@@ -1997,7 +1997,7 @@ final class GameCore {
     }
 
     void startGame() {
-        slimeBubbles.reset();slimeBanks.reset();
+        slimeBubbles.reset();slimeBanks.reset();crystalField.reset();
         if(!modes.playable(this))return;
         bossRetry.finish(this);bossRetry.clear();
         titleKeyHint = 0f;
@@ -2129,7 +2129,7 @@ final class GameCore {
     }
 
     void toTitle() {
-        slimeBubbles.reset();slimeBanks.reset();
+        slimeBubbles.reset();slimeBanks.reset();crystalField.reset();
         bossRetry.finish(this);bossRetry.clear();
         pairSpawnSlots = 0;
         titleKeyHint = 0f;
@@ -2821,6 +2821,7 @@ final class GameCore {
         titleKeyHint = titleKeysAvailable() ? decay(titleKeyHint, elapsed / 1.2f) : 0f;
         if(!SlimeBubbles.enabled(this))slimeBubbles.reset();
         if(!boss.active() || boss.kind!=Boss.SLIME || state!=PLAY)slimeBanks.reset();
+        if(state!=PLAY || CrystalField.presence(this)<=0)crystalField.reset();
         if (paused) return;
         if(!starter.open)titleStart.update(this,elapsed,L);
         townSaveRetry=Math.max(0f,townSaveRetry-elapsed);
@@ -3444,6 +3445,7 @@ final class GameCore {
         e.clearX = enemyCentreX(e);
         e.clearY = e.y;
         SlimeHills.cleared(this,e.clearX,e.clearY,Glyph.COLOR[e.word[e.word.length-1]],L);
+        crystalField.cleared(this,L,e.clearX,e.clearY,e.word.length,Glyph.COLOR[e.word[e.word.length-1]]);
         e.dying = false;
         // A destroyed word is no longer a threat, so it must stop looking like one. The
         // update loop skips destroyed words, so whatever warning state it held would

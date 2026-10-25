@@ -8,7 +8,41 @@ final class CrystalField extends Draw {
     static final float PERIOD=2f;
     static final float[] SPEED={.012f,.023f,.041f};
     static final int LAYERS=3;
+    static final float CLEAR_TIME=1.05f;
+    static final int MAX_LIGHTS=6;
+    private final Pulse[] lights=new Pulse[MAX_LIGHTS];
+    private int nextLight;
     private float width;
+    static final class Pulse {
+        float born=-100,sky,x,y,rx;
+        int color;
+    }
+    CrystalField(){for(int i=0;i<MAX_LIGHTS;i++)lights[i]=new Pulse();}
+    void reset(){for(Pulse light:lights)light.born=-100;nextLight=0;}
+    void cleared(GameCore c,Layout L,float x,float y,int length,int color) {
+        if(c.state!=GameCore.PLAY || c.survival.active || Lands.forStage(c.stage)!=LAND)return;
+        Pulse light=lights[nextLight];nextLight=(nextLight+1)%MAX_LIGHTS;
+        light.born=c.clock;light.sky=c.skyClock;light.x=x/L.w;light.y=y/L.w;
+        light.rx=Math.min(.46f,Math.max(.23f,length*L.enemyStep/L.w*.55f));
+        light.color=Glyph.mix(0xFFE2CEFF,color,.28f);
+    }
+    private static float strength(Pulse light,float clock) {
+        float age=clock-light.born;if(age<0 || age>=CLEAR_TIME)return 0;
+        float fade=1-age/CLEAR_TIME;return fade*fade;
+    }
+    private static float lightY(Pulse light,GameCore c,int layer) {
+        // Follow the lit crystal rather than leaving the light fixed on the screen.
+        return light.y+(c.skyClock-light.sky)*SPEED[layer];
+    }
+    float lightAt(GameCore c,Layout L,int layer,float x,float y) {
+        float best=0;
+        for(Pulse light:lights) {
+            if(strength(light,c.clock)<=0)continue;
+            float dx=(x/L.w-light.x)/light.rx,dy=(y/L.w-lightY(light,c,layer))/.27f;
+            best=Math.max(best,strength(light,c.clock)*Math.max(0,1-dx*dx-dy*dy));
+        }
+        return best;
+    }
     Cell[][] layers;
     static final class Cell {
         float[] rim,face;
@@ -86,10 +120,40 @@ final class CrystalField extends Draw {
         for(int k=0;k<result.length;k++)result[k]=out.get(k);
         return result;
     }
+    private void edgeLights(Painter p,GameCore c,Layout L,Cell cell,int layer,float y,float fade) {
+        for(int k=0;k<cell.rim.length;k+=2) {
+            int n=(k+2)%cell.rim.length;
+            float ax=cell.rim[k],ay=cell.rim[k+1],bx=cell.rim[n],by=cell.rim[n+1];
+            float best=0,from=0,to=0;int color=0;
+            for(Pulse light:lights) {
+                float power=strength(light,c.clock);if(power<=.015f)continue;
+                float rx=light.rx*L.w,ry=L.w*.27f;
+                float dx=(bx-ax)/rx,dy=(by-ay)/ry;
+                float px=(ax-light.x*L.w)/rx,py=(ay+y-lightY(light,c,layer)*L.w)/ry;
+                float len=dx*dx+dy*dy;if(len<.00001f)continue;
+                float projection=-(px*dx+py*dy)/len,t=Math.max(0,Math.min(1,projection));
+                float nx=px+dx*t,ny=py+dy*t,near=nx*nx+ny*ny;
+                float amount=power*Math.max(0,1-near);if(amount<=best)continue;
+                float ex=px+dx*projection,ey=py+dy*projection;
+                float half=(float)Math.sqrt(Math.max(0,(1-ex*ex-ey*ey)/len));
+                best=amount;from=Math.max(0,projection-half);to=Math.min(1,projection+half);color=light.color;
+            }
+            if(best<=.025f)continue;
+            float dx=bx-ax,dy=by-ay,scale=fade*best;
+            float x1=ax+dx*from,y1=ay+dy*from,x2=ax+dx*to,y2=ay+dy*to;
+            float soft=layer==0?.036f:layer==1?.025f:.016f;
+            p.line(x1,y1,x2,y2,Glyph.withAlpha(color,(int)(scale*24)),L.w*soft);
+            p.line(x1,y1,x2,y2,Glyph.withAlpha(color,(int)(scale*57)),L.w*soft*.48f);
+            p.line(x1,y1,x2,y2,Glyph.withAlpha(color,(int)(scale*(layer==0?105:layer==1?150:205))),
+                    L.w*(layer==0?.008f:layer==1?.005f:.003f));
+        }
+    }
     void draw(Painter p,GameCore c,Layout L,float fade) {
         if(fade<=.001f)return;
         prepare(L.w);
         float period=PERIOD*L.w;
+        boolean lighting=false;
+        for(Pulse light:lights)if(strength(light,c.clock)>.015f){lighting=true;break;}
         p.save();p.clipRect(0,0,L.w,L.deckTop);
         for(int layer=0;layer<LAYERS;layer++) {
             float offset=scroll(c.skyClock,L.w,layer);
@@ -107,6 +171,7 @@ final class CrystalField extends Draw {
                     p.strokePoly(cell.rim,Glyph.withAlpha(edgeColor,(int)(fade*(5+layer*3))),L.w*softness*.48f);
                     p.strokePoly(cell.rim,Glyph.withAlpha(edgeColor,(int)(fade*(layer==0?12:layer==1?28:53)*( .8f+shimmer*.2f))),
                             L.w*(layer==0?.006f:layer==1?.0035f:.0022f));
+                    if(lighting)edgeLights(p,c,L,cell,layer,y,fade);
                     float sweep=((c.clock*.16f+cell.phase/Softbody.TAU)%1)*13-2.5f;
                     for(int band=0;band<cell.sheen.length;band++) {
                         float distance=Math.abs(band-sweep)/1.8f;

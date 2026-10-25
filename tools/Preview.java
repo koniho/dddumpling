@@ -3201,6 +3201,12 @@ final class Preview {
             Check.add(crystal,L,new int[]{0,2,4},L.h*.29f).enterT=1;
             Check.add(crystal,L,new int[]{1,3,5,2},L.h*.52f).enterT=1;
             shot(dir,"crystal-field-prompts",crystal,L,w,h,ss);
+            GameCore.Enemy cleared=crystal.enemies.get(1);
+            crystal.destroyWord(cleared,cleared.baseX,cleared.y,L);
+            crystal.clock+=.12f;crystal.skyClock+=.12f;
+            shot(dir,"crystal-field-clear",crystal,L,w,h,ss);
+            crystal.clock+=.65f;crystal.skyClock+=.65f;
+            shot(dir,"crystal-field-clear-fading",crystal,L,w,h,ss);
         }
         if(wanted("slime-basin-death-")) {
             GameCore death=toBoss(L,Boss.SLIME,764L,false);
