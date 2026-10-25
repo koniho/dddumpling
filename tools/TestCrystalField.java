@@ -83,11 +83,12 @@ final class TestCrystalField extends Check {
         return c;
     }
     private static void arena(Layout L) {
-        boolean symmetric=true,growing=true,seamless=true,covers=true;
+        boolean symmetric=true,growing=true,seamless=true,covers=true,depth=true;
         int[] previous=new int[3];
         for(int phase=0;phase<=CrystalArena.MAX_PHASE;phase++)for(int layer=0;layer<3;layer++) {
             CrystalField.Cell[] cells=CrystalArena.make(L.w,layer,phase);
             growing&=cells.length>previous[layer];previous[layer]=cells.length;
+            if(layer>0)depth&=previous[layer-1]>cells.length;
             for(CrystalField.Cell cell:cells)for(int j=0;j<cell.rim.length;j+=2) {
                 int next=(j+2)%cell.rim.length;
                 seamless&=!(Math.abs(cell.rim[j]-L.w*.5f)<.001f && Math.abs(cell.rim[next]-L.w*.5f)<.001f);
@@ -107,6 +108,7 @@ final class TestCrystalField extends Check {
         }
         check("all arena layers stay exactly mirrored through every fracture",symmetric);
         check("each pinch adds arena fragments",growing);
+        check("deeper arena layers retain finer segmentation through every phase",depth);
         check("center-spanning arena tiles have no vertical mirror seam",seamless);
         check("joined arena tiles cover every phase without gaps or overlaps",covers);
         GameCore c=arenaScene(L,7);

@@ -4,7 +4,7 @@ import java.util.ArrayList;
 
 /** Mirrored crystal chamber: each completed pinch fractures the tiles symmetrically. */
 final class CrystalArena extends Draw {
-    static final int MAX_PHASE=Boss.DIVIDE_NODES, START=6;
+    static final int MAX_PHASE=Boss.DIVIDE_NODES;
     private int phase=-1;
     private float width;
     CrystalField.Cell[][] cells;
@@ -24,14 +24,16 @@ final class CrystalArena extends Draw {
     }
     static CrystalField.Cell[] make(float w,int layer,int phase) {
         ArrayList<float[]> pieces=new ArrayList<>();
-        float[] sx=new float[START],sy=new float[START];
-        for(int i=0;i<START;i++) {
-            sx[i]=.25f*(i%2+.15f+.7f*hash(1351+layer*113+i*71));
-            sy[i]=2f*(i/2+.15f+.7f*hash(872+layer*173+i*47))/(START/2);
+        // Smaller distant facets establish scale depth; the foreground keeps its broad slabs.
+        int columns=layer==0?3:2,rows=layer==0?8:layer==1?6:3,count=columns*rows;
+        float[] sx=new float[count],sy=new float[count];
+        for(int i=0;i<count;i++) {
+            sx[i]=.5f*(i%columns+.15f+.7f*hash(1351+layer*113+i*71))/columns;
+            sy[i]=2f*(i/columns+.15f+.7f*hash(872+layer*173+i*47))/rows;
         }
-        for(int i=0;i<START;i++) {
+        for(int i=0;i<count;i++) {
             float[] p={0,0,.5f,0,.5f,2,0,2};
-            for(int j=0;j<START;j++)if(j!=i)
+            for(int j=0;j<count;j++)if(j!=i)
                 p=CrystalField.clip(p,sx[j]-sx[i],sy[j]-sy[i],(sx[j]*sx[j]+sy[j]*sy[j]-sx[i]*sx[i]-sy[i]*sy[i])*.5f);
             pieces.add(p);
         }
