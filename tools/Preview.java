@@ -3210,6 +3210,13 @@ final class Preview {
                 arena.shake=arena.flash=0;
                 shot(dir,"crystal-arena-phase-"+phase,arena,L,w,h,ss);
             }
+            for(float age:new float[]{.06f,.2f,.48f}) {
+                GameCore split=TestCrystalField.arenaScene(L,2);split.clock=split.skyClock=5;split.crystalField.reset();
+                int node=split.boss.pieceNodeIndex(0);split.boss.pieceHits[node]=Boss.DIVIDE_HITS;
+                split.boss.beginPinch(100);BossPlay.pinch(split,100*(Boss.DIVIDE_SCALE+.02f),L);
+                step(split,L,age);split.shake=split.flash=0;
+                shot(dir,"crystal-arena-split-jiggle-"+Math.round(age*1000),split,L,w,h,ss);
+            }
             for(int beat=0;beat<2;beat++) {
                 GameCore pulse=TestCrystalField.arenaScene(L,4);pulse.skyClock=5;
                 pulse.clock=(float)Math.PI/(2*6.4f)+beat*(float)Math.PI/6.4f;pulse.shake=pulse.flash=0;
@@ -3222,8 +3229,8 @@ final class Preview {
             boltBoss.bsx[0]=L.w*.28f;boltBoss.bsy[0]=L.h*.43f;boltBoss.bt[0]=.2f;clear.tapKey(boltKey,L);
             shot(dir,"crystal-arena-projectile-clear",clear,L,w,h,ss);
             GameCore hit=TestCrystalField.arenaScene(L,4);hit.clock=hit.skyClock=5;hit.shake=hit.flash=0;
-            hit.crystalField.flash(hit,L,L.w*.3f,L.h*.4f,3,Glyph.COLOR[4]);
-            hit.crystalField.flash(hit,L,L.w*.7f,L.h*.4f,3,Glyph.COLOR[4]);
+            Softbody struck=hit.boss.pieceBody(0);
+            hit.crystalField.globFlash(hit,L,struck.centreX(),struck.centreY(),struck.radiusX(),struck.radiusY(),Glyph.COLOR[4],false);
             shot(dir,"crystal-arena-impact",hit,L,w,h,ss);
             for(float time:new float[]{DivideDeath.BURST_AT-.05f,DivideDeath.BURST_AT+.3f,DivideDeath.BURST_AT+.85f}) {
                 GameCore dead=TestCrystalField.arenaScene(L,15);dead.clock=dead.skyClock=5;

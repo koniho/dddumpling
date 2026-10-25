@@ -244,7 +244,8 @@ final class BossPlay {
                 || b.body!=s.promptRoot)return false;
         boolean divide=s.promptKind==Boss.SPLITTER;
         // A credited hit still lights the arena if its glob was pinched before arrival.
-        if(divide)c.crystalField.arenaFlash(c,L,s.tx,s.ty,3,Glyph.COLOR[s.glyph]);
+        if(divide)c.crystalField.globFlash(c,L,s.tx,s.ty,
+                s.promptBody.radiusX(),s.promptBody.radiusY(),Glyph.COLOR[s.glyph],false);
         if(divide && (!b.nodeActive(s.promptNode)
                 || b.divideBody[s.promptNode]!=s.promptBody))return false;
         b.promptImpact(s.promptNode,s.promptSplit,s.tx,s.ty);
@@ -380,10 +381,14 @@ final class BossPlay {
     static boolean pinch(GameCore c, float distance, float x1, float y1, float x2, float y2,
             Layout L) {
         float beforeHp = c.boss.hp;
+        int node=c.boss.pinchNode;
+        Softbody glob=node>=0?c.boss.divideBody[node]:null;
+        float rx=glob==null?Boss.bodyR(L):glob.radiusX(),ry=glob==null?Boss.bodyR(L):glob.radiusY();
         boolean changed = c.boss.pinch(distance, x1, y1, x2, y2, c.rnd);
         c.progress.bossDamage(c.boss.kind, beforeHp, c.boss.hp);
         c.timeAttack.bossDamaged(beforeHp, c.boss.hp);
         if (!changed) return false;
+        c.crystalField.globFlash(c,L,c.boss.hitX,c.boss.hitY,rx,ry,CrystalField.SPLIT_COLOR,true);
         c.onboarding.bossDamaged(c);
         c.companion.react(RunCompanion.BOSS_HIT, 1f);
         boolean deactivate = c.boss.divideDeactivated;

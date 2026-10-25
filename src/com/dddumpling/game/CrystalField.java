@@ -9,32 +9,53 @@ final class CrystalField extends Draw {
     static final float[] SPEED={.012f,.023f,.041f};
     static final int LAYERS=3, STAMP_WIDTH=480, STAMP_HEIGHT=960;
     static final float CLEAR_TIME=1.05f;
-    static final int MAX_LIGHTS=6;
+    static final int MAX_LIGHTS=6, SPLIT_COLOR=0xFF65F5ED;
+    static final float JIGGLE_TIME=.8f;
     private final Pulse[] lights=new Pulse[MAX_LIGHTS+Boss.DIVIDE_PIECES*2];
     private int nextLight,arenaLightCount;
+    private boolean hasJiggle;
     final CrystalArrival arrival=new CrystalArrival();
     private float width;
     static final class Pulse {
-        float born=-100,sky,x,y,rx,held=-1;
+        float born=-100,sky,x,y,rx,ry=.27f,held=-1,kickWave;
+        boolean kick;
         int color;
     }
     CrystalField(){for(int i=0;i<lights.length;i++)lights[i]=new Pulse();}
-    void reset(){for(Pulse light:lights){light.born=-100;light.held=-1;}nextLight=arenaLightCount=0;arrival.reset();}
+    void reset(){for(Pulse light:lights){light.born=-100;light.held=-1;light.kick=false;light.kickWave=0;}nextLight=arenaLightCount=0;hasJiggle=false;arrival.reset();}
     void cleared(GameCore c,Layout L,float x,float y,int length,int color) {
         if(c.state!=GameCore.PLAY || c.survival.active || Lands.forStage(c.stage)!=LAND)return;
         flash(c,L,x,y,length,color);
     }
     void flash(GameCore c,Layout L,float x,float y,int length,int color) {
+        flashSized(c,L,x,y,Math.min(.46f,Math.max(.23f,length*L.enemyStep/L.w*.55f))*L.w,
+                L.w*.27f,Glyph.mix(0xFFE2CEFF,color,.28f),false);
+    }
+    private void flashSized(GameCore c,Layout L,float x,float y,float rx,float ry,int color,boolean kick) {
         Pulse light=lights[nextLight];nextLight=(nextLight+1)%MAX_LIGHTS;
         light.born=c.clock;light.sky=c.skyClock;light.x=x/L.w;light.y=y/L.w;
-        light.rx=Math.min(.46f,Math.max(.23f,length*L.enemyStep/L.w*.55f));
-        light.color=Glyph.mix(0xFFE2CEFF,color,.28f);
+        light.rx=Math.max(.01f,rx/L.w);light.ry=Math.max(.01f,ry/L.w);
+        light.color=color;light.held=-1;light.kick=kick;light.kickWave=0;
+    }
+    void globFlash(GameCore c,Layout L,float x,float y,float rx,float ry,int color,boolean split) {
+        int tint=split?SPLIT_COLOR:Glyph.mix(0xFFE2CEFF,color,.28f);
+        flashSized(c,L,x,y,rx*2,ry*2,tint,split);
+        flashSized(c,L,L.w-x,y,rx*2,ry*2,tint,split);
     }
     void arenaFlash(GameCore c,Layout L,float x,float y,int length,int color) {
         flash(c,L,x,y,length,color);flash(c,L,L.w-x,y,length,color);
     }
     void prepareArenaLights(GameCore c,Layout L) {
-        arenaLightCount=0;
+        arenaLightCount=0;hasJiggle=false;
+        for(int i=0;i<MAX_LIGHTS;i++) {
+            Pulse light=lights[i];float age=c.clock-light.born;
+            light.kickWave=0;
+            if(light.kick && age>=0 && age<JIGGLE_TIME) {
+                float decay=1-age/JIGGLE_TIME;
+                light.kickWave=(float)Math.sin(age*26)*decay*decay;
+                hasJiggle=true;
+            }
+        }
         Boss b=c.boss;
         if(c.state!=GameCore.PLAY || !b.fighting() || b.kind!=Boss.SPLITTER)return;
         float power=BossScreen.vulnerabilityPulse(c.clock)*.70f;
@@ -44,7 +65,7 @@ final class CrystalField extends Draw {
                 Pulse light=lights[MAX_LIGHTS+arenaLightCount++];
                 light.x=(side==0?body.centreX():L.w-body.centreX())/L.w;light.y=body.centreY()/L.w;
                 light.rx=Math.max(.18f,Math.min(.42f,b.pieceR(i,L)*1.8f/L.w));
-                light.sky=c.skyClock;light.held=power;light.color=Draw.YELLOW;
+                light.ry=.27f;light.sky=c.skyClock;light.held=power;light.color=Draw.YELLOW;
             }
         }
     }
@@ -66,10 +87,21 @@ final class CrystalField extends Draw {
         for(int lightIndex=0;lightIndex<MAX_LIGHTS+arenaLightCount;lightIndex++) {
             Pulse light=lights[lightIndex];
             if(strength(light,c.clock)<=0)continue;
-            float dx=(x/L.w-light.x)/light.rx,dy=(y/L.w-lightY(light,c,layer))/.27f;
+            float dx=(x/L.w-light.x)/light.rx,dy=(y/L.w-lightY(light,c,layer))/light.ry;
             best=Math.max(best,strength(light,c.clock)*Math.max(0,1-dx*dx-dy*dy));
         }
         return best;
+    }
+    float jiggleAt(GameCore c,Layout L,int layer,float x,float y,boolean horizontal) {
+        if(!hasJiggle)return 0;
+        float offset=0;
+        for(int i=0;i<MAX_LIGHTS;i++) {
+            Pulse light=lights[i];if(light.kickWave==0)continue;
+            float dx=(x/L.w-light.x)/light.rx,dy=(y/L.w-lightY(light,c,layer))/light.ry;
+            float falloff=Math.max(0,1-dx*dx-dy*dy);
+            offset+=light.kickWave*falloff*(horizontal?dx:dy);
+        }
+        return Math.max(-1,Math.min(1,offset))*L.w*(.022f+layer*.006f);
     }
     Cell[][] layers;
     static final class Cell {
@@ -156,7 +188,7 @@ final class CrystalField extends Draw {
             for(int lightIndex=0;lightIndex<MAX_LIGHTS+arenaLightCount;lightIndex++) {
                 Pulse light=lights[lightIndex];
                 float power=strength(light,c.clock);if(power<=.015f)continue;
-                float rx=light.rx*L.w,ry=L.w*.27f;
+                float rx=light.rx*L.w,ry=light.ry*L.w;
                 float lx=light.x*L.w,ly=lightY(light,c,layer)*L.w-y;
                 if(Math.max(ax,bx)<lx-rx || Math.min(ax,bx)>lx+rx
                         || Math.max(ay,by)<ly-ry || Math.min(ay,by)>ly+ry)continue;
@@ -171,6 +203,12 @@ final class CrystalField extends Draw {
                 best=amount;from=Math.max(0,projection-half);to=Math.min(1,projection+half);color=light.color;
             }
             if(best<=.025f)continue;
+            if(hasJiggle) {
+                // Adjacent edges sample the same node offset, so their lit junction stays joined.
+                float axOffset=jiggleAt(c,L,layer,ax,ay+y,true),ayOffset=jiggleAt(c,L,layer,ax,ay+y,false);
+                float bxOffset=jiggleAt(c,L,layer,bx,by+y,true),byOffset=jiggleAt(c,L,layer,bx,by+y,false);
+                ax+=axOffset;ay+=ayOffset;bx+=bxOffset;by+=byOffset;
+            }
             float dx=bx-ax,dy=by-ay,scale=fade*best;
             float x1=ax+dx*from,y1=ay+dy*from,x2=ax+dx*to,y2=ay+dy*to;
             float soft=layer==0?.036f:layer==1?.025f:.016f;

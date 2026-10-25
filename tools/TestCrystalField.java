@@ -4,6 +4,7 @@ final class TestCrystalField extends Check {
     static void all(Layout L) {
         arena(L);
         arenaLights(L);
+        splitLighting(L);
         arrival(L);
 
         GatorReplay replay=new GatorReplay(Boss.SPLITTER),chunked=new GatorReplay(Boss.SPLITTER);
@@ -185,6 +186,34 @@ final class TestCrystalField extends Check {
         check("all eight vulnerable globs fit the fixed light pool",c.crystalField.hasLights(c));
         c.lives=1;c.takeHit(L.w*.5f,L);c.crystalField.reset();c.crystalField.prepareArenaLights(c,L);
         check("loss clears vulnerability lighting from the retained arena",!c.crystalField.hasLights(c));
+    }
+    private static void splitLighting(Layout L) {
+        GameCore c=arenaScene(L,0);float x=L.w*.5f,y=L.h*.4f,rx=L.w*.08f,ry=L.w*.12f;
+        c.crystalField.globFlash(c,L,x,y,rx,ry,Glyph.COLOR[0],false);
+        check("glob prompt lighting spans twice its width and height",
+                c.crystalField.lightAt(c,L,0,x+rx*1.5f,y)>.4f && c.crystalField.lightAt(c,L,0,x,y+ry*1.5f)>.4f
+                && c.crystalField.lightAt(c,L,0,x+rx*2.1f,y)==0 && c.crystalField.lightAt(c,L,0,x,y+ry*2.1f)==0);
+        c.crystalField.reset();c.boss.pieceHits[0]=Boss.DIVIDE_HITS;c.boss.beginPinch(100);
+        BossPlay.pinch(c,100*(Boss.DIVIDE_SCALE+.02f),L);
+        final boolean[] cyan={false};
+        Painter probe=new OpacityPainter(new ProfileCrystalField.Counter(true),1) {
+            @Override public void line(float x1,float y1,float x2,float y2,int color,float width) {
+                cyan[0]|=(color&0xFFFFFF)==(CrystalField.SPLIT_COLOR&0xFFFFFF);
+            }
+        };
+        c.crystalField.draw(probe,c,L,1);
+        check("glob splitting emits its own cyan edge light",cyan[0]);
+        c.clock+=.06f;c.crystalField.prepareArenaLights(c,L);
+        float xx=L.w*.25f,yy=c.boss.hitY;
+        float kick=c.crystalField.jiggleAt(c,L,2,xx,yy,true);
+        check("split kicks nearby illuminated crystal junctions",Math.abs(kick)>.01f);
+        check("node jiggle stays mirrored",Math.abs(kick+c.crystalField.jiggleAt(c,L,2,L.w-xx,yy,true))<.001f);
+        c.clock+=.15f;c.crystalField.prepareArenaLights(c,L);
+        check("crystal junctions spring back past their rest position",kick*c.crystalField.jiggleAt(c,L,2,xx,yy,true)<0);
+        c.clock+=CrystalField.JIGGLE_TIME;c.crystalField.prepareArenaLights(c,L);
+        check("node jiggle settles without changing cached arena geometry",c.crystalField.jiggleAt(c,L,2,xx,yy,true)==0);
+        c.crystalField.reset();
+        check("reset releases node motion",c.crystalField.jiggleAt(c,L,2,xx,yy,true)==0);
     }
     private static void arrival(Layout L) {
         GameCore c=arenaScene(L,0);c.boss.intro=Boss.INTRO;c.clock=c.skyClock=5;
