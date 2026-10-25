@@ -246,6 +246,7 @@ final class BossPlay {
         for(GameCore.Particle p:s.promptParticles) {p.x+=s.tx;p.y+=s.ty;c.particles.add(p);}
         s.promptParticles.clear();
         if(!divide) {
+            c.slimeBanks.flash(c.clock,s.tx,s.ty,false);
             SlimeSpray.emit(c,s.tx,s.ty,s.tx-s.sx,s.ty-s.sy,b.body.rest*.5f,false);
             SlimeHills.surfaceRipple(c,s.tx,s.ty,Glyph.COLOR[s.glyph],b.body.rest*.28f);
         }

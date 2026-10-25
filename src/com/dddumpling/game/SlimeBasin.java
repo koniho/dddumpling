@@ -33,6 +33,7 @@ final class SlimeBasin extends Draw {
         if(fade<=.001f)return;
         Boss b=boss(c);
         float span=L.deckTop-L.playTop,t=c.clock,hit=retained(c)?0:light(b);
+        if(!retained(c))hit=Math.max(hit,Math.max(c.slimeBanks.light(t,0)*.85f,c.slimeBanks.light(t,1)));
         float breath=.5f+.5f*(float)Math.sin(t*.85f);
         float cx=b.bodyX(L),floor=b.bodyY(L)+b.bodyR(L)*.80f;
         float[] shape=new float[34];
@@ -49,8 +50,18 @@ final class SlimeBasin extends Draw {
         }
         // Move and modulate a single smooth light texture; bank geometry stays cached.
         float glowX=L.w*.5f+(cx-L.w*.5f)*.20f;
-        art(p,SlimeBasinArt.LIGHT,glowX-L.w*.65f,floor-span*.46f,
-                L.w*1.3f,span*1.12f,(int)(fade*(46+breath*18+hit*100)));
+        float glowWidth=L.w*(1.3f+hit*.65f),glowHeight=span*(1.12f+hit*.24f);
+        art(p,SlimeBasinArt.LIGHT,glowX-glowWidth*.5f,floor-glowHeight*.41f,
+                glowWidth,glowHeight,(int)(fade*Math.min(255,46+breath*18+hit*185)));
+        // Reuse the same cached mask for a brief expanding light at the actual contact point.
+        if(!retained(c))for(int i=0;i<2;i++) {
+            float pulse=c.slimeBanks.light(t,i);
+            if(pulse<.01f)continue;
+            float reach=L.w*((i==0?1.15f:2.0f)+(1-pulse)*.65f);
+            float height=reach*.72f;
+            art(p,SlimeBasinArt.LIGHT,c.slimeBanks.lightX[i]-reach*.5f,c.slimeBanks.lightY[i]-height*.5f,
+                    reach,height,(int)(fade*pulse*(i==0?205:255)));
+        }
         // Small live glints and surface reflections retain motion without full-scene redraws.
         for(int side=0;side<2;side++)for(int i=0;i<3;i++) {
             float u=.46f+i*.19f+.006f*(float)Math.sin(t*.65f+i);
@@ -58,14 +69,14 @@ final class SlimeBasin extends Draw {
             float x=(SlimeBasinArt.inset(u,side,L.w)-L.w*.020f)*scale;
             x+=x/bankWidth(t,side,L)*SlimeBanks.sample(c.slimeBanks.offsets(t,side,L),u);
             if(side==1)x=L.w-x;
-            SlimeHills.jelly(p,shape,x,bankTop(t,side,L)+bankHeight(t,side,L)*u,L.w*.014f*scale,L.w*.008f,
-                    i,Glyph.withAlpha(SlimeHills.MINT,(int)(fade*(28+breath*18+hit*36))));
+            SlimeHills.jelly(p,shape,x,bankTop(t,side,L)+bankHeight(t,side,L)*u,L.w*.014f*scale*(1+hit),L.w*.008f*(1+hit*.6f),
+                    i,Glyph.withAlpha(SlimeHills.MINT,(int)(fade*(28+breath*18+hit*110))));
         }
         for(int i=0;i<6;i++) {
             float x=L.w*(.26f+hash(i+921)*.48f),y=L.playTop+span*(.35f+hash(i+613)*.54f);
             x+=L.w*.012f*(float)Math.sin(t*.5f+i);
-            SlimeHills.jelly(p,shape,x,y,L.w*(.025f+hash(i+84)*.035f),L.w*.006f,i,
-                    Glyph.withAlpha(0xFF9BD79B,(int)(fade*(13+breath*5+hit*18))));
+            SlimeHills.jelly(p,shape,x,y,L.w*(.025f+hash(i+84)*.035f)*(1+hit*.85f),L.w*.006f*(1+hit*.5f),i,
+                    Glyph.withAlpha(0xFF9BD79B,(int)(fade*(13+breath*5+hit*65))));
         }
         float reveal=SlimeArrival.reveal(b);
         float grounding=BossCollect.keepsArena(c,Boss.SLIME)?0:fade*reveal*(b.beaten?1-b.leaveProgress():1);
@@ -73,9 +84,9 @@ final class SlimeBasin extends Draw {
                 b.bodyR(L)*3.2f,b.bodyR(L)*.60f,(int)(grounding*115));
         for(int wave=0;wave<3;wave++) {
             float phase=(t*.19f+wave/3f)%1;
-            float radius=b.bodyR(L)*(1.03f+phase*.8f+hit*.3f);
+            float radius=b.bodyR(L)*(1.03f+phase*.8f+hit*.65f);
             SlimeHills.ripple(p,rings,cx,floor,radius,radius*.23f,wave+t*.13f,
-                    Glyph.withAlpha(SlimeHills.MINT,(int)(grounding*(1-phase)*(28+hit*40))),.035f);
+                    Glyph.withAlpha(SlimeHills.MINT,(int)(grounding*(1-phase)*(28+hit*90))),.035f);
         }
         SlimeHills.clearRipples(p,c,L,fade);
     }

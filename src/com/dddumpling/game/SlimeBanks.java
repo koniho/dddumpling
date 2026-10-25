@@ -1,12 +1,24 @@
 package com.dddumpling.game;
 
-/** Two bounded spring impulses deform cached banks; no simulation or gameplay randomness. */
+/** Bounded bank springs and impact lights; no simulation or gameplay randomness. */
 final class SlimeBanks {
     static final int ROWS=8;
     private final float[] hitAt={-100,-100},hitY={.5f,.5f};
     private final float[][] offsets={new float[ROWS+1],new float[ROWS+1]};
-    void reset(){hitAt[0]=hitAt[1]=-100;}
+    private final float[] lightAt={-100,-100};
+    final float[] lightX=new float[2],lightY=new float[2];
+    void reset(){hitAt[0]=hitAt[1]=lightAt[0]=lightAt[1]=-100;}
+    void flash(float time,float x,float y,boolean drag) {
+        int i=drag?1:0;lightAt[i]=time;lightX[i]=x;lightY[i]=y;
+    }
+    float light(float time,int i) {
+        float age=time-lightAt[i];
+        if(age<0)return 0;
+        float fade=Math.max(0,1-age/(i==0?.55f:.95f));
+        return fade*fade;
+    }
     void hit(float time,float x,float y,Layout L) {
+        flash(time,x,y,true);
         int side=x<L.w*.5f?0:1;hitAt[side]=time;
         hitY[side]=Math.max(.08f,Math.min(.92f,(y-SlimeBasin.bankTop(time,side,L))/SlimeBasin.bankHeight(time,side,L)));
     }

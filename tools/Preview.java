@@ -3197,6 +3197,7 @@ final class Preview {
             step(basin,L,SlimeArrival.DURATION+1);
             shot(dir,"slime-basin-idle",basin,L,w,h,ss);
             basin.boss.hurt=1;
+            basin.slimeBanks.flash(basin.clock,basin.boss.bodyX(L)+Boss.bodyR(L)*.55f,basin.boss.bodyY(L),false);
             shot(dir,"slime-basin-impact",basin,L,w,h,ss);
             basin.boss.hurt=0;step(basin,L,1);
             basin.slimeBanks.hit(basin.clock,0,L.playTop+(L.deckTop-L.playTop)*.48f,L);

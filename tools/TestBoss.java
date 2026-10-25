@@ -90,6 +90,15 @@ final class TestBoss extends Check {
         check("basin hit changes cached light alpha without changing artwork",cache.calls==10 && cache.lightAlpha>idle);
         cache.calls=0;SlimeBasin.draw(new OpacityPainter(cache,.5f),c,L);
         check("per primitive fades retain vector fallback",cache.calls==0);
+        c.boss.hurt=0;c.slimeBanks.flash(c.clock,L.w*.4f,L.h*.3f,false);
+        cache.calls=0;SlimeBasin.draw(cache,c,L);
+        check("prompt glow reuses a cached mask",cache.calls==6 && cache.mask==31);
+        c.slimeBanks.hit(c.clock,L.w,L.h*.5f,L);cache.calls=0;SlimeBasin.draw(cache,c,L);
+        check("prompt and drag lights overlap with bounded cached draws",cache.calls==7 && cache.mask==31);
+        check("drag lighting lasts longer than prompt lighting",c.slimeBanks.light(c.clock+.6f,0)==0
+                && c.slimeBanks.light(c.clock+.6f,1)>0 && c.slimeBanks.light(c.clock+1,1)==0);
+        c.slimeBanks.reset();
+        check("leaving the arena clears both impact lights",c.slimeBanks.light(c.clock,0)==0 && c.slimeBanks.light(c.clock,1)==0);
         boolean covered=true,bounded=true,independent=false;
         for(int frame=0;frame<600;frame++) {
             float time=frame*.1f;
@@ -336,7 +345,7 @@ final class TestBoss extends Check {
                     (kind==Boss.SLIME?b.chainAt:b.pieceCharge(0))==before+1);
             check("key press has no early hit flash, shake, particles or sound "+kind,
                     b.hurt==0 && b.slimeKeyPulse==0 && b.slimeEyeHit==0 && c.shake==0 && c.flash==0 && c.particles.isEmpty()
-                    && ear.slimeHits==0 && ear.boltPops==0 && ear.divideDamages==0);
+                    && ear.slimeHits==0 && ear.boltPops==0 && ear.divideDamages==0 && c.slimeBanks.light(c.clock,0)==0);
             GameCore.Shot shot=c.shots.get(0);
             c.paused=true;c.update(.3f,L);
             check("pause holds the pending reaction "+kind,shot.t==0 && b.hurt==0);
@@ -354,6 +363,8 @@ final class TestBoss extends Check {
             for(GameCore.Particle q:c.particles)if(q.slimeRipple){ripples++;ripple=q;}
             check("only Slime prompt contact adds an impact ripple "+kind,ripples==(kind==Boss.SLIME?1:0));
             if(ripple!=null)check("prompt ripple is located at contact",ripple.x==shot.tx && ripple.y==shot.ty);
+            check("only slime contact starts basin illumination "+kind,c.slimeBanks.light(c.clock,0)==(kind==Boss.SLIME?1:0));
+            if(kind==Boss.SLIME)check("prompt light follows projectile contact",c.slimeBanks.lightX[0]==shot.tx && c.slimeBanks.lightY[0]==shot.ty);
 
             Fx.updateShots(c,.5f,L);
             check("completed flight cannot replay the sound "+kind,(kind==Boss.SLIME?ear.slimeHits:ear.divideDamages)==1);
