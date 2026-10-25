@@ -3192,6 +3192,11 @@ final class Preview {
             }
         }
         if(wanted("crystal-arena-")) {
+            for(float time:new float[]{0,.35f,.8f,1.2f,1.59f}) {
+                GameCore entry=TestCrystalField.arenaScene(L,0);
+                entry.boss.intro=Boss.INTRO-time;entry.clock=entry.skyClock=5+time;entry.shake=entry.flash=0;
+                shot(dir,"crystal-arena-arrival-"+Math.round(time*1000),entry,L,w,h,ss);
+            }
             for(int phase:new int[]{0,4,7,14}) {
                 GameCore arena=TestCrystalField.arenaScene(L,phase);arena.clock=arena.skyClock=5;
                 arena.shake=arena.flash=0;

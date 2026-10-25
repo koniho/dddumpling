@@ -12,13 +12,14 @@ final class CrystalField extends Draw {
     static final int MAX_LIGHTS=6;
     private final Pulse[] lights=new Pulse[MAX_LIGHTS];
     private int nextLight;
+    final CrystalArrival arrival=new CrystalArrival();
     private float width;
     static final class Pulse {
         float born=-100,sky,x,y,rx;
         int color;
     }
     CrystalField(){for(int i=0;i<MAX_LIGHTS;i++)lights[i]=new Pulse();}
-    void reset(){for(Pulse light:lights)light.born=-100;nextLight=0;}
+    void reset(){for(Pulse light:lights)light.born=-100;nextLight=0;arrival.reset();}
     void cleared(GameCore c,Layout L,float x,float y,int length,int color) {
         if(c.state!=GameCore.PLAY || c.survival.active || Lands.forStage(c.stage)!=LAND)return;
         flash(c,L,x,y,length,color);
@@ -184,7 +185,19 @@ final class CrystalField extends Draw {
     }
     void draw(Painter p,GameCore c,Layout L,float fade) {
         if(fade<=.001f)return;
-        if(CrystalArena.active(c)){c.crystalArena.draw(p,c,L,fade);return;}
+        if(CrystalArena.active(c)) {
+            if(c.boss.intro>0) {
+                float t=c.boss.introProgress(),mix=CrystalArrival.blend(t);
+                arrival.prepare(this,c.crystalArena,L,c.skyClock-(c.boss.introDuration()-c.boss.intro),t);
+                if(mix<.999f)drawStage(p,c,L,fade*(1-mix),false);
+                if(mix>.001f)c.crystalArena.draw(p,c,L,fade*mix);
+                arrival.draw(p,L,t,c.skyClock,fade);
+            } else {arrival.reset();c.crystalArena.draw(p,c,L,fade);}
+            return;
+        }
+        arrival.reset();drawStage(p,c,L,fade,true);
+    }
+    private void drawStage(Painter p,GameCore c,Layout L,float fade,boolean animate) {
         prepare(L.w);
         float period=PERIOD*L.w;
         boolean lighting=false;
@@ -201,7 +214,8 @@ final class CrystalField extends Draw {
                 for(Cell cell:layers[layer]) {
                     if(cell.bottom+y<0 || cell.top+y>L.deckTop)continue;
                     if(!cached)base(p,cell,layer,L.w,fade);
-                    if(lighting)edgeLights(p,c,L,cell,layer,y,fade);
+                    if(animate && lighting)edgeLights(p,c,L,cell,layer,y,fade);
+                    if(!animate)continue;
                     float sweep=((c.clock*.16f+cell.phase/Softbody.TAU)%1)*13-2.5f;
                     for(int band=0;band<cell.sheen.length;band++) {
                         float distance=Math.abs(band-sweep)/1.8f;

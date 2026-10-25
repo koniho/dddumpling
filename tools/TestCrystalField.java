@@ -3,6 +3,7 @@ package com.dddumpling.game;
 final class TestCrystalField extends Check {
     static void all(Layout L) {
         arena(L);
+        arrival(L);
 
         GatorReplay replay=new GatorReplay(Boss.SPLITTER),chunked=new GatorReplay(Boss.SPLITTER);
         for(int i=0;i<1440;i++){replay.step(L);if(i%2==1)chunked.update(GatorReplay.STEP*2,L);}
@@ -123,6 +124,35 @@ final class TestCrystalField extends Check {
             mirrored&=Math.abs(c.crystalField.lightAt(c,L,layer,xx,yy)-c.crystalField.lightAt(c,L,layer,L.w-xx,yy))<.001f;
         }
         check("arena impact lighting stays mirrored",mirrored);
+    }
+    private static void arrival(Layout L) {
+        GameCore c=arenaScene(L,0);c.boss.intro=Boss.INTRO;c.clock=c.skyClock=5;
+        ProfileCrystalField.Counter painter=new ProfileCrystalField.Counter(true);
+        c.crystalField.draw(painter,c,L,1);
+        CrystalArrival.Edge[] plan=c.crystalField.arrival.edges;
+        boolean clipped=plan!=null,matched=false,unique=true;
+        for(int i=0;i<plan.length;i++) {
+            CrystalArrival.Edge e=plan[i];matched|=e.matched;
+            clipped&=e.ax>=-.001f && e.bx>=-.001f && e.ax<=L.w+.001f && e.bx<=L.w+.001f
+                    && e.ay>=-.001f && e.by>=-.001f && e.ay<=L.deckTop+.001f && e.by<=L.deckTop+.001f;
+            if(!e.departing)for(int j=0;j<i;j++) {
+                CrystalArrival.Edge prev=plan[j];
+                if(prev.layer==e.layer && !prev.departing)
+                    unique&=!(Math.abs(e.tx-prev.tx)<.001f && Math.abs(e.ty-prev.ty)<.001f
+                            && Math.abs(e.ux-prev.ux)<.001f && Math.abs(e.uy-prev.uy)<.001f);
+            }
+        }
+        check("arena arrival matches edges within a bounded visible plan",clipped && matched && plan.length<=CrystalArrival.PER_LAYER*2);
+        check("arena arrival draws each destination edge once",unique);
+        c.boss.intro=Boss.INTRO*.5f;c.clock+=.8f;c.skyClock+=.8f;
+        painter=new ProfileCrystalField.Counter(true);c.crystalField.draw(painter,c,L,1);
+        check("arena arrival reuses its edge plan as the sky scrolls",plan==c.crystalField.arrival.edges);
+        check("cached arrival keeps drawing bounded",painter.calls<250);
+        check("arena arrival crossfade begins and ends at the exact backdrops",CrystalArrival.blend(0)==0 && CrystalArrival.blend(1)==1);
+        c.boss.intro=0;c.crystalField.draw(painter,c,L,1);
+        check("arena arrival releases temporary edges when settled",c.crystalField.arrival.edges==null);
+        c.boss.intro=Boss.INTRO;c.crystalField.draw(painter,c,L,1);c.crystalField.reset();
+        check("arena arrival clears on game reset",c.crystalField.arrival.edges==null);
     }
     private static void clearLights(GameCore c,Layout L) {
         float x=L.w*.5f,y=L.h*.45f;
