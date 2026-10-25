@@ -901,7 +901,7 @@ final class TestBoss extends Check {
                     !reward.prizeNew && reward.score == score + GameCore.DUPE_BONUS);
         }
         for (int kind = 0; kind < Boss.COUNT; kind++) {
-            for (float frame : new float[] {1f / 60f, 1f / 120f}) {
+            for (float frame : new float[] {1f / 30f, 1f / 60f, 1f / 120f}) {
                 GameCore death = enterBoss(L, kind, 3100L + kind);
                 death.boss.beaten = true; death.boss.leaveT = Boss.LEAVE;
                 int heavy = 0, light = 0;
@@ -912,7 +912,11 @@ final class TestBoss extends Check {
                     if (death.bossDeathHaptic > 0)
                         check("death haptic has matching shake " + kind, death.shake >= .30f);
                 }
-                check("each death has three light beats and two heavy impacts " + kind,
+                if(kind==Boss.SLIME) {
+                    check("slime death builds and drains with fifteen timed haptic beats",heavy==3 && light==12);
+                    check("slime death lights fade before friendship",
+                            death.slimeBanks.light(death.clock,0)<.1f && death.slimeBanks.light(death.clock,1)<.4f);
+                } else check("each death has three light beats and two heavy impacts " + kind,
                         heavy == 2 && light == 3);
                 death.boss.leave(); death.update(frame, L);
                 check("leaving clears death feedback " + kind, death.bossDeathHaptic == 0);

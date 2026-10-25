@@ -3204,7 +3204,7 @@ final class GameCore {
             if(boss.kind==Boss.ALLIGATOR)boss.alligator.guard.feedback(this);
             if(boss.kind==Boss.ALLIGATOR)shake=Math.max(shake,Math.max(boss.alligator.takeShake(),
                     AlligatorArrival.shake(beforeIntro,boss.introProgress())));
-            BossPlay.deathFeedback(this, beforeDeath);
+            BossPlay.deathFeedback(this, L, beforeDeath);
             if (beforeSupernova && DivideDeath.bursting(boss) && sound != null) sound.divideSupernova();
             float cover=boss.slimePromptCover();
             if(sound!=null && boss.kind==Boss.SLIME && boss.fighting() && (priorSlimeOpening || boss.slimePromptHits>=2)

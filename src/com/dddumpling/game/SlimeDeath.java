@@ -4,6 +4,31 @@ package com.dddumpling.game;
 final class SlimeDeath extends OpacityPainter {
     static final float SPLAT_AT=Boss.LEAVE*.38f;
     static final float DRAIN_END=3.3f;
+    // A quick build into the splat, followed by slower beats down the draining sheet.
+    private static final float[] BEATS={0,.18f,.36f,.54f,.72f,.9f,1.08f,1.22f,
+            SPLAT_AT,1.60f,1.86f,2.12f,2.40f,2.70f,3.05f};
+    static void feedback(GameCore c,Layout L,float before,float now) {
+        for(int i=0;i<BEATS.length;i++) {
+            float at=BEATS[i];
+            if(!(before<at && now>=at) && !(i==0 && before==0 && now>0))continue;
+            boolean splat=at==SPLAT_AT,heavy=i==0 || splat || i==12;
+            c.bossDeathHaptic=Math.max(c.bossDeathHaptic,heavy?2:1);
+            c.shake=Math.max(c.shake,splat?1.4f:heavy?.8f:.34f);
+            float progress=Math.max(0,(at-SPLAT_AT)/(DRAIN_END-SPLAT_AT));
+            float y=L.playTop+(L.deckTop-L.playTop)*(.30f+progress*.60f);
+            float x=L.w*(.5f+.29f*(float)Math.sin(i*1.9f));
+            c.slimeBanks.flash(c.clock,x,y,i%2==0);
+            if(splat) {
+                c.slimeBanks.flash(c.clock,L.w*.22f,y,false);
+                c.slimeBanks.flash(c.clock,L.w*.78f,y,true);
+            }
+            // Only the opening and splat wash the screen; the other beats light scenery.
+            if(i==0 || splat) {
+                c.flash=Math.max(c.flash,splat?.45f:.22f);
+                c.flashColor=0xFFDFFFF0;
+            }
+        }
+    }
     static final Pose BASIC=basicPose();
     private static Pose basicPose() {
         Softbody body=new Softbody();body.reset(0,0,100f,2f);

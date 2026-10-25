@@ -3191,6 +3191,17 @@ final class Preview {
                 shot(dir,"slime-arrival-"+frame,arrival,L,w,h,ss);
             }
         }
+        if(wanted("slime-basin-death-")) {
+            GameCore death=toBoss(L,Boss.SLIME,764L,false);
+            death.stage=5;death.landBlend=1;death.stageBanner=death.rosterSceneT=0;
+            step(death,L,SlimeArrival.DURATION+1);
+            death.boss.damage(death.boss.hp);
+            float previous=0;
+            for(float at:new float[]{.20f,SlimeDeath.SPLAT_AT+.04f,2.44f,3.45f}) {
+                step(death,L,at-previous);previous=at;
+                shot(dir,"slime-basin-death-"+Math.round(at*1000),death,L,w,h,ss);
+            }
+        }
         if(wanted("slime-basin-")) {
             GameCore basin=toBoss(L,Boss.SLIME,764L,false);
             basin.stage=5;basin.landBlend=1;basin.stageBanner=basin.rosterSceneT=0;

@@ -54,11 +54,15 @@ final class BossPlay {
         c.spawnedThisStage = c.stageQuota();
     }
 
-    static void deathFeedback(GameCore c, float before) {
+    static void deathFeedback(GameCore c, Layout L, float before) {
         Boss b = c.boss;
         if (!b.beaten || before < 0f || (b.kind==Boss.RAINBOW_CAT && b.cat.rocket.active)) return;
         float now = b.leaveProgress() * Boss.LEAVE;
         if (now <= before) return;
+        if(b.kind==Boss.SLIME) {
+            SlimeDeath.feedback(c,L,before,now);
+            return;
+        }
         boolean impact = before == 0f || (before < b.deathImpactTime() && now >= b.deathImpactTime());
         if (impact || b.defeatChime) {
             c.bossDeathHaptic = impact ? 2 : 1;
