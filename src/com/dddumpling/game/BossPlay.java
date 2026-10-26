@@ -153,6 +153,7 @@ final class BossPlay {
         // prompt progress is immediate; Slime and Divide hit feedback travels with this shot.
         shot(c, g, L, verdict);
         if (verdict == Boss.PARRY) {
+            if(c.boss.kind==Boss.OCTOPUS)c.waterRipples.cleared(c,L,c.boss.hitX,c.boss.hitY);
             if(c.boss.kind==Boss.SPLITTER && c.boss.boltDestroyed)
                 c.crystalField.arenaFlash(c,L,c.boss.hitX,c.boss.hitY,3,Glyph.COLOR[g]);
             if(c.boss.kind==Boss.SLIME)SlimeHills.surfaceRipple(c,c.boss.hitX,c.boss.hitY,Glyph.COLOR[g],L.enemyR);

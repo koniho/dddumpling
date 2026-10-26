@@ -199,6 +199,9 @@ src/com/dddumpling/game/CrystalSkits.java
 src/com/dddumpling/game/MushroomSkits.java
 src/com/dddumpling/game/MushroomForest.java
 src/com/dddumpling/game/Underwater.java
+src/com/dddumpling/game/UnderwaterCoral.java
+src/com/dddumpling/game/WaterPainter.java
+src/com/dddumpling/game/WaterRipples.java
 src/com/dddumpling/game/CrystalField.java
 src/com/dddumpling/game/CrystalArena.java
 src/com/dddumpling/game/CrystalArrival.java

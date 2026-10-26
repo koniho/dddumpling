@@ -32,7 +32,36 @@ final class TestUnderwater extends Check {
         c=stage(L);c.survival.active=true;
         check("survival keeps its own scenery",Underwater.presence(c)==0 && Underwater.caveProgress(c)==0);
         check("water tint is absent outside water",Underwater.enemyColor(c,Glyph.COLOR[0],L.h*.4f,L)==Glyph.COLOR[0]);
+        float largest=0;boolean moving=false;
+        for(int frame=0;frame<120;frame++) {
+            float t=frame*.1f;
+            for(int row=0;row<20;row++) {
+                float y=L.h*row/20f,a=WaterPainter.shift(t,L.w*.5f,y,L.w,1);
+                largest=Math.max(largest,Math.abs(a));
+                moving|=Math.abs(a-WaterPainter.shift(t+1,L.w*.5f,y,L.w,1))>L.w*.001f;
+            }
+        }
+        check("refraction moves but stays below one percent of screen width",moving && largest<=L.w*.0091f);
+        c=stage(L);float x=L.w*.5f,y=L.h*.4f;
+        check("enemy refraction is much smaller than scenery",Math.abs(Underwater.enemyShift(c,x,y,L))<=L.w*.0022f);
+        c.survival.active=true;
+        check("enemy refraction is absent in other modes",Underwater.enemyShift(c,x,y,L)==0);
+        ripples(L);
         geometry(L);
+    }
+    private static void ripples(Layout L) {
+        GameCore c=stage(L);float x=L.w*.45f,y=L.h*.45f;
+        GameCore.Enemy e=new GameCore.Enemy();e.word=new int[]{0};e.need=new int[]{1};e.baseX=x;e.y=y;
+        c.enemies.add(e);c.destroyWord(e,x,y,L,false);c.clock+=.08f;c.waterRipples.prepare(c,L);
+        check("real enemy clear increases local refraction",Math.abs(c.waterRipples.shift(e.clearX,y,L.w))>L.w*.01f);
+        check("clear refraction leaves distant scenery alone",c.waterRipples.shift(e.clearX,y+L.h*.7f,L.w)==0);
+        for(int i=0;i<20;i++)c.waterRipples.cleared(c,L,x,y);
+        c.clock+=.08f;c.waterRipples.prepare(c,L);
+        check("many clears have a capped refraction amplitude",Math.abs(c.waterRipples.shift(x,y,L.w))<=L.w*.0281f);
+        c.clock+=WaterRipples.DURATION;c.waterRipples.prepare(c,L);
+        check("local clear wobble fully settles",c.waterRipples.shift(x,y,L.w)==0);
+        c.waterRipples.cleared(c,L,x,y);c.toTitle();c.waterRipples.prepare(c,L);
+        check("return to title clears water impulses",c.waterRipples.shift(x,y,L.w)==0);
     }
     private static void geometry(Layout L) {
         // Count shared vector work: neither mobile renderer should need a blur or texture rebuild.
@@ -50,7 +79,7 @@ final class TestUnderwater extends Check {
             c.landBlend=1;if(phase==1)c.boss.intro=Boss.INTRO*.5f;
             calls[0]=vertices[0]=0;
             Underwater.backdrop(probe,c,L);Underwater.veil(probe,c,L);
-            check("water geometry finite and bounded in phase "+phase,finite[0] && calls[0]<360 && vertices[0]<6000);
+            check("water geometry finite and bounded in phase "+phase+" ("+calls[0]+" draws, "+vertices[0]+" coordinates)",finite[0] && calls[0]<360 && vertices[0]<6000);
         }
     }
 }

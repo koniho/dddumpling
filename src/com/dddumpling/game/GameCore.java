@@ -910,6 +910,7 @@ final class GameCore {
     final SlimeBubbles slimeBubbles=new SlimeBubbles();
     final SlimeBanks slimeBanks=new SlimeBanks();
     final CrystalField crystalField=new CrystalField();
+    final WaterRipples waterRipples=new WaterRipples();
     final CrystalArena crystalArena=new CrystalArena();
     int landFrom, landFromBg = Lands.BG[0], landFromTint = Lands.TINT[0];
     float landBlend = 1f;
@@ -1998,7 +1999,7 @@ final class GameCore {
     }
 
     void startGame() {
-        slimeBubbles.reset();slimeBanks.reset();crystalField.reset();
+        slimeBubbles.reset();slimeBanks.reset();crystalField.reset();waterRipples.reset();
         if(!modes.playable(this))return;
         bossRetry.finish(this);bossRetry.clear();
         titleKeyHint = 0f;
@@ -2130,7 +2131,7 @@ final class GameCore {
     }
 
     void toTitle() {
-        slimeBubbles.reset();slimeBanks.reset();crystalField.reset();
+        slimeBubbles.reset();slimeBanks.reset();crystalField.reset();waterRipples.reset();
         bossRetry.finish(this);bossRetry.clear();
         pairSpawnSlots = 0;
         titleKeyHint = 0f;
@@ -2823,6 +2824,7 @@ final class GameCore {
         if(!SlimeBubbles.enabled(this))slimeBubbles.reset();
         if(!boss.active() || boss.kind!=Boss.SLIME || state!=PLAY)slimeBanks.reset();
         if(state!=PLAY || CrystalField.presence(this)<=0)crystalField.reset();
+        if(state!=PLAY || Underwater.presence(this)<=0)waterRipples.reset();
         if (paused) return;
         if(!starter.open)titleStart.update(this,elapsed,L);
         townSaveRetry=Math.max(0f,townSaveRetry-elapsed);
@@ -3447,6 +3449,7 @@ final class GameCore {
         e.clearY = e.y;
         SlimeHills.cleared(this,e.clearX,e.clearY,Glyph.COLOR[e.word[e.word.length-1]],L);
         crystalField.cleared(this,L,e.clearX,e.clearY,e.word.length,Glyph.COLOR[e.word[e.word.length-1]]);
+        waterRipples.cleared(this,L,e.clearX,e.clearY);
         e.dying = false;
         // A destroyed word is no longer a threat, so it must stop looking like one. The
         // update loop skips destroyed words, so whatever warning state it held would

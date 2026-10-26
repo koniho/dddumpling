@@ -3199,6 +3199,11 @@ final class Preview {
             TestBossRetry.ready(loss,L);step(loss,L,.6f);
             shot(dir,"boss-arena-loss-"+kind+"-retry",loss,L,w,h,ss);
         }
+        if(wanted("underwater-coral-kinds")) {
+            RasterPainter coralSheet=new RasterPainter(w,h,ss);coralSheet.clear(0xFF080F24);
+            for(int kind=0;kind<5;kind++)UnderwaterCoral.draw(coralSheet,w*.50f,h*(.17f+kind*.18f),w*.14f,3.5f,kind,1);
+            Png.write(new File(dir,"underwater-coral-kinds.png"),coralSheet.resolve(),w,h);
+        }
         if(wanted("underwater-")) {
             GameCore water=TestUnderwater.stage(L);
             for(int i=0;i<3;i++) {
@@ -3209,6 +3214,11 @@ final class Preview {
             for(int frame=0;frame<2;frame++) {
                 water.clock=water.skyClock=17+frame*8;
                 shot(dir,"underwater-reef-"+frame,water,L,w,h,ss);
+            }
+            water.waterRipples.cleared(water,L,L.w*.18f,L.h*.64f);
+            for(int frame=0;frame<3;frame++) {
+                water.clock=25.08f+frame*.13f;
+                shot(dir,"underwater-clear-wobble-"+frame,water,L,w,h,ss);
             }
             for(float time:new float[]{.4f,.95f,1.6f}) {
                 GameCore arena=TestBossRetry.fight(L,Boss.OCTOPUS);arena.landBlend=1;

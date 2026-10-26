@@ -281,6 +281,7 @@ final class Renderer extends Draw {
             boolean cleared = i < e.pos && !e.linkWaiting && destroy == 0f;
             float x = c.tileX(e, i, L) + jx;
             float y = e.y + jy;
+            x+=Underwater.enemyShift(c,x,y,L);
 
             // Tiles removed out of order fly off along the direction they were sent.
             if (e.gone[i] && destroy == 0f) {
@@ -397,6 +398,7 @@ final class Renderer extends Draw {
                 // Thicker white outline plus a caret, drawn at the smoothed position so the
                 // indicator slides between letters instead of teleporting.
                 float ix = c.caretXFor(e, L) + jx;
+                ix+=Underwater.enemyShift(c,ix,y,L);
                 float pulse = 0.6f + 0.4f * (float) Math.sin(c.clock * 7f);
                 p.strokePoly(starTile?FastEnemies.outline(ix,y,cellR):Glyph.hex(ix, y, cellR), Glyph.withAlpha(INK, (int) (215 * pulse)),
                         cellR * 0.13f);
