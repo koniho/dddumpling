@@ -158,7 +158,9 @@ rock images (under 3 MiB), anchored to their seabed scroll without ambient disto
 The stage reef corridor additionally caches one lit water painting, ten decorated
 rock columns, and a shared soft sunbeam (8.5 MiB before optional grayscale copies). Five staggered depth layers
 per side share a projection for placement, scale, and accelerating outward travel.
-Columns fade in near mid-screen and recycle beyond the side edges; their coral and
+Columns fade in briefly near mid-screen, then use RGB depth shading at full opacity.
+Android filters the cached image; iOS tints within a clipped local layer without changing
+image alpha. No extra color-variant textures are retained. Columns recycle beyond the side edges; their coral and
 plants stay attached inside the same cached image. No static side rocks are baked
 into the backdrop. Sand ripples grow and scroll from mid-screen to below the viewport;
 Column curvature is baked with its decorations, with five inward profiles per side.

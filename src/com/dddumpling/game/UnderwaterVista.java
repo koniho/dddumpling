@@ -11,7 +11,7 @@ final class UnderwaterVista extends Draw {
     static float depth(float travel) {return travel/(4-3*travel);}
     static float visibility(float travel) {return smooth(travel/.22f);}
     static float rootY(float travel) {return .50f+depth(travel)*.82f;}
-    static float depthShade(float travel) {return .18f+.82f*smooth(depth(travel)*1.8f);}
+    static float depthShade(float travel) {return .48f+.52f*smooth(depth(travel)*1.8f);}
     static float scale(float travel) {return .16f+depth(travel)*1.50f;}
 
     static float columnHeight(float travel,float width) {
@@ -42,8 +42,8 @@ final class UnderwaterVista extends Draw {
             int art=1+2*Math.floorMod(row-cycle+side*3,ROWS)+side;
             float x=L.w*columnX(t,side),y=L.h*rootY(t),w=L.w*COLUMN_WIDTH*s,h=columnHeight(t,L.w*.60f*s);
             if(x+w*.5f<0 || x-w*.5f>L.w)continue;
-            float alpha=fade*visibility(t)*depthShade(t);
-            image(p,art,x-w*.5f,y-h*.90f,w,h,alpha);
+            float alpha=fade*visibility(t);
+            shadedImage(p,art,x-w*.5f,y-h*.90f,w,h,alpha,depthShade(t));
         }
         for(int i=0;i<18;i++) {
             float t=(hash(727+i)*1.0f+c.skyClock*.018f)%1,d=depth(t);
@@ -58,6 +58,21 @@ final class UnderwaterVista extends Draw {
         ArtStamp cache=p.stamps();
         if(cache!=null && cache.reefVista(art,x,y,w,h,(int)(fade*255)))return;
         artwork(p,art,x,y,w,h,fade);
+    }
+    private static void shadedImage(Painter p,int art,float x,float y,float w,float h,float fade,float shade) {
+        ArtStamp cache=p.stamps();
+        if(cache!=null && cache.reefVistaShaded(art,x,y,w,h,(int)(fade*255),shade,0))return;
+        artwork(new DimPainter(p,shade),art,x,y,w,h,fade);
+    }
+    static int shadeColor(int color,float shade) {
+        return (color&0xFF000000)|((int)(((color>>>16)&255)*shade)<<16)
+                |((int)(((color>>>8)&255)*shade)<<8)|(int)((color&255)*shade);
+    }
+    private static final class DimPainter extends OpacityPainter {
+        final float shade;
+        DimPainter(Painter p,float shade){super(p,1);this.shade=shade;}
+        int color(int c){return shadeColor(c,shade);}
+        public ArtStamp stamps(){return null;}
     }
     static void paint(Painter p,int art) {artwork(p,art,0,0,WIDTH,height(art),1);}
     private static void artwork(Painter p,int art,float x,float y,float w,float h,float fade) {
@@ -181,7 +196,7 @@ final class UnderwaterVista extends Draw {
         for(int layer=0;layer<6;layer++) {
             int at=0;
             for(int j=0;j<=16;j++) {
-                float xx=.5f+(.24f-layer*.003f)*(j/8f-1);
+                float xx=.5f+(.20f-layer*.003f)*(j/8f-1);
                 path[at++]=x+w*xx;path[at++]=y+h*(horizon(xx)+layer*.002f);
             }
             for(int j=1;j<=16;j++) {
@@ -198,10 +213,10 @@ final class UnderwaterVista extends Draw {
         }
     }
     static float horizon(float x) {
-        return .48f+.020f*(float)Math.sin(x*14+.8f)+.012f*(float)Math.sin(x*29);
+        return .48f+.003f*(float)Math.sin(x*14+.8f)+.0015f*(float)Math.sin(x*29);
     }
     static float floorEdge(float t,int side,int layer) {
-        return .5f+.035f*(float)Math.sin(t*7)+side*(.24f-layer*.003f+t*(.82f-layer*.018f));
+        return .5f+.035f*(float)Math.sin(t*7)+side*(.20f-layer*.003f+t*(.82f-layer*.018f));
     }
     private static float floorY(float t,float x,int layer) {
         return .48f+t*.60f+(horizon(x)-.48f+layer*.002f)*(1-t)*(1-t);

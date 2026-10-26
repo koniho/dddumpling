@@ -27,6 +27,10 @@ class OpacityPainter implements Painter, ArtStamp {
         ArtStamp cache=stamps()==null?null:p.stamps();
         return cache!=null && cache.reefVista(art,x,y,w,h,alpha);
     }
+    public boolean reefVistaShaded(int art,float x,float y,float w,float h,int alpha,float shade,float mono) {
+        ArtStamp cache=stamps()==null?null:p.stamps();
+        return cache!=null && cache.reefVistaShaded(art,x,y,w,h,alpha,shade,mono);
+    }
     public boolean reefRock(int art,float x,float y,float w,float h,int alpha) {
         ArtStamp cache=stamps()==null?null:p.stamps();
         return cache!=null && cache.reefRock(art,x,y,w,h,alpha);

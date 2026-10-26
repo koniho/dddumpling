@@ -16,6 +16,9 @@ final class MonochromePainter implements Painter,ArtStamp {
     public boolean reefVista(int art,float x,float y,float w,float h,int alpha) {
         return p.stamps().reefVista(art,x,y,w,h,alpha,amount);
     }
+    public boolean reefVistaShaded(int art,float x,float y,float w,float h,int alpha,float shade,float mono) {
+        return p.stamps().reefVistaShaded(art,x,y,w,h,alpha,shade,amount+(1-amount)*mono);
+    }
     public boolean reefRock(int art,float x,float y,float w,float h,int alpha) {
         return p.stamps().reefRock(art,x,y,w,h,alpha,amount);
     }

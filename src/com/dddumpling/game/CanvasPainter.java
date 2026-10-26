@@ -80,6 +80,20 @@ final class CanvasPainter implements Painter, ArtStamp {
         if(reefStamps==null)reefStamps=new CanvasReefStamps();
         reefStamps.vista(canvas,art,x,y,w,h,alpha,monoFilter(mono));return true;
     }
+    private final android.graphics.ColorMatrixColorFilter[] shadeFilters=new android.graphics.ColorMatrixColorFilter[65];
+    private float shadeMono=-1;
+    public boolean reefVistaShaded(int art,float x,float y,float w,float h,int alpha,float shade,float mono) {
+        if(stamps()==null || art<0 || art>=UnderwaterVista.COUNT || w<=0 || h<=0)return false;
+        if(reefStamps==null)reefStamps=new CanvasReefStamps();
+        int level=Math.max(0,Math.min(64,Math.round(shade*64)));
+        if(shadeMono!=mono){java.util.Arrays.fill(shadeFilters,null);shadeMono=mono;}
+        if(shadeFilters[level]==null) {
+            float[] values=new float[20];MonochromePainter.matrix(values,mono);
+            for(int i=0;i<15;i++)values[i]*=level/64f;
+            shadeFilters[level]=new android.graphics.ColorMatrixColorFilter(values);
+        }
+        reefStamps.vista(canvas,art,x,y,w,h,alpha,shadeFilters[level]);return true;
+    }
     public boolean reefRock(int art,float x,float y,float w,float h,int alpha) {
         return reefRock(art,x,y,w,h,alpha,0);
     }

@@ -92,6 +92,29 @@
   painter.context=NULL;CGContextRelease(context);CGColorSpaceRelease(space);
 }
 
+- (void)testReefDepthShadeChangesRGBWithoutChangingAlpha {
+  unsigned char pixels[96*128*4]={0},baseline[sizeof(pixels)];
+  CGColorSpaceRef space=CGColorSpaceCreateDeviceRGB();
+  CGContextRef context=CGBitmapContextCreate(pixels,96,128,8,96*4,space,kCGImageAlphaPremultipliedLast);
+  DDIOSPainter *painter=[DDIOSPainter new];painter.context=context;
+  CGAffineTransform before=CGContextGetCTM(context);
+  for(int step=0;step<3;step++) {
+    float mono=step*.5f;memset(pixels,0,sizeof(pixels));
+    XCTAssertTrue([painter reefVistaShadedWithInt:3 withFloat:0 withFloat:0 withFloat:96 withFloat:128 withInt:180 withFloat:1 withFloat:mono]);
+    memcpy(baseline,pixels,sizeof(pixels));memset(pixels,0,sizeof(pixels));
+    XCTAssertTrue([painter reefVistaShadedWithInt:3 withFloat:0 withFloat:0 withFloat:96 withFloat:128 withInt:180 withFloat:.5f withFloat:mono]);
+    BOOL sameAlpha=YES;long light=0,dark=0;
+    for(int i=0;i<sizeof(pixels);i+=4) {
+      sameAlpha&=abs((int)pixels[i+3]-(int)baseline[i+3])<=1;
+      for(int c=0;c<3;c++){light+=baseline[i+c];dark+=pixels[i+c];}
+    }
+    XCTAssertTrue(sameAlpha);XCTAssertGreaterThan(dark,light*.40);XCTAssertLessThan(dark,light*.60);
+    XCTAssertEqual(painter.context,context);
+    XCTAssertTrue(CGAffineTransformEqualToTransform(before,CGContextGetCTM(context)));
+  }
+  painter.context=NULL;CGContextRelease(context);CGColorSpaceRelease(space);
+}
+
 - (void)testReefVistaCachesRespectOpacityAndRestoreContext {
   unsigned char pixels[128*256*4]={0};
   CGColorSpaceRef space=CGColorSpaceCreateDeviceRGB();

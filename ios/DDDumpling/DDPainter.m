@@ -213,6 +213,11 @@ static void DDDrawCachedImage(CGContextRef ctx,CGRect rect,CGImageRef color,CGIm
 
 - (jboolean)reefVistaWithInt:(jint)art withFloat:(jfloat)x withFloat:(jfloat)y
                   withFloat:(jfloat)w withFloat:(jfloat)h withInt:(jint)alpha withFloat:(jfloat)mono {
+  return [self reefVistaShadedWithInt:art withFloat:x withFloat:y withFloat:w withFloat:h withInt:alpha withFloat:1 withFloat:mono];
+}
+
+- (jboolean)reefVistaShadedWithInt:(jint)art withFloat:(jfloat)x withFloat:(jfloat)y
+                  withFloat:(jfloat)w withFloat:(jfloat)h withInt:(jint)alpha withFloat:(jfloat)shade withFloat:(jfloat)mono {
   if(!self.context || _drawingForest || art<0 || art>=DDUnderwaterVista_COUNT || w<=0 || h<=0)return NO;
   if(!_reefVista[art]) {
     size_t width=DDUnderwaterVista_WIDTH,height=[DDUnderwaterVista heightWithInt:art];
@@ -230,7 +235,17 @@ static void DDDrawCachedImage(CGContextRef ctx,CGRect rect,CGImageRef color,CGIm
   CGContextSaveGState(self.context);
   CGContextSetAlpha(self.context,MAX(0,MIN(255,alpha))/255.0);
   CGContextSetInterpolationQuality(self.context,kCGInterpolationMedium);
-  DDDrawCachedImage(self.context,CGRectMake(x,y,w,h),_reefVista[art],_reefVistaGray[art],mono);
+  CGRect rect=CGRectMake(x,y,w,h);
+  shade=MAX(0,MIN(1,shade));
+  if(shade<1)CGContextBeginTransparencyLayerWithRect(self.context,CGRectIntersection(rect,CGContextGetClipBoundingBox(self.context)),NULL);
+  DDDrawCachedImage(self.context,rect,_reefVista[art],_reefVistaGray[art],mono);
+  if(shade<1) {
+    // Tint only the image's RGB, keeping its alpha and the horizon fade intact.
+    CGContextSetBlendMode(self.context,kCGBlendModeSourceAtop);
+    CGContextSetRGBFillColor(self.context,0,0,0,1-shade);
+    CGContextFillRect(self.context,rect);
+    CGContextEndTransparencyLayer(self.context);
+  }
   CGContextRestoreGState(self.context);return YES;
 }
 

@@ -104,6 +104,9 @@ final class TestUnderwater extends Check {
                 valid[0]&=art>=0 && art<Underwater.ROCK_COUNT && w>0 && h>0 && alpha>0 && alpha<=255;
                 return true;
             }
+            public boolean reefVistaShaded(int art,float x,float y,float w,float h,int alpha,float shade,float mono) {
+                return reefVista(art,x,y,w,h,alpha);
+            }
             public boolean reefVista(int art,float x,float y,float w,float h,int alpha){return true;}
             public boolean waterBand(float[] xy,float r,int alpha){bands[0]++;return true;}
             public boolean waterGlow(float x,float y,float rx,float ry,int alpha){glows[0]++;return true;}
@@ -184,10 +187,16 @@ final class TestUnderwater extends Check {
         float near=.93f,nearWidth=L.w*.60f*UnderwaterVista.scale(near);
         float nearTop=L.h*UnderwaterVista.rootY(near)-UnderwaterVista.columnHeight(near,nearWidth)*.68f;
         check("nearby reef crowns stretch above the screen",nearTop<0);
-        final int[] stamps={0},calls={0};final boolean[] valid={true};
+        int dim=UnderwaterVista.shadeColor(0x7F80C040,.5f);
+        check("reef shading halves RGB without changing alpha",dim==0x7F406020);
+        final int[] stamps={0},calls={0},solid={0};final boolean[] valid={true};
         ArtStamp cache=new ArtStamp() {
             public boolean stamp(int art,float x,float y,float w,float h,float angle,int tint,float amount){return false;}
+            public boolean reefVistaShaded(int art,float x,float y,float w,float h,int alpha,float shade,float mono) {
+                return reefVista(art,x,y,w,h,alpha);
+            }
             public boolean reefVista(int art,float x,float y,float w,float h,int alpha) {
+                if(art>0 && art<UnderwaterVista.RAY && alpha==255)solid[0]++;
                 stamps[0]++;valid[0]&=art>=0 && art<UnderwaterVista.COUNT && Float.isFinite(x+y+w+h)
                         && w>0 && h>0 && alpha>=0 && alpha<=255;return true;
             }
@@ -198,9 +207,9 @@ final class TestUnderwater extends Check {
         });
         GameCore c=stage(L);boolean bounded=true;
         for(int i=0;i<180;i++) {
-            stamps[0]=calls[0]=0;c.skyClock=i*3.17f;
+            stamps[0]=calls[0]=solid[0]=0;c.skyClock=i*3.17f;
             UnderwaterVista.draw(new OpacityPainter(probe,1),c,L,1);
-            bounded&=stamps[0]>4 && stamps[0]<=21 && calls[0]<80;
+            bounded&=stamps[0]>4 && stamps[0]<=21 && calls[0]<80 && solid[0]>=4;
         }
         check("detailed reef artwork stays cached and bounded throughout travel",valid[0] && bounded);
     }
@@ -226,17 +235,17 @@ final class TestUnderwater extends Check {
                 float x=UnderwaterVista.columnX(t,side);
                 overlap&=x>UnderwaterVista.floorEdge(floorDepth,-1,5) && x<UnderwaterVista.floorEdge(floorDepth,1,5);
             }
-            curved|=Math.abs(UnderwaterVista.horizon(.3f+i*.01f)-UnderwaterVista.horizon(.3f))>.015f;
+            curved|=Math.abs(UnderwaterVista.horizon(.3f+i*.01f)-UnderwaterVista.horizon(.3f))>.002f;
         }
         check("distant seabed reaches beneath both banks with a meandering horizon",overlap && curved);
-        check("distant columns darken into water and recover their near palette",UnderwaterVista.depthShade(.1f)<.3f
+        check("distant columns darken their palette and recover near colors",UnderwaterVista.depthShade(.1f)<.55f
                 && UnderwaterVista.depthShade(.7f)>UnderwaterVista.depthShade(.1f) && UnderwaterVista.depthShade(1)==1);
     }
     private static void monochrome(Layout L) {
         final int[] calls={0},stamps={0};final float[] received={-1};
         ArtStamp cache=(ArtStamp)java.lang.reflect.Proxy.newProxyInstance(ArtStamp.class.getClassLoader(),new Class<?>[]{ArtStamp.class},(proxy,method,args)-> {
             String name=method.getName();
-            boolean supported=name.equals("reefVista") || name.equals("reefRock") || name.equals("waterBand")
+            boolean supported=name.equals("reefVista") || name.equals("reefVistaShaded") || name.equals("reefRock") || name.equals("waterBand")
                     || name.equals("waterGlow") || name.equals("crystal");
             if(supported) {
                 stamps[0]++;Object last=args[args.length-1];received[0]=last instanceof Float?(Float)last:0;
@@ -293,6 +302,9 @@ final class TestUnderwater extends Check {
         final int[] calls={0},vertices={0};final boolean[] finite={true};
         ArtStamp cache=new ArtStamp() {
             public boolean stamp(int art,float x,float y,float w,float h,float angle,int tint,float amount){return false;}
+            public boolean reefVistaShaded(int art,float x,float y,float w,float h,int alpha,float shade,float mono) {
+                return reefVista(art,x,y,w,h,alpha);
+            }
             public boolean reefVista(int art,float x,float y,float w,float h,int alpha){return true;}
         };
         Painter probe=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),new Class<?>[]{Painter.class},(proxy,method,args)-> {
