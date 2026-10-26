@@ -32,6 +32,15 @@ class ReleaseNotes(unittest.TestCase):
         notes.validate(data)
         self.assertIn('ReleaseChange.HALLOWEEN', notes.render(data))
 
+    def test_home_tours_generate_matching_icons_and_roomy_art(self):
+        for icon in ('land_homes', 'arena_homes'):
+            data = copy.deepcopy(self.data)
+            change = data['releases'][0]['changes'][0]
+            change['icon'] = icon
+            change['autoReset'] = True
+            self.assertIn('ReleaseChange.' + icon.upper(), notes.render(data))
+            self.assertEqual(notes.ART[icon], 8)
+
     def test_review_image_uses_draft_without_changing_catalog_and_opens_android(self):
         draft = {'version': '1.0.0', 'changes': [{'icon': 'swipe', 'title': 'Swipe',
                  'autoReset': False, 'where': 'Last life', 'why': 'Swipe up.'}]}

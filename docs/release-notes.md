@@ -120,6 +120,8 @@ Keep a separate entry only when it communicates a distinct change the player nee
 | `news` | Exploring release notes | Little steamer |
 | `flurry` | Flurry pickup feedback | Circular rainbow |
 | `travel` | Choosing or traveling between lands | Interactive land travel |
+| `land_homes` | Refreshed Adventure scenery | Companion visits four lands with their actual resident bosses; tap to advance |
+| `arena_homes` | Refreshed boss arenas | Companion visits four reactive boss homes; tap to advance |
 | `stars` | Star Path challenges | Star and trail |
 | `shuffle` | Mystery power-up pickups | Interactive pickup shuffle |
 | `disguise` | Incognito or Monochrome | Disguised characters |

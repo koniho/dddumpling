@@ -59,7 +59,9 @@ final class TimeAttackVersus extends Draw {
     }
 
     /** Only the isolated portrait's springs run here; no attacks, timers or gameplay RNG. */
-    private void animatePortrait(float dt,Layout L) {
+    private void animatePortrait(float dt,Layout L) { animatePortrait(portrait,dt,L); }
+    static void animatePortrait(Boss portrait,float dt,Layout L) {
+        int boss=portrait.kind;
         float before=portrait.age;
         portrait.age+=dt;
         float t=portrait.age,period=boss==Boss.SLIME?.78f:1.08f;

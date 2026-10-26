@@ -10,6 +10,8 @@ final class ReleaseNotes extends Draw {
     final ReleaseTransition transition=new ReleaseTransition();
     int page,feature;
     GameCore demo;
+    ReleaseHomes homes;
+    int homeStep;
     private final Layout mini=new Layout();
     private boolean gesture;
     private int replay,feedbackPending;
@@ -179,7 +181,7 @@ final class ReleaseNotes extends Draw {
     }
     private void activated() { restartIn=ReleaseContent.AUTO_RESET[item()] ? RESTART_DELAY : -1f; }
     void reset(Layout L) {
-        age=0f;restartIn=-1f;celebration=-1f;
+        age=0f;restartIn=-1f;celebration=-1f;homes=null;homeStep=0;
         if(!ReleaseChange.playable(change())) { demo=null;return; }
         geometry(L);
         demo=new GameCore(null,7000L+page+37L*replay++);demo.collected=Collect.MASK;
@@ -196,10 +198,10 @@ final class ReleaseNotes extends Draw {
     }
     void update(float dt,Layout L) {
         if(!open) return;
-        if(transition.update(dt)) { open=false;demo=null;previous=next=far=null;return; }
+        if(transition.update(dt)) { open=false;demo=null;homes=null;previous=next=far=null;return; }
         if(!listing && !transition.moving()) {
             pageSlide=Math.max(0f,Math.min(1f,pageSlide+(pageReturning?-dt:dt)/PAGE_TIME));
-            if(pageReturning && pageSlide==0f) { listing=true;pageReturning=false;demo=null;previous=next=far=null; }
+            if(pageReturning && pageSlide==0f) { listing=true;pageReturning=false;demo=null;homes=null;previous=next=far=null; }
         }
         if(entrySlide<1f && !transition.moving() && !pageReturning) {
             entrySlide=Math.min(1f,entrySlide+dt/PAGE_TIME);
@@ -207,7 +209,7 @@ final class ReleaseNotes extends Draw {
                 ReleaseNotes incoming=entryDirection<0?previous:next;
                 feature=pendingFeature;pendingFeature=-1;entryDirection=0;
                 demo=incoming.demo;age=incoming.age;replay=incoming.replay;restartIn=incoming.restartIn;
-                celebration=incoming.celebration;
+                celebration=incoming.celebration;homes=incoming.homes;homeStep=incoming.homeStep;
                 prepareNeighbors(L);
             }
         }
@@ -319,6 +321,9 @@ final class ReleaseNotes extends Draw {
         int edge=edgeAt(L,x,y);
         if(edge!=0) { step(edge,L);return true; }
         if(y<demoTop(L) || y>demoBottom(L) || x<L.w*.14f || x>L.w*.86f) return true;
+        if(ReleaseChange.homes(change())) {
+            homeStep++;age=0f;activated();feedback();return true;
+        }
         if(demo==null) {
             age=0f;
             if(change()==ReleaseChange.ACHIEVEMENTS) { celebration=0f;feedback(); }
@@ -398,7 +403,10 @@ final class ReleaseNotes extends Draw {
         p.save();p.clipRect(L.w*.14f,demoTop(L),L.w*.86f,demoBottom(L));
         p.translate(L.w*.14f,demoTop(L));
         float artH=demoBottom(L)-demoTop(L);
-        if(demo==null) {
+        if(ReleaseChange.homes(change())) {
+            if(homes==null)homes=new ReleaseHomes(change()==ReleaseChange.ARENA_HOMES);
+            homes.draw(p,0,0,L.w*.72f,artH,age+homeStep*ReleaseHomes.PERIOD,true);
+        } else if(demo==null) {
             float bounce=(float)Math.sin(Math.min(1f,age/.5f)*Math.PI)*s*.35f;
             ReleaseChange.icon(p,change(),L.w*.36f,artH*.5f-bounce,s*1.7f,c.clock+age,celebration);
         } else if(change()==ReleaseChange.TRAVEL) {

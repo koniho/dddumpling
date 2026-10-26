@@ -1,6 +1,51 @@
 {
   "releases": [
     {
+      "version": "0.1.35",
+      "changes": [
+        {
+          "icon": "land_homes",
+          "title": "Fresh places to squish",
+          "autoReset": true,
+          "where": "Across Adventure lands",
+          "why": "Wobbling slime bubbles, shimmering crystals, leafy forests and deeper reefs give each journey a new look."
+        },
+        {
+          "icon": "arena_homes",
+          "title": "Big boss entrances",
+          "autoReset": true,
+          "where": "Adventure and Boss Time Attack",
+          "why": "Fight in a glowing slime basin, a shattering crystal arena, a woodland grove and an underwater cave. Your hits bring the scenery to life!"
+        },
+        {
+          "icon": "misc",
+          "title": "Little improvements",
+          "autoReset": false,
+          "improvements": [
+            {
+              "where": "Fly Agaric battles",
+              "why": "Start swaying either way. If your grab slips, dodge the spores and grab again."
+            },
+            {
+              "where": "Rainbow Lands",
+              "why": "Brighter, whiter clouds drift over the rainbow."
+            }
+          ]
+        },
+        {
+          "icon": "bugs",
+          "title": "Happy little fixes",
+          "autoReset": false,
+          "fixes": [
+            {
+              "where": "During Monochrome",
+              "why": "Smoother underwater and crystal scenery when the colors fade."
+            }
+          ]
+        }
+      ]
+    },
+    {
       "version": "0.1.34",
       "changes": [
         {

@@ -114,6 +114,7 @@ src/com/dddumpling/game/PrivacyUi.java
 src/com/dddumpling/game/ReleaseNotes.java
 src/com/dddumpling/game/UpdatePrompt.java
 src/com/dddumpling/game/ReleaseChange.java
+src/com/dddumpling/game/ReleaseHomes.java
 src/com/dddumpling/game/ReleaseContent.java
 src/com/dddumpling/game/ReleaseTransition.java
 src/com/dddumpling/game/OpacityPainter.java
