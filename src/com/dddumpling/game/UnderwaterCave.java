@@ -13,7 +13,7 @@ final class UnderwaterCave extends Draw {
         float bx=b.body==null?b.bodyX(L):b.body.centreX();
         float by=b.body==null?b.bodyY(L):b.body.centreY();
         UnderwaterVista.image(p,UnderwaterVista.CAVE,0,0,L.w,L.h,fade);
-        kelp(p,c,L,b,fade,0,8);
+        kelp(p,c,L,b,fade,0,KELP_PATCHES);
         glow(p,bx,by+L.h*.13f,L.w*(.36f+damage*.14f),L.h*(.27f+damage*.10f),fade*(12+movement*24+damage*90));
         for(int i=0;i<3;i++) {
             float pulse=c.waterRipples.beamPulse(c.clock,.24f+i*.25f);
@@ -24,7 +24,6 @@ final class UnderwaterCave extends Draw {
         }
         float y=-(1-arrival)*L.h*.16f;
         UnderwaterVista.image(p,UnderwaterVista.CAVE+1,0,y,L.w,L.h,fade);
-        kelp(p,c,L,b,fade,8,KELP_PATCHES);
         for(int side=0;side<2;side++) {
             int arm=side==0?1:6;
             float reachY=b.octoPlaced && (b.octoArms&(1<<arm))!=0?b.octoY[arm][Boss.OCTO_NODES-1]:by+L.h*.15f;
@@ -76,9 +75,10 @@ final class UnderwaterCave extends Draw {
         float bx=b.body==null?L.w*.5f:b.body.centreX();
         float[] blade=c.waterRipples.kelpBlade,edge=c.waterRipples.kelpEdge,shadow=c.waterRipples.kelpShadow;
         for(int i=first;i<end;i++) {
-            int seed=721+i*97;boolean far=i<8,wall=i>=8 && i<14;
+            int seed=721+i*97;boolean far=i<8;
             float x=kelpX(i),y=kelpY(i);
-            float height=L.h*(far?.045f:wall?.07f:.085f)*(1+hash(seed+7)*1.1f);
+            float depth=Math.max(0,Math.min(1,(y-.70f)/.18f));
+            float height=L.h*Math.min(y-.675f,(.025f+depth*.04f)*(1+hash(seed+7)*1.1f));
             float flow=c.waterRipples.caveCurrent.flow[i],direction=x*L.w>=bx?1:-1;
             float localDamage=c.waterRipples.caveCurrent.damage[i],age=c.waterRipples.caveCurrent.age[i];
             float flash=Math.min(1,damage*.35f+localDamage*.90f);
@@ -111,11 +111,12 @@ final class UnderwaterCave extends Draw {
 
     static float kelpX(int i) {
         int seed=721+i*97;
-        return i<8?.26f+hash(seed)*.48f:i<14?(i%2==0?.08f:.78f)+hash(seed)*.14f:.23f+hash(seed)*.54f;
+        float depth=Math.max(0,Math.min(1,(kelpY(i)-.70f)/.18f));
+        return .5f+(hash(seed)-.5f)*(.20f+depth*.25f);
     }
     static float kelpY(int i) {
         int seed=721+i*97;
-        return i<8?.52f+hash(seed+3)*.31f:i<14?.42f+hash(seed+3)*.44f:.84f+hash(seed+3)*.12f;
+        return i<8?.71f+hash(seed+3)*.06f:i<14?.77f+hash(seed+3)*.07f:.84f+hash(seed+3)*.04f;
     }
     static float travelDelay(float dx,float dy) {
         return Math.min(.75f,.045f+.75f*(float)Math.sqrt(dx*dx+dy*dy));
