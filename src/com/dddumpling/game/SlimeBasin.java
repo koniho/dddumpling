@@ -4,7 +4,7 @@ package com.dddumpling.game;
 final class SlimeBasin extends Draw {
     private SlimeBasin() {}
     static boolean retained(GameCore c) {
-        return c.state==GameCore.OVER && c.bossVictoryKind==Boss.SLIME && c.bossVictory!=null;
+        return BossVictory.retained(c) && c.bossVictoryKind==Boss.SLIME;
     }
     private static Boss boss(GameCore c) {return retained(c)?c.bossVictory:c.boss;}
     static float progress(GameCore c) {
@@ -36,6 +36,47 @@ final class SlimeBasin extends Draw {
         }
         return Math.min(1,strength);
     }
+    static float shimmerPhase(Boss b,int ribbon) {
+        // The curtain has cleared before the first highlights draw themselves onto the banks.
+        if(b.intro>0)return -1;
+        float age=b.age-.25f-ribbon*.18f;
+        return age<0?-1:(age%5.6f)/4;
+    }
+    static int shimmer(Painter p,GameCore c,Layout L,Boss b,float fade) {
+        if(b.beaten || retained(c) || BossCollect.keepsArena(c,Boss.SLIME))return 0;
+        float[] line=c.slimeBanks.shimmer;
+        int strokes=0;
+        for(int ribbon=0;ribbon<3;ribbon++) {
+            float phase=shimmerPhase(b,ribbon);
+            if(phase<=0 || phase>=1)continue;
+            float head=Math.min(1,phase*1.3f),tail=Math.max(0,phase*1.3f-.30f);
+            float alpha=fade*Math.min(1,Math.min(phase/.13f,(1-phase)/.22f));
+            int side=ribbon-1;
+            float width=side<0?L.w:bankWidth(c.clock,side,L);
+            float[] offsets=side<0?null:c.slimeBanks.offsets(c.clock,side,L);
+            for(int j=0;j<line.length/2;j++) {
+                float u=tail+(head-tail)*j/(line.length/2-1f),x,y;
+                if(side<0) {
+                    x=L.w*u;
+                    y=L.playTop+(L.deckTop-L.playTop)*(.306f-.025f*(float)Math.sin(u*Math.PI)
+                            +.005f*(float)Math.sin(u*18+.6f));
+                } else {
+                    u=.42f+u*.49f;
+                    x=(SlimeBasinArt.inset(u,side,L.w)-L.w*.018f)*width/(L.w*SlimeBasinArt.BANK_FRACTION);
+                    x+=x/width*SlimeBanks.sample(offsets,u);
+                    if(side==1)x=L.w-x;
+                    y=bankTop(c.clock,side,L)+bankHeight(c.clock,side,L)*u;
+                }
+                line[j*2]=x;line[j*2+1]=y;
+            }
+            // Three short strokes provide soft edges without blur passes or new raster textures.
+            p.polyline(line,Glyph.withAlpha(SlimeHills.MINT,(int)(alpha*18)),L.w*.020f);
+            p.polyline(line,Glyph.withAlpha(SlimeHills.MINT,(int)(alpha*42)),L.w*.008f);
+            p.polyline(line,Glyph.withAlpha(0xFFDFFFF0,(int)(alpha*108)),L.w*.0025f);
+            strokes+=3;
+        }
+        return strokes;
+    }
     static void draw(Painter p,GameCore c,Layout L) {
         float fade=progress(c)*(retained(c)?1:1-c.drained());
         if(fade<=.001f)return;
@@ -64,6 +105,7 @@ final class SlimeBasin extends Draw {
                     SlimeBasinArt.paint(new SlimeBanks.Warp(p,alpha,side,x,y,width,h,offsets),lit,width,h);
             }
         }
+        shimmer(p,c,L,b,fade);
         // Move and modulate a single smooth light texture; bank geometry stays cached.
         float glowX=L.w*.5f+(cx-L.w*.5f)*.20f;
         float glowWidth=L.w*(1.3f+hit*.65f),glowHeight=span*(1.12f+hit*.24f);

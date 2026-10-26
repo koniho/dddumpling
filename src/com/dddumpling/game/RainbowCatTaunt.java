@@ -6,7 +6,7 @@ final class RainbowCatTaunt extends Draw {
     static final int NOTES=7;
     private static final float[] START={.22f,1.42f,1.88f,2.36f}, END={1.25f,1.75f,2.21f,3.30f};
     static boolean retained(GameCore c) {
-        return c.state==GameCore.OVER && c.bossVictoryKind==Boss.RAINBOW_CAT && c.bossVictory!=null;
+        return BossVictory.retained(c) && c.bossVictoryKind==Boss.RAINBOW_CAT;
     }
     static float scrollRate(float age) {return RainbowLand.BATTLE_SKY_RATE*(1+2*ease(age/1.2f));}
     static float starTravel(float age) {
@@ -16,7 +16,7 @@ final class RainbowCatTaunt extends Draw {
     static void background(Painter p,GameCore c,Layout L) {
         if(!retained(c))return;
         RainbowCat a=c.bossVictory.cat;
-        RainbowCatArrival.stars(new OpacityPainter(p,1-c.drained()),a,c.bossVictory,L,
+        RainbowCatArrival.stars(new OpacityPainter(p,1-BossVictory.backdropDrain(c)),a,c.bossVictory,L,
                 a.clock+starTravel(c.deathDuration()-c.deathT));
     }
     static float pitch(int note) {return (float)Math.pow(2,(4-note)/12.0);}

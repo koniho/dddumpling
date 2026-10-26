@@ -3191,6 +3191,80 @@ final class Preview {
                 shot(dir,"slime-arrival-"+frame,arrival,L,w,h,ss);
             }
         }
+        if(wanted("boss-arena-loss-"))for(int kind:new int[]{Boss.SLIME,Boss.SPLITTER,Boss.MUSHROOM,Boss.RAINBOW_CAT}) {
+            GameCore loss=kind==Boss.SPLITTER?TestCrystalField.arenaScene(L,7):TestBossRetry.fight(L,kind);
+            loss.stageBanner=loss.shake=loss.flash=0;loss.landBlend=1;
+            loss.bossRetry.checkpoint(loss);TestBossRetry.lose(loss,L);step(loss,L,.65f);
+            shot(dir,"boss-arena-loss-"+kind+"-taunt",loss,L,w,h,ss);
+            TestBossRetry.ready(loss,L);step(loss,L,.6f);
+            shot(dir,"boss-arena-loss-"+kind+"-retry",loss,L,w,h,ss);
+        }
+        if(wanted("crystal-arena-")) {
+            for(float time:new float[]{0,.35f,.8f,1.2f,1.59f}) {
+                GameCore entry=TestCrystalField.arenaScene(L,0);
+                entry.boss.intro=Boss.INTRO-time;entry.clock=entry.skyClock=5+time;entry.shake=entry.flash=0;
+                shot(dir,"crystal-arena-arrival-"+Math.round(time*1000),entry,L,w,h,ss);
+            }
+            for(int phase:new int[]{0,4,7,14}) {
+                GameCore arena=TestCrystalField.arenaScene(L,phase);arena.clock=arena.skyClock=5;
+                arena.shake=arena.flash=0;
+                shot(dir,"crystal-arena-phase-"+phase,arena,L,w,h,ss);
+            }
+            for(float age:new float[]{.06f,.2f,.48f}) {
+                GameCore split=TestCrystalField.arenaScene(L,2);split.clock=split.skyClock=5;split.crystalField.reset();
+                int node=split.boss.pieceNodeIndex(0);split.boss.pieceHits[node]=Boss.DIVIDE_HITS;
+                split.boss.beginPinch(100);BossPlay.pinch(split,100*(Boss.DIVIDE_SCALE+.02f),L);
+                step(split,L,age);split.shake=split.flash=0;
+                shot(dir,"crystal-arena-split-jiggle-"+Math.round(age*1000),split,L,w,h,ss);
+            }
+            for(int beat=0;beat<2;beat++) {
+                GameCore pulse=TestCrystalField.arenaScene(L,4);pulse.skyClock=5;
+                pulse.clock=(float)Math.PI/(2*6.4f)+beat*(float)Math.PI/6.4f;pulse.shake=pulse.flash=0;
+                pulse.boss.pieceHits[pulse.boss.pieceNodeIndex(1)]=Boss.DIVIDE_HITS;
+                shot(dir,"crystal-arena-vulnerable-"+beat,pulse,L,w,h,ss);
+            }
+            GameCore clear=TestCrystalField.arenaScene(L,4);clear.clock=clear.skyClock=5;clear.shake=clear.flash=0;
+            Boss boltBoss=clear.boss;int boltKey=boltBoss.pieceWant(0);
+            boltBoss.blive[0]=true;boltBoss.bglyph[0]=boltKey;boltBoss.bhp[0]=boltBoss.bhpMax[0]=1;
+            boltBoss.bsx[0]=L.w*.28f;boltBoss.bsy[0]=L.h*.43f;boltBoss.bt[0]=.2f;clear.tapKey(boltKey,L);
+            shot(dir,"crystal-arena-projectile-clear",clear,L,w,h,ss);
+            GameCore hit=TestCrystalField.arenaScene(L,4);hit.clock=hit.skyClock=5;hit.shake=hit.flash=0;
+            Softbody struck=hit.boss.pieceBody(0);
+            hit.crystalField.globFlash(hit,L,struck.centreX(),struck.centreY(),struck.radiusX(),struck.radiusY(),Glyph.COLOR[4],false);
+            shot(dir,"crystal-arena-impact",hit,L,w,h,ss);
+            for(float time:new float[]{DivideDeath.BURST_AT-.05f,DivideDeath.BURST_AT+.3f,DivideDeath.BURST_AT+.85f}) {
+                GameCore dead=TestCrystalField.arenaScene(L,15);dead.clock=dead.skyClock=5;
+                dead.boss.leaveT=Boss.LEAVE-time;dead.shake=dead.flash=0;
+                shot(dir,"crystal-arena-burst-"+Math.round(time*1000),dead,L,w,h,ss);
+            }
+        }
+        if(wanted("crystal-field-")) {
+            GameCore crystal=new GameCore(new Check.Mem(),248L);crystal.startGame();
+            crystal.jumpToStage(6,L);crystal.enemies.clear();crystal.stageBanner=0;crystal.landBlend=1;
+            for(int frame=0;frame<3;frame++) {
+                crystal.clock=crystal.skyClock=frame*5f;
+                shot(dir,"crystal-field-"+frame,crystal,L,w,h,ss);
+            }
+            Check.add(crystal,L,new int[]{0,2,4},L.h*.29f).enterT=1;
+            Check.add(crystal,L,new int[]{1,3,5,2},L.h*.52f).enterT=1;
+            shot(dir,"crystal-field-prompts",crystal,L,w,h,ss);
+            GameCore.Enemy cleared=crystal.enemies.get(1);
+            crystal.destroyWord(cleared,cleared.baseX,cleared.y,L);
+            crystal.clock+=.12f;crystal.skyClock+=.12f;
+            shot(dir,"crystal-field-clear",crystal,L,w,h,ss);
+            crystal.clock+=.65f;crystal.skyClock+=.65f;
+            shot(dir,"crystal-field-clear-fading",crystal,L,w,h,ss);
+        }
+        if(wanted("slime-basin-shimmer-")) {
+            GameCore sheen=toBoss(L,Boss.SLIME,764L,false);
+            sheen.stage=5;sheen.landBlend=1;sheen.stageBanner=sheen.rosterSceneT=0;
+            step(sheen,L,SlimeArrival.DURATION);
+            float previous=0;
+            for(float age:new float[]{.1f,.8f,1.8f,3.1f,4.7f}) {
+                step(sheen,L,age-previous);previous=age;
+                shot(dir,"slime-basin-shimmer-"+Math.round(age*1000),sheen,L,w,h,ss);
+            }
+        }
         if(wanted("slime-basin-death-")) {
             GameCore death=toBoss(L,Boss.SLIME,764L,false);
             death.stage=5;death.landBlend=1;death.stageBanner=death.rosterSceneT=0;

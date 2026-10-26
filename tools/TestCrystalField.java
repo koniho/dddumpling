@@ -1,0 +1,282 @@
+package com.dddumpling.game;
+
+final class TestCrystalField extends Check {
+    static void all(Layout L) {
+        arena(L);
+        arenaLights(L);
+        splitLighting(L);
+        arrival(L);
+
+        GatorReplay replay=new GatorReplay(Boss.SPLITTER),chunked=new GatorReplay(Boss.SPLITTER);
+        for(int i=0;i<1440;i++){replay.step(L);if(i%2==1)chunked.update(GatorReplay.STEP*2,L);}
+        check("Divide profiling reproduces the busy split state without a playthrough",replay.core.boss.pieceCount()==Boss.DIVIDE_PIECES);
+        check("Divide profiling is frame chunk independent",replay.tick==chunked.tick
+                && replay.core.boss.divideSplits==chunked.core.boss.divideSplits);
+
+        GameCore cacheScene=chunked.core;
+        boolean burstSeen=false;
+        for(int i=1440;i<GatorReplay.LENGTH;i++) {
+            replay.step(L);burstSeen|=replay.core.boss.beaten && DivideDeath.bursting(replay.core.boss);
+        }
+        check("Divide profiling reaches the final arena shatter",burstSeen);
+
+        ProfileCrystalField.Counter vector=new ProfileCrystalField.Counter(false),cachedDraw=new ProfileCrystalField.Counter(true);
+        cacheScene.crystalField.draw(vector,cacheScene,L,1);
+        cacheScene.crystalField.draw(new OpacityPainter(cachedDraw,1),cacheScene,L,1);
+        check("native crystal cache removes most backdrop commands through painter wrappers",cachedDraw.calls<vector.calls*.5f);
+        check("cached crystal drawing retains live shimmer",cachedDraw.calls>20);
+        CrystalField field=new CrystalField();field.prepare(L.w);
+        CrystalField.Cell[][] cached=field.layers;
+        field.prepare(L.w);
+        check("crystal geometry stays cached between frames",field.layers==cached);
+        boolean covers=true,finite=true;
+        // Sample across the wrapping seam too: every point must have exactly one owner.
+        for(int layer=0;layer<CrystalField.LAYERS;layer++)
+        for(int row=0;row<61;row++)for(int col=0;col<37;col++) {
+            float x=L.w*(col+.317f)/37,y=L.w*CrystalField.PERIOD*(row+.219f)/61;
+            int owners=0;
+            for(CrystalField.Cell cell:field.layers[layer])for(int tile=-1;tile<=1;tile++)
+                if(inside(cell.rim,x,y-tile*CrystalField.PERIOD*L.w))owners++;
+            covers&=owners==1;
+        }
+        int vertices=0;
+        for(CrystalField.Cell cell:field.layers[0]) {
+            vertices+=cell.rim.length/2;
+            for(float v:cell.rim)finite&=Float.isFinite(v);
+        }
+        check("crystal floor covers the whole tile with no overlapping cells or seam gaps",covers);
+        check("crystal geometry stays finite and bounded",finite && vertices<150);
+        CrystalField duplicate=new CrystalField();duplicate.prepare(L.w);
+        boolean same=true;
+        for(int i=0;i<field.layers[0].length;i++)same&=java.util.Arrays.equals(field.layers[0][i].rim,duplicate.layers[0][i].rim);
+        check("crystal geometry is deterministic",same);
+        field.prepare(L.w*.75f);
+        check("crystal cache adapts to a resized viewport",field.layers!=cached
+                && Math.abs(field.layers[0][0].rim[0]-cached[0][0].rim[0]*.75f)<.01f);
+        for(int layer=0;layer<CrystalField.LAYERS;layer++) {
+            check("crystal layer scrolling wraps after a full tile "+layer,
+                    Math.abs(CrystalField.scroll(5,L.w,layer)-CrystalField.scroll(5+CrystalField.PERIOD/CrystalField.SPEED[layer],L.w,layer))<.01f);
+        }
+        check("three crystal depths scroll at increasing rates",CrystalField.LAYERS>=3
+                && CrystalField.SPEED[0]<CrystalField.SPEED[1] && CrystalField.SPEED[1]<CrystalField.SPEED[2]);
+        check("crystal layers use different outlines",
+                !java.util.Arrays.equals(field.layers[0][0].rim,field.layers[1][0].rim)
+                && !java.util.Arrays.equals(field.layers[1][0].rim,field.layers[2][0].rim));
+        GameCore c=new GameCore(new Mem(),248L);c.startGame();c.stage=6;c.landBlend=1;
+        check("crystal stage uses the faceted floor",CrystalField.presence(c)==1);
+        clearLights(c,L);
+        c.landFrom=1;c.stage=11;c.landBlend=.5f;
+        check("crystal floor fades on land departure",Math.abs(CrystalField.presence(c)-.5f)<.001f);
+        c.state=GameCore.TITLE;
+        check("crystal floor does not replace the title",CrystalField.presence(c)==0);
+        c.state=GameCore.PLAY;c.survival.active=true;
+        check("crystal floor does not replace Survival",CrystalField.presence(c)==0);
+    }
+    static GameCore arenaScene(Layout L,int events) {
+        GameCore c=TestBoss.enterBoss(L,Boss.SPLITTER,248);c.stage=10;c.landBlend=1;c.stageBanner=0;
+        for(int event=0;event<events;event++) {
+            for(int node=0;node<Boss.DIVIDE_NODES;node++)if(c.boss.nodeActive(node)) {
+                c.boss.pieceHits[node]=Boss.DIVIDE_HITS;break;
+            }
+            c.boss.beginPinch(100);BossPlay.pinch(c,100*(Boss.DIVIDE_SCALE+.02f),L);
+            if(!c.boss.beaten)c.boss.update(.02f,L,c.rnd);
+        }
+        if(!c.boss.beaten)for(int frame=0;frame<45;frame++)c.boss.update(DT,L,c.rnd);
+        return c;
+    }
+    private static void arena(Layout L) {
+        boolean symmetric=true,growing=true,seamless=true,covers=true,depth=true,horizontal=true;
+        int[] previous=new int[3];
+        for(int phase=0;phase<=CrystalArena.MAX_PHASE;phase++)for(int layer=0;layer<3;layer++) {
+            CrystalField.Cell[] cells=CrystalArena.make(L.w,layer,phase);
+            growing&=cells.length>previous[layer];previous[layer]=cells.length;
+            if(layer>0)depth&=previous[layer-1]>cells.length;
+            for(CrystalField.Cell cell:cells)for(int j=0;j<cell.rim.length;j+=2) {
+                int next=(j+2)%cell.rim.length;
+                horizontal&=!(Math.abs(cell.rim[j+1]-cell.rim[next+1])<.001f
+                        && Math.abs(cell.rim[j]-cell.rim[next])>L.w*.2f);
+                seamless&=!(Math.abs(cell.rim[j]-L.w*.5f)<.001f && Math.abs(cell.rim[next]-L.w*.5f)<.001f);
+                boolean match=false;
+                for(CrystalField.Cell other:cells)if(other.phase==cell.phase)
+                    for(int k=0;k<other.rim.length;k+=2)
+                        match|=Math.abs(cell.rim[j]+other.rim[k]-L.w)<.001f
+                                && Math.abs(cell.rim[j+1]-other.rim[k+1])<.001f;
+                symmetric&=match;
+            }
+            for(int row=0;row<31;row++)for(int col=0;col<23;col++) {
+                float x=L.w*(col+.317f)/23,y=L.w*2*(row+.219f)/31;
+                int owners=0;
+                for(CrystalField.Cell cell:cells)for(int tile=-1;tile<=1;tile++)
+                    if(inside(cell.rim,x,y-tile*CrystalField.PERIOD*L.w))owners++;
+                covers&=owners==1;
+            }
+        }
+        check("all arena layers stay exactly mirrored through every fracture",symmetric);
+        check("each pinch adds arena fragments",growing);
+        check("deeper arena layers retain finer segmentation through every phase",depth);
+        check("center-spanning arena tiles have no vertical mirror seam",seamless);
+        check("arena has no long horizontal tile-border edges",horizontal);
+        check("joined arena tiles cover every phase without gaps or overlaps",covers);
+        GameCore c=arenaScene(L,7);
+        check("seven actual splits advance the crystal arena",CrystalArena.phase(c.boss)==7 && c.shake>=1);
+        ProfileCrystalField.Counter retainedDraw=new ProfileCrystalField.Counter(true);
+        c.crystalField.draw(retainedDraw,c,L,1);
+        CrystalField.Cell[][] beforeLoss=c.crystalArena.cells;
+        c.lives=1;c.takeHit(L.w*.5f,L);
+        c.crystalField.draw(retainedDraw,c,L,1);
+        check("crystal defeat keeps the exact fractured arena geometry",CrystalArena.active(c)
+                && c.crystalArena.cells==beforeLoss && CrystalArena.phase(BossVictory.sceneBoss(c))==7);
+        c=arenaScene(L,15);
+        check("eight fragment clears finish all fifteen fracture phases",c.boss.beaten && CrystalArena.phase(c.boss)==15);
+        c=arenaScene(L,0);
+        int key=c.boss.pieceWant(0);c.tapKey(key,L);
+        check("arena does not light before projectile contact",!c.crystalField.hasLights(c));
+        for(int step=0;step<120 && !c.crystalField.hasLights(c);step++)c.update(DT,L);
+        check("projectile contact lights the crystal arena",c.crystalField.hasLights(c));
+        boolean mirrored=true;
+        for(int layer=0;layer<3;layer++)for(int x=0;x<8;x++) {
+            float xx=L.w*(x+.25f)/8,yy=L.h*.35f;
+            mirrored&=Math.abs(c.crystalField.lightAt(c,L,layer,xx,yy)-c.crystalField.lightAt(c,L,layer,L.w-xx,yy))<.001f;
+        }
+        check("arena impact lighting stays mirrored",mirrored);
+    }
+    private static void arenaLights(Layout L) {
+        int hitNodes=0;
+        for(int phase=0;phase<=7;phase++) {
+            GameCore hit=arenaScene(L,phase);Boss boss=hit.boss;boss.clearBolts();
+            for(int piece=0;piece<boss.pieceCount();piece++) {
+                int node=boss.pieceNodeIndex(piece);if((hitNodes & (1<<node))!=0)continue;
+                hitNodes|=1<<node;
+                for(int other=0;other<Boss.DIVIDE_NODES;other++){boss.pieceHits[other]=0;boss.halfWant[other]=1;}
+                boss.halfWant[node]=0;hit.crystalField.reset();hit.shots.clear();hit.tapKey(0,L);
+                GameCore.Shot shot=hit.shots.get(0);Fx.updateShots(hit,GameCore.SHOT_TIME,L);
+                check("prompt contact lights every glob node "+node,shot.promptNode==node
+                        && hit.crystalField.lightAt(hit,L,2,shot.tx,shot.ty)>.99f);
+            }
+        }
+        check("prompt lighting covers all fifteen glob nodes",hitNodes==(1<<Boss.DIVIDE_NODES)-1);
+        GameCore split=arenaScene(L,0);split.boss.pieceHits[0]=Boss.DIVIDE_HITS-1;
+        split.tapKey(split.boss.pieceWant(0),L);GameCore.Shot pending=split.shots.get(0);
+        split.boss.beginPinch(100);BossPlay.pinch(split,100*(Boss.DIVIDE_SCALE+.02f),L);
+        split.crystalField.reset();Fx.updateShots(split,GameCore.SHOT_TIME,L);
+        check("last prompt still lights after its glob has split",!split.boss.nodeActive(0)
+                && split.crystalField.lightAt(split,L,0,pending.tx,pending.ty)>.99f);
+
+        GameCore c=arenaScene(L,0);Boss b=c.boss;int key=b.pieceWant(0);
+        b.blive[0]=true;b.bglyph[0]=key;b.bhp[0]=b.bhpMax[0]=2;
+        b.bsx[0]=L.w*.3f;b.bsy[0]=L.h*.4f;b.bt[0]=.3f;
+        c.tapKey(key,L);
+        check("partial projectile damage does not trigger a clear flash",!c.crystalField.hasLights(c));
+        c.tapKey(key,L);
+        check("destroying a boss projectile lights nearby crystals",!b.blive[0]
+                && c.crystalField.lightAt(c,L,0,b.hitX,b.hitY)>.99f);
+        check("projectile clear flash has a mirrored partner",c.crystalField.lightAt(c,L,2,L.w-b.hitX,b.hitY)>.99f);
+        c.crystalField.reset();b.pieceHits[b.pieceNodeIndex(0)]=Boss.DIVIDE_HITS;
+        Softbody body=b.pieceBody(0);
+        c.clock=(float)Math.PI/(2*6.4f);c.crystalField.prepareArenaLights(c,L);
+        float peak=c.crystalField.lightAt(c,L,1,body.centreX(),body.centreY());
+        check("vulnerable glob lighting follows its bright body pulse",Math.abs(peak-.70f*BossScreen.vulnerabilityPulse(c.clock))<.001f && peak>.69f);
+        c.clock+=(float)Math.PI/6.4f;c.crystalField.prepareArenaLights(c,L);
+        check("vulnerable glob lighting dims with its body",c.crystalField.lightAt(c,L,1,body.centreX(),body.centreY())<.001f);
+        c.clock=(float)Math.PI/(2*6.4f);b.pieceHits[b.pieceNodeIndex(0)]=0;c.crystalField.prepareArenaLights(c,L);
+        check("background stops pulsing when vulnerability ends",!c.crystalField.hasLights(c));
+        c=arenaScene(L,7);b=c.boss;
+        for(int i=0;i<b.pieceCount();i++)b.pieceHits[b.pieceNodeIndex(i)]=Boss.DIVIDE_HITS;
+        c.clock=(float)Math.PI/(2*6.4f);c.crystalField.prepareArenaLights(c,L);
+        check("all eight vulnerable globs fit the fixed light pool",c.crystalField.hasLights(c));
+        c.lives=1;c.takeHit(L.w*.5f,L);c.crystalField.reset();c.crystalField.prepareArenaLights(c,L);
+        check("loss clears vulnerability lighting from the retained arena",!c.crystalField.hasLights(c));
+    }
+    private static void splitLighting(Layout L) {
+        GameCore c=arenaScene(L,0);float x=L.w*.5f,y=L.h*.4f,rx=L.w*.08f,ry=L.w*.12f;
+        c.crystalField.globFlash(c,L,x,y,rx,ry,Glyph.COLOR[0],false);
+        check("glob prompt lighting spans twice its width and height",
+                c.crystalField.lightAt(c,L,0,x+rx*1.5f,y)>.4f && c.crystalField.lightAt(c,L,0,x,y+ry*1.5f)>.4f
+                && c.crystalField.lightAt(c,L,0,x+rx*2.1f,y)==0 && c.crystalField.lightAt(c,L,0,x,y+ry*2.1f)==0);
+        c.crystalField.reset();c.boss.pieceHits[0]=Boss.DIVIDE_HITS;c.boss.beginPinch(100);
+        BossPlay.pinch(c,100*(Boss.DIVIDE_SCALE+.02f),L);
+        final boolean[] cyan={false};
+        Painter probe=new OpacityPainter(new ProfileCrystalField.Counter(true),1) {
+            @Override public void line(float x1,float y1,float x2,float y2,int color,float width) {
+                cyan[0]|=(color&0xFFFFFF)==(CrystalField.SPLIT_COLOR&0xFFFFFF);
+            }
+        };
+        c.crystalField.draw(probe,c,L,1);
+        check("glob splitting emits its own cyan edge light",cyan[0]);
+        c.clock+=.06f;c.crystalField.prepareArenaLights(c,L);
+        float xx=L.w*.25f,yy=c.boss.hitY;
+        float kick=c.crystalField.jiggleAt(c,L,2,xx,yy,true);
+        check("split kicks nearby illuminated crystal junctions",Math.abs(kick)>.01f);
+        check("node jiggle stays mirrored",Math.abs(kick+c.crystalField.jiggleAt(c,L,2,L.w-xx,yy,true))<.001f);
+        c.clock+=.15f;c.crystalField.prepareArenaLights(c,L);
+        check("crystal junctions spring back past their rest position",kick*c.crystalField.jiggleAt(c,L,2,xx,yy,true)<0);
+        c.clock+=CrystalField.JIGGLE_TIME;c.crystalField.prepareArenaLights(c,L);
+        check("node jiggle settles without changing cached arena geometry",c.crystalField.jiggleAt(c,L,2,xx,yy,true)==0);
+        c.crystalField.reset();
+        check("reset releases node motion",c.crystalField.jiggleAt(c,L,2,xx,yy,true)==0);
+    }
+    private static void arrival(Layout L) {
+        GameCore c=arenaScene(L,0);c.boss.intro=Boss.INTRO;c.clock=c.skyClock=5;
+        ProfileCrystalField.Counter painter=new ProfileCrystalField.Counter(true);
+        c.crystalField.draw(painter,c,L,1);
+        CrystalArrival.Edge[] plan=c.crystalField.arrival.edges;
+        boolean clipped=plan!=null,matched=false,unique=true;
+        for(int i=0;i<plan.length;i++) {
+            CrystalArrival.Edge e=plan[i];matched|=e.matched;
+            clipped&=e.ax>=-.001f && e.bx>=-.001f && e.ax<=L.w+.001f && e.bx<=L.w+.001f
+                    && e.ay>=-.001f && e.by>=-.001f && e.ay<=L.deckTop+.001f && e.by<=L.deckTop+.001f;
+            if(!e.departing)for(int j=0;j<i;j++) {
+                CrystalArrival.Edge prev=plan[j];
+                if(prev.layer==e.layer && !prev.departing)
+                    unique&=!(Math.abs(e.tx-prev.tx)<.001f && Math.abs(e.ty-prev.ty)<.001f
+                            && Math.abs(e.ux-prev.ux)<.001f && Math.abs(e.uy-prev.uy)<.001f);
+            }
+        }
+        check("arena arrival matches edges within a bounded visible plan",clipped && matched && plan.length<=CrystalArrival.PER_LAYER*2);
+        check("arena arrival draws each destination edge once",unique);
+        c.boss.intro=Boss.INTRO*.5f;c.clock+=.8f;c.skyClock+=.8f;
+        painter=new ProfileCrystalField.Counter(true);c.crystalField.draw(painter,c,L,1);
+        check("arena arrival reuses its edge plan as the sky scrolls",plan==c.crystalField.arrival.edges);
+        check("cached arrival keeps drawing bounded",painter.calls<250);
+        check("arena arrival crossfade begins and ends at the exact backdrops",CrystalArrival.blend(0)==0 && CrystalArrival.blend(1)==1);
+        c.boss.intro=0;c.crystalField.draw(painter,c,L,1);
+        check("arena arrival releases temporary edges when settled",c.crystalField.arrival.edges==null);
+        c.boss.intro=Boss.INTRO;c.crystalField.draw(painter,c,L,1);c.crystalField.reset();
+        check("arena arrival clears on game reset",c.crystalField.arrival.edges==null);
+    }
+    private static void clearLights(GameCore c,Layout L) {
+        float x=L.w*.5f,y=L.h*.45f;
+        check("crystal edges begin unlit",c.crystalField.lightAt(c,L,0,x,y)==0);
+        GameCore.Enemy enemy=add(c,L,new int[]{0,2,4},y);
+        c.destroyWord(enemy,x,y,L);
+        for(int layer=0;layer<CrystalField.LAYERS;layer++) {
+            check("enemy clear lights crystal depth "+layer,c.crystalField.lightAt(c,L,layer,x,y)>.99f);
+            check("clear light stays near the destroyed word "+layer,c.crystalField.lightAt(c,L,layer,x,y+L.w)==0);
+        }
+        c.clock+=.25f;c.skyClock+=8;
+        float expected=(1-.25f/CrystalField.CLEAR_TIME);expected*=expected;
+        for(int layer=0;layer<CrystalField.LAYERS;layer++)
+            check("clear light follows its own layer speed "+layer,
+                    Math.abs(c.crystalField.lightAt(c,L,layer,x,y+8*CrystalField.SPEED[layer]*L.w)-expected)<.001f);
+        c.destroyWord(enemy,x,y,L);
+        check("duplicate clear does not restart crystal light",c.crystalField.lightAt(c,L,0,x,y)<.9f);
+        c.clock+=CrystalField.CLEAR_TIME;
+        check("crystal clear light expires",c.crystalField.lightAt(c,L,0,x,y)==0);
+        c.crystalField.cleared(c,L,x,y,3,Glyph.COLOR[0]);
+        c.paused=true;float clock=c.clock;
+        c.update(.2f,L);
+        check("pausing freezes crystal clear lights",c.clock==clock && c.crystalField.lightAt(c,L,0,x,y)>.99f);
+        c.paused=false;c.state=GameCore.OVER;c.update(0,L);
+        check("death clears crystal lights",c.crystalField.lightAt(c,L,0,x,y)==0);
+        c.startGame();c.stage=6;c.landBlend=1;
+        c.crystalField.cleared(c,L,x,y,3,Glyph.COLOR[0]);c.startGame();
+        check("new run clears crystal lights",c.crystalField.lightAt(c,L,0,x,y)==0);
+        c.stage=6;c.landBlend=1;
+    }
+    private static boolean inside(float[] p,float x,float y) {
+        boolean hit=false;
+        for(int i=0,j=p.length-2;i<p.length;j=i,i+=2)
+            if((p[i+1]>y)!=(p[j+1]>y) && x<(p[j]-p[i])*(y-p[i+1])/(p[j+1]-p[i+1])+p[i])hit=!hit;
+        return hit;
+    }
+}

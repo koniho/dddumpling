@@ -7,6 +7,13 @@ package com.dddumpling.game;
 final class BossVictory extends Draw {
     private BossVictory() {}
 
+    static boolean retained(GameCore c) {
+        return c.state==GameCore.OVER && c.bossVictory!=null && c.bossVictoryKind>=0;
+    }
+    static Boss sceneBoss(GameCore c) {return retained(c)?c.bossVictory:c.boss;}
+    /** Loss UI can fade independently while the arena keeps its battle palette. */
+    static float backdropDrain(GameCore c) {return retained(c)?0:c.drained();}
+
     static void draw(Painter p, GameCore c, Layout L) {
         int kind = c.bossVictoryKind;
         if (kind < 0 || c.bossVictory == null || !c.dying()) return;

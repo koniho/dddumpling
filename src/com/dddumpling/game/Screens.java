@@ -138,7 +138,7 @@ final class Screens extends Draw {
         float fade = c.overFade();
         if (fade <= 0.004f) return;
         // Keep Adventure's drained palette; Survival's rainbow exit reveals violet.
-        scrim(p, L, (int) (220 * fade), c.survival.active || c.timeAttack.active?SCRIM:Glyph.mix(SCRIM, DEATH_SCRIM, c.drained()));
+        scrim(p, L, (int) (220 * fade), c.survival.active || c.timeAttack.active?SCRIM:Glyph.mix(SCRIM, DEATH_SCRIM, BossVictory.backdropDrain(c)));
         if(c.bossRetry.pending){c.bossRetry.draw(p,c,L,fade);return;}
         if(c.timeAttack.active) {c.timeAttack.result(p,c,L,fade);return;}
         if(c.survival.active) {c.survival.result(p,c,L,fade);return;}

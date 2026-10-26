@@ -57,6 +57,7 @@ final class CoreTest {
             TestWords.entranceAndPersistence(L);
         });
         group("Stages", () -> {
+            TestCrystalField.all(L);
             TestStages.waves(L);
             TestStages.bonusOrdering(L);
             TestStages.bonusIntro(L);

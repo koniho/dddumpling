@@ -153,6 +153,8 @@ final class BossPlay {
         // prompt progress is immediate; Slime and Divide hit feedback travels with this shot.
         shot(c, g, L, verdict);
         if (verdict == Boss.PARRY) {
+            if(c.boss.kind==Boss.SPLITTER && c.boss.boltDestroyed)
+                c.crystalField.arenaFlash(c,L,c.boss.hitX,c.boss.hitY,3,Glyph.COLOR[g]);
             if(c.boss.kind==Boss.SLIME)SlimeHills.surfaceRipple(c,c.boss.hitX,c.boss.hitY,Glyph.COLOR[g],L.enemyR);
             if(c.boss.boltDestroyed)c.timeAttack.defended();
             // Swatted, not landed on the boss: the score is the same as a hit but the boss is
@@ -236,17 +238,22 @@ final class BossPlay {
         if(c.sound!=null)c.sound.slimeSquish(variant);
     }
 
-    static boolean promptImpact(GameCore c,GameCore.Shot s) {
+    static boolean promptImpact(GameCore c,GameCore.Shot s,Layout L) {
         Boss b=c.boss;
         if(c.state!=GameCore.PLAY || c.dying() || !b.fighting() || b.kind!=s.promptKind
                 || b.body!=s.promptRoot)return false;
-        if(s.promptKind==Boss.SPLITTER && (!b.nodeActive(s.promptNode)
+        boolean divide=s.promptKind==Boss.SPLITTER;
+        // A credited hit still lights the arena if its glob was pinched before arrival.
+        if(divide)c.crystalField.globFlash(c,L,s.tx,s.ty,
+                s.promptBody.radiusX(),s.promptBody.radiusY(),Glyph.COLOR[s.glyph],false);
+        if(divide && (!b.nodeActive(s.promptNode)
                 || b.divideBody[s.promptNode]!=s.promptBody))return false;
         b.promptImpact(s.promptNode,s.promptSplit,s.tx,s.ty);
         c.skyGlow=Math.max(c.skyGlow,GameCore.GLOW_HIT);c.skyGlowColor=Glyph.COLOR[s.glyph];
-        boolean divide=s.promptKind==Boss.SPLITTER;
         c.shake=Math.max(c.shake,divide?.18f:.12f);
-        if(divide) {c.flash=Math.max(c.flash,.28f);c.flashColor=0xFF7D45D6;}
+        if(divide) {
+            c.flash=Math.max(c.flash,.28f);c.flashColor=0xFF7D45D6;
+        }
         for(GameCore.Particle p:s.promptParticles) {p.x+=s.tx;p.y+=s.ty;c.particles.add(p);}
         s.promptParticles.clear();
         if(!divide) {
@@ -374,14 +381,18 @@ final class BossPlay {
     static boolean pinch(GameCore c, float distance, float x1, float y1, float x2, float y2,
             Layout L) {
         float beforeHp = c.boss.hp;
+        int node=c.boss.pinchNode;
+        Softbody glob=node>=0?c.boss.divideBody[node]:null;
+        float rx=glob==null?Boss.bodyR(L):glob.radiusX(),ry=glob==null?Boss.bodyR(L):glob.radiusY();
         boolean changed = c.boss.pinch(distance, x1, y1, x2, y2, c.rnd);
         c.progress.bossDamage(c.boss.kind, beforeHp, c.boss.hp);
         c.timeAttack.bossDamaged(beforeHp, c.boss.hp);
         if (!changed) return false;
+        c.crystalField.globFlash(c,L,c.boss.hitX,c.boss.hitY,rx,ry,CrystalField.SPLIT_COLOR,true);
         c.onboarding.bossDamaged(c);
         c.companion.react(RunCompanion.BOSS_HIT, 1f);
         boolean deactivate = c.boss.divideDeactivated;
-        c.shake = Math.max(c.shake, deactivate ? 1.2f : 0.85f);
+        c.shake = Math.max(c.shake, deactivate ? 1.2f : 1.05f);
         c.flashColor = deactivate ? 0xFFFFFFFF : 0xFF7D45D6;
         c.flashColor = 0xFF7D45D6;
         Fx.explode(c, c.rnd, c.boss.hitX, c.boss.hitY, L.enemyR * (deactivate ? 3.5f : 2.8f), deactivate ? 38 : 28,
