@@ -155,7 +155,7 @@ final class TestUnderwater extends Check {
         check("reef perspective moves down and grows continuously",advancing && accelerating);
         check("reef colonies fade in at the distant plane",UnderwaterVista.visibility(0)==0
                 && UnderwaterVista.visibility(.05f)<UnderwaterVista.visibility(.15f));
-        float halfWidth=.30f*UnderwaterVista.scale(1);
+        float halfWidth=UnderwaterVista.COLUMN_WIDTH*.5f*UnderwaterVista.scale(1);
         check("reef columns recycle beyond the side edges",UnderwaterVista.columnX(1,0)+halfWidth<0
                 && UnderwaterVista.columnX(1,1)-halfWidth>1);
         check("reef columns and sand emerge at mid-screen",UnderwaterVista.rootY(0)==.5f

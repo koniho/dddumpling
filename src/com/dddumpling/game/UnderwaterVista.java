@@ -3,6 +3,7 @@ package com.dddumpling.game;
 /** A lit reef corridor: immutable scenery passes through a small perspective field. */
 final class UnderwaterVista extends Draw {
     static final int COUNT=7,WIDTH=256,ROWS=5;
+    static final float COLUMN_WIDTH=1.08f;
     static int height(int art) {return art==0?512:768;}
     private UnderwaterVista() {}
     private static int ink(int color,float alpha) {return Glyph.withAlpha(color,(int)alpha);}
@@ -16,7 +17,9 @@ final class UnderwaterVista extends Draw {
         return width*height(1)/WIDTH*(1+.95f*smooth(depth(travel)));
     }
     static float columnX(float travel,int side) {
-        return .5f+(side==0?-1:1)*(.14f+depth(travel)*.90f);
+        float d=depth(travel);
+        // Carry the wider foreground pieces fully past the sides before recycling.
+        return .5f+(side==0?-1:1)*(.14f+d*.90f+.45f*d*d*d*d);
     }
     static float travel(float clock,int row,int side) {
         float phase=clock*.10f+side*.43f;
@@ -36,7 +39,7 @@ final class UnderwaterVista extends Draw {
             int cycle=(int)Math.floor(clock);
             float t=travel(c.skyClock,row,side),d=depth(t),s=scale(t);
             int art=1+Math.floorMod(row-cycle+side*3,6);
-            float x=L.w*columnX(t,side),y=L.h*rootY(t),w=L.w*.60f*s,h=columnHeight(t,w);
+            float x=L.w*columnX(t,side),y=L.h*rootY(t),w=L.w*COLUMN_WIDTH*s,h=columnHeight(t,L.w*.60f*s);
             if(x+w*.5f<0 || x-w*.5f>L.w)continue;
             float alpha=fade*visibility(t)*(.38f+.62f*smooth(d*2.4f));
             image(p,art,x-w*.5f,y-h*.90f,w,h,alpha);
