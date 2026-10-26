@@ -348,10 +348,23 @@ static void DDDrawCachedImage(CGContextRef ctx,CGRect rect,CGImageRef color,CGIm
                     withInt:(jint)alpha {
   if (!self.context || _drawingForest || [DDSlimeBasinArt sideWithInt:art]<0 || !offsets
       || offsets->size_<2 || offsets->size_>17 || w<=0 || h<=0)return NO;
+  if(alpha<=0)return YES;
   CGImageRef image=[self basinImage:art];if (!image)return NO;
   CGContextRef ctx=self.context;int rows=offsets->size_-1;BOOL left=[DDSlimeBasinArt sideWithInt:art]==0;
   CGContextSaveGState(ctx);
   CGContextSetAlpha(ctx,MAX(0,MIN(255,alpha))/255.0);
+  // Apply opacity once to the assembled bank, not at each shared triangle edge.
+  BOOL grouped=alpha<255;
+  if(grouped) {
+    CGFloat minX=x,maxX=x+w;
+    for(int row=0;row<=rows;row++) {
+      minX=MIN(minX,x-(left?0:offsets->buffer_[row]));
+      maxX=MAX(maxX,x+w+(left?offsets->buffer_[row]:0));
+    }
+    CGRect bounds=CGRectIntersection(CGRectMake(minX,y,maxX-minX,h),CGContextGetClipBoundingBox(ctx));
+    if(CGRectIsEmpty(bounds)){CGContextRestoreGState(ctx);return YES;}
+    CGContextBeginTransparencyLayerWithRect(ctx,bounds,NULL);
+  }
   CGContextSetInterpolationQuality(ctx,kCGInterpolationMedium);
   // Adjacent clipped triangles share edges. Texture filtering supplies the visible silhouette AA.
   CGContextSetShouldAntialias(ctx,NO);
@@ -370,6 +383,7 @@ static void DDDrawCachedImage(CGContextRef ctx,CGRect rect,CGImageRef color,CGIm
       CGContextDrawImage(ctx,CGRectMake(0,0,1,1),image);CGContextRestoreGState(ctx);
     }
   }
+  if(grouped)CGContextEndTransparencyLayer(ctx);
   CGContextRestoreGState(ctx);return YES;
 }
 
