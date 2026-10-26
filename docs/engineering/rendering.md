@@ -174,7 +174,10 @@ background and floor, asymmetric fractured walls and overhangs, matching lit sto
 and a continuous feathered blue-green light ribbon. The light
 painting pulses on clears and boss hits, while the beams react most strongly near each clear. Three slowly drifting light ribbons illuminate the chamber. Fish stay in stages,
 where they shimmer as they turn and scale toward the foreground before leaving below the screen. No scrolling ground geometry or live rock tessellation remains in the arena;
-its reduced haze preserves the deeper shadows on both native hosts.
+its reduced haze preserves the deeper shadows on both native hosts. Two extra distant rock
+planes are baked into the chamber for depth. Three existing soft glow stamps follow the boss
+and tentacles. Eighteen kelp patches share reusable vertex buffers; their rooted blades respond
+to nearby tentacle velocity and the existing damage/recoil timers, with no new gameplay state.
 The Octopulse cave keeps its fixed arena composition. Underwater and crystal caches
 remain active during monochrome: Android applies a luminance color matrix, while
 iOS lazily retains one grayscale copy per live image slot. Partial iOS fades blend

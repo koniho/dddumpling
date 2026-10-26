@@ -2,24 +2,110 @@ package com.dddumpling.game;
 
 /** A stationary reef chamber: shaded stone and its relighting are cached separately. */
 final class UnderwaterCave extends Draw {
+    static final int KELP_PATCHES=18;
     private UnderwaterCave() {}
     private static int ink(int color,float alpha){return Glyph.withAlpha(color,(int)alpha);}
 
     static void draw(Painter p,GameCore c,Layout L,float fade,float arrival) {
         if(p instanceof WaterPainter)p=((WaterPainter)p).anchored();
+        Boss b=BossVictory.sceneBoss(c);
+        float movement=motion(b,L),damage=damagePulse(b);
+        float bx=b.body==null?b.bodyX(L):b.body.centreX();
+        float by=b.body==null?b.bodyY(L):b.body.centreY();
         UnderwaterVista.image(p,UnderwaterVista.CAVE,0,0,L.w,L.h,fade);
+        kelp(p,c,L,b,fade,0,8);
+        glow(p,bx,by+L.h*.13f,L.w*.36f,L.h*.27f,fade*(12+movement*24+damage*42));
         for(int i=0;i<3;i++) {
             float pulse=c.waterRipples.beamPulse(c.clock,.24f+i*.25f);
-            float drift=(float)Math.sin(c.clock*.17f+i*2.4f)*L.w*.045f;
-            float light=.20f+UnderwaterVista.beamIdle(c.clock*.7f,i)*.65f+pulse*.30f;
+            float drift=(float)Math.sin(c.clock*.17f+i*2.4f)*L.w*.045f+(bx-L.w*.5f)*.28f;
+            float light=.20f+UnderwaterVista.beamIdle(c.clock*.7f,i)*.65f+pulse*.30f+movement*.10f+damage*.22f;
             UnderwaterVista.image(p,UnderwaterVista.CAVE+3,L.w*(-.22f+i*.30f)+drift,
                     -L.h*(.08f+i*.025f),L.w*(.85f-i*.08f),L.h*(.94f-i*.04f),fade*light);
         }
         float y=-(1-arrival)*L.h*.16f;
         UnderwaterVista.image(p,UnderwaterVista.CAVE+1,0,y,L.w,L.h,fade);
+        kelp(p,c,L,b,fade,8,KELP_PATCHES);
+        for(int side=0;side<2;side++) {
+            int arm=side==0?1:6;
+            float reachY=b.octoPlaced && (b.octoArms&(1<<arm))!=0?b.octoY[arm][Boss.OCTO_NODES-1]:by+L.h*.15f;
+            float gy=Math.max(L.h*.25f,Math.min(L.h*.79f,reachY));
+            glow(p,L.w*(side==0?.12f:.88f),gy,L.w*.21f,L.h*.24f,
+                    fade*(9+movement*26+damage*48));
+        }
         float pulse=c.waterRipples.beamPulse(c.clock,.5f);
         float shimmer=.055f+.045f*(.5f+.5f*(float)Math.sin(c.clock*.47f));
-        UnderwaterVista.image(p,UnderwaterVista.CAVE+2,0,y,L.w,L.h,fade*Math.min(1,shimmer+pulse*.85f));
+        UnderwaterVista.image(p,UnderwaterVista.CAVE+2,0,y,L.w,L.h,fade*Math.min(1,shimmer+pulse*.85f+movement*.22f+damage*.70f));
+    }
+
+    static float damagePulse(Boss b) {
+        if(b.kind!=Boss.OCTOPUS)return 0;
+        return Math.max(b.hurt,b.octoDeath>0?Math.max(0,1-b.octoDeath):0);
+    }
+    static float motion(Boss b,Layout L) {
+        if(b.kind!=Boss.OCTOPUS || !b.octoPlaced)return 0;
+        float energy=0;
+        for(int arm=0;arm<Boss.OCTO_ARMS;arm++)if((b.octoArms&(1<<arm))!=0) {
+            int tip=Boss.OCTO_NODES-1;
+            energy+=Math.abs(b.octoVX[arm][tip])+Math.abs(b.octoVY[arm][tip]);
+        }
+        return Math.min(1,energy/(L.w*3));
+    }
+    static float current(Boss b,Layout L,float x,float y) {
+        if(b.kind!=Boss.OCTOPUS || !b.octoPlaced)return 0;
+        float force=0;
+        for(int arm=0;arm<Boss.OCTO_ARMS;arm++)if((b.octoArms&(1<<arm))!=0) {
+            int tip=Boss.OCTO_NODES-1;
+            float dx=(x-b.octoX[arm][tip])/L.w,dy=(y-b.octoY[arm][tip])/L.h;
+            float weight=1/(1+dx*dx*22+dy*dy*28);
+            force+=Math.max(-1,Math.min(1,b.octoVX[arm][tip]/(L.w*.6f)))*weight*.50f;
+        }
+        return Math.max(-.8f,Math.min(.8f,force));
+    }
+    private static void glow(Painter p,float x,float y,float rx,float ry,float alpha) {
+        ArtStamp cache=p.stamps();
+        if(cache!=null && cache.waterGlow(x,y,rx,ry,Math.round(alpha)))return;
+        float previous=0;
+        for(int layer=0;layer<10;layer++) {
+            float radius=3*(1-layer/10f),opacity=alpha*(float)Math.exp(-radius*radius*.5f);
+            int a=Math.round(opacity)-Math.round(previous);previous=opacity;
+            p.fillEllipse(x,y,rx*radius/3,ry*radius/3,ink(0xFF80DCD2,a));
+        }
+    }
+    private static void kelp(Painter p,GameCore c,Layout L,Boss b,float fade,int first,int end) {
+        float damage=damagePulse(b),age=b.octoDeath>0?b.octoDeath:(1-b.hurt)*.38f;
+        float bx=b.body==null?L.w*.5f:b.body.centreX();
+        float[] blade=c.waterRipples.kelpBlade,edge=c.waterRipples.kelpEdge,shadow=c.waterRipples.kelpShadow;
+        for(int i=first;i<end;i++) {
+            int seed=721+i*97;boolean far=i<8,wall=i>=8 && i<14;
+            float x=far?.26f+hash(seed)*.48f:wall?(i%2==0?.08f:.78f)+hash(seed)*.14f:.23f+hash(seed)*.54f;
+            float y=far?.52f+hash(seed+3)*.31f:wall?.42f+hash(seed+3)*.44f:.84f+hash(seed+3)*.12f;
+            float height=L.h*(far?.045f:wall?.07f:.085f)*(1+hash(seed+7)*1.1f);
+            float flow=current(b,L,x*L.w,y*L.h),direction=x*L.w>=bx?1:-1;
+            float dx=x-b.hitX/L.w,dy=y-b.hitY/L.h;
+            float distance=(float)Math.sqrt(dx*dx+dy*dy);
+            float surge=damage*(.68f*direction+.52f*(float)Math.sin(age*13-distance*7));
+            float strength=fade*(far?.42f:.90f);
+            for(int stem=0;stem<2;stem++) {
+                float rootX=x*L.w+(stem-.5f)*L.w*.008f,rootY=y*L.h+stem*L.h*.003f;
+                float tall=height*(stem==0?1:.73f),phase=c.clock*.85f+i*2.1f+stem*.7f;
+                for(int j=0;j<9;j++) {
+                    float u=j/8f;
+                    float sway=.14f*(float)Math.sin(phase-u*3.4f)+.06f*(float)Math.sin(phase*.7f+u*6);
+                    float bend=tall*u*u*(sway+flow*.60f+surge*.72f);
+                    float xx=rootX+bend+(stem-.5f)*tall*u*.16f;
+                    float yy=rootY-tall*u+Math.abs(bend)*.22f*u;
+                    float width=L.w*(far?.0040f:.0075f)*(1+.32f*(float)Math.sin(u*13+seed))*(1-u*.94f);
+                    int left=j*2,right=(17-j)*2;
+                    blade[left]=xx-width;blade[right]=xx+width;blade[left+1]=blade[right+1]=yy;
+                    edge[left]=xx-width*.42f;edge[right]=xx-width*.10f;edge[left+1]=edge[right+1]=yy;
+                    shadow[left]=xx-width*1.6f+tall*u*.40f;shadow[right]=xx+width*1.6f+tall*u*.40f;
+                    shadow[left+1]=shadow[right+1]=rootY+tall*u*.18f;
+                }
+                p.fillPoly(shadow,ink(0xFF01050C,strength*70));
+                p.fillPoly(blade,ink(i%3==0?0xFF285C58:0xFF285C4A,strength*240));
+                p.fillPoly(edge,ink(0xFF8BCDB1,strength*(48+damage*135+Math.abs(flow)*55)));
+            }
+        }
     }
 
     static void paint(Painter p,int layer,float x,float y,float w,float h,float fade) {
@@ -115,6 +201,12 @@ final class UnderwaterCave extends Draw {
                         ink(0xFF000000|(r<<16)|(g<<8)|b,fade*255));
             }
         }
+        for(int plane=0;plane<2;plane++) {
+            float inset=plane==0?.24f:.13f;
+            Painter distant=new DepthStone(p,plane==0?.60f:.36f);
+            for(int side=0;side<2;side++)
+                buttress(distant,x+w*inset,y+h*(plane==0?.17f:.08f),w*(1-inset*2),h*(plane==0?.70f:.88f),side,0,fade);
+        }
         // A softly lit, irregular floor continues under the keys, without a horizon seam.
         for(int layer=0;layer<18;layer++) {
             float[] floor=new float[44];float inset=layer*.008f;
@@ -139,6 +231,12 @@ final class UnderwaterCave extends Draw {
         }
     }
 
+    private static final class DepthStone extends OpacityPainter {
+        final float haze;
+        DepthStone(Painter p,float haze){super(p,1);this.haze=haze;}
+        int color(int c){return (c&0xFF000000)|(Glyph.mix(c,0xFF143846,haze)&0xFFFFFF);}
+        public ArtStamp stamps(){return null;}
+    }
     private static final class LitStone extends OpacityPainter {
         LitStone(Painter p){super(p,1);}
         int color(int c) {

@@ -52,6 +52,7 @@ final class TestUnderwater extends Check {
         check("fish shimmer peaks while turning",Underwater.fishShimmer(0)==0
                 && Underwater.fishShimmer((float)Math.PI*.5f)>.99f);
         beamLighting(L);
+        caveMotion(L);
         cachedScenery(L);
         perspective(L);
         backdropSeams();
@@ -113,6 +114,49 @@ final class TestUnderwater extends Check {
         }
         check("idle beam fades are slow, staggered, and visibly varied",gradual && staggered && low<.04f && high>.47f);
     }
+    private static void caveMotion(Layout L) {
+        GameCore c=TestBossRetry.fight(L,Boss.OCTOPUS);Boss b=c.boss;c.clock=5;
+        b.octoPlaced=true;b.octoArms=255;
+        for(int arm=0;arm<Boss.OCTO_ARMS;arm++) {
+            java.util.Arrays.fill(b.octoVX[arm],0);java.util.Arrays.fill(b.octoVY[arm],0);
+            b.octoX[arm][Boss.OCTO_NODES-1]=L.w*.40f;b.octoY[arm][Boss.OCTO_NODES-1]=L.h*.65f;
+        }
+        int[] plants={0},light={0};float[] roots=new float[UnderwaterCave.KELP_PATCHES*4],tips=roots.clone();
+        ArtStamp cache=(ArtStamp)java.lang.reflect.Proxy.newProxyInstance(ArtStamp.class.getClassLoader(),new Class<?>[]{ArtStamp.class},(proxy,method,args)-> {
+            if(method.getName().equals("waterGlow"))light[0]+=(Integer)args[4];
+            return true;
+        });
+        Painter probe=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),new Class<?>[]{Painter.class},(proxy,method,args)-> {
+            if(method.getName().equals("stamps"))return cache;
+            if(method.getName().equals("fillPoly")) {
+                int rgb=(Integer)args[1]&0xFFFFFF;
+                if(rgb==0x285C58 || rgb==0x285C4A) {
+                    float[] shape=(float[])args[0];int at=plants[0]++*2;
+                    roots[at]=(shape[0]+shape[34])*.5f;roots[at+1]=shape[1];
+                    tips[at]=(shape[16]+shape[18])*.5f;tips[at+1]=shape[17];
+                }
+            }
+            return null;
+        });
+        UnderwaterCave.draw(probe,c,L,1,1);
+        float[] idle=tips.clone(),anchored=roots.clone();int idleLight=light[0];
+        check("cave has a bounded scattered kelp population",plants[0]==UnderwaterCave.KELP_PATCHES*2);
+        b.octoVX[0][Boss.OCTO_NODES-1]=L.w;
+        check("tentacle current is stronger nearby",UnderwaterCave.current(b,L,L.w*.4f,L.h*.65f)
+                >UnderwaterCave.current(b,L,L.w,L.h*.1f)*2);
+        plants[0]=light[0]=0;UnderwaterCave.draw(probe,c,L,1,1);
+        float moved=0;for(int i=0;i<tips.length;i++)moved+=Math.abs(tips[i]-idle[i]);
+        check("tentacle motion bends kelp without uprooting it",moved>L.w*.03f && java.util.Arrays.equals(anchored,roots));
+        check("tentacle motion brightens cave glows",light[0]>idleLight);
+        int movingLight=light[0];b.damage(1);plants[0]=light[0]=0;
+        UnderwaterCave.draw(probe,c,L,1,1);
+        float struck=0;for(int i=0;i<tips.length;i++)struck+=Math.abs(tips[i]-idle[i]);
+        check("boss damage produces a stronger rooted kelp wave and light pulse",
+                struck>moved && light[0]>movingLight && java.util.Arrays.equals(anchored,roots));
+        b.hurt=0;b.octoDeath=.7f;
+        check("kelp damage surge follows tentacle recoil after the flash",UnderwaterCave.damagePulse(b)>.25f);
+        b.octoDeath=0;check("kelp damage surge fully settles",UnderwaterCave.damagePulse(b)==0);
+    }
     private static void cachedScenery(Layout L) {
         GameCore c=stage(L);c.waterRipples.prepare(c,L);
         float error=0;
@@ -141,7 +185,7 @@ final class TestUnderwater extends Check {
         };
         Painter probe=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),new Class<?>[]{Painter.class},(proxy,method,args)-> {
             if(method.getName().equals("stamps"))return cache;
-            if(method.getName().equals("fillPoly") || method.getName().equals("fillCircle"))fishShapes[0]++;
+            if(method.getName().equals("fillPoly") && ((float[])args[0]).length==16)fishShapes[0]++;
             draws[0]++;return null;
         });
         Underwater.backdrop(new OpacityPainter(probe,1),c,L);
@@ -153,7 +197,7 @@ final class TestUnderwater extends Check {
         c.waterRipples.cleared(c,L,L.w*.3f,L.h*.5f);c.clock+=.1f;stamps[0]=0;draws[0]=0;
         Underwater.backdrop(probe,c,L);
         check("cave clear lighting adds no geometry or texture passes",stamps[0]==3 && draws[0]<160);
-        c=stage(L);c.waterRipples.cleared(c,L,L.w*.5f,L.h*.5f);c.clock+=.1f;draws[0]=0;
+        c=stage(L);c.waterRipples.cleared(c,L,L.w*.5f,L.h*.5f);c.clock+=.1f;draws[0]=glows[0]=bands[0]=0;
         Underwater.veil(new OpacityPainter(probe,1),c,L);
         check("soft water effects use cached textures through wrappers",bands[0]==3 && glows[0]==1 && draws[0]<40);
         check("soft texture edges are fully transparent",(Underwater.waterPixel(64,0,true)>>>24)==0
