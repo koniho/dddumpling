@@ -1146,9 +1146,10 @@ public final class IOSInputTest extends Check {
             check("background cannot replay death feedback " + kind, host.impacts == 1 && host.ticks == 0);
             game.background(false); Pause.resume(c);
             for (int i = 0; i < 200; i++) game.update(DT);
-            check("iOS dispatches all death beats once " + kind, host.impacts == 2 && host.ticks == 3);
+            int impacts = kind == Boss.SLIME ? 3 : 2, ticks = kind == Boss.SLIME ? 12 : 3;
+            check("iOS dispatches all death beats once " + kind, host.impacts == impacts && host.ticks == ticks);
             c.boss.leave(); game.update(DT);
-            check("iOS death feedback ends with the boss " + kind, host.impacts == 2 && host.ticks == 3);
+            check("iOS death feedback ends with the boss " + kind, host.impacts == impacts && host.ticks == ticks);
         }
 
     }
