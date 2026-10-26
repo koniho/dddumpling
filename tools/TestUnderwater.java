@@ -79,7 +79,8 @@ final class TestUnderwater extends Check {
             c.landBlend=1;if(phase==1)c.boss.intro=Boss.INTRO*.5f;
             calls[0]=vertices[0]=0;
             Underwater.backdrop(probe,c,L);Underwater.veil(probe,c,L);
-            check("water geometry finite and bounded in phase "+phase+" ("+calls[0]+" draws, "+vertices[0]+" coordinates)",finite[0] && calls[0]<360 && vertices[0]<6000);
+            // Soft reefs and central dunes remain bounded without native blur or per-frame tessellation.
+            check("water geometry finite and bounded in phase "+phase+" ("+calls[0]+" draws, "+vertices[0]+" coordinates)",finite[0] && calls[0]<400 && vertices[0]<10000);
         }
     }
 }

@@ -12,8 +12,8 @@ final class UnderwaterCoral extends Draw {
     }
     static void draw(Painter p,float x,float y,float r,float t,int kind,float fade,int seed) {
         int color=COLORS[kind];float pulse=.8f+.2f*(float)Math.sin(t*.7f+kind);
-        // Uneven, nested contact shadows keep colonies attached to their rock ledges.
-        for(int layer=2;layer>=0;layer--)p.fillEllipse(x+r*.12f,y+r*.08f,r*(.65f+layer*.13f),r*(.13f+layer*.045f),ink(0xFF030916,fade*(layer==0?95:26)));
+        // The reef shares one upper-left light: soft colony shadows spread down and right.
+        for(int layer=2;layer>=0;layer--)p.fillEllipse(x+r*(.20f+layer*.10f),y+r*(.16f+layer*.07f),r*(.65f+layer*.13f),r*(.19f+layer*.055f),ink(0xFF030916,fade*(layer==0?80:21)));
         p.fillEllipse(x,y-r*.30f,r*1.10f,r*.77f,ink(color,fade*pulse*8));
         if(kind==0)fan(p,x,y,r,t,color,fade,seed);
         else if(kind==1)tubes(p,x,y,r,color,fade,seed);

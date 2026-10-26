@@ -4,7 +4,18 @@ package com.dddumpling.game;
 final class Underwater extends Draw {
     static final int LAND=2;
     private static final int WATER=0xFF080F24, LIGHT=0xFF8BCFDF;
+    private static final float[][] ROCK_RIMS=rockRims();
     private Underwater() {}
+    private static float[][] rockRims() {
+        float[][] shapes=new float[12][40];
+        for(int seed=0;seed<shapes.length;seed++)for(int j=0;j<20;j++) {
+            float angle=j*Softbody.TAU/20;
+            float edge=1+.065f*(float)Math.sin(angle*3+seed*.7f)+.035f*(float)Math.cos(angle*5+seed);
+            shapes[seed][j*2]=(float)Math.cos(angle)*edge;
+            shapes[seed][j*2+1]=(float)Math.sin(angle)*edge;
+        }
+        return shapes;
+    }
 
     static float caveProgress(GameCore c) {
         if(c.survival.active || c.state==GameCore.TITLE)return 0;
@@ -34,6 +45,8 @@ final class Underwater extends Draw {
         for(int layer=3;layer>=0;layer--)p.fillEllipse(L.w*.54f,L.h*.40f,
                 L.w*(.38f+layer*.15f),L.h*(.23f+layer*.12f),ink(0xFF243B69,fade*(6+layer*2)*(1-cave*.65f)));
         rays(p,c,L,fade*(1-cave*.70f));
+        sandDunes(p,c,L,fade);
+        scatteredRocks(p,c,L,fade);
         if(cave<1)reefs(p,c,L,fade*(1-cave),cave*L.h*.36f);
         if(cave>0)cave(p,c,L,fade,cave);
         caustics(p,c,L,fade*(1-cave*.45f),false);
@@ -78,26 +91,59 @@ final class Underwater extends Draw {
     }
 
     private static void cliff(Painter p,float x,float y,float w,float h,int side,float fade,int seed) {
-        float[] outline={0,-1,.38f,-.91f,.67f,-.66f,.62f,-.39f,.94f,-.16f,1,.06f,
-                .87f,.30f,.55f,.36f,.67f,.58f,.38f,.84f,0,1,-.4f,1,-.4f,-1};
-        float[] shape=new float[outline.length];
-        for(int layer=0;layer<3;layer++) {
-            float inset=layer*.13f;
-            for(int j=0;j<shape.length;j+=2) {
-                shape[j]=x+side*w*(outline[j]*(1-inset)-inset*.3f);
-                shape[j+1]=y+h*(outline[j+1]*(1-layer*.06f)-layer*.045f);
+        rock(p,x+side*w*.02f,y,w,h,fade,seed);
+    }
+
+    /** Rounded erosion contours with a broad upper-left highlight and a down-right cast shadow. */
+    private static void rock(Painter p,float x,float y,float w,float h,float fade,int seed) {
+        float[] shape=new float[40],rim=ROCK_RIMS[seed%ROCK_RIMS.length];
+        for(int layer=0;layer<6;layer++) {
+            float scale=layer==0?1.20f:layer==1?1.06f:layer==2?1.07f:layer==3?1:layer==4?.88f:.66f;
+            float dx=layer<2?w*(layer==0?.40f:.29f):layer>3?-w*(layer-3)*.085f:0;
+            float dy=layer<2?h*(layer==0?.24f:.17f):layer>3?-h*(layer-3)*.065f:0;
+            for(int j=0;j<20;j++) {
+                shape[j*2]=x+dx+rim[j*2]*w*scale;
+                shape[j*2+1]=y+dy+rim[j*2+1]*h*scale;
             }
-            if(layer==0) {
-                p.strokePoly(shape,ink(0xFF0C1425,fade*16),w*.15f);
-                p.strokePoly(shape,ink(0xFF0C1425,fade*28),w*.07f);
-            }
-            p.fillPoly(shape,ink(layer==0?0xFF080C15:layer==1?0xFF282D37:0xFF42464E,fade*(layer==0?240:190)));
+            int col=layer<2?0xFF020714:layer==2?0xFF1C2534:layer==3?0xFF252C38:layer==4?0xFF424953:0xFF59616B;
+            int alpha=layer==0?19:layer==1?45:layer==2?28:layer==3?210:layer==4?89:37;
+            p.fillPoly(shape,ink(col,fade*alpha));
         }
-        // Broken mineral shelves and lit edges follow the rock instead of outlining every facet.
-        for(int j=0;j<3;j++) {
-            float yy=y+h*(-.65f+j*.51f),reach=w*(.49f+hash(seed+j)*.23f);
-            p.fillPoly(new float[]{x,yy-h*.10f,x+side*reach*.74f,yy-h*.04f,
-                    x+side*reach,yy+h*.03f,x+side*reach*.42f,yy+h*.055f,x,yy+h*.01f},ink(0xFF81858D,fade*42));
+    }
+
+    private static void sandDunes(Painter p,GameCore c,Layout L,float fade) {
+        float[] dune=new float[44];
+        for(int i=0;i<6;i++) {
+            int seed=3809+i*83,depth=i%2;
+            float r=L.w*(.16f+hash(seed)*.22f),height=r*(.12f+hash(seed+5)*.13f);
+            float span=L.h+height*8,x=L.w*(.15f+hash(seed+9)*.70f);
+            float y=(hash(seed+13)*span+c.skyClock*L.h*(depth==0?.009f:.019f))%span-height*4;
+            float slope=(hash(seed+17)-.5f)*.38f;
+            for(int layer=0;layer<3;layer++) {
+                for(int j=0;j<11;j++) {
+                    float u=j/10f,edge=(float)Math.sin(u*Math.PI);
+                    float xx=x+(u-.5f)*r*2;
+                    float crest=y+height*((float)Math.sin(u*4.1f+hash(seed+3)*2)*.5f+slope*u*5);
+                    // A steep lit ridge rolls into a wider, down-right lee slope; ends taper away.
+                    float above=height*edge*(layer==0?.45f:layer==1?.20f:.035f);
+                    float below=height*edge*(layer==0?1.55f:layer==1?.70f:.12f);
+                    dune[j*2]=xx+(layer==0?height*.25f:0);dune[j*2+1]=crest-above;
+                    dune[(21-j)*2]=dune[j*2];dune[(21-j)*2+1]=crest+below;
+                }
+                int color=layer==0?0xFF080F1D:layer==1?0xFF40515B:0xFF78827D;
+                float alpha=layer==0?52:layer==1?24:25;
+                p.fillPoly(dune,ink(color,fade*alpha*(depth==0?.55f:.90f)));
+            }
+        }
+    }
+
+    private static void scatteredRocks(Painter p,GameCore c,Layout L,float fade) {
+        for(int i=0;i<10;i++) {
+            int seed=2803+i*53;
+            float r=L.w*(.025f+hash(seed)*.045f),span=L.h+r*6;
+            float y=(hash(seed+11)*span+c.skyClock*L.h*(.010f+i%2*.006f))%span-r*3;
+            float x=L.w*(.07f+hash(seed+7)*.86f);
+            rock(p,x,y,r,r*(.64f+hash(seed+19)*.60f),fade*(.22f+i%3*.065f),seed);
         }
     }
 
@@ -111,7 +157,7 @@ final class Underwater extends Draw {
             for(int j=0;j<=21;j++) {
                 float x=(j/21f*1.2f-.1f)*L.w,u=Math.abs(x/L.w-.51f)*2;
                 roof[2+j*2]=x;
-                roof[3+j*2]=top+L.h*(.20f*u*u+.017f*(float)Math.sin(j*2.3f+layer));
+                roof[3+j*2]=top+L.h*(.20f*u*u+.011f*(float)Math.sin(j*.72f+layer));
             }
             roof[46]=L.w*1.1f;roof[47]=-L.h;roof[48]=-L.w*.1f;roof[49]=-L.h;
             p.fillPoly(roof,ink(layer==0?0xFF3B3F49:layer==1?0xFF252A35:0xFF121822,fade*(135+layer*45)));
@@ -134,20 +180,20 @@ final class Underwater extends Draw {
     }
 
     private static void garden(Painter p,GameCore c,Layout L,float x,float y,float r,float fade,int seed,int kind) {
-        float[] ribbon=new float[68];
+        float[] ribbon=new float[44];
         for(int stem=0;stem<3;stem++) {
             float base=x+(stem-1)*r*.35f,height=r*(2.4f+hash(seed+stem)*2.0f);
             // Travelling bends grow from a fixed holdfast; uneven widths twist along each blade.
             for(int layer=0;layer<2;layer++) {
-                for(int j=0;j<17;j++) {
-                    float u=j/16f,phase=c.clock*(.9f+stem*.11f)+seed;
+                for(int j=0;j<11;j++) {
+                    float u=j/10f,phase=c.clock*(.9f+stem*.11f)+seed;
                     float bend=u*r*(.32f*(float)Math.sin(phase-u*4.5f)
                             +.18f*u*(float)Math.sin(phase*1.4f-u*9+stem));
                     float xx=base+bend+(stem-1)*r*.13f*u,yy=y-u*height;
                     float width=r*(.035f+.030f*(float)Math.pow(Math.sin(u*13+seed),2))*(1-u*.94f);
                     if(layer==1){xx-=width*.25f;width*=.23f;}
                     ribbon[j*2]=xx-width;ribbon[j*2+1]=yy;
-                    ribbon[(33-j)*2]=xx+width;ribbon[(33-j)*2+1]=yy;
+                    ribbon[(21-j)*2]=xx+width;ribbon[(21-j)*2+1]=yy;
                 }
                 p.fillPoly(ribbon,ink(layer==0?0xFF274C51:0xFF669280,fade*(layer==0?210:100)));
             }
@@ -176,8 +222,8 @@ final class Underwater extends Draw {
     static void veil(Painter p,GameCore c,Layout L) {
         float fade=presence(c)*(1-BossVictory.backdropDrain(c));if(fade<=.001f)return;
         p=new WaterPainter(p,c,L,.6f);
-        p.save();p.clipRect(0,L.playTop,L.w,L.dangerY);
-        caustics(p,c,L,fade*.40f,true);
+        p.save();p.clipRect(0,L.playTop,L.w,L.h);
+        caustics(p,c,L,fade,true);
         for(int i=0;i<14;i++) {
             float span=L.deckTop+40,y=span-(hash(234+i)*span+c.clock*(8+i%3*3))%span;
             float x=L.w*hash(877+i)+(float)Math.sin(c.clock*.8f+i)*L.w*.013f,r=L.w*(.002f+hash(57+i)*.003f);
@@ -186,19 +232,24 @@ final class Underwater extends Draw {
         p.restore();
     }
     private static void caustics(Painter p,GameCore c,Layout L,float fade,boolean front) {
-        float[] ribbon=new float[36];
-        for(int i=0;i<(front?6:14);i++) {
-            float span=L.deckTop+L.h*.2f,y=(hash(i+571)*span+c.skyClock*L.h*.016f)%span-L.h*.10f;
-            float x=L.w*hash(i+813),r=L.w*(.09f+hash(i+21)*.09f),phase=c.clock*.63f+i;
-            float pulse=.4f+.6f*(float)Math.pow(Math.sin(phase),2);
-            for(int j=0;j<9;j++) {
-                float u=j/8f;
-                float xx=x+(u-.5f)*r*2,yy=y+r*.27f*(float)Math.sin(u*5+phase*.6f);
-                float width=r*.025f*(float)Math.sin(u*Math.PI);
-                ribbon[j*2]=ribbon[(17-j)*2]=xx;
-                ribbon[j*2+1]=yy-width;ribbon[(17-j)*2+1]=yy+width;
+        float[] ribbon=new float[52];
+        int count=front?7:6;
+        for(int i=0;i<count;i++) {
+            float span=L.h*1.3f,y=(hash(i+571)*span+c.skyClock*L.h*.016f)%span-L.h*.15f;
+            float x=L.w*hash(i+813),r=L.w*(.27f+hash(i+21)*.22f),phase=c.clock*.63f+i;
+            float pulse=.6f+.4f*(float)Math.pow(Math.sin(phase),2);
+            for(int layer=0;layer<(front?3:1);layer++) {
+                float breadth=front?(.16f-layer*.052f):.10f;
+                for(int j=0;j<13;j++) {
+                    float u=j/12f;
+                    float xx=x+(u-.5f)*r*2;
+                    float yy=y+r*(.23f*(float)Math.sin(u*5+phase*.6f)+.07f*(float)Math.sin(u*9-phase*.4f));
+                    float width=r*breadth*(float)Math.sin(u*Math.PI);
+                    ribbon[j*2]=ribbon[(25-j)*2]=xx;
+                    ribbon[j*2+1]=yy-width;ribbon[(25-j)*2+1]=yy+width;
+                }
+                p.fillPoly(ribbon,ink(LIGHT,fade*pulse*(front?6:4)));
             }
-            p.fillPoly(ribbon,ink(LIGHT,fade*pulse*14));
         }
     }
 

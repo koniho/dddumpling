@@ -109,7 +109,6 @@ final class Renderer extends Draw {
         // translucent of the three: it drifts over the play area and must never hide a letter.
         Sky.cloudBand(p, c, L, Sky.CLOUD_FRONT_LAYER, GameCore.CLOUD_LAYERS, hurt);
 
-        Underwater.veil(p,c,L);
         if(c.state==GameCore.PLAY && c.ninja())c.ninjaSlashes.draw(p,L);
         p.save();p.translate(0,c.starter.keyOffset(L));
         if (!(c.state == GameCore.BONUS && c.starBonus)) keys(p, c, L);
@@ -125,6 +124,9 @@ final class Renderer extends Draw {
         c.survival.drawRescue(p,c,L);
         // The grown TEAM form flies in front of the home while it leaves the key deck.
         if(c.buddy.entryLeft>0f) buddy(p,c,L);
+
+        // Water light crosses the boss, enemies, effects, companion and keys; HUD stays readable.
+        Underwater.veil(p,c,L);
 
         // Red closing-in glow: from low health, and from a word about to land.
         Sky.vignette(p, L, ROSE, Math.max(hurt, c.warnLevel * (0.45f + 0.55f * hurtPulse)));
