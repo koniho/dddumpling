@@ -46,23 +46,42 @@ final class TestUnderwater extends Check {
         check("enemy refraction is much smaller than scenery",Math.abs(Underwater.enemyShift(c,x,y,L))<=L.w*.0022f);
         c.survival.active=true;
         check("enemy refraction is absent in other modes",Underwater.enemyShift(c,x,y,L)==0);
-        ripples(L);
+        clearGlows(L);
         cachedScenery(L);
         geometry(L);
     }
-    private static void ripples(Layout L) {
-        GameCore c=stage(L);float x=L.w*.45f,y=L.h*.45f;
+    private static void clearGlows(Layout L) {
+        GameCore c=stage(L),control=stage(L);float x=L.w*.45f,y=L.h*.45f;
+        final int[] calls={0},dots={0};final float[] centre={0},point=new float[2];
+        Painter probe=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),new Class<?>[]{Painter.class},(proxy,method,args)-> {
+            if(method.getName().equals("fillEllipse")){calls[0]++;centre[0]=(Float)args[1];}
+            if(method.getName().equals("fillCircle")) {
+                if(dots[0]++==0){point[0]=(Float)args[0];point[1]=(Float)args[1];}
+            }
+            return null;
+        });
         GameCore.Enemy e=new GameCore.Enemy();e.word=new int[]{0};e.need=new int[]{1};e.baseX=x;e.y=y;
-        c.enemies.add(e);c.destroyWord(e,x,y,L,false);c.clock+=.08f;c.waterRipples.prepare(c,L);
-        check("real enemy clear increases local refraction",Math.abs(c.waterRipples.shift(e.clearX,y,L.w))>L.w*.01f);
-        check("clear refraction leaves distant scenery alone",c.waterRipples.shift(e.clearX,y+L.h*.7f,L.w)==0);
+        c.enemies.add(e);c.destroyWord(e,x,y,L,false);c.clock+=.08f;control.clock=c.clock;
+        c.waterRipples.drawGlows(probe,c,L,1);
+        check("real enemy clear creates an underwater glow",calls[0]>0);
+        control.waterRipples.prepare(control,L);
+        check("clear does not distort nearby rocks or enemies",c.waterRipples.refract(x,y)==control.waterRipples.refract(x,y)
+                && Underwater.enemyShift(c,x,y,L)==Underwater.enemyShift(control,x,y,L));
+        check("clear emits a bounded group of glowing plankton",dots[0]==WaterRipples.PLANKTON*2);
+        float ax=point[0],ay=point[1];c.clock+=.25f;dots[0]=0;c.waterRipples.drawGlows(probe,c,L,1);
+        float bx=point[0],by=point[1];c.clock+=.25f;dots[0]=0;c.waterRipples.drawGlows(probe,c,L,1);
+        float cross=(bx-ax)*(point[1]-by)-(by-ay)*(point[0]-bx);
+        check("plankton dispersal bends instead of following straight rays",Math.abs(cross)>.01f);
+        float start=centre[0];c.skyClock+=1;c.waterRipples.drawGlows(probe,c,L,1);
+        check("clear glow follows the seabed",Math.abs(centre[0]-start-L.h*Underwater.SCROLL)<.001f);
         for(int i=0;i<20;i++)c.waterRipples.cleared(c,L,x,y);
-        c.clock+=.08f;c.waterRipples.prepare(c,L);
-        check("many clears have a capped refraction amplitude",Math.abs(c.waterRipples.shift(x,y,L.w))<=L.w*.0281f);
-        c.clock+=WaterRipples.DURATION;c.waterRipples.prepare(c,L);
-        check("local clear wobble fully settles",c.waterRipples.shift(x,y,L.w)==0);
-        c.waterRipples.cleared(c,L,x,y);c.toTitle();c.waterRipples.prepare(c,L);
-        check("return to title clears water impulses",c.waterRipples.shift(x,y,L.w)==0);
+        c.clock+=.08f;calls[0]=dots[0]=0;c.waterRipples.drawGlows(probe,c,L,1);
+        check("many clears keep glow and plankton drawing bounded",calls[0]>0 && calls[0]<=WaterRipples.COUNT*12
+                && dots[0]<=WaterRipples.COUNT*WaterRipples.PLANKTON*2);
+        c.clock+=WaterRipples.DURATION;calls[0]=dots[0]=0;c.waterRipples.drawGlows(probe,c,L,1);
+        check("clear glows and plankton fully fade out",calls[0]==0 && dots[0]==0);
+        c.waterRipples.cleared(c,L,x,y);c.toTitle();calls[0]=dots[0]=0;c.waterRipples.drawGlows(probe,c,L,1);
+        check("return to title clears glows and plankton",calls[0]==0 && dots[0]==0);
     }
     private static void cachedScenery(Layout L) {
         GameCore c=stage(L);c.waterRipples.prepare(c,L);

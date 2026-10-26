@@ -3218,7 +3218,7 @@ final class Preview {
             water.waterRipples.cleared(water,L,L.w*.18f,L.h*.64f);
             for(int frame=0;frame<3;frame++) {
                 water.clock=25.08f+frame*.13f;
-                shot(dir,"underwater-clear-wobble-"+frame,water,L,w,h,ss);
+                shot(dir,"underwater-clear-glow-"+frame,water,L,w,h,ss);
             }
             for(float time:new float[]{.4f,.95f,1.6f}) {
                 GameCore arena=TestBossRetry.fight(L,Boss.OCTOPUS);arena.landBlend=1;

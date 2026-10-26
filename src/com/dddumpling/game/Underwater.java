@@ -50,6 +50,7 @@ final class Underwater extends Draw {
                 L.w*(.38f+layer*.15f),L.h*(.23f+layer*.12f),ink(0xFF243B69,fade*(6+layer*2)*(1-cave*.65f)));
         rays(p,c,L,fade*(1-cave*.70f));
         sandDunes(p,c,L,fade);
+        groundTexture(p,c,L,fade);
         scatteredRocks(p,c,L,fade);
         if(cave<1)reefs(p,c,L,fade*(1-cave),cave*L.h*.36f);
         if(cave>0)cave(p,c,L,fade,cave);
@@ -185,6 +186,25 @@ final class Underwater extends Draw {
         }
     }
 
+    private static void groundTexture(Painter p,GameCore c,Layout L,float fade) {
+        float[] groove=new float[12];
+        for(int i=0;i<12;i++) {
+            int seed=6239+i*83;
+            float span=L.h*1.2f,y=(hash(seed)*span+scrollY(c,L,0))%span-L.h*.1f;
+            float x=L.w*(.10f+hash(seed+3)*.8f),r=L.w*(.025f+hash(seed+9)*.045f);
+            float slope=(hash(seed+5)-.5f)*.75f;
+            for(int layer=0;layer<2;layer++) {
+                for(int j=0;j<6;j++) {
+                    float u=j/5f;
+                    groove[j*2]=x+(u-.5f)*r*2+layer*L.w*.002f;
+                    groove[j*2+1]=y+r*(slope*u+.12f*(float)Math.sin(u*5+seed))+layer*L.w*.003f;
+                }
+                p.polyline(groove,ink(layer==0?0xFF829394:0xFF020A14,fade*(layer==0?14:45)),
+                        L.w*(layer==0?.0015f:.003f));
+            }
+        }
+    }
+
     private static void scatteredRocks(Painter p,GameCore c,Layout L,float fade) {
         for(int i=0;i<10;i++) {
             int seed=2803+i*53;
@@ -243,31 +263,53 @@ final class Underwater extends Draw {
             float plants=stageFade*shelfPlantFade(c,L,y,r,cave);
             if(plants>.025f)garden(p,c,L,L.w*(i%2==0?.35f:.65f),y,r,plants,seed,i);
         }
+        if(stageFade>.025f)for(int i=0;i<24;i++) {
+            int seed=5107+i*101;
+            float span=L.h*1.65f,y=(i*span/24+hash(seed+7)*L.h*.06f+scrollY(c,L,0))%span-L.h*.15f;
+            float r=L.w*(.018f+hash(seed+3)*.011f);
+            if(y+r<0 || y-r*6>L.h)continue;
+            float plants=stageFade*shelfPlantFade(c,L,y,r,cave);
+            float x=L.w*((i%2==0?.35f:.65f)+(hash(seed+11)-.5f)*.055f);
+            if(plants>.025f)kelp(p,c,x,y,r,plants,seed,2);
+        }
         float caveFade=fade*smooth((cave-.45f)/.55f);
         if(caveFade>.025f)for(int i=0;i<2;i++)garden(p,c,L,L.w*(i==0?.35f:.65f),
                 L.deckTop-L.h*.055f,L.w*.043f,caveFade,4261+i*79,i==0?2:3);
+        if(caveFade>.025f)for(int i=0;i<4;i++)kelp(p,c,L.w*(.36f+i*.09f),
+                L.deckTop-L.h*(.09f+hash(533+i)*.15f),L.w*(.021f+hash(87+i)*.008f),
+                caveFade,5591+i*73,2);
     }
 
     private static void garden(Painter p,GameCore c,Layout L,float x,float y,float r,float fade,int seed,int kind) {
-        float[] ribbon=new float[44];
-        for(int stem=0;stem<3;stem++) {
-            float base=x+(stem-1)*r*.35f,height=r*(2.4f+hash(seed+stem)*2.0f);
-            // Travelling bends grow from a fixed holdfast; uneven widths twist along each blade.
-            for(int layer=0;layer<2;layer++) {
-                for(int j=0;j<11;j++) {
-                    float u=j/10f,phase=c.clock*(.9f+stem*.11f)+seed;
-                    float bend=u*r*(.32f*(float)Math.sin(phase-u*4.5f)
-                            +.18f*u*(float)Math.sin(phase*1.4f-u*9+stem));
-                    float xx=base+bend+(stem-1)*r*.13f*u,yy=y-u*height;
-                    float width=r*(.035f+.030f*(float)Math.pow(Math.sin(u*13+seed),2))*(1-u*.94f);
-                    if(layer==1){xx-=width*.25f;width*=.23f;}
-                    ribbon[j*2]=xx-width;ribbon[j*2+1]=yy;
-                    ribbon[(21-j)*2]=xx+width;ribbon[(21-j)*2+1]=yy;
-                }
-                p.fillPoly(ribbon,ink(layer==0?0xFF274C51:0xFF669280,fade*(layer==0?210:100)));
-            }
-        }
+        kelp(p,c,x,y,r,fade,seed,3);
         UnderwaterCoral.draw(p,x+r*.25f,y+r*.04f,r*.85f,c.clock+seed,kind,fade,seed);
+    }
+    private static void kelp(Painter p,GameCore c,float x,float y,float r,float fade,int seed,int stems) {
+        float[] blade=new float[36],shadow=new float[36],edge=new float[36];
+        for(int stem=0;stem<stems;stem++) {
+            float spread=seed%3==0?.8f:seed%3==1?.3f:.55f;
+            float base=x+(stem-(stems-1)*.5f)*r*spread;
+            float root=y+r*(hash(seed+stem+19)-.5f)*.45f;
+            float height=r*(1.8f+hash(seed+stem)*4.1f);
+            for(int j=0;j<9;j++) {
+                float u=j/8f,phase=c.clock*(.9f+stem*.11f)+seed;
+                float bend=u*r*(.32f*(float)Math.sin(phase-u*4.5f)
+                        +.18f*u*(float)Math.sin(phase*1.4f-u*9+stem));
+                float lean=(stem-(stems-1)*.5f)*r*.25f*u;
+                float xx=base+bend+lean,yy=root-u*height;
+                float width=r*(.045f+.035f*(float)Math.pow(Math.sin(u*13+seed),2))*(1-u*.94f);
+                int left=j*2,right=(17-j)*2;
+                blade[left]=xx-width;blade[right]=xx+width;blade[left+1]=blade[right+1]=yy;
+                edge[left]=xx-width*.45f;edge[right]=xx-width*.10f;edge[left+1]=edge[right+1]=yy;
+                // Upper-left light projects each waving blade down-right onto the seabed.
+                float sx=xx+u*height*.62f,sy=root+u*height*.30f;
+                shadow[left]=sx-width*1.8f;shadow[right]=sx+width*1.8f;
+                shadow[left+1]=shadow[right+1]=sy;
+            }
+            p.fillPoly(shadow,ink(0xFF010714,fade*75));
+            p.fillPoly(blade,ink(0xFF274C51,fade*210));
+            if(stems>=3)p.fillPoly(edge,ink(0xFF669280,fade*90));
+        }
     }
 
     private static void fish(Painter p,GameCore c,Layout L,float fade) {
@@ -293,6 +335,7 @@ final class Underwater extends Draw {
         p=new WaterPainter(p,c,L,.6f);
         p.save();p.clipRect(0,0,L.w,L.h);
         p.fillRect(0,0,L.w,L.h,ink(0xFF538BA0,fade*10));
+        c.waterRipples.drawGlows(p,c,L,fade);
         haze(p,c,L,fade);
         for(int i=0;i<14;i++) {
             float span=L.deckTop+40,y=span-(hash(234+i)*span+c.clock*(8+i%3*3))%span;

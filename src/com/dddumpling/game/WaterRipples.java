@@ -1,11 +1,14 @@
 package com.dddumpling.game;
 
-/** Bounded, local refraction impulses. Derived coefficients are prepared once per rendered frame. */
+/** Ambient water refraction and bounded clear glows, prepared once per rendered frame. */
 final class WaterRipples {
     static final int COUNT=4;
-    static final float DURATION=1.6f;
+    static final int PLANKTON=8;
+    static final float DURATION=1.8f;
+    private static final float GLOW_TIME=1.05f;
     private final float[] born=new float[COUNT],sky=new float[COUNT],x=new float[COUNT],y=new float[COUNT];
-    private final float[] px=new float[COUNT],py=new float[COUNT],amplitude=new float[COUNT],radius2=new float[COUNT];
+    private final float[] px=new float[COUNT],py=new float[COUNT],brightness=new float[COUNT],radius=new float[COUNT];
+    private final float[] ages=new float[COUNT],phase=new float[COUNT];
     private static final int COLS=8,ROWS=64;
     private final float[] field=new float[(COLS+1)*(ROWS+1)];
     final float[][] buffers=new float[96][];
@@ -23,15 +26,16 @@ final class WaterRipples {
         prepared=c.clock;preparedSky=c.skyClock;preparedWidth=L.w;preparedHeight=L.h;active=0;
         for(int i=0;i<COUNT;i++) {
             float age=c.clock-born[i];if(age<0 || age>=DURATION)continue;
-            float fade=1-age/DURATION,r=L.w*(.28f+age*.35f);
+            float fade=Math.max(0,1-age/GLOW_TIME);
             px[active]=x[i]*L.w;py[active]=y[i]*L.h+(c.skyClock-sky[i])*L.h*Underwater.SCROLL;
-            amplitude[active]=L.w*.055f*fade*fade*(float)Math.sin(age*19);
-            radius2[active]=r*r;active++;
+            brightness[active]=fade*fade*Math.min(1,.35f+age/.05f);
+            radius[active]=L.w*(.12f+age*.14f);
+            ages[active]=age;phase[active]=born[i]*.7f+x[i]*7+y[i]*3;active++;
         }
         // Evaluate waves once on a reusable grid, not for every vertex of every translucent layer.
         for(int row=0;row<=ROWS;row++)for(int col=0;col<=COLS;col++) {
             float xx=(col*2f/COLS-.5f)*L.w,yy=(row*2f/ROWS-.5f)*L.h;
-            field[row*(COLS+1)+col]=WaterPainter.shift(c.clock,xx,yy,L.w,1)+shift(xx,yy,L.w);
+            field[row*(COLS+1)+col]=WaterPainter.shift(c.clock,xx,yy,L.w,1);
         }
     }
     float refract(float x,float y) {
@@ -42,13 +46,38 @@ final class WaterRipples {
         float bottom=field[at+COLS+1]+(field[at+COLS+2]-field[at+COLS+1])*u;
         return top+(bottom-top)*v;
     }
-    float shift(float x,float y,float width) {
-        float sum=0;
+    void drawGlows(Painter p,GameCore c,Layout L,float fade) {
+        if(fade<=0)return;
+        prepare(c,L);
         for(int i=0;i<active;i++) {
-            float dx=x-px[i],dy=y-py[i],falloff=1-(dx*dx+dy*dy)/radius2[i];
-            if(falloff>0)sum+=amplitude[i]*falloff*falloff;
+            float previous=0;
+            for(int layer=0;layer<12;layer++) {
+                float distance=2.8f*(1-layer/12f);
+                float opacity=46*fade*brightness[i]*(float)Math.exp(-.5f*distance*distance);
+                int alpha=Math.round(opacity)-Math.round(previous);previous=opacity;
+                if(alpha<=0)continue;
+                int color=Glyph.mix(0xFF49B5CC,0xFFBBF5EB,layer/11f);
+                p.fillEllipse(px[i],py[i],radius[i]*distance,radius[i]*distance*.72f,
+                        Glyph.withAlpha(color,alpha));
+            }
+            plankton(p,L,i,fade);
         }
-        // Fast multi-clears remain lively without moving art away from its input targets.
-        return Math.max(-width*.028f,Math.min(width*.028f,sum));
+    }
+    private void plankton(Painter p,Layout L,int burst,float fade) {
+        float age=ages[burst],life=1-age/DURATION;
+        float spread=1-(float)Math.exp(-age*1.7f);
+        for(int j=0;j<PLANKTON;j++) {
+            float angle=j*Softbody.TAU/PLANKTON+phase[burst];
+            float dx=(float)Math.cos(angle),dy=(float)Math.sin(angle);
+            float travel=L.w*(.13f+.04f*(j%3))*spread;
+            float bend=L.w*.023f*spread*((float)Math.sin(age*(4+j%3)+angle)-(float)Math.sin(angle));
+            float xx=px[burst]+dx*travel-dy*bend;
+            float yy=py[burst]+dy*travel*.75f+dx*bend-age*L.h*.008f;
+            float shimmer=.78f+.22f*(float)Math.sin(age*8+angle);
+            float r=L.w*(.0025f+(j%3)*.0007f),alpha=fade*life*life*shimmer;
+            int color=j%3==0?0xFFB7F5CC:j%3==1?0xFF6ED8EE:0xFFD1F7EE;
+            p.fillCircle(xx,yy,r*3.6f,Glyph.withAlpha(color,(int)(alpha*22)));
+            p.fillCircle(xx,yy,r,Glyph.withAlpha(color,(int)(alpha*205)));
+        }
     }
 }
