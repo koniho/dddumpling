@@ -66,7 +66,7 @@ final class Sky extends Draw {
             tint = Glyph.mix(tint, Glyph.cycle(c.clock * 0.9f + layer * 0.22f), 0.60f * bite);
             alpha += (int) (alpha * 0.30f * bite);
         }
-        alpha=Math.round(alpha*(1f-MushroomForest.presence(c))*(1f-SlimeHills.presence(c))*(1f-CrystalField.presence(c)));
+        alpha=Math.round(alpha*(1f-MushroomForest.presence(c))*(1f-SlimeHills.presence(c))*(1f-CrystalField.presence(c))*(1f-Underwater.presence(c)));
         if(alpha<=0)return;
         float scale = cloudScale(layer);
         float h = cloudHeight(L, layer);

@@ -3199,6 +3199,28 @@ final class Preview {
             TestBossRetry.ready(loss,L);step(loss,L,.6f);
             shot(dir,"boss-arena-loss-"+kind+"-retry",loss,L,w,h,ss);
         }
+        if(wanted("underwater-")) {
+            GameCore water=TestUnderwater.stage(L);
+            for(int i=0;i<3;i++) {
+                GameCore.Enemy e=new GameCore.Enemy();e.word=new int[]{i,(i+1)%6,(i+3)%6};
+                e.need=new int[]{1,1,1};e.gone=new boolean[3];e.goneT=new float[3];e.goneDx=new float[3];e.goneDy=new float[3];
+                e.baseX=L.w*(.36f+i*.10f);e.y=L.h*(.29f+i*.17f);e.enterT=1;water.enemies.add(e);
+            }
+            for(int frame=0;frame<2;frame++) {
+                water.clock=water.skyClock=17+frame*8;
+                shot(dir,"underwater-reef-"+frame,water,L,w,h,ss);
+            }
+            for(float time:new float[]{.4f,.95f,1.6f}) {
+                GameCore arena=TestBossRetry.fight(L,Boss.OCTOPUS);arena.landBlend=1;
+                arena.clock=arena.skyClock=17;arena.boss.intro=Boss.INTRO-time;
+                shot(dir,"underwater-cave-"+Math.round(time*1000),arena,L,w,h,ss);
+            }
+            GameCore battle=TestBossRetry.fight(L,Boss.OCTOPUS);battle.landBlend=1;
+            step(battle,L,1.25f);shot(dir,"underwater-cave-battle",battle,L,w,h,ss);
+            GameCore loss=TestBossRetry.fight(L,Boss.OCTOPUS);loss.landBlend=1;
+            TestBossRetry.lose(loss,L);TestBossRetry.ready(loss,L);step(loss,L,.6f);
+            shot(dir,"underwater-cave-retry",loss,L,w,h,ss);
+        }
         if(wanted("crystal-arena-")) {
             for(float time:new float[]{0,.35f,.8f,1.2f,1.59f}) {
                 GameCore entry=TestCrystalField.arenaScene(L,0);

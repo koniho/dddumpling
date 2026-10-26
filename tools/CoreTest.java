@@ -58,6 +58,7 @@ final class CoreTest {
         });
         group("Stages", () -> {
             TestCrystalField.all(L);
+            TestUnderwater.all(L);
             TestStages.waves(L);
             TestStages.bonusOrdering(L);
             TestStages.bonusIntro(L);

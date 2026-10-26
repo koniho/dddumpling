@@ -141,6 +141,7 @@ final class BossScreen extends Draw {
         float fade = b.intro > 0f ? Math.min(1f, b.introProgress() * 1.6f)
                 : b.beaten && b.kind != Boss.SPLITTER ? Math.max(0f, 1f - b.defeatMelt() * b.defeatMelt()) : 1f;
         if(b.kind==Boss.SLIME)fade*=SlimeArrival.reveal(b);
+        if(b.kind==Boss.OCTOPUS)fade*=Underwater.bossReveal(b);
         fade *= alpha;
         if (fade <= 0.01f) return;
 

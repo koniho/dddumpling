@@ -2903,7 +2903,7 @@ final class GameCore {
         float skyRate=state==PLAY && boss.active() && boss.kind==Boss.RAINBOW_CAT?RainbowLand.BATTLE_SKY_RATE:1f;
         if(RainbowCatTaunt.retained(this) && dying())skyRate=RainbowCatTaunt.scrollRate(deathDuration()-deathT);
         float previousSky=skyClock;
-        skyClock += dt * (powerActive() ? Power.SKY_RATE : skyRate) * (1f-MushroomForest.groveProgress(this)) * (1f-SlimeBasin.progress(this));
+        skyClock += dt * (powerActive() ? Power.SKY_RATE : skyRate) * (1f-MushroomForest.groveProgress(this)) * (1f-SlimeBasin.progress(this)) * (1f-Underwater.caveProgress(this));
         slimeBubbles.update(this,L,dt,skyClock-previousSky);
         landBlend = Math.min(1f, landBlend + dt / Lands.FADE_TIME);
         LandPicker.updateDiscovery(this, dt);

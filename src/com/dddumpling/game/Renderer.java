@@ -109,6 +109,7 @@ final class Renderer extends Draw {
         // translucent of the three: it drifts over the play area and must never hide a letter.
         Sky.cloudBand(p, c, L, Sky.CLOUD_FRONT_LAYER, GameCore.CLOUD_LAYERS, hurt);
 
+        Underwater.veil(p,c,L);
         if(c.state==GameCore.PLAY && c.ninja())c.ninjaSlashes.draw(p,L);
         p.save();p.translate(0,c.starter.keyOffset(L));
         if (!(c.state == GameCore.BONUS && c.starBonus)) keys(p, c, L);
@@ -334,6 +335,7 @@ final class Renderer extends Draw {
             if (e.failPulse > 0) col = Glyph.mix(col, ROSE, e.failPulse * 0.75f);
             if (attack > 0) col = Glyph.mix(col, ROSE, attack * 0.35f);
             col=Glyph.mix(col,SwampEnemies.FOG_INK,fogTint);
+            col=Underwater.enemyColor(c,col,y,L);
 
             // Cleared letters stay put — the word only leaves once it is fully typed — but
             // recede so the remaining letters are what the eye lands on.
@@ -363,6 +365,8 @@ final class Renderer extends Draw {
                 p.strokePoly(Glyph.hex(x, y, cellR), Glyph.withAlpha(col, edgeA * fade / 255),
                         cellR * (0.075f+0.045f*bondFlex));
             }
+
+            if(!starTile)Underwater.tileLight(p,c,L,x,y,cellR,fade);
 
             float charR = cellR * 0.60f * (1f + 0.045f * (float) Math.sin(wobble))
                     * (1f + 0.34f * pop);
