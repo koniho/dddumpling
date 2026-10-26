@@ -1,4 +1,5 @@
 #import "com/dddumpling/game/SlimeBasinArt.h"
+#import "com/dddumpling/game/UnderwaterVista.h"
 #import <XCTest/XCTest.h>
 #import "DDPainter.h"
 #import "IOSPrimitiveArray.h"
@@ -97,15 +98,19 @@
   CGContextRef context=CGBitmapContextCreate(pixels,128,256,8,128*4,space,kCGImageAlphaPremultipliedLast);
   DDIOSPainter *painter=[DDIOSPainter new];painter.context=context;
   CGAffineTransform before=CGContextGetCTM(context);
-  for(int pass=0;pass<2;pass++)for(int art=0;art<7;art++) {
+  for(int pass=0;pass<2;pass++)for(int art=0;art<DDUnderwaterVista_COUNT;art++) {
     memset(pixels,0,sizeof(pixels));
     XCTAssertTrue([painter reefVistaWithInt:art withFloat:0 withFloat:0 withFloat:128 withFloat:256 withInt:80]);
     unsigned char peak=0;for(int i=3;i<sizeof(pixels);i+=4)peak=MAX(peak,pixels[i]);
     XCTAssertGreaterThan(peak,0);XCTAssertLessThanOrEqual(peak,80);
+    if(art==0) {
+      unsigned char minimum=255;for(int i=3;i<sizeof(pixels);i+=4)minimum=MIN(minimum,pixels[i]);
+      XCTAssertEqual(minimum,80, @"Backdrop must not have transparent row seams");
+    }
     XCTAssertEqual(painter.context,context);
     XCTAssertTrue(CGAffineTransformEqualToTransform(before,CGContextGetCTM(context)));
   }
-  XCTAssertFalse([painter reefVistaWithInt:7 withFloat:0 withFloat:0 withFloat:128 withFloat:256 withInt:255]);
+  XCTAssertFalse([painter reefVistaWithInt:DDUnderwaterVista_COUNT withFloat:0 withFloat:0 withFloat:128 withFloat:256 withInt:255]);
   XCTAssertFalse([painter reefVistaWithInt:0 withFloat:0 withFloat:0 withFloat:0 withFloat:256 withInt:255]);
   painter.context=NULL;CGContextRelease(context);CGColorSpaceRelease(space);
 }

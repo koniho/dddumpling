@@ -49,6 +49,7 @@ final class TestUnderwater extends Check {
         clearGlows(L);
         cachedScenery(L);
         perspective(L);
+        backdropSeams();
         monochrome(L);
         geometry(L);
     }
@@ -202,6 +203,34 @@ final class TestUnderwater extends Check {
             bounded&=stamps[0]>4 && stamps[0]<=21 && calls[0]<80;
         }
         check("detailed reef artwork stays cached and bounded throughout travel",valid[0] && bounded);
+    }
+    private static void backdropSeams() {
+        final double[] coverage=new double[512];
+        Painter probe=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),new Class<?>[]{Painter.class},(proxy,method,args)-> {
+            if(method.getName().equals("fillRect")) {
+                float top=(Float)args[1],bottom=(Float)args[3];int color=(Integer)args[4];
+                for(int row=0;row<coverage.length;row++) {
+                    double alpha=Math.max(0,Math.min(row+1,bottom)-Math.max(row,top))*(color>>>24)/255;
+                    coverage[row]+=alpha*(1-coverage[row]);
+                }
+            }
+            return null;
+        });
+        UnderwaterVista.paint(probe,0);
+        boolean opaque=true;for(double alpha:coverage)opaque&=alpha>.999;
+        check("antialiased water gradient has no transparent horizontal seams",opaque);
+        boolean overlap=true,curved=false;
+        for(int i=0;i<40;i++) {
+            float t=i/100f,y=UnderwaterVista.rootY(t),floorDepth=(y-.48f)/.60f;
+            for(int side=0;side<2;side++) {
+                float x=UnderwaterVista.columnX(t,side);
+                overlap&=x>UnderwaterVista.floorEdge(floorDepth,-1,5) && x<UnderwaterVista.floorEdge(floorDepth,1,5);
+            }
+            curved|=Math.abs(UnderwaterVista.horizon(.3f+i*.01f)-UnderwaterVista.horizon(.3f))>.015f;
+        }
+        check("distant seabed reaches beneath both banks with a meandering horizon",overlap && curved);
+        check("distant columns darken into water and recover their near palette",UnderwaterVista.depthShade(.1f)<.3f
+                && UnderwaterVista.depthShade(.7f)>UnderwaterVista.depthShade(.1f) && UnderwaterVista.depthShade(1)==1);
     }
     private static void monochrome(Layout L) {
         final int[] calls={0},stamps={0};final float[] received={-1};

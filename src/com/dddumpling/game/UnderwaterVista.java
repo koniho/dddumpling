@@ -11,6 +11,7 @@ final class UnderwaterVista extends Draw {
     static float depth(float travel) {return travel/(4-3*travel);}
     static float visibility(float travel) {return smooth(travel/.22f);}
     static float rootY(float travel) {return .50f+depth(travel)*.82f;}
+    static float depthShade(float travel) {return .18f+.82f*smooth(depth(travel)*1.8f);}
     static float scale(float travel) {return .16f+depth(travel)*1.50f;}
 
     static float columnHeight(float travel,float width) {
@@ -41,7 +42,7 @@ final class UnderwaterVista extends Draw {
             int art=1+2*Math.floorMod(row-cycle+side*3,ROWS)+side;
             float x=L.w*columnX(t,side),y=L.h*rootY(t),w=L.w*COLUMN_WIDTH*s,h=columnHeight(t,L.w*.60f*s);
             if(x+w*.5f<0 || x-w*.5f>L.w)continue;
-            float alpha=fade*visibility(t)*(.38f+.62f*smooth(d*2.4f));
+            float alpha=fade*visibility(t)*depthShade(t);
             image(p,art,x-w*.5f,y-h*.90f,w,h,alpha);
         }
         for(int i=0;i<18;i++) {
@@ -168,31 +169,44 @@ final class UnderwaterVista extends Draw {
         for(int row=0;row<80;row++) {
             float t=(row+.5f)/80;
             int col=Glyph.mix(0xFF17546F,0xFF0B203E,smooth(t));
-            p.fillRect(x,y+h*row/80,x+w,y+h*(row+1)/80,ink(col,a*255));
+            // Integer texel boundaries avoid antialiased gaps between adjacent strips.
+            p.fillRect(x,y+(float)Math.floor(h*row/80),x+w,y+(float)Math.floor(h*(row+1)/80),ink(col,a*255));
         }
         for(int layer=63;layer>=0;layer--) {
             float t=layer/63f;
             p.fillEllipse(x+w*.48f,y-h*.06f,w*(.13f+t*.52f),h*(.15f+t*.54f),ink(0xFF75DFDD,a*1.8f));
         }
-        // A warmer seabed separates the perspective floor from blue open water.
-        // Baked with the backdrop, including soft banks and the distant fade.
-        float[] path=new float[8];
-        for(int row=0;row<48;row++) {
-            float t=row/48f,u=(row+1)/48f;
-            float opacity=a*smooth((t+u)*2);
-            int color=Glyph.mix(0xFF748A84,0xFFA99B83,(t+u)*.5f);
-            for(int layer=0;layer<6;layer++) {
-                float inset=layer*.018f;
-                float top=w*(.025f+t*(.82f-inset)),bottom=w*(.025f+u*(.82f-inset));
-                float tx=x+w*(.5f+.012f*(float)Math.sin(t*7)),bx=x+w*(.5f+.012f*(float)Math.sin(u*7));
-                path[0]=tx-top;path[1]=y+h*(.49f+t*.60f);
-                path[2]=tx+top;path[3]=path[1];
-                path[4]=bx+bottom;path[5]=y+h*(.49f+u*.60f);
-                path[6]=bx-bottom;path[7]=path[5];
-                p.fillPoly(path,ink(color,opacity*(18+layer)));
+        // Continuous polygons remove strip seams; the wider floor tucks under both banks.
+        float[] path=new float[100];
+        for(int layer=0;layer<6;layer++) {
+            int at=0;
+            for(int j=0;j<=16;j++) {
+                float xx=.5f+(.24f-layer*.003f)*(j/8f-1);
+                path[at++]=x+w*xx;path[at++]=y+h*(horizon(xx)+layer*.002f);
             }
+            for(int j=1;j<=16;j++) {
+                float t=j/16f,xx=floorEdge(t,1,layer);
+                path[at++]=x+w*xx;path[at++]=y+h*floorY(t,xx,layer);
+            }
+            float xx=floorEdge(1,-1,layer);
+            path[at++]=x+w*xx;path[at++]=y+h*floorY(1,xx,layer);
+            for(int j=15;j>=0;j--) {
+                float t=j/16f;xx=floorEdge(t,-1,layer);
+                path[at++]=x+w*xx;path[at++]=y+h*floorY(t,xx,layer);
+            }
+            p.fillPoly(path,ink(Glyph.mix(0xFF84958C,0xFFA99B83,layer/5f),a*(18+layer)));
         }
     }
+    static float horizon(float x) {
+        return .48f+.020f*(float)Math.sin(x*14+.8f)+.012f*(float)Math.sin(x*29);
+    }
+    static float floorEdge(float t,int side,int layer) {
+        return .5f+.035f*(float)Math.sin(t*7)+side*(.24f-layer*.003f+t*(.82f-layer*.018f));
+    }
+    private static float floorY(float t,float x,int layer) {
+        return .48f+t*.60f+(horizon(x)-.48f+layer*.002f)*(1-t)*(1-t);
+    }
+
     private static void ground(Painter p,GameCore c,Layout L,float a) {
         float[] line=new float[26];
         // Fixed rows in depth, projected into accelerating, widening sand ripples.
