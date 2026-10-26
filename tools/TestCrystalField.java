@@ -3,6 +3,7 @@ package com.dddumpling.game;
 final class TestCrystalField extends Check {
     static void all(Layout L) {
         arena(L);
+        arenaShimmer(L);
         arenaLights(L);
         splitLighting(L);
         arrival(L);
@@ -139,6 +140,37 @@ final class TestCrystalField extends Check {
             mirrored&=Math.abs(c.crystalField.lightAt(c,L,layer,xx,yy)-c.crystalField.lightAt(c,L,layer,L.w-xx,yy))<.001f;
         }
         check("arena impact lighting stays mirrored",mirrored);
+    }
+    private static void arenaShimmer(Layout L) {
+        boolean mirrored=true,animated=true,reused=true;
+        for(int phase:new int[]{0,7,CrystalArena.MAX_PHASE}) {
+            CrystalArena arena=new CrystalArena();arena.prepare(L.w,phase);
+            for(int layer=0;layer<3;layer++) {
+                CrystalField.Cell[] cells=arena.cells[layer];
+                ProfileCrystalField.Counter first=new ProfileCrystalField.Counter(false),later=new ProfileCrystalField.Counter(false);
+                for(CrystalField.Cell cell:cells) {
+                    float[][] sheen=cell.sheen;
+                    CrystalField.shimmer(first,cell,layer,1,1);
+                    CrystalField.shimmer(later,cell,layer,3,1);
+                    reused&=cell.sheen==sheen;
+                    for(int band=0;band<sheen.length;band++) {
+                        float[] strip=sheen[band];if(strip.length<6)continue;
+                        float x=0,y=0;
+                        for(int k=0;k<strip.length;k+=2){x+=strip[k];y+=strip[k+1];}
+                        x=L.w-x/(strip.length/2);y/=strip.length/2;
+                        boolean match=false;
+                        for(CrystalField.Cell other:cells)if(other.phase==cell.phase)
+                            for(int b=band%8;b<other.sheen.length;b+=8)
+                                match|=inside(other.sheen[b],x,y);
+                        mirrored&=match;
+                    }
+                }
+                animated&=first.calls>0 && later.calls>0 && first.checksum!=later.checksum;
+            }
+        }
+        check("arena shimmer sweeps across facets in all layers and fracture phases",animated);
+        check("arena shimmer stays mirrored, including center-spanning facets",mirrored);
+        check("arena shimmer reuses preclipped strips between frames",reused);
     }
     private static void arenaLights(Layout L) {
         int hitNodes=0;

@@ -139,7 +139,6 @@ final class CrystalField extends Draw {
             }
             Cell cell=cells[i]=new Cell();
             cell.rim=poly;cell.face=new float[poly.length];
-            cell.sheen=new float[8][];
             cell.top=Float.MAX_VALUE;cell.bottom=-Float.MAX_VALUE;
             cell.phase=hash(seed+891+i*37)*Softbody.TAU;
             cell.color=Glyph.mix(0xFF43315F,0xFF71588C,hash(1831+i*53));
@@ -151,18 +150,33 @@ final class CrystalField extends Draw {
                 poly[k]*=w;poly[k+1]*=w;
                 cell.top=Math.min(cell.top,poly[k+1]);cell.bottom=Math.max(cell.bottom,poly[k+1]);
             }
-            float lo=Float.MAX_VALUE,hi=-Float.MAX_VALUE;
-            for(int k=0;k<cell.face.length;k+=2) {
-                float diagonal=cell.face[k]+cell.face[k+1]*.65f;
-                lo=Math.min(lo,diagonal);hi=Math.max(hi,diagonal);
-            }
-            // Preclip eight broad diagonal strips: animated sheen never rebuilds paths.
-            for(int band=0;band<cell.sheen.length;band++) {
-                float start=lo+(hi-lo)*band/cell.sheen.length,end=lo+(hi-lo)*(band+1)/cell.sheen.length;
-                cell.sheen[band]=clip(clip(cell.face,1,.65f,end),-1,-.65f,-start);
-            }
+            cell.sheen=makeSheen(cell.face,1);
         }
         return cells;
+    }
+    // Preclip broad diagonal strips once; live shimmer never rebuilds paths.
+    static float[][] makeSheen(float[] face,float nx) {
+        float lo=Float.MAX_VALUE,hi=-Float.MAX_VALUE;
+        for(int k=0;k<face.length;k+=2) {
+            float diagonal=face[k]*nx+face[k+1]*.65f;
+            lo=Math.min(lo,diagonal);hi=Math.max(hi,diagonal);
+        }
+        float[][] sheen=new float[8][];
+        for(int band=0;band<sheen.length;band++) {
+            float start=lo+(hi-lo)*band/8,end=lo+(hi-lo)*(band+1)/8;
+            sheen[band]=clip(clip(face,nx,.65f,end),-nx,-.65f,-start);
+        }
+        return sheen;
+    }
+    static void shimmer(Painter p,Cell cell,int layer,float clock,float fade) {
+        float sweep=((clock*.16f+cell.phase/Softbody.TAU)%1)*13-2.5f;
+        for(int band=0;band<cell.sheen.length;band++) {
+            float distance=Math.abs(band%8-sweep)/1.8f;
+            if(distance>=1 || cell.sheen[band].length<6)continue;
+            float glow=(1-distance*distance);glow*=glow;
+            int alpha=(int)(fade*glow*(5+layer*5));
+            if(alpha>0)p.fillPoly(cell.sheen[band],Glyph.withAlpha(edgeColor(layer),alpha));
+        }
     }
     /** Clip to the half-plane closest to this seed; no gameplay RNG is consumed. */
     static float[] clip(float[] p,float nx,float ny,float d) {
@@ -272,7 +286,6 @@ final class CrystalField extends Draw {
         p.save();p.clipRect(0,0,L.w,L.deckTop);
         for(int layer=0;layer<LAYERS;layer++) {
             float offset=scroll(c.skyClock,L.w,layer);
-            int edgeColor=edgeColor(layer);
             for(int tile=-1;tile<=(int)(L.deckTop/period)+1;tile++) {
                 float y=offset+tile*period;
                 ArtStamp cache=p.stamps();
@@ -283,13 +296,7 @@ final class CrystalField extends Draw {
                     if(!cached)base(p,cell,layer,L.w,fade);
                     if(animate && lighting)edgeLights(p,c,L,cell,layer,y,fade);
                     if(!animate)continue;
-                    float sweep=((c.clock*.16f+cell.phase/Softbody.TAU)%1)*13-2.5f;
-                    for(int band=0;band<cell.sheen.length;band++) {
-                        float distance=Math.abs(band-sweep)/1.8f;
-                        if(distance>=1 || cell.sheen[band].length<6)continue;
-                        float glow=(1-distance*distance);glow*=glow;
-                        p.fillPoly(cell.sheen[band],Glyph.withAlpha(edgeColor,(int)(fade*glow*(5+layer*5))));
-                    }
+                    shimmer(p,cell,layer,c.clock,fade);
                 }
                 p.restore();
             }

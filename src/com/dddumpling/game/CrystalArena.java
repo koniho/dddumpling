@@ -63,6 +63,24 @@ final class CrystalArena extends Draw {
                     cell.rim[j]=(side==0?contour[j]:1-contour[j])*w;cell.rim[j+1]=contour[j+1]*w;
                     cell.top=Math.min(cell.top,cell.rim[j+1]);cell.bottom=Math.max(cell.bottom,cell.rim[j+1]);
                 }
+                float cx=0,cy=0;
+                for(int j=0;j<cell.rim.length;j+=2){cx+=cell.rim[j];cy+=cell.rim[j+1];}
+                cx/=cell.rim.length/2;cy/=cell.rim.length/2;
+                for(int j=0;j<cell.rim.length;j+=2) {
+                    cell.face[j]=cx+(cell.rim[j]-cx)*.94f;
+                    cell.face[j+1]=cy+(cell.rim[j+1]-cy)*.94f;
+                }
+                if(joined==null)cell.sheen=CrystalField.makeSheen(cell.face,side==0?1:-1);
+                else {
+                    // The middle tile shares one contour, with reflected sweeps inside it.
+                    float[][] left=CrystalField.makeSheen(CrystalField.clip(cell.face,1,0,w*.5f),1);
+                    cell.sheen=new float[16][];
+                    for(int band=0;band<8;band++) {
+                        cell.sheen[band]=left[band];
+                        float[] right=cell.sheen[band+8]=left[band].clone();
+                        for(int j=0;j<right.length;j+=2)right[j]=w-right[j];
+                    }
+                }
             }
         }
         return result.toArray(new CrystalField.Cell[0]);
@@ -108,6 +126,8 @@ final class CrystalArena extends Draw {
         float burst=b.beaten?Math.max(0,DivideDeath.elapsed(b)-DivideDeath.BURST_AT):0;
         float period=CrystalField.PERIOD*L.w;
         boolean lighting=c.crystalField.hasLights(c);
+        // Start the sheen as the incoming edge animation settles.
+        float sheenFade=fade*(b.intro>0?panelTravel((b.introProgress()-.88f)/.12f):1);
         // Freeze the pattern at the burst so every visible tile leaves its actual position.
         float clock=c.skyClock-burst;
         p.save();p.clipRect(0,0,L.w,L.deckTop);
@@ -124,8 +144,7 @@ final class CrystalArena extends Draw {
                     if(burst>0){shatter(p,cell,layer,y,burst,L,fade);continue;}
                     if(!cached)base(p,cell,layer,L.w,fade);
                     if(lighting)c.crystalField.edgeLights(p,c,L,cell,layer,y,fade);
-                    float glint=Math.max(0,(float)Math.sin(c.clock*.8f+cell.phase));
-                    if(glint>.65f)p.fillPoly(cell.rim,Glyph.withAlpha(0xFFBB99EE,(int)(fade*(glint-.65f)*(12+layer*8))));
+                    if(sheenFade>0)CrystalField.shimmer(p,cell,layer,c.clock,sheenFade);
                 }
                 p.restore();
             }
