@@ -201,13 +201,17 @@
   CGAffineTransform transform=CGContextGetCTM(context);
   for (NSNumber *art in @[@(DDSlimeBasinArt_LEFT_BANK),@(DDSlimeBasinArt_RIGHT_BANK),
                          @(DDSlimeBasinArt_LEFT_LIT),@(DDSlimeBasinArt_RIGHT_LIT)]) {
+  for(NSNumber *opacity in @[@0,@80,@160,@255]) {
   CGContextClearRect(context,CGRectMake(0,0,256,256));
   XCTAssertTrue([painter basinMeshWithInt:art.intValue withFloat:0 withFloat:0 withFloat:100
-                   withFloat:256 withFloatArray:offsets withInt:80]);
+                   withFloat:256 withFloatArray:offsets withInt:opacity.intValue]);
   XCTAssertTrue(CGAffineTransformEqualToTransform(transform,CGContextGetCTM(context)));
   NSUInteger painted=0;uint8_t maxAlpha=0;
   for (NSUInteger i=0;i<256*256;i++){painted+=pixels[i*4+3]>0;maxAlpha=MAX(maxAlpha,pixels[i*4+3]);}
-  XCTAssertGreaterThan(painted,100u);XCTAssertLessThanOrEqual(maxAlpha,80);
+  if(opacity.intValue>0)XCTAssertGreaterThan(painted,100u);
+  else XCTAssertEqual(painted,0u);
+  XCTAssertLessThanOrEqual(maxAlpha,opacity.intValue);
+  }
   }
   [painter fillRectWithFloat:0 withFloat:0 withFloat:256 withFloat:256 withInt:(jint)0xFFFFFFFF];
   XCTAssertEqual(pixels[3],255);
