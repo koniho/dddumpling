@@ -169,6 +169,9 @@ final class TestUnderwater extends Check {
                 staggered&=UnderwaterVista.travel(i,row,0)!=UnderwaterVista.travel(i,row,1);
         }
         check("five column layers move outward on independently staggered sides",UnderwaterVista.ROWS==5 && outward && staggered);
+        float near=.93f,nearWidth=L.w*.60f*UnderwaterVista.scale(near);
+        float nearTop=L.h*UnderwaterVista.rootY(near)-UnderwaterVista.columnHeight(near,nearWidth)*.68f;
+        check("nearby reef crowns stretch above the screen",nearTop<0);
         final int[] stamps={0},calls={0};final boolean[] valid={true};
         ArtStamp cache=new ArtStamp() {
             public boolean stamp(int art,float x,float y,float w,float h,float angle,int tint,float amount){return false;}

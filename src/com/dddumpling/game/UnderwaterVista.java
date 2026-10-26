@@ -12,6 +12,9 @@ final class UnderwaterVista extends Draw {
     static float rootY(float travel) {return .50f+depth(travel)*.82f;}
     static float scale(float travel) {return .16f+depth(travel)*1.50f;}
 
+    static float columnHeight(float travel,float width) {
+        return width*height(1)/WIDTH*(1+.95f*smooth(depth(travel)));
+    }
     static float columnX(float travel,int side) {
         return .5f+(side==0?-1:1)*(.14f+depth(travel)*.90f);
     }
@@ -33,7 +36,7 @@ final class UnderwaterVista extends Draw {
             int cycle=(int)Math.floor(clock);
             float t=travel(c.skyClock,row,side),d=depth(t),s=scale(t);
             int art=1+Math.floorMod(row-cycle+side*3,6);
-            float x=L.w*columnX(t,side),y=L.h*rootY(t),w=L.w*.60f*s,h=w*height(art)/WIDTH;
+            float x=L.w*columnX(t,side),y=L.h*rootY(t),w=L.w*.60f*s,h=columnHeight(t,w);
             if(x+w*.5f<0 || x-w*.5f>L.w)continue;
             float alpha=fade*visibility(t)*(.38f+.62f*smooth(d*2.4f));
             image(p,art,x-w*.5f,y-h*.90f,w,h,alpha);
@@ -69,23 +72,38 @@ final class UnderwaterVista extends Draw {
             else plume(p,xx,yy-r*.10f,r*(.38f+ledge*.04f),seed+ledge*31,
                     art%2==0?0xFF7299B3:0xFFAD87A0,fade*.85f);
         }
-        stone(p,cx-r*.48f,root-r*.05f,r*.47f,r*.26f,seed+7,fade);
+        // Broad attached footing and loose toe stones meet the sand without a flat cut.
+        stone(p,cx,root-r*.025f,r*1.12f,r*.26f,seed+7,fade);
+        stone(p,cx-r*.76f,root+r*.025f,r*.35f,r*.18f,seed+29,fade);
+        stone(p,cx+r*.72f,root+r*.05f,r*.30f,r*.17f,seed+53,fade);
         plume(p,cx+r*.35f,root-r*.08f,r*.55f,seed+37,0xFF719B9D,fade);
     }
     private static void column(Painter p,float x,float y,float w,float h,int seed,float a) {
-        float[] rim=new float[52];
+        float[] contour=new float[72],rim=new float[72];
         float crown=.09f+hash(seed+61)*.12f;
+        for(int j=0;j<13;j++) {
+            float t=j/12f,yy=crown+.025f+t*(.875f-crown);
+            float flare=.12f*smooth((t-.70f)/.30f);
+            float taper=.45f+.55f*(float)Math.sin(Math.PI*(.12f+t*.78f));
+            float left=(.25f+.055f*(float)Math.sin(j*1.9f+seed)+.025f*hash(seed+j))*taper+flare;
+            float right=(.27f+.055f*(float)Math.sin(j*1.7f+seed+2))*taper+flare;
+            float mid=.48f+.025f*(float)Math.sin(t*7+seed);
+            contour[j*2]=mid-left;contour[j*2+1]=yy;
+            contour[(30-j)*2]=mid+right;
+            contour[(30-j)*2+1]=yy+.010f*(float)Math.sin(j*1.3f+seed);
+        }
+        for(int i=0;i<5;i++) {
+            float u=(i+1)/6f;
+            contour[(13+i)*2]=contour[24]+(contour[36]-contour[24])*u;
+            contour[(13+i)*2+1]=.90f+.025f*(float)Math.sin(u*Math.PI)+hash(seed+i+19)*.007f;
+            contour[(31+i)*2]=contour[60]+(contour[0]-contour[60])*u;
+            contour[(31+i)*2+1]=crown-.020f*(float)Math.sin(u*Math.PI)
+                    +.012f*(float)Math.sin(u*13+seed)+hash(seed+i+31)*.008f;
+        }
         for(int layer=0;layer<3;layer++) {
-            for(int j=0;j<13;j++) {
-                float t=j/12f,yy=y+h*(crown+t*(.90f-crown));
-                float taper=.45f+.55f*(float)Math.sin(Math.PI*(.12f+t*.78f));
-                float left=.25f+.055f*(float)Math.sin(j*1.9f+seed)+.025f*hash(seed+j);
-                float right=.27f+.055f*(float)Math.sin(j*1.7f+seed+2);
-                float mid=x+w*(.48f+.025f*(float)Math.sin(t*7+seed));
-                rim[j*2]=mid-w*left*taper*(1-layer*.18f)-w*layer*.018f;
-                rim[j*2+1]=yy-h*layer*.008f;
-                rim[(25-j)*2]=mid+w*right*taper*(1-layer*.27f)-w*layer*.018f;
-                rim[(25-j)*2+1]=yy-h*layer*.008f+h*.015f*(float)Math.sin(j*1.3f+seed);
+            for(int j=0;j<contour.length;j+=2) {
+                rim[j]=x+w*(.48f+(contour[j]-.48f)*(1-layer*.19f)-layer*.018f);
+                rim[j+1]=y+h*(contour[j+1]-layer*.006f);
             }
             p.fillPoly(rim,ink(layer==0?0xFF102B46:layer==1?0xFF2C5068:0xFF53798B,a*(layer==2?130:245)));
         }

@@ -264,15 +264,16 @@ final class Underwater extends Draw {
         for(int school=0;school<3;school++) {
             int direction=school%2==0?1:-1;
             float travel=(c.clock*(.022f+school*.005f)+school*.37f)%1;
-            float x=L.w*(-.20f+travel*1.4f);if(direction<0)x=L.w-x;
+            float x=L.w*(.30f+travel*.46f);if(direction<0)x=L.w-x;
+            float schoolFade=fade*smooth(travel/.16f)*smooth((1-travel)/.16f);
             for(int i=0;i<4;i++) {
-                float xx=x-direction*i*L.w*.035f,yy=L.h*(.29f+school*.19f)+L.h*.014f*(float)Math.sin(c.clock*1.2f+school+i*.8f);
+                float xx=x-direction*i*L.w*.022f,yy=L.h*(.29f+school*.16f)+L.h*.014f*(float)Math.sin(c.clock*1.2f+school+i*.8f);
                 float r=L.w*(.009f+(i%2)*.002f),tail=.65f+.22f*(float)Math.sin(c.clock*10+i);
-                int col=ink(school==1?0xFFBCA2BA:0xFF88BEB6,fade*95);
+                int col=ink(school==1?0xFFBCA2BA:0xFF88BEB6,schoolFade*115);
                 p.fillPoly(new float[]{xx+r*direction,yy,xx,yy-r*.5f,xx-r*direction,yy-r*.20f,
                         xx-r*1.65f*direction,yy-r*tail,xx-r*1.65f*direction,yy+r*tail,
                         xx-r*direction,yy+r*.20f,xx,yy+r*.5f},col);
-                p.fillCircle(xx+r*.5f*direction,yy-r*.1f,r*.11f,ink(0xFF16394C,fade*160));
+                p.fillCircle(xx+r*.5f*direction,yy-r*.1f,r*.11f,ink(0xFF16394C,schoolFade*160));
             }
         }
     }
