@@ -37,10 +37,31 @@ final class TestVisuals extends Check {
 
     private static void releaseBook(Layout L) {
         TestUpdatePrompt.run(L);
-        releaseHistory();releaseEntryBounds();
+        releaseHistory();releaseEntryBounds();releaseHomes(L);
         releaseOutside(L);
         releaseFeedback(L);
         try(ReleaseExamples examples=new ReleaseExamples()) { releaseNavigation(L);releaseDetailOutside(L);releaseBookExamples(L); }
+    }
+    private static void releaseHomes(Layout L) {
+        int item=ReleaseContent.ITEMS[0][0],saved=ReleaseContent.ICONS[item];
+        boolean reset=ReleaseContent.AUTO_RESET[item];
+        try {
+            for(int icon:new int[]{ReleaseChange.LAND_HOMES,ReleaseChange.ARENA_HOMES}) {
+                ReleaseContent.ICONS[item]=icon;ReleaseContent.AUTO_RESET[item]=true;
+                GameCore c=new GameCore(new Mem(),3500);ReleaseNotes n=c.releaseNotes;
+                n.show(c,L);n.update(ReleaseTransition.DURATION,L);n.select(0,0,L);n.update(ReleaseNotes.PAGE_TIME,L);
+                n.touch(c,L,L.w*.5f,(n.demoTop(L)+n.demoBottom(L))*.5f);
+                check("home visit tap advances the tour "+icon,n.homeStep==1);
+                n.update(ReleaseNotes.RESTART_DELAY+.1f,L);
+                check("home visit resets the cycle after interaction "+icon,n.homeStep==0 && n.demo==null);
+                ReleaseHomes visit=new ReleaseHomes(icon==ReleaseChange.ARENA_HOMES);n.homes=visit;
+                n.update(ReleaseNotes.RESTART_DELAY+.1f,L);
+                check("home visit reset does not repeat while idle "+icon,n.homes==visit && n.homeStep==0);
+            }
+            check("home tour returns to its first land",ReleaseHomes.stop(ReleaseHomes.PERIOD*ReleaseHomes.HOSTS.length)==0);
+            for(int i=0;i<ReleaseHomes.HOSTS.length;i++)
+                check("home tour visits refreshed land "+i,ReleaseHomes.stop((i+.5f)*ReleaseHomes.PERIOD)==i);
+        } finally {ReleaseContent.ICONS[item]=saved;ReleaseContent.AUTO_RESET[item]=reset;}
     }
     private static void releaseNavigation(Layout L) {
         GameCore c=new GameCore(new Mem(),7210L);Ear ear=new Ear();c.sound=ear;

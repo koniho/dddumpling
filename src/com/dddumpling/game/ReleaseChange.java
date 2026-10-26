@@ -5,14 +5,15 @@ final class ReleaseChange extends Draw {
     static final int TRAVEL=0, STARS=1, BUGS=2, SHUFFLE=3, DISGUISE=4, SLIME=5,
             PAIR=6, FLEX=7, TEAM=8, NEWS=9, FLURRY=10, MISC=11, SETTINGS=12, SWIPE=13, SCORES=14, OCTOPULSE=15,
             COMPANION=16, TUTORIAL=17, TOWN=18, SURVIVAL=19, TIME_ATTACK=20, SWAMP=21, RUSH=22, FOG=23, HALLOWEEN=24, RAINBOW=25, BOSS_RETRY=26,
-            ACHIEVEMENTS=27, PROFESSOR=28;
+            ACHIEVEMENTS=27, PROFESSOR=28, LAND_HOMES=29, ARENA_HOMES=30;
     private static final class FogIcon {
         static final GameCore.Enemy WORD=new GameCore.Enemy();
         static {WORD.word=new int[]{0,1,2};WORD.enterT=1f;WORD.swampKind=SwampEnemies.FOG;}
     }
     static final int[][] ITEMS=ReleaseContent.ITEMS;
+    static boolean homes(int id) { return id==LAND_HOMES || id==ARENA_HOMES; }
     static boolean playable(int id) { return id==TRAVEL || id==SHUFFLE || id==PAIR; }
-    static float artUnits(int id) { return id==TRAVEL ? 8f : id==PAIR ? 9f : id==SHUFFLE ? 9f : id==ACHIEVEMENTS ? 7f : 5f; }
+    static float artUnits(int id) { return homes(id) ? 8f : id==TRAVEL ? 8f : id==PAIR ? 9f : id==SHUFFLE ? 9f : id==ACHIEVEMENTS ? 7f : 5f; }
     private static void halloween(Painter p,float x,float y,float r,float time) {
         p=Skins.painter(p,Skins.HALLOWEEN);
         // Real costume art stays recognizable in both the small list and the roomy popup.
@@ -36,6 +37,9 @@ final class ReleaseChange extends Draw {
         icon(p,id,x,y,r,time,-1f);
     }
     static void icon(Painter p,int id,float x,float y,float r,float time,float celebration) {
+        if(homes(id)) {
+            ReleaseHomes.icon(p,id==ARENA_HOMES,x,y,r,time);return;
+        }
         if(id==ACHIEVEMENTS) {
             float jump=0f;
             if(celebration>=0f && celebration<2.8f) {
