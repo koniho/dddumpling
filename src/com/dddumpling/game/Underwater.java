@@ -10,9 +10,12 @@ final class Underwater extends Draw {
         float[][] shapes=new float[ROCK_COUNT][40];
         for(int seed=0;seed<shapes.length;seed++)for(int j=0;j<20;j++) {
             float angle=j*Softbody.TAU/20;
-            float edge=1+.065f*(float)Math.sin(angle*3+seed*.7f)+.035f*(float)Math.cos(angle*5+seed);
-            shapes[seed][j*2]=(float)Math.cos(angle)*edge;
-            shapes[seed][j*2+1]=(float)Math.sin(angle)*edge;
+            float edge=1+.065f*(float)Math.sin(angle*3+seed*.7f)+.045f*(float)Math.cos(angle*5+seed);
+            float cx=(float)Math.cos(angle),sy=(float)Math.sin(angle);
+            // Worn, blunt shoulders and uneven ledges instead of an ellipse stretched into a plate.
+            shapes[seed][j*2]=Math.copySign((float)Math.pow(Math.abs(cx),.62f),cx)*edge;
+            shapes[seed][j*2+1]=Math.copySign((float)Math.pow(Math.abs(sy),.72f),sy)*edge
+                    +.055f*(float)Math.sin(angle*2+seed);
         }
         return shapes;
     }
@@ -81,9 +84,9 @@ final class Underwater extends Draw {
             // Wide, low outcrops leave open water between each shelf.
             float y=reefY(c,L,depth,side,i,arrival);
             float w=L.w*(.23f+hash(seed+2)*.04f)*(depth==0?.80f:1);
-            float h=w*(.19f+hash(seed+1)*.06f);
+            float h=w*(.34f+hash(seed+1)*.06f);
             // Occasional low, broad shelves reach beyond the middle, alternating banks.
-            if(depth==1 && i==side){w=L.w*(.60f+hash(seed+2)*.06f);h=w*.13f;}
+            if(depth==1 && i==side){w=L.w*(.60f+hash(seed+2)*.06f);h=w*.21f;}
             if(y+h<-20 || y-h>L.h+20)continue;
             cliff(p,L.w*side,y,w,h,side==0?1:-1,depthFade,seed);
         }
@@ -99,7 +102,7 @@ final class Underwater extends Draw {
         float clear=1;
         for(int side=0;side<2;side++) {
             float shelfY=reefY(c,L,1,side,side,cave*L.h*.36f);
-            float distance=Math.abs(y-shelfY)-L.w*.105f-radius;
+            float distance=Math.abs(y-shelfY)-L.w*.165f-radius;
             clear=Math.min(clear,smooth(distance/(L.h*.045f)));
         }
         return clear;
@@ -117,18 +120,37 @@ final class Underwater extends Draw {
     static void paintRock(Painter p,int art) {rockVector(p,104,108,80,80,1,art);}
     private static void rockVector(Painter p,float x,float y,float w,float h,float fade,int seed) {
         float[] shape=new float[40],rim=ROCK_RIMS[seed%ROCK_RIMS.length];
-        for(int layer=0;layer<6;layer++) {
-            float scale=layer==0?1.20f:layer==1?1.06f:layer==2?1.07f:layer==3?1:layer==4?.88f:.66f;
-            float dx=layer<2?w*(layer==0?.40f:.29f):layer>3?-w*(layer-3)*.085f:0;
-            float dy=layer<2?h*(layer==0?.24f:.17f):layer>3?-h*(layer-3)*.065f:0;
+        for(int layer=0;layer<4;layer++) {
+            float scale=layer==0?1.20f:layer==1?1.06f:layer==2?1.07f:1;
+            float dx=layer<2?w*(layer==0?.40f:.29f):0;
+            float dy=layer<2?h*(layer==0?.24f:.17f):0;
             for(int j=0;j<20;j++) {
                 shape[j*2]=x+dx+rim[j*2]*w*scale;
                 shape[j*2+1]=y+dy+rim[j*2+1]*h*scale;
             }
-            int col=layer<2?0xFF020714:layer==2?0xFF1C2534:layer==3?0xFF252C38:layer==4?0xFF424953:0xFF59616B;
-            int alpha=layer==0?19:layer==1?45:layer==2?28:layer==3?210:layer==4?89:37;
+            int col=layer<2?0xFF020714:layer==2?0xFF1C2534:0xFF303743;
+            int alpha=layer==0?19:layer==1?45:layer==2?28:220;
             p.fillPoly(shape,ink(col,fade*alpha));
         }
+        // A broad lit top meets an uneven darker front face, not nested copies of the outline.
+        float[] top=new float[28];
+        for(int j=0;j<11;j++) {
+            int at=(j+10)%20;
+            top[j*2]=x+rim[at*2]*w;top[j*2+1]=y+rim[at*2+1]*h;
+        }
+        top[22]=x+w*.46f;top[23]=y-h*.10f;
+        top[24]=x+w*.08f;top[25]=y+h*.17f;
+        top[26]=x-w*.46f;top[27]=y-h*.02f;
+        p.fillPoly(top,ink(0xFF69717A,fade*83));
+        float[] facet=new float[16];
+        for(int j=0;j<5;j++) {
+            int at=j+12;
+            facet[j*2]=x+rim[at*2]*w;facet[j*2+1]=y+rim[at*2+1]*h;
+        }
+        facet[10]=x+w*.25f;facet[11]=y-h*.45f;
+        facet[12]=x-w*.10f;facet[13]=y-h*.20f;
+        facet[14]=x-w*.58f;facet[15]=y-h*.30f;
+        p.fillPoly(facet,ink(0xFF8A9094,fade*35));
     }
 
     private static void sandDunes(Painter p,GameCore c,Layout L,float fade) {
@@ -163,7 +185,7 @@ final class Underwater extends Draw {
             float r=L.w*(.025f+hash(seed)*.045f),span=L.h+r*6;
             float y=(hash(seed+11)*span+c.skyClock*L.h*(.010f+i%2*.006f))%span-r*3;
             float x=L.w*scatterX(seed,r/L.w);
-            rock(p,x,y,r,r*(.28f+hash(seed+19)*.22f),fade*(.22f+i%3*.065f),seed);
+            rock(p,x,y,r,r*(.55f+hash(seed+19)*.20f),fade*(.22f+i%3*.065f),seed);
         }
     }
 
@@ -183,8 +205,8 @@ final class Underwater extends Draw {
             p.fillPoly(roof,ink(layer==0?0xFF3B3F49:layer==1?0xFF252A35:0xFF121822,fade*(135+layer*45)));
         }
         for(int side=0;side<2;side++) {
-            cliff(p,L.w*side,L.h*.43f,L.w*.26f,L.w*.065f,side==0?1:-1,fade,991+side);
-            cliff(p,L.w*side,L.deckTop-L.h*.06f,L.w*.32f,L.w*.070f,side==0?1:-1,fade,953+side);
+            cliff(p,L.w*side,L.h*.43f,L.w*.26f,L.w*.090f,side==0?1:-1,fade,991+side);
+            cliff(p,L.w*side,L.deckTop-L.h*.06f,L.w*.32f,L.w*.100f,side==0?1:-1,fade,953+side);
 
         }
         // Sand-lit hollow under Octopulse; rim is textured rather than a hard horizon.
