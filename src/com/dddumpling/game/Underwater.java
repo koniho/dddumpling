@@ -48,7 +48,7 @@ final class Underwater extends Draw {
         p.fillRect(0,0,L.w,L.h,ink(WATER,245*fade));
         if(cave<1)UnderwaterVista.draw(p,c,L,fade*(1-cave));
         if(cave>0)UnderwaterCave.draw(p,c,L,fade*cave,cave);
-        fish(p,c,L,fade*(1-cave*.60f));
+        if(cave<1)fish(p,c,L,fade*(1-cave));
         // Scenery continues behind the keys; a gradual darkening replaces the cut-off horizon.
         float start=L.deckTop-L.h*.045f;
         for(int band=0;band<14;band++) {
@@ -128,20 +128,50 @@ final class Underwater extends Draw {
         }
     }
 
+    static float fishTravel(float clock,int school) {
+        float t=clock*.032f+school*.37f;
+        return t-(float)Math.floor(t);
+    }
+    static float fishDepth(float travel){return travel*travel;}
+    static float fishY(float travel){return .22f+fishDepth(travel)*1.08f;}
+    static float fishSize(float travel){return .0045f+fishDepth(travel)*.026f;}
+    static float fishShimmer(float turn) {
+        float edge=1-Math.abs((float)Math.cos(turn));
+        return edge*edge*edge*edge;
+    }
     private static void fish(Painter p,GameCore c,Layout L,float fade) {
         for(int school=0;school<3;school++) {
-            int direction=school%2==0?1:-1;
-            float travel=(c.clock*(.022f+school*.005f)+school*.37f)%1;
-            float x=L.w*(.30f+travel*.46f);if(direction<0)x=L.w-x;
-            float schoolFade=fade*smooth(travel/.16f)*smooth((1-travel)/.16f);
+            float t=fishTravel(c.clock,school),depth=fishDepth(t),turn=t*6.5f+school*2.4f;
+            float amplitude=.035f+depth*.25f;
+            float x=L.w*(.5f+amplitude*(float)Math.sin(turn)),y=L.h*fishY(t);
+            float dx=L.w*(.5f*t*(float)Math.sin(turn)+amplitude*6.5f*(float)Math.cos(turn));
+            float dy=L.h*2.16f*t;
+            float length=Math.max(.001f,(float)Math.sqrt(dx*dx+dy*dy));dx/=length;dy/=length;
+            float schoolFade=fade*smooth(t/.13f);
             for(int i=0;i<4;i++) {
-                float xx=x-direction*i*L.w*.022f,yy=L.h*(.29f+school*.16f)+L.h*.014f*(float)Math.sin(c.clock*1.2f+school+i*.8f);
-                float r=L.w*(.009f+(i%2)*.002f),tail=.65f+.22f*(float)Math.sin(c.clock*10+i);
-                int col=ink(school==1?0xFFBCA2BA:0xFF88BEB6,schoolFade*115);
-                p.fillPoly(new float[]{xx+r*direction,yy,xx,yy-r*.5f,xx-r*direction,yy-r*.20f,
-                        xx-r*1.65f*direction,yy-r*tail,xx-r*1.65f*direction,yy+r*tail,
-                        xx-r*direction,yy+r*.20f,xx,yy+r*.5f},col);
-                p.fillCircle(xx+r*.5f*direction,yy-r*.1f,r*.11f,ink(0xFF16394C,schoolFade*160));
+                float r=L.w*fishSize(t)*(1-(i%2)*.14f),spacing=L.w*(.014f+depth*.042f);
+                float xx=x-dx*i*spacing-dy*(i%2)*r*.8f;
+                float yy=y-dy*i*spacing+dx*(i%2)*r*.8f;
+                if(yy-r*3>L.h)continue;
+                float angle=turn+i*.21f,glint=fishShimmer(angle);
+                float tail=.42f+.27f*(float)Math.sin(c.clock*8+i),thickness=.38f-.17f*glint;
+                float[] local={1,0,.2f,-thickness,-.8f,-thickness*.45f,-1.65f,-tail,
+                        -1.35f,0,-1.65f,tail,-.8f,thickness*.45f,.2f,thickness};
+                float[] shape=new float[local.length];
+                for(int j=0;j<local.length;j+=2) {
+                    shape[j]=xx+r*(local[j]*dx-local[j+1]*dy);
+                    shape[j+1]=yy+r*(local[j]*dy+local[j+1]*dx);
+                }
+                int base=school==1?0xFF7E849D:0xFF548F9B;
+                int sheen=Glyph.mix(0xFF9DE9D5,0xFFCBC7F0,(float)(.5+.5*Math.sin(angle)));
+                p.fillPoly(shape,ink(Glyph.mix(base,sheen,glint*.85f),schoolFade*(95+depth*75)));
+                float[] facet={xx+r*dx,yy+r*dy,xx-dy*r*thickness,yy+dx*r*thickness,
+                        xx-r*dx*.85f,yy-r*dy*.85f};
+                p.fillPoly(facet,ink(sheen,schoolFade*(18+glint*120)));
+                p.line(xx-r*dx*.55f,yy-r*dy*.55f,xx+r*dx*.55f,yy+r*dy*.55f,
+                        ink(0xFFD9F8E6,schoolFade*glint*175),r*.09f);
+                p.fillCircle(xx+r*(dx*.52f-dy*.11f),yy+r*(dy*.52f+dx*.11f),r*.11f,
+                        ink(0xFF0B2138,schoolFade*180));
             }
         }
     }

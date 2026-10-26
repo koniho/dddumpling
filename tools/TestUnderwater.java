@@ -47,6 +47,10 @@ final class TestUnderwater extends Check {
         c.survival.active=true;
         check("enemy refraction is absent in other modes",Underwater.enemyShift(c,x,y,L)==0);
         clearGlows(L);
+        check("fish approach and leave below the foreground",Underwater.fishY(0)<.3f
+                && Underwater.fishY(1)>1.2f && Underwater.fishSize(1)>Underwater.fishSize(0)*5);
+        check("fish shimmer peaks while turning",Underwater.fishShimmer(0)==0
+                && Underwater.fishShimmer((float)Math.PI*.5f)>.99f);
         beamLighting(L);
         cachedScenery(L);
         perspective(L);
@@ -118,7 +122,7 @@ final class TestUnderwater extends Check {
         }
         check("sampled water field stays close to analytic waves",error<L.w*.0008f);
         c=TestBossRetry.fight(L,Boss.OCTOPUS);c.landBlend=1;c.clock=c.skyClock=17;
-        final int[] stamps={0},draws={0},bands={0},glows={0};final boolean[] valid={true};
+        final int[] stamps={0},draws={0},bands={0},glows={0},fishShapes={0};final boolean[] valid={true};
         final float[] rocks=new float[160];
         ArtStamp cache=new ArtStamp() {
             public boolean stamp(int art,float x,float y,float w,float h,float angle,int tint,float amount){return false;}
@@ -126,7 +130,7 @@ final class TestUnderwater extends Check {
                 return reefVista(art,x,y,w,h,alpha);
             }
             public boolean reefVista(int art,float x,float y,float w,float h,int alpha) {
-                if(art>=UnderwaterVista.CAVE) {
+                if(art>=UnderwaterVista.CAVE && art<UnderwaterVista.CAVE+3) {
                     int at=stamps[0]++*4;rocks[at]=x;rocks[at+1]=y;rocks[at+2]=w;rocks[at+3]=h;
                     valid[0]&=art<UnderwaterVista.COUNT && w>0 && h>0 && alpha>0 && alpha<=255;
                 }
@@ -137,10 +141,12 @@ final class TestUnderwater extends Check {
         };
         Painter probe=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),new Class<?>[]{Painter.class},(proxy,method,args)-> {
             if(method.getName().equals("stamps"))return cache;
+            if(method.getName().equals("fillPoly") || method.getName().equals("fillCircle"))fishShapes[0]++;
             draws[0]++;return null;
         });
         Underwater.backdrop(new OpacityPainter(probe,1),c,L);
         check("cave scenery and relighting stay cached through wrappers",valid[0] && stamps[0]==3 && draws[0]<160);
+        check("settled cave has no swimming fish",fishShapes[0]==0);
         float[] first=rocks.clone();int count=stamps[0];stamps[0]=0;c.clock+=1;c.skyClock+=5;
         Underwater.backdrop(new OpacityPainter(probe,1),c,L);
         check("settled cave geometry stays anchored while lighting animates",count==stamps[0] && java.util.Arrays.equals(first,rocks));
@@ -207,7 +213,7 @@ final class TestUnderwater extends Check {
                 && UnderwaterVista.edgeSoftness(.5f)>.1f && UnderwaterVista.edgeSoftness(.85f)==0);
         long bytes=0;
         for(int art=0;art<UnderwaterVista.COUNT;art++)bytes+=4L*UnderwaterVista.width(art)*UnderwaterVista.height(art);
-        check("reef cache including soft silhouettes stays below 12 MiB",bytes<12*1024*1024);
+        check("reef cache including soft silhouettes stays below 13 MiB",bytes<13*1024*1024);
         final int[] stamps={0},calls={0},solid={0};final boolean[] valid={true};
         ArtStamp cache=new ArtStamp() {
             public boolean stamp(int art,float x,float y,float w,float h,float angle,int tint,float amount){return false;}

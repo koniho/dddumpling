@@ -2,7 +2,7 @@ package com.dddumpling.game;
 
 /** A lit reef corridor: immutable scenery passes through a small perspective field. */
 final class UnderwaterVista extends Draw {
-    static final int COUNT=25,WIDTH=256,ROWS=5,RAY=11,SOFT=12,CAVE=22;
+    static final int COUNT=26,WIDTH=256,ROWS=5,RAY=11,SOFT=12,CAVE=22;
     static final float COLUMN_WIDTH=1.08f;
     static int width(int art) {return art>=SOFT && art<CAVE?128:WIDTH;}
     static int height(int art) {return art>=CAVE?512:art>=SOFT?384:art==0 || art==RAY?512:768;}

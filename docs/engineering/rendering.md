@@ -156,7 +156,7 @@ the crystal stage followed by its arena. Neither replay changes saved progress.
 Android and iOS cache twelve shaded
 rock images (under 3 MiB), anchored to their seabed scroll without ambient distortion.
 The stage reef corridor additionally caches one lit water painting, ten decorated
-rock columns, a shared soft sunbeam, and ten half-resolution feathered silhouettes (11.875 MiB including the three cave paintings, before optional grayscale copies). Five staggered depth layers
+rock columns, a shared soft sunbeam, and ten half-resolution feathered silhouettes (12.375 MiB including the four cave paintings, before optional grayscale copies). Five staggered depth layers
 per side share a projection for placement, scale, and accelerating outward travel.
 Columns fade in briefly near mid-screen, then blend their RGB toward water teal at distance, at full opacity.
 The cached base palette is darkened for the foreground; atmospheric tint recedes as columns approach.
@@ -169,10 +169,11 @@ plants stay attached inside the same cached image. No static side rocks are bake
 into the backdrop. Sand ripples grow and scroll from mid-screen to below the viewport;
 Column curvature is baked with its decorations, with five inward profiles per side.
 Sunbeams drift and pulse using the shared feathered texture; surface light and motes remain live.
-The Octopulse cave uses a stationary reef chamber with three cached paintings: deep-water
-background and floor, overlapping columns and roof arch, and matching lit stone. The light
-painting pulses on clears and boss hits, while the beams react most strongly near each clear. Ambient beams reuse
-the stage texture. No scrolling ground geometry or live rock tessellation remains in the arena;
+The Octopulse cave uses a stationary reef chamber with four cached paintings: deep-water
+background and floor, asymmetric fractured walls and overhangs, matching lit stone,
+and a continuous feathered blue-green light ribbon. The light
+painting pulses on clears and boss hits, while the beams react most strongly near each clear. Three slowly drifting light ribbons illuminate the chamber. Fish stay in stages,
+where they shimmer as they turn and scale toward the foreground before leaving below the screen. No scrolling ground geometry or live rock tessellation remains in the arena;
 its reduced haze preserves the deeper shadows on both native hosts.
 The Octopulse cave keeps its fixed arena composition. Underwater and crystal caches
 remain active during monochrome: Android applies a luminance color matrix, while

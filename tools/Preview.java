@@ -3224,6 +3224,11 @@ final class Preview {
                 water.clock=water.skyClock=17+frame*8;
                 shot(dir,"underwater-reef-"+frame,water,L,w,h,ss);
             }
+            for(int frame=0;frame<2;frame++) {
+                water.clock=water.skyClock=frame==0?22.66f:29.7f;
+                shot(dir,"underwater-fish-"+(frame==0?"turn":"foreground"),water,L,w,h,ss);
+            }
+            water.clock=water.skyClock=25;
             water.waterRipples.cleared(water,L,L.w*.18f,L.h*.64f);
             for(int frame=0;frame<3;frame++) {
                 water.clock=25.08f+frame*.13f;
