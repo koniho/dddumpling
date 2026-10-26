@@ -2,9 +2,9 @@ package com.dddumpling.game;
 
 /** A lit reef corridor: immutable scenery passes through a small perspective field. */
 final class UnderwaterVista extends Draw {
-    static final int COUNT=7,WIDTH=256,ROWS=5;
+    static final int COUNT=12,WIDTH=256,ROWS=5,RAY=11;
     static final float COLUMN_WIDTH=1.08f;
-    static int height(int art) {return art==0?512:768;}
+    static int height(int art) {return art==0 || art==RAY?512:768;}
     private UnderwaterVista() {}
     private static int ink(int color,float alpha) {return Glyph.withAlpha(color,(int)alpha);}
     private static float smooth(float v) {v=Math.max(0,Math.min(1,v));return v*v*(3-2*v);}
@@ -38,7 +38,7 @@ final class UnderwaterVista extends Draw {
             float clock=c.skyClock*.10f+side*.43f;
             int cycle=(int)Math.floor(clock);
             float t=travel(c.skyClock,row,side),d=depth(t),s=scale(t);
-            int art=1+Math.floorMod(row-cycle+side*3,6);
+            int art=1+2*Math.floorMod(row-cycle+side*3,ROWS)+side;
             float x=L.w*columnX(t,side),y=L.h*rootY(t),w=L.w*COLUMN_WIDTH*s,h=columnHeight(t,L.w*.60f*s);
             if(x+w*.5f<0 || x-w*.5f>L.w)continue;
             float alpha=fade*visibility(t)*(.38f+.62f*smooth(d*2.4f));
@@ -61,6 +61,8 @@ final class UnderwaterVista extends Draw {
     static void paint(Painter p,int art) {artwork(p,art,0,0,WIDTH,height(art),1);}
     private static void artwork(Painter p,int art,float x,float y,float w,float h,float fade) {
         if(art==0){backdrop(p,x,y,w,h,fade);return;}
+        if(art==RAY){sunbeam(p,x,y,w,h,fade);return;}
+        p=new CurvedColumn(p,art,y,w,h);
         float r=w*.34f,cx=x+w*.5f,root=y+h*.90f;
         int seed=419+art*83;
         // Crown and ledge plants are painted with the rock, so nothing floats independently.
@@ -80,6 +82,49 @@ final class UnderwaterVista extends Draw {
         stone(p,cx-r*.76f,root+r*.025f,r*.35f,r*.18f,seed+29,fade);
         stone(p,cx+r*.72f,root+r*.05f,r*.30f,r*.17f,seed+53,fade);
         plume(p,cx+r*.35f,root-r*.08f,r*.55f,seed+37,0xFF719B9D,fade);
+    }
+    static float bow(int art,float y) {
+        float t=Math.max(0,Math.min(1,(.91f-y)/.82f));
+        int variant=(art-1)/2;
+        float amount=.025f+.12f*variant/4f;
+        float curve=(float)Math.pow(Math.sin(t*Math.PI),1.2+.25*variant);
+        return (art%2==1?1:-1)*amount*curve;
+    }
+    // Warp the whole painting once, including its plants, seams, crown and footing.
+    private static final class CurvedColumn extends OpacityPainter {
+        final int art;final float y,w,h;
+        CurvedColumn(Painter p,int art,float y,float w,float h){super(p,1);this.art=art;this.y=y;this.w=w;this.h=h;}
+        private float dx(float yy){return w*bow(art,(yy-y)/h);}
+        private float[] curve(float[] xy) {
+            float[] q=xy.clone();for(int i=0;i<q.length;i+=2)q[i]+=dx(q[i+1]);return q;
+        }
+        public ArtStamp stamps(){return null;}
+        public void fillPoly(float[] xy,int c){p.fillPoly(curve(xy),c);}
+        public void strokePoly(float[] xy,int c,float r){p.strokePoly(curve(xy),c,r);}
+        public void polyline(float[] xy,int c,float r){p.polyline(curve(xy),c,r);}
+        public void fillCircle(float x,float y,float r,int c){p.fillCircle(x+dx(y),y,r,c);}
+        public void fillEllipse(float x,float y,float rx,float ry,int c){p.fillEllipse(x+dx(y),y,rx,ry,c);}
+        public void strokeCircle(float x,float y,float r,int c,float s){p.strokeCircle(x+dx(y),y,r,c,s);}
+        public void line(float x,float y,float xx,float yy,int c,float r){p.line(x+dx(y),y,xx+dx(yy),yy,c,r);}
+        public void arc(float x,float y,float rx,float ry,float start,float sweep,int c,float r){p.arc(x+dx(y),y,rx,ry,start,sweep,c,r);}
+    }
+    private static void sunbeam(Painter p,float x,float y,float w,float h,float a) {
+        float[] quad=new float[8];
+        // Soft edges and length falloff are baked into one shared small texture.
+        for(int row=0;row<32;row++) {
+            float t=row/32f,u=(row+1)/32f,fade=(float)Math.pow(1-(t+u)*.5f,1.5);
+            float previous=0;
+            for(int layer=0;layer<24;layer++) {
+                float radius=3*(1-layer/24f),opacity=255*fade*(float)Math.exp(-.5f*radius*radius);
+                int alpha=Math.round(opacity)-Math.round(previous);previous=opacity;
+                if(alpha<=0)continue;
+                float top=(.06f+t*.23f)*radius/3,bottom=(.06f+u*.23f)*radius/3;
+                float tx=.30f+t*.34f,bx=.30f+u*.34f;
+                quad[0]=x+w*(tx-top);quad[1]=y+h*t;quad[2]=x+w*(tx+top);quad[3]=y+h*t;
+                quad[4]=x+w*(bx+bottom);quad[5]=y+h*u;quad[6]=x+w*(bx-bottom);quad[7]=y+h*u;
+                p.fillPoly(quad,ink(0xFFFFF2CE,a*alpha));
+            }
+        }
     }
     private static void column(Painter p,float x,float y,float w,float h,int seed,float a) {
         float[] contour=new float[72],rim=new float[72];
@@ -173,12 +218,15 @@ final class UnderwaterVista extends Draw {
                 line[j*2+1]=yy+L.h*.009f*(float)Math.sin(u*8+c.clock*.3f+i*1.7f)
                         +L.h*.025f*(u-.5f)*(u-.5f);
             }
-            p.polyline(line,ink(0xFF9DE3DD,a*(20-i*1.5f)),L.w*(.003f+i*.0003f));
+            p.polyline(line,ink(0xFFFFF4D9,a*(20-i*1.5f)),L.w*(.003f+i*.0003f));
         }
-        for(int i=0;i<3;i++) {
-            float xx=L.w*(.31f+i*.17f),sway=L.w*.035f*(float)Math.sin(c.clock*.18f+i);
-            p.fillPoly(new float[]{xx-L.w*.025f,0,xx+L.w*.025f,0,
-                    xx+sway+L.w*.15f,L.h*.80f,xx+sway-L.w*.10f,L.h*.80f},ink(0xFF98DDD5,a*6));
+        for(int i=0;i<5;i++) {
+            float sway=L.w*.035f*(float)Math.sin(c.clock*.18f+i*1.7f);
+            float x=L.w*(-.13f+i*.23f)+sway;
+            float alpha=a*(.34f+.08f*(float)Math.sin(c.clock*.31f+i));
+            float w=L.w*(.58f+i%2*.16f),h=L.h*(.51f+i%3*.07f);
+            image(p,RAY,x-w*.18f,-L.h*.035f,w*1.6f,h*1.1f,alpha*.40f);
+            image(p,RAY,x,-L.h*.035f,w,h,alpha);
         }
     }
     private static void stone(Painter p,float x,float y,float rx,float ry,int seed,float a) {

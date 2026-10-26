@@ -169,6 +169,16 @@ final class TestUnderwater extends Check {
                 staggered&=UnderwaterVista.travel(i,row,0)!=UnderwaterVista.travel(i,row,1);
         }
         check("five column layers move outward on independently staggered sides",UnderwaterVista.ROWS==5 && outward && staggered);
+        boolean inward=true,anchored=true,varied=true;
+        float previousBow=0;
+        for(int variant=0;variant<5;variant++) {
+            int left=1+variant*2,right=left+1;
+            float bend=UnderwaterVista.bow(left,.5f);
+            inward&=bend>0 && UnderwaterVista.bow(right,.5f)==-bend;
+            anchored&=UnderwaterVista.bow(left,.95f)==0 && UnderwaterVista.bow(right,.95f)==0;
+            varied&=bend>previousBow;previousBow=bend;
+        }
+        check("five reef profiles bow inward by different amounts with grounded feet",inward && anchored && varied);
         float near=.93f,nearWidth=L.w*.60f*UnderwaterVista.scale(near);
         float nearTop=L.h*UnderwaterVista.rootY(near)-UnderwaterVista.columnHeight(near,nearWidth)*.68f;
         check("nearby reef crowns stretch above the screen",nearTop<0);
@@ -188,7 +198,7 @@ final class TestUnderwater extends Check {
         for(int i=0;i<180;i++) {
             stamps[0]=calls[0]=0;c.skyClock=i*3.17f;
             UnderwaterVista.draw(new OpacityPainter(probe,1),c,L,1);
-            bounded&=stamps[0]>4 && stamps[0]<=11 && calls[0]<80;
+            bounded&=stamps[0]>4 && stamps[0]<=21 && calls[0]<80;
         }
         check("detailed reef artwork stays cached and bounded throughout travel",valid[0] && bounded);
     }
