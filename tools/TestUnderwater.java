@@ -121,7 +121,7 @@ final class TestUnderwater extends Check {
             java.util.Arrays.fill(b.octoVX[arm],0);java.util.Arrays.fill(b.octoVY[arm],0);
             b.octoX[arm][Boss.OCTO_NODES-1]=L.w*.40f;b.octoY[arm][Boss.OCTO_NODES-1]=L.h*.65f;
         }
-        int[] plants={0},light={0};float[] roots=new float[UnderwaterCave.KELP_PATCHES*4],tips=roots.clone();
+        int[] plants={0},light={0},polygons={0};float[] roots=new float[UnderwaterCave.KELP_PATCHES*4],tips=roots.clone();
         ArtStamp cache=(ArtStamp)java.lang.reflect.Proxy.newProxyInstance(ArtStamp.class.getClassLoader(),new Class<?>[]{ArtStamp.class},(proxy,method,args)-> {
             if(method.getName().equals("waterGlow"))light[0]+=(Integer)args[4];
             return true;
@@ -129,8 +129,7 @@ final class TestUnderwater extends Check {
         Painter probe=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),new Class<?>[]{Painter.class},(proxy,method,args)-> {
             if(method.getName().equals("stamps"))return cache;
             if(method.getName().equals("fillPoly")) {
-                int rgb=(Integer)args[1]&0xFFFFFF;
-                if(rgb==0x285C58 || rgb==0x285C4A) {
+                if(((float[])args[0]).length==36 && polygons[0]++%3==1) {
                     float[] shape=(float[])args[0];int at=plants[0]++*2;
                     roots[at]=(shape[0]+shape[34])*.5f;roots[at+1]=shape[1];
                     tips[at]=(shape[16]+shape[18])*.5f;tips[at+1]=shape[17];
@@ -144,18 +143,52 @@ final class TestUnderwater extends Check {
         b.octoVX[0][Boss.OCTO_NODES-1]=L.w;
         check("tentacle current is stronger nearby",UnderwaterCave.current(b,L,L.w*.4f,L.h*.65f)
                 >UnderwaterCave.current(b,L,L.w,L.h*.1f)*2);
+        for(int tick=0;tick<60;tick++){c.clock+=1/60f;c.waterRipples.caveCurrent.update(c,L);}
         plants[0]=light[0]=0;UnderwaterCave.draw(probe,c,L,1,1);
         float moved=0;for(int i=0;i<tips.length;i++)moved+=Math.abs(tips[i]-idle[i]);
         check("tentacle motion bends kelp without uprooting it",moved>L.w*.03f && java.util.Arrays.equals(anchored,roots));
         check("tentacle motion brightens cave glows",light[0]>idleLight);
-        int movingLight=light[0];b.damage(1);plants[0]=light[0]=0;
+        int movingLight=light[0];b.damage(1);
+        for(int tick=0;tick<40;tick++){c.clock+=1/60f;c.waterRipples.caveCurrent.update(c,L);}
+        plants[0]=light[0]=0;
         UnderwaterCave.draw(probe,c,L,1,1);
         float struck=0;for(int i=0;i<tips.length;i++)struck+=Math.abs(tips[i]-idle[i]);
         check("boss damage produces a stronger rooted kelp wave and light pulse",
-                struck>moved && light[0]>movingLight && java.util.Arrays.equals(anchored,roots));
+                struck>L.w*.1f && light[0]>movingLight && java.util.Arrays.equals(anchored,roots));
         b.hurt=0;b.octoDeath=.7f;
         check("kelp damage surge follows tentacle recoil after the flash",UnderwaterCave.damagePulse(b)>.25f);
         b.octoDeath=0;check("kelp damage surge fully settles",UnderwaterCave.damagePulse(b)==0);
+        kelpDelay(L,30);kelpDelay(L,120);
+    }
+    private static void kelpDelay(Layout L,int hz) {
+        GameCore c=TestBossRetry.fight(L,Boss.OCTOPUS);Boss b=c.boss;
+        b.octoPlaced=true;b.octoArms=255;b.hurt=0;b.octoDeath=0;
+        for(int arm=0;arm<Boss.OCTO_ARMS;arm++) {
+            java.util.Arrays.fill(b.octoVX[arm],0);java.util.Arrays.fill(b.octoVY[arm],0);
+        }
+        UnderwaterCave.CurrentHistory history=c.waterRipples.caveCurrent;
+        float bx=(b.body==null?b.bodyX(L):b.body.centreX())/L.w;
+        float by=(b.body==null?b.bodyY(L):b.body.centreY())/L.h;
+        int near=0,far=0;float shortest=10,longest=0;
+        for(int i=0;i<UnderwaterCave.KELP_PATCHES;i++) {
+            float delay=UnderwaterCave.travelDelay(UnderwaterCave.kelpX(i)-bx,UnderwaterCave.kelpY(i)-by);
+            if(delay<shortest){shortest=delay;near=i;}
+            if(delay>longest){longest=delay;far=i;}
+        }
+        for(int tick=0;tick<hz;tick++){c.clock+=1f/hz;history.update(c,L);}
+        b.hurt=1;b.octoVX[0][Boss.OCTO_NODES-1]=L.w;
+        int nearAt=-1,farAt=-1;
+        for(int tick=0;tick<hz;tick++) {
+            c.clock+=1f/hz;history.update(c,L);
+            if(history.damage[near]>.5f && nearAt<0)nearAt=tick;
+            if(history.damage[far]>.5f && farAt<0)farAt=tick;
+        }
+        check("kelp damage reaches nearby plants before distant ones at "+hz+" Hz",nearAt>=0 && farAt>nearAt+2);
+        check("delayed current reaches distant kelp at "+hz+" Hz",history.flow[far]>0);
+        b.age=10;history.update(c,L);b.age=0;history.update(c,L);
+        check("restarting boss discards delayed kelp motion at "+hz+" Hz",history.damage[near]==0 && history.flow[far]==0);
+        c.state=GameCore.OVER;history.update(c,L);
+        check("leaving play clears delayed kelp motion at "+hz+" Hz",history.damage[far]==0 && history.flow[near]==0);
     }
     private static void cachedScenery(Layout L) {
         GameCore c=stage(L);c.waterRipples.prepare(c,L);

@@ -177,7 +177,10 @@ where they shimmer as they turn and scale toward the foreground before leaving b
 its reduced haze preserves the deeper shadows on both native hosts. Two extra distant rock
 planes are baked into the chamber for depth. Three existing soft glow stamps follow the boss
 and tentacles. Eighteen kelp patches share reusable vertex buffers; their rooted blades respond
-to nearby tentacle velocity and the existing damage/recoil timers, with no new gameplay state.
+to nearby tentacle velocity and the existing damage/recoil timers. A bounded cosmetic history
+samples at up to 60 Hz and delays each patch by distance from the boss (up to 0.75 seconds),
+so currents and damage waves travel outward. It resets on completion, death, and retry.
+Damage illuminates whole blades and widens the cached wall glows without extra draw passes.
 The Octopulse cave keeps its fixed arena composition. Underwater and crystal caches
 remain active during monochrome: Android applies a luminance color matrix, while
 iOS lazily retains one grayscale copy per live image slot. Partial iOS fades blend

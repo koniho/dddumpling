@@ -21,6 +21,7 @@ final class BossPlay {
      */
     static void endBoss(GameCore c, Layout L) {
         boolean won = c.boss.beaten;
+        if(c.boss.kind==Boss.OCTOPUS)c.waterRipples.caveCurrent.reset();
         if (c.sound != null) {
             c.sound.bossMusic(false);
             if(c.boss.kind==Boss.RAINBOW_CAT)c.sound.rocket(0);

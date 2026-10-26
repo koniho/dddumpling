@@ -3245,6 +3245,8 @@ final class Preview {
             shot(dir,"underwater-cave-lit",battle,L,w,h,ss);
             battle.boss.damage(1);battle.boss.octoDeath=.2f;
             shot(dir,"underwater-cave-damage-kelp",battle,L,w,h,ss);
+            step(battle,L,.28f);shot(dir,"underwater-cave-kelp-wave-near",battle,L,w,h,ss);
+            step(battle,L,.30f);shot(dir,"underwater-cave-kelp-wave-far",battle,L,w,h,ss);
             GameCore loss=TestBossRetry.fight(L,Boss.OCTOPUS);loss.landBlend=1;
             TestBossRetry.lose(loss,L);TestBossRetry.ready(loss,L);step(loss,L,.6f);
             shot(dir,"underwater-cave-retry",loss,L,w,h,ss);

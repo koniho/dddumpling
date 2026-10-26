@@ -14,11 +14,11 @@ final class UnderwaterCave extends Draw {
         float by=b.body==null?b.bodyY(L):b.body.centreY();
         UnderwaterVista.image(p,UnderwaterVista.CAVE,0,0,L.w,L.h,fade);
         kelp(p,c,L,b,fade,0,8);
-        glow(p,bx,by+L.h*.13f,L.w*.36f,L.h*.27f,fade*(12+movement*24+damage*42));
+        glow(p,bx,by+L.h*.13f,L.w*(.36f+damage*.14f),L.h*(.27f+damage*.10f),fade*(12+movement*24+damage*90));
         for(int i=0;i<3;i++) {
             float pulse=c.waterRipples.beamPulse(c.clock,.24f+i*.25f);
             float drift=(float)Math.sin(c.clock*.17f+i*2.4f)*L.w*.045f+(bx-L.w*.5f)*.28f;
-            float light=.20f+UnderwaterVista.beamIdle(c.clock*.7f,i)*.65f+pulse*.30f+movement*.10f+damage*.22f;
+            float light=.20f+UnderwaterVista.beamIdle(c.clock*.7f,i)*.65f+pulse*.30f+movement*.10f+damage*.48f;
             UnderwaterVista.image(p,UnderwaterVista.CAVE+3,L.w*(-.22f+i*.30f)+drift,
                     -L.h*(.08f+i*.025f),L.w*(.85f-i*.08f),L.h*(.94f-i*.04f),fade*light);
         }
@@ -29,12 +29,12 @@ final class UnderwaterCave extends Draw {
             int arm=side==0?1:6;
             float reachY=b.octoPlaced && (b.octoArms&(1<<arm))!=0?b.octoY[arm][Boss.OCTO_NODES-1]:by+L.h*.15f;
             float gy=Math.max(L.h*.25f,Math.min(L.h*.79f,reachY));
-            glow(p,L.w*(side==0?.12f:.88f),gy,L.w*.21f,L.h*.24f,
-                    fade*(9+movement*26+damage*48));
+            glow(p,L.w*(side==0?.12f:.88f),gy,L.w*(.21f+damage*.10f),L.h*(.24f+damage*.09f),
+                    fade*(9+movement*26+damage*110));
         }
         float pulse=c.waterRipples.beamPulse(c.clock,.5f);
         float shimmer=.055f+.045f*(.5f+.5f*(float)Math.sin(c.clock*.47f));
-        UnderwaterVista.image(p,UnderwaterVista.CAVE+2,0,y,L.w,L.h,fade*Math.min(1,shimmer+pulse*.85f+movement*.22f+damage*.70f));
+        UnderwaterVista.image(p,UnderwaterVista.CAVE+2,0,y,L.w,L.h,fade*Math.min(1,shimmer+pulse*.85f+movement*.22f+damage*1.45f));
     }
 
     static float damagePulse(Boss b) {
@@ -72,18 +72,19 @@ final class UnderwaterCave extends Draw {
         }
     }
     private static void kelp(Painter p,GameCore c,Layout L,Boss b,float fade,int first,int end) {
-        float damage=damagePulse(b),age=b.octoDeath>0?b.octoDeath:(1-b.hurt)*.38f;
+        float damage=damagePulse(b);
         float bx=b.body==null?L.w*.5f:b.body.centreX();
         float[] blade=c.waterRipples.kelpBlade,edge=c.waterRipples.kelpEdge,shadow=c.waterRipples.kelpShadow;
         for(int i=first;i<end;i++) {
             int seed=721+i*97;boolean far=i<8,wall=i>=8 && i<14;
-            float x=far?.26f+hash(seed)*.48f:wall?(i%2==0?.08f:.78f)+hash(seed)*.14f:.23f+hash(seed)*.54f;
-            float y=far?.52f+hash(seed+3)*.31f:wall?.42f+hash(seed+3)*.44f:.84f+hash(seed+3)*.12f;
+            float x=kelpX(i),y=kelpY(i);
             float height=L.h*(far?.045f:wall?.07f:.085f)*(1+hash(seed+7)*1.1f);
-            float flow=current(b,L,x*L.w,y*L.h),direction=x*L.w>=bx?1:-1;
+            float flow=c.waterRipples.caveCurrent.flow[i],direction=x*L.w>=bx?1:-1;
+            float localDamage=c.waterRipples.caveCurrent.damage[i],age=c.waterRipples.caveCurrent.age[i];
+            float flash=Math.min(1,damage*.35f+localDamage*.90f);
             float dx=x-b.hitX/L.w,dy=y-b.hitY/L.h;
             float distance=(float)Math.sqrt(dx*dx+dy*dy);
-            float surge=damage*(.68f*direction+.52f*(float)Math.sin(age*13-distance*7));
+            float surge=localDamage*(.68f*direction+.52f*(float)Math.sin(age*13-distance*3));
             float strength=fade*(far?.42f:.90f);
             for(int stem=0;stem<2;stem++) {
                 float rootX=x*L.w+(stem-.5f)*L.w*.008f,rootY=y*L.h+stem*L.h*.003f;
@@ -102,8 +103,61 @@ final class UnderwaterCave extends Draw {
                     shadow[left+1]=shadow[right+1]=rootY+tall*u*.18f;
                 }
                 p.fillPoly(shadow,ink(0xFF01050C,strength*70));
-                p.fillPoly(blade,ink(i%3==0?0xFF285C58:0xFF285C4A,strength*240));
-                p.fillPoly(edge,ink(0xFF8BCDB1,strength*(48+damage*135+Math.abs(flow)*55)));
+                p.fillPoly(blade,ink(Glyph.mix(i%3==0?0xFF285C58:0xFF285C4A,0xFFAFF5CF,flash*.85f),strength*240));
+                p.fillPoly(edge,ink(Glyph.mix(0xFF8BCDB1,0xFFE3FFF2,flash),strength*(48+flash*180+Math.abs(flow)*25)));
+            }
+        }
+    }
+
+    static float kelpX(int i) {
+        int seed=721+i*97;
+        return i<8?.26f+hash(seed)*.48f:i<14?(i%2==0?.08f:.78f)+hash(seed)*.14f:.23f+hash(seed)*.54f;
+    }
+    static float kelpY(int i) {
+        int seed=721+i*97;
+        return i<8?.52f+hash(seed+3)*.31f:i<14?.42f+hash(seed+3)*.44f:.84f+hash(seed+3)*.12f;
+    }
+    static float travelDelay(float dx,float dy) {
+        return Math.min(.75f,.045f+.75f*(float)Math.sqrt(dx*dx+dy*dy));
+    }
+    static final class CurrentHistory {
+        static final int SAMPLES=64;
+        final float[] flow=new float[KELP_PATCHES],damage=new float[KELP_PATCHES],age=new float[KELP_PATCHES];
+        private final float[][] samples=new float[SAMPLES][KELP_PATCHES+2];
+        private final float[] times=new float[SAMPLES];
+        private int next,count;
+        private float lastTime=-100,lastAge=-1;
+        void reset() {
+            next=count=0;lastTime=-100;lastAge=-1;
+            java.util.Arrays.fill(flow,0);java.util.Arrays.fill(damage,0);java.util.Arrays.fill(age,0);
+        }
+        void update(GameCore c,Layout L) {
+            Boss b=c.boss;
+            if(c.state!=GameCore.PLAY || b.kind!=Boss.OCTOPUS || !b.active()) {reset();return;}
+            if(b.age<lastAge || c.clock<lastTime)reset();
+            lastAge=b.age;
+            if(c.clock-lastTime>=1/60f-.00001f) {
+                float[] sample=samples[next];times[next]=lastTime=c.clock;
+                for(int i=0;i<KELP_PATCHES;i++)sample[i]=current(b,L,kelpX(i)*L.w,kelpY(i)*L.h);
+                sample[KELP_PATCHES]=damagePulse(b);
+                sample[KELP_PATCHES+1]=b.octoDeath>0?b.octoDeath:(1-b.hurt)*.38f;
+                next=(next+1)%SAMPLES;count=Math.min(SAMPLES,count+1);
+            }
+            float bx=(b.body==null?b.bodyX(L):b.body.centreX())/L.w;
+            float by=(b.body==null?b.bodyY(L):b.body.centreY())/L.h;
+            for(int i=0;i<KELP_PATCHES;i++) {
+                float target=c.clock-travelDelay(kelpX(i)-bx,kelpY(i)-by);
+                flow[i]=damage[i]=age[i]=0;
+                for(int n=0;n<count;n++) {
+                    int older=(next-1-n+SAMPLES)%SAMPLES;
+                    if(times[older]>target)continue;
+                    int newer=n==0?older:(older+1)%SAMPLES;
+                    float span=times[newer]-times[older],t=span<=0?0:Math.min(1,(target-times[older])/span);
+                    flow[i]=samples[older][i]+(samples[newer][i]-samples[older][i])*t;
+                    damage[i]=samples[older][KELP_PATCHES]+(samples[newer][KELP_PATCHES]-samples[older][KELP_PATCHES])*t;
+                    age[i]=samples[older][KELP_PATCHES+1]+(samples[newer][KELP_PATCHES+1]-samples[older][KELP_PATCHES+1])*t;
+                    break;
+                }
             }
         }
     }

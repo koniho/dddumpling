@@ -21,8 +21,9 @@ final class WaterRipples {
     }}
     private int next,active;
     private float prepared=-1,preparedSky=-1,preparedWidth=-1,preparedHeight=-1;
+    final UnderwaterCave.CurrentHistory caveCurrent=new UnderwaterCave.CurrentHistory();
     WaterRipples(){reset();}
-    void reset(){java.util.Arrays.fill(born,-100);next=active=0;prepared=-1;}
+    void reset(){java.util.Arrays.fill(born,-100);next=active=0;prepared=-1;caveCurrent.reset();}
     void cleared(GameCore c,Layout L,float cx,float cy) {
         if(c.state!=GameCore.PLAY || c.survival.active || Underwater.presence(c)<=0)return;
         born[next]=c.clock;sky[next]=c.skyClock;x[next]=cx/L.w;y[next]=cy/L.h;

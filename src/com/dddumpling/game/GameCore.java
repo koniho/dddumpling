@@ -3200,6 +3200,7 @@ final class GameCore {
             if(boss.kind==Boss.RAINBOW_CAT)boss.cat.kids=kidsRun;
             if(boss.kind==Boss.ALLIGATOR)boss.alligator.target(this,L);
             int bossHits = boss.update(dt, L, rnd);
+            waterRipples.caveCurrent.update(this,L);
             if(boss.kind==Boss.RAINBOW_CAT) {
                 RainbowCatArrival.feedback(this,beforeIntro);
                 boss.cat.rocket.feedback(this);
