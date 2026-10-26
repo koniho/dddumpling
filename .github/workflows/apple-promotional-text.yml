@@ -1,0 +1,40 @@
+name: Update Apple promotional text
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Exact existing App Store version to update
+        type: string
+        required: true
+      apply:
+        description: Apply the checked-in English promotional text
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: apple-promotional-text
+  cancel-in-progress: false
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    environment: ios-release
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+      - name: Check promotional text guards
+        run: bundle exec ruby tools/test-store-promotional-text.rb
+      - name: Inspect or update only promotional text
+        env:
+          APPLY: ${{ inputs.apply }}
+          IOS_STORE_VERSION: ${{ inputs.version }}
+          IOS_APPSTORE_KEY_ID: ${{ secrets.IOS_APPSTORE_KEY_ID }}
+          IOS_APPSTORE_ISSUER_ID: ${{ secrets.IOS_APPSTORE_ISSUER_ID }}
+          IOS_APPSTORE_KEY_BASE64: ${{ secrets.IOS_APPSTORE_KEY_BASE64 }}
+        run: |
+          args=()
+          if [ "$APPLY" = true ]; then args+=(--write); fi
+          bundle exec ruby tools/store-promotional-text.rb "${args[@]}"

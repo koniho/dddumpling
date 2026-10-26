@@ -53,3 +53,11 @@ a separate 15–30 second cut can be made for an App Store preview.
 
 References: [iPhone screen recording](https://support.apple.com/en-ca/guide/iphone/iph52f6e1987/ios),
 [App Store preview specifications](https://developer.apple.com/help/app-store-connect/reference/app-information/app-preview-specifications).
+
+## Promotional text updates
+
+The **Update Apple promotional text** workflow previews or applies
+`en-US/promotional_text.txt` to one exact existing iOS version. Set `version` and
+leave `apply` false to inspect; use `apply=true` for an authorized update. It changes
+only `promotionalText`, verifies the saved English localization, and never alters
+review or release status. The limit is 170 characters; no app build is needed.
