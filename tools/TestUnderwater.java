@@ -169,16 +169,17 @@ final class TestUnderwater extends Check {
                 staggered&=UnderwaterVista.travel(i,row,0)!=UnderwaterVista.travel(i,row,1);
         }
         check("five column layers move outward on independently staggered sides",UnderwaterVista.ROWS==5 && outward && staggered);
-        boolean inward=true,anchored=true,varied=true;
-        float previousBow=0;
+        boolean inward=true,anchored=true;
+        int crownProfiles=0;
         for(int variant=0;variant<5;variant++) {
             int left=1+variant*2,right=left+1;
             float bend=UnderwaterVista.bow(left,.5f);
             inward&=bend>0 && UnderwaterVista.bow(right,.5f)==-bend;
             anchored&=UnderwaterVista.bow(left,.95f)==0 && UnderwaterVista.bow(right,.95f)==0;
-            varied&=bend>previousBow;previousBow=bend;
+            if(UnderwaterVista.bow(left,.15f)>bend)crownProfiles++;
         }
-        check("five reef profiles bow inward by different amounts with grounded feet",inward && anchored && varied);
+        check("reef profiles bow inward with grounded feet",inward && anchored);
+        check("most reef bends sit at the crown with occasional lower bulges",crownProfiles==4);
         float near=.93f,nearWidth=L.w*.60f*UnderwaterVista.scale(near);
         float nearTop=L.h*UnderwaterVista.rootY(near)-UnderwaterVista.columnHeight(near,nearWidth)*.68f;
         check("nearby reef crowns stretch above the screen",nearTop<0);

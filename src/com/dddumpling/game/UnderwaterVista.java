@@ -87,7 +87,8 @@ final class UnderwaterVista extends Draw {
         float t=Math.max(0,Math.min(1,(.91f-y)/.82f));
         int variant=(art-1)/2;
         float amount=.025f+.12f*variant/4f;
-        float curve=(float)Math.pow(Math.sin(t*Math.PI),1.2+.25*variant);
+        // Four of five profiles lean at the crown; one keeps a lower bulge.
+        float curve=variant==3?(float)Math.pow(Math.sin(t*Math.PI),1.95):t*t;
         return (art%2==1?1:-1)*amount*curve;
     }
     // Warp the whole painting once, including its plants, seams, crown and footing.
@@ -173,18 +174,23 @@ final class UnderwaterVista extends Draw {
             float t=layer/63f;
             p.fillEllipse(x+w*.48f,y-h*.06f,w*(.13f+t*.52f),h*(.15f+t*.54f),ink(0xFF75DFDD,a*1.8f));
         }
-        // An irregular, distant sandy channel broadens gently toward the foreground.
-        float[] path=new float[84];
-        for(int layer=0;layer<12;layer++) {
-            for(int i=0;i<21;i++) {
-                float t=i/20f,yy=y+h*(.61f+t*.52f);
-                float half=w*(.015f*t+t*t*(.34f-layer*.015f));
-                float mid=x+w*(.50f+.025f*(float)Math.sin(t*8));
-                float ripple=w*.014f*t*(float)Math.sin(t*34+layer);
-                path[i*2]=mid-half+ripple;path[i*2+1]=yy;
-                path[(41-i)*2]=mid+half+ripple;path[(41-i)*2+1]=yy;
+        // A warmer seabed separates the perspective floor from blue open water.
+        // Baked with the backdrop, including soft banks and the distant fade.
+        float[] path=new float[8];
+        for(int row=0;row<48;row++) {
+            float t=row/48f,u=(row+1)/48f;
+            float opacity=a*smooth((t+u)*2);
+            int color=Glyph.mix(0xFF748A84,0xFFA99B83,(t+u)*.5f);
+            for(int layer=0;layer<6;layer++) {
+                float inset=layer*.018f;
+                float top=w*(.025f+t*(.82f-inset)),bottom=w*(.025f+u*(.82f-inset));
+                float tx=x+w*(.5f+.012f*(float)Math.sin(t*7)),bx=x+w*(.5f+.012f*(float)Math.sin(u*7));
+                path[0]=tx-top;path[1]=y+h*(.49f+t*.60f);
+                path[2]=tx+top;path[3]=path[1];
+                path[4]=bx+bottom;path[5]=y+h*(.49f+u*.60f);
+                path[6]=bx-bottom;path[7]=path[5];
+                p.fillPoly(path,ink(color,opacity*(18+layer)));
             }
-            p.fillPoly(path,ink(0xFFA2ADA0,a*3));
         }
     }
     private static void ground(Painter p,GameCore c,Layout L,float a) {
@@ -204,8 +210,8 @@ final class UnderwaterVista extends Draw {
                 line[j*2+1]=yy+L.h*d*(.012f*(float)Math.sin(u*8+seed*1.3f)+.024f*(u-.5f)*(u-.5f));
             }
             float width=L.w*(.001f+d*.014f);
-            p.polyline(line,ink(0xFF9BAEAD,alpha*(7+d*9)),width*2.4f);
-            p.polyline(line,ink(0xFF9BAEAD,alpha*(10+d*10)),width);
+            p.polyline(line,ink(0xFFC3C8B2,alpha*(9+d*10)),width*2.4f);
+            p.polyline(line,ink(0xFFC3C8B2,alpha*(14+d*12)),width);
         }
     }
     private static void surface(Painter p,GameCore c,Layout L,float a) {
