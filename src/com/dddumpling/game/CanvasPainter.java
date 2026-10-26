@@ -55,6 +55,11 @@ final class CanvasPainter implements Painter, ArtStamp {
         if(waterStamps==null)waterStamps=new CanvasWaterStamps();
         waterStamps.glow(canvas,x,y,rx,ry,alpha);return true;
     }
+    public boolean reefVista(int art,float x,float y,float w,float h,int alpha) {
+        if(stamps()==null || art<0 || art>=UnderwaterVista.COUNT || w<=0 || h<=0)return false;
+        if(reefStamps==null)reefStamps=new CanvasReefStamps();
+        reefStamps.vista(canvas,art,x,y,w,h,alpha);return true;
+    }
     public boolean reefRock(int art,float x,float y,float w,float h,int alpha) {
         if(stamps()==null || art<0 || art>=Underwater.ROCK_COUNT || w<=0 || h<=0)return false;
         if(reefStamps==null)reefStamps=new CanvasReefStamps();

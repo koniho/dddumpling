@@ -46,16 +46,15 @@ final class Underwater extends Draw {
         p=new WaterPainter(p,c,L,1.8f);
         p.save();p.clipRect(0,0,L.w,L.h);
         p.fillRect(0,0,L.w,L.h,ink(WATER,245*fade));
-        // A few nested pools of blue give depth without blur passes or full-screen distortion.
-        for(int layer=3;layer>=0;layer--)p.fillEllipse(L.w*.54f,L.h*.40f,
-                L.w*(.38f+layer*.15f),L.h*(.23f+layer*.12f),ink(0xFF243B69,fade*(6+layer*2)*(1-cave*.65f)));
-        rays(p,c,L,fade*(1-cave*.70f));
-        sandDunes(p,c,L,fade);
-        groundTexture(p,c,L,fade);
-        scatteredRocks(p,c,L,fade);
-        if(cave<.5f)reefs(p,c,L,fade*(1-smooth(cave*2)),cave*L.h*.36f);
-        if(cave>0)cave(p,c,L,fade,cave);
-        seabedGardens(p,c,L,fade,cave);
+        if(cave<1)UnderwaterVista.draw(p,c,L,fade*(1-cave));
+        if(cave>0) {
+            rays(p,c,L,fade*cave*.30f);
+            sandDunes(p,c,L,fade*cave);
+            groundTexture(p,c,L,fade*cave);
+            scatteredRocks(p,c,L,fade*cave);
+            cave(p,c,L,fade,cave);
+            seabedGardens(p,c,L,fade,cave);
+        }
         fish(p,c,L,fade);
         // Scenery continues behind the keys; a gradual darkening replaces the cut-off horizon.
         float start=L.deckTop-L.h*.045f;
@@ -79,41 +78,8 @@ final class Underwater extends Draw {
         }
     }
 
-    private static void reefs(Painter p,GameCore c,Layout L,float fade,float arrival) {
-        for(int depth=0;depth<2;depth++)for(int side=0;side<2;side++)for(int i=0;i<3;i++) {
-            float depthFade=depth==0?fade*fade*.42f:fade*.88f;
-            if(depthFade<.025f)continue;
-            int seed=1253+depth*103+side*43+i*67;
-            float y=reefY(c,L,depth,side,i,arrival);
-            float w=L.w*(.23f+hash(seed+2)*.11f)*(depth==0?.80f:1);
-            float h=Math.min(w*(.68f+hash(seed+1)*.20f),L.h*.136f);
-            if(y+h<-20 || y-h>L.h+20)continue;
-            cliff(p,L.w*side,y,w,h,side==0?1:-1,depthFade,seed);
-        }
-    }
-
     private static float scrollY(GameCore c,Layout L,float depth) {
-        // Grounded scenery shares one current; only a small depth offset separates its layers.
         return c.skyClock*L.h*SCROLL*(1+depth*.03f);
-    }
-
-    private static float reefY(GameCore c,Layout L,int depth,int side,int row,float arrival) {
-        int seed=1253+depth*103+side*43+row*67;
-        // Interleaved slots keep near/far rocks separate throughout a long run.
-        // Bounded depth motion preserves parallax without layers eventually overtaking.
-        float span=L.h*2.4f,slot=span/6;
-        float depthOffset=L.h*.012f*(float)Math.sin(c.skyClock*.10f+depth*2);
-        return ((row*2+depth)*slot+side*slot*.21f+hash(seed)*slot*.04f
-                +scrollY(c,L,0)+depthOffset+arrival)%span-L.h*.30f;
-    }
-    private static float shelfPlantFade(GameCore c,Layout L,float y,float radius,float cave) {
-        float clear=1;
-        for(int side=0;side<2;side++) {
-            float shelfY=reefY(c,L,1,side,side,cave*L.h*.36f);
-            float distance=Math.abs(y-shelfY)-L.w*.255f-radius;
-            clear=Math.min(clear,smooth(distance/(L.h*.045f)));
-        }
-        return clear;
     }
 
     private static void cliff(Painter p,float x,float y,float w,float h,int side,float fade,int seed) {
@@ -252,32 +218,7 @@ final class Underwater extends Draw {
         p.restore();
     }
 
-    static float scatterX(int seed,float radius) {
-        for(int tryX=0;tryX<12;tryX++) {
-            float x=.07f+hash(seed+7+tryX*73)*.86f;
-            if(Math.abs(x-.35f)>radius*1.1f+.07f && Math.abs(x-.65f)>radius*1.1f+.07f)return x;
-        }
-        return .5f;
-    }
     private static void seabedGardens(Painter p,GameCore c,Layout L,float fade,float cave) {
-        float stageFade=fade*smooth((1-cave-.55f)/.45f);
-        if(stageFade>.025f)for(int i=0;i<5;i++) {
-            int seed=4103+i*97;
-            float span=L.h*1.5f,y=(i*span/5+hash(seed)*L.h*.08f+scrollY(c,L,0))%span-L.h*.20f;
-            float r=L.w*(.039f+hash(seed+3)*.008f);
-            if(y+r<0 || y-r*5>L.h)continue;
-            float plants=stageFade*shelfPlantFade(c,L,y,r,cave);
-            if(plants>.025f)garden(p,c,L,L.w*(i%2==0?.35f:.65f),y,r,plants,seed,i);
-        }
-        if(stageFade>.025f)for(int i=0;i<24;i++) {
-            int seed=5107+i*101;
-            float span=L.h*1.65f,y=(i*span/24+hash(seed+7)*L.h*.06f+scrollY(c,L,0))%span-L.h*.15f;
-            float r=L.w*(.018f+hash(seed+3)*.011f);
-            if(y+r<0 || y-r*6>L.h)continue;
-            float plants=stageFade*shelfPlantFade(c,L,y,r,cave);
-            float x=L.w*((i%2==0?.35f:.65f)+(hash(seed+11)-.5f)*.055f);
-            if(plants>.025f)kelp(p,c,x,y,r,plants,seed,2);
-        }
         float caveFade=fade*smooth((cave-.45f)/.55f);
         if(caveFade>.025f)for(int i=0;i<2;i++)garden(p,c,L,L.w*(i==0?.35f:.65f),
                 L.deckTop-L.h*.055f,L.w*.043f,caveFade,4261+i*79,i==0?2:3);
@@ -290,7 +231,7 @@ final class Underwater extends Draw {
         kelp(p,c,x,y,r,fade,seed,3);
         UnderwaterCoral.draw(p,x+r*.25f,y+r*.04f,r*.85f,c.clock+seed,kind,fade,seed);
     }
-    private static void kelp(Painter p,GameCore c,float x,float y,float r,float fade,int seed,int stems) {
+    static void kelp(Painter p,GameCore c,float x,float y,float r,float fade,int seed,int stems) {
         float[] blade=c.waterRipples.kelpBlade,shadow=c.waterRipples.kelpShadow,edge=c.waterRipples.kelpEdge;
         for(int stem=0;stem<stems;stem++) {
             float spread=seed%3==0?.8f:seed%3==1?.3f:.55f;

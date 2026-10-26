@@ -9,6 +9,7 @@
 #import "com/dddumpling/game/CrystalField.h"
 #import "com/dddumpling/game/CrystalArena.h"
 #import "com/dddumpling/game/Underwater.h"
+#import "com/dddumpling/game/UnderwaterVista.h"
 #import "IOSObjectArray.h"
 #import "IOSPrimitiveArray.h"
 
@@ -38,6 +39,7 @@ static void DDAppendPolygon(CGContextRef context, IOSFloatArray *points) {
 
 @interface DDIOSPainter () {
   CGImageRef _forest[6];
+  CGImageRef _reefVista[DDUnderwaterVista_COUNT];
   CGImageRef _reef[DDUnderwater_ROCK_COUNT];
   CGImageRef _waterBand,_waterGlow;
   CGImageRef _crystal[DDCrystalField_LAYERS],_crystalArena[DDCrystalField_LAYERS];
@@ -162,6 +164,27 @@ static void DDAppendPolygon(CGContextRef context, IOSFloatArray *points) {
   CGContextRestoreGState(self.context);return YES;
 }
 
+- (jboolean)reefVistaWithInt:(jint)art withFloat:(jfloat)x withFloat:(jfloat)y
+                  withFloat:(jfloat)w withFloat:(jfloat)h withInt:(jint)alpha {
+  if(!self.context || _drawingForest || art<0 || art>=DDUnderwaterVista_COUNT || w<=0 || h<=0)return NO;
+  if(!_reefVista[art]) {
+    size_t width=DDUnderwaterVista_WIDTH,height=[DDUnderwaterVista heightWithInt:art];
+    CGContextRef bitmap=CGBitmapContextCreate(NULL,width,height,8,width*4,_colorSpace,
+        kCGBitmapByteOrder32Big|kCGImageAlphaPremultipliedLast);
+    if(!bitmap)return NO;
+    CGContextRef prior=self.context;self.context=bitmap;_drawingForest=YES;
+    [DDUnderwaterVista paintWithDDPainter:self withInt:art];
+    _drawingForest=NO;self.context=prior;
+    _reefVista[art]=CGBitmapContextCreateImage(bitmap);CGContextRelease(bitmap);
+    if(!_reefVista[art])return NO;
+  }
+  CGContextSaveGState(self.context);
+  CGContextSetAlpha(self.context,MAX(0,MIN(255,alpha))/255.0);
+  CGContextSetInterpolationQuality(self.context,kCGInterpolationMedium);
+  CGContextDrawImage(self.context,CGRectMake(x,y,w,h),_reefVista[art]);
+  CGContextRestoreGState(self.context);return YES;
+}
+
 - (jboolean)reefRockWithInt:(jint)art withFloat:(jfloat)x withFloat:(jfloat)y
                  withFloat:(jfloat)w withFloat:(jfloat)h withInt:(jint)alpha {
   if (!self.context || _drawingForest || art<0 || art>=DDUnderwater_ROCK_COUNT || w<=0 || h<=0)return NO;
@@ -276,6 +299,7 @@ static void DDAppendPolygon(CGContextRef context, IOSFloatArray *points) {
 
 - (void)dealloc {
   CGImageRelease(_waterBand);CGImageRelease(_waterGlow);
+  for(NSUInteger i=0;i<DDUnderwaterVista_COUNT;i++)CGImageRelease(_reefVista[i]);
   for (NSUInteger i=0;i<DDUnderwater_ROCK_COUNT;i++)CGImageRelease(_reef[i]);
   for (NSUInteger i=0;i<DDCrystalField_LAYERS;i++){CGImageRelease(_crystal[i]);CGImageRelease(_crystalArena[i]);}
   for (NSUInteger i=0;i<DDSlimeBasinArt_COUNT;i++) CGImageRelease(_basin[i]);

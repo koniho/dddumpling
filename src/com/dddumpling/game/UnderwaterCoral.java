@@ -11,7 +11,10 @@ final class UnderwaterCoral extends Draw {
         draw(p,x,y,r,t,kind,fade,137+kind*71);
     }
     static void draw(Painter p,float x,float y,float r,float t,int kind,float fade,int seed) {
-        int color=COLORS[kind];float pulse=.8f+.2f*(float)Math.sin(t*.7f+kind);
+        colony(p,x,y,r,t,kind,fade,seed,COLORS[kind]);
+    }
+    static void colony(Painter p,float x,float y,float r,float t,int kind,float fade,int seed,int color) {
+        float pulse=.8f+.2f*(float)Math.sin(t*.7f+kind);
         // The reef shares one upper-left light: soft colony shadows spread down and right.
         for(int layer=2;layer>=0;layer--)p.fillEllipse(x+r*(.20f+layer*.10f),y+r*(.16f+layer*.07f),r*(.65f+layer*.13f),r*(.19f+layer*.055f),ink(0xFF030916,fade*(layer==0?80:21)));
         p.fillEllipse(x,y-r*.30f,r*1.10f,r*.77f,ink(color,fade*pulse*8));

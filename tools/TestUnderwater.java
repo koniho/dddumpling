@@ -48,6 +48,7 @@ final class TestUnderwater extends Check {
         check("enemy refraction is absent in other modes",Underwater.enemyShift(c,x,y,L)==0);
         clearGlows(L);
         cachedScenery(L);
+        perspective(L);
         geometry(L);
     }
     private static void clearGlows(Layout L) {
@@ -91,12 +92,7 @@ final class TestUnderwater extends Check {
             error=Math.max(error,Math.abs(c.waterRipples.refract(x,y)-WaterPainter.shift(c.clock,x,y,L.w,1)));
         }
         check("sampled water field stays close to analytic waves",error<L.w*.0008f);
-        boolean clear=true;
-        for(int seed=0;seed<1000;seed++) {
-            float r=.03f+.04f*Draw.hash(seed),x=Underwater.scatterX(seed,r);
-            clear&=Math.abs(x-.35f)>r*1.1f+.07f && Math.abs(x-.65f)>r*1.1f+.07f;
-        }
-        check("scattered rocks leave both plant root lanes clear",clear);
+        c=TestBossRetry.fight(L,Boss.OCTOPUS);c.landBlend=1;c.clock=c.skyClock=17;
         final int[] stamps={0},draws={0},bands={0},glows={0};final boolean[] valid={true};
         final float[] rocks=new float[160];
         ArtStamp cache=new ArtStamp() {
@@ -106,6 +102,7 @@ final class TestUnderwater extends Check {
                 valid[0]&=art>=0 && art<Underwater.ROCK_COUNT && w>0 && h>0 && alpha>0 && alpha<=255;
                 return true;
             }
+            public boolean reefVista(int art,float x,float y,float w,float h,int alpha){return true;}
             public boolean waterBand(float[] xy,float r,int alpha){bands[0]++;return true;}
             public boolean waterGlow(float x,float y,float rx,float ry,int alpha){glows[0]++;return true;}
         };
@@ -120,8 +117,8 @@ final class TestUnderwater extends Check {
         check("ambient motion never shifts or squeezes anchored rocks",count==stamps[0] && java.util.Arrays.equals(first,rocks));
         boolean separated=true,proportioned=true;
         // Cover repeated wraps and cave arrival, not just one convenient screenshot.
-        for(int phase=0;phase<3;phase++)for(int tick=0;tick<180;tick++) {
-            GameCore scene=phase==0?stage(L):TestBossRetry.fight(L,Boss.OCTOPUS);
+        for(int phase=1;phase<3;phase++)for(int tick=0;tick<180;tick++) {
+            GameCore scene=TestBossRetry.fight(L,Boss.OCTOPUS);
             scene.landBlend=1;scene.skyClock=scene.clock=tick*7.31f;
             if(phase==1)scene.boss.intro=Boss.INTRO*(1-tick/179f);
             stamps[0]=0;Underwater.backdrop(probe,scene,L);
@@ -137,7 +134,7 @@ final class TestUnderwater extends Check {
         }
         check("rock silhouettes stay separate through scroll wraps and cave arrival",separated);
         check("rocks retain full proportions rather than stretched shelves",proportioned);
-        c.waterRipples.cleared(c,L,L.w*.5f,L.h*.5f);c.clock+=.1f;draws[0]=0;
+        c=stage(L);c.waterRipples.cleared(c,L,L.w*.5f,L.h*.5f);c.clock+=.1f;draws[0]=0;
         Underwater.veil(new OpacityPainter(probe,1),c,L);
         check("soft water effects use cached textures through wrappers",bands[0]==3 && glows[0]==1 && draws[0]<40);
         check("soft texture edges are fully transparent",(Underwater.waterPixel(64,0,true)>>>24)==0
@@ -146,10 +143,49 @@ final class TestUnderwater extends Check {
         for(int tick=0;tick<24*60;tick++)replay.step(L);
         check("underwater profile reaches settled cave without playing manually",replay.core.boss.kind==Boss.OCTOPUS && Underwater.caveProgress(replay.core)==1);
     }
+    private static void perspective(Layout L) {
+        boolean advancing=true,accelerating=true;
+        float lastY=UnderwaterVista.rootY(0),lastSize=UnderwaterVista.scale(0),lastSpeed=0;
+        for(int i=1;i<=100;i++) {
+            float t=i/100f,y=UnderwaterVista.rootY(t),size=UnderwaterVista.scale(t),speed=y-lastY;
+            advancing&=y>lastY && size>lastSize;accelerating&=speed>=lastSpeed;
+            lastY=y;lastSize=size;lastSpeed=speed;
+        }
+        check("reef perspective moves down and grows continuously",advancing && accelerating);
+        check("reef colonies fade in at the distant plane",UnderwaterVista.visibility(0)==0
+                && UnderwaterVista.visibility(.05f)<UnderwaterVista.visibility(.15f));
+        // The tallest colony has completely passed the viewport before recycling.
+        float top=UnderwaterVista.rootY(1)*L.h-L.w*.65f*UnderwaterVista.scale(1)*352/256*.86f;
+        check("reef colonies recycle beyond the bottom",top>L.h);
+        final int[] stamps={0},calls={0};final boolean[] valid={true};
+        ArtStamp cache=new ArtStamp() {
+            public boolean stamp(int art,float x,float y,float w,float h,float angle,int tint,float amount){return false;}
+            public boolean reefVista(int art,float x,float y,float w,float h,int alpha) {
+                stamps[0]++;valid[0]&=art>=0 && art<UnderwaterVista.COUNT && Float.isFinite(x+y+w+h)
+                        && w>0 && h>0 && alpha>=0 && alpha<=255;return true;
+            }
+        };
+        Painter probe=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),new Class<?>[]{Painter.class},(proxy,method,args)-> {
+            if(method.getName().equals("stamps"))return cache;
+            calls[0]++;return null;
+        });
+        GameCore c=stage(L);boolean bounded=true;
+        for(int i=0;i<180;i++) {
+            stamps[0]=calls[0]=0;c.skyClock=i*3.17f;
+            UnderwaterVista.draw(new OpacityPainter(probe,1),c,L,1);
+            bounded&=stamps[0]>4 && stamps[0]<=9 && calls[0]<70;
+        }
+        check("detailed reef artwork stays cached and bounded throughout travel",valid[0] && bounded);
+    }
     private static void geometry(Layout L) {
         // Count shared vector work: neither mobile renderer should need a blur or texture rebuild.
         final int[] calls={0},vertices={0};final boolean[] finite={true};
+        ArtStamp cache=new ArtStamp() {
+            public boolean stamp(int art,float x,float y,float w,float h,float angle,int tint,float amount){return false;}
+            public boolean reefVista(int art,float x,float y,float w,float h,int alpha){return true;}
+        };
         Painter probe=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),new Class<?>[]{Painter.class},(proxy,method,args)-> {
+            if(method.getName().equals("stamps"))return cache;
             calls[0]++;
             if(args!=null)for(Object arg:args) {
                 if(arg instanceof float[])for(float x:(float[])arg){finite[0]&=Float.isFinite(x);vertices[0]++;}
@@ -157,6 +193,8 @@ final class TestUnderwater extends Check {
             }
             return null;
         });
+        for(int art=0;art<UnderwaterVista.COUNT;art++)UnderwaterVista.paint(probe,art);
+        check("cached reef paintings contain finite geometry",finite[0]);
         for(int phase=0;phase<3;phase++) {
             GameCore c=phase==0?stage(L):TestBossRetry.fight(L,Boss.OCTOPUS);
             c.landBlend=1;if(phase==1)c.boss.intro=Boss.INTRO*.5f;

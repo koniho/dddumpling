@@ -152,6 +152,11 @@ measurement, and restore flow above, writing `build/underwater-profile-*`.
 The comparison switches immutable artwork caching; both paths use the shared
 sampled refraction field and moving haze. Android and iOS cache twelve shaded
 rock images (under 3 MiB), anchored to their seabed scroll without ambient distortion.
+The stage reef corridor additionally caches one lit water/wall painting and six coral
+colonies (2.56 MiB). Their shared perspective projection controls placement, scale,
+and accelerating downward travel. Colonies fade in at the far plane and recycle
+after leaving the viewport; kelp, light ripples, and drifting motes remain live.
+The Octopulse cave keeps its fixed arena composition.
 Soft haze and clear glows share two immutable Gaussian textures (65 KiB total).
 Android bends the strip with a small bitmap mesh; iOS draws affine strip segments.
 Both avoid stacking translucent polygons over the same screen area each frame.
