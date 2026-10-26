@@ -4,6 +4,7 @@ package com.dddumpling.game;
 final class Underwater extends Draw {
     static final int LAND=2,ROCK_COUNT=12,ROCK_WIDTH=248,ROCK_HEIGHT=236;
     static final float SCROLL=.016f;
+    static final int WATER_TEXTURE=128;
     private static final int WATER=0xFF080F24, LIGHT=0xFF8BCFDF;
     private static final float[][] ROCK_RIMS=rockRims();
     private Underwater() {}
@@ -121,6 +122,7 @@ final class Underwater extends Draw {
 
     /** Rounded erosion contours with a broad upper-left highlight and a down-right cast shadow. */
     private static void rock(Painter p,float x,float y,float w,float h,float fade,int seed) {
+        if(p instanceof WaterPainter)p=((WaterPainter)p).anchored();
         if(p.stamps()!=null && p.stamps().reefRock(seed%ROCK_COUNT,x,y,w,h,(int)(fade*255)))return;
         rockVector(p,x,y,w,h,fade,seed);
     }
@@ -285,7 +287,7 @@ final class Underwater extends Draw {
         UnderwaterCoral.draw(p,x+r*.25f,y+r*.04f,r*.85f,c.clock+seed,kind,fade,seed);
     }
     private static void kelp(Painter p,GameCore c,float x,float y,float r,float fade,int seed,int stems) {
-        float[] blade=new float[36],shadow=new float[36],edge=new float[36];
+        float[] blade=c.waterRipples.kelpBlade,shadow=c.waterRipples.kelpShadow,edge=c.waterRipples.kelpEdge;
         for(int stem=0;stem<stems;stem++) {
             float spread=seed%3==0?.8f:seed%3==1?.3f:.55f;
             float base=x+(stem-(stems-1)*.5f)*r*spread;
@@ -297,7 +299,8 @@ final class Underwater extends Draw {
                         +.18f*u*(float)Math.sin(phase*1.4f-u*9+stem));
                 float lean=(stem-(stems-1)*.5f)*r*.25f*u;
                 float xx=base+bend+lean,yy=root-u*height;
-                float width=r*(.045f+.035f*(float)Math.pow(Math.sin(u*13+seed),2))*(1-u*.94f);
+                float wave=(float)Math.sin(u*13+seed);
+                float width=r*(.045f+.035f*wave*wave)*(1-u*.94f);
                 int left=j*2,right=(17-j)*2;
                 blade[left]=xx-width;blade[right]=xx+width;blade[left+1]=blade[right+1]=yy;
                 edge[left]=xx-width*.45f;edge[right]=xx-width*.10f;edge[left+1]=edge[right+1]=yy;
@@ -332,7 +335,6 @@ final class Underwater extends Draw {
     /** Broad, layered haze passes over all playfield artwork; the HUD stays crisp above it. */
     static void veil(Painter p,GameCore c,Layout L) {
         float fade=presence(c)*(1-BossVictory.backdropDrain(c));if(fade<=.001f)return;
-        p=new WaterPainter(p,c,L,.6f);
         p.save();p.clipRect(0,0,L.w,L.h);
         p.fillRect(0,0,L.w,L.h,ink(0xFF538BA0,fade*10));
         c.waterRipples.drawGlows(p,c,L,fade);
@@ -345,7 +347,7 @@ final class Underwater extends Draw {
         p.restore();
     }
     private static void haze(Painter p,GameCore c,Layout L,float fade) {
-        float[] ribbon=new float[36],centre=new float[9];
+        float[] ribbon=c.waterRipples.hazeRibbon,centre=c.waterRipples.hazeCentre;
         for(int i=0;i<3;i++) {
             float span=L.h*1.5f,y=(i*span/3+hash(i+571)*L.h*.12f+scrollY(c,L,0))%span-L.h*.25f;
             float phase=c.clock*.40f+i*2.1f,r=L.h*(.070f+hash(i+21)*.025f);
@@ -354,9 +356,12 @@ final class Underwater extends Draw {
                 float u=j/8f;
                 // The whole strip crosses the viewport: its ends never taper inside the scene.
                 ribbon[j*2]=ribbon[(17-j)*2]=L.w*(-.25f+u*1.5f);
-                centre[j]=y+L.w*(.085f*(float)Math.sin(u*4+phase)
+                centre[j*2]=ribbon[j*2];
+                centre[j*2+1]=y+L.w*(.085f*(float)Math.sin(u*4+phase)
                         +.025f*(float)Math.sin(u*7-phase*.7f));
             }
+            ArtStamp cache=p.stamps();
+            if(cache!=null && cache.waterBand(centre,r*3,Math.round(25*fade*pulse)))continue;
             float previous=0;
             // Tiny Gaussian opacity increments replace the four visibly stepped bands.
             for(int layer=0;layer<16;layer++) {
@@ -365,12 +370,22 @@ final class Underwater extends Draw {
                 int alpha=Math.round(opacity)-Math.round(previous);previous=opacity;
                 if(alpha<=0)continue;
                 for(int j=0;j<9;j++) {
-                    ribbon[j*2+1]=centre[j]-width;
-                    ribbon[(17-j)*2+1]=centre[j]+width;
+                    ribbon[j*2+1]=centre[j*2+1]-width;
+                    ribbon[(17-j)*2+1]=centre[j*2+1]+width;
                 }
                 p.fillPoly(ribbon,ink(LIGHT,alpha));
             }
         }
+    }
+
+    /** Shared soft textures, generated once by either host; no frame-sized blur buffers. */
+    static int waterPixel(int x,int y,boolean band) {
+        float yy=(y/(WATER_TEXTURE-1f)*2-1)*3;
+        float xx=band?0:(x/(WATER_TEXTURE-1f)*2-1)*3;
+        float d=(float)Math.sqrt(xx*xx+yy*yy);
+        float falloff=Math.max(0,((float)Math.exp(-.5f*d*d)-.011109f)/.988891f);
+        int color=band?LIGHT:Glyph.mix(0xFF49B5CC,0xFFBBF5EB,Math.max(0,1-d/3));
+        return Glyph.withAlpha(color,Math.round(255*falloff));
     }
 
     static float enemyShift(GameCore c,float x,float y,Layout L) {

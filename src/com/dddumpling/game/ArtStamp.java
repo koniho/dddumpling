@@ -5,6 +5,8 @@ interface ArtStamp {
     int PALM=0, PEBBLE=1, COUNT=2;
     /** Alpha is applied to the completed foliage image, avoiding hundreds of translucent paths. */
     default boolean forest(int art,float x,float y,float r,float lean,int color,int alpha) {return false;}
+    default boolean waterBand(float[] xy,float radius,int alpha) {return false;}
+    default boolean waterGlow(float x,float y,float rx,float ry,int alpha) {return false;}
     default boolean reefRock(int art,float x,float y,float w,float h,int alpha) {return false;}
     default boolean crystal(int layer,float x,float y,float w,float h,int alpha) {return false;}
     default boolean basin(int art,float x,float y,float w,float h,int alpha) {return false;}

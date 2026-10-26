@@ -97,13 +97,17 @@ final class TestUnderwater extends Check {
             clear&=Math.abs(x-.35f)>r*1.1f+.07f && Math.abs(x-.65f)>r*1.1f+.07f;
         }
         check("scattered rocks leave both plant root lanes clear",clear);
-        final int[] stamps={0},draws={0};final boolean[] valid={true};
+        final int[] stamps={0},draws={0},bands={0},glows={0};final boolean[] valid={true};
+        final float[] rocks=new float[160];
         ArtStamp cache=new ArtStamp() {
             public boolean stamp(int art,float x,float y,float w,float h,float angle,int tint,float amount){return false;}
             public boolean reefRock(int art,float x,float y,float w,float h,int alpha) {
-                stamps[0]++;valid[0]&=art>=0 && art<Underwater.ROCK_COUNT && w>0 && h>0 && alpha>0 && alpha<=255;
+                int at=stamps[0]++*4;rocks[at]=x;rocks[at+1]=y;rocks[at+2]=w;rocks[at+3]=h;
+                valid[0]&=art>=0 && art<Underwater.ROCK_COUNT && w>0 && h>0 && alpha>0 && alpha<=255;
                 return true;
             }
+            public boolean waterBand(float[] xy,float r,int alpha){bands[0]++;return true;}
+            public boolean waterGlow(float x,float y,float rx,float ry,int alpha){glows[0]++;return true;}
         };
         Painter probe=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),new Class<?>[]{Painter.class},(proxy,method,args)-> {
             if(method.getName().equals("stamps"))return cache;
@@ -111,6 +115,14 @@ final class TestUnderwater extends Check {
         });
         Underwater.backdrop(new OpacityPainter(probe,1),c,L);
         check("rock cache survives painter wrappers and cuts vector work",valid[0] && stamps[0]>=10 && draws[0]<240);
+        float[] first=rocks.clone();int count=stamps[0];stamps[0]=0;c.clock+=1;
+        Underwater.backdrop(new OpacityPainter(probe,1),c,L);
+        check("ambient motion never shifts or squeezes anchored rocks",count==stamps[0] && java.util.Arrays.equals(first,rocks));
+        c.waterRipples.cleared(c,L,L.w*.5f,L.h*.5f);c.clock+=.1f;draws[0]=0;
+        Underwater.veil(new OpacityPainter(probe,1),c,L);
+        check("soft water effects use cached textures through wrappers",bands[0]==3 && glows[0]==1 && draws[0]<40);
+        check("soft texture edges are fully transparent",(Underwater.waterPixel(64,0,true)>>>24)==0
+                && (Underwater.waterPixel(0,0,false)>>>24)==0 && (Underwater.waterPixel(64,64,false)>>>24)>250);
         GatorReplay replay=new GatorReplay(Boss.OCTOPUS);
         for(int tick=0;tick<24*60;tick++)replay.step(L);
         check("underwater profile reaches settled cave without playing manually",replay.core.boss.kind==Boss.OCTOPUS && Underwater.caveProgress(replay.core)==1);

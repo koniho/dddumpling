@@ -12,6 +12,13 @@ final class WaterRipples {
     private static final int COLS=8,ROWS=64;
     private final float[] field=new float[(COLS+1)*(ROWS+1)];
     final float[][] buffers=new float[96][];
+    final float[] kelpBlade=new float[36],kelpShadow=new float[36],kelpEdge=new float[36];
+    final float[] hazeRibbon=new float[36],hazeCentre=new float[18];
+    private static final float[] SIN_X=new float[COLS+1],COS_X=new float[COLS+1];
+    static {for(int col=0;col<=COLS;col++) {
+        float phase=(col*2f/COLS-.5f)*2.1f;
+        SIN_X[col]=(float)Math.sin(phase);COS_X[col]=(float)Math.cos(phase);
+    }}
     private int next,active;
     private float prepared=-1,preparedSky=-1,preparedWidth=-1,preparedHeight=-1;
     WaterRipples(){reset();}
@@ -32,12 +39,16 @@ final class WaterRipples {
             radius[active]=L.w*(.12f+age*.14f);
             ages[active]=age;phase[active]=born[i]*.7f+x[i]*7+y[i]*3;active++;
         }
-        // Evaluate waves once on a reusable grid, not for every vertex of every translucent layer.
-        for(int row=0;row<=ROWS;row++)for(int col=0;col<=COLS;col++) {
-            float xx=(col*2f/COLS-.5f)*L.w,yy=(row*2f/ROWS-.5f)*L.h;
-            field[row*(COLS+1)+col]=WaterPainter.shift(c.clock,xx,yy,L.w,1);
+        // Separate x and y phases: three trig calls per row instead of two per grid cell.
+        for(int row=0;row<=ROWS;row++) {
+            float yy=(row*2f/ROWS-.5f)*L.h/L.w;
+            float base=L.w*.006f*(float)Math.sin(yy*7.5f-c.clock*.85f);
+            float phase=yy*13+c.clock*1.1f;
+            float sy=L.w*.003f*(float)Math.sin(phase),cy=L.w*.003f*(float)Math.cos(phase);
+            for(int col=0;col<=COLS;col++)field[row*(COLS+1)+col]=base+sy*COS_X[col]+cy*SIN_X[col];
         }
     }
+
     float refract(float x,float y) {
         float gx=Math.max(0,Math.min(COLS-.001f,(x/preparedWidth+.5f)*COLS*.5f));
         float gy=Math.max(0,Math.min(ROWS-.001f,(y/preparedHeight+.5f)*ROWS*.5f));
@@ -50,8 +61,11 @@ final class WaterRipples {
         if(fade<=0)return;
         prepare(c,L);
         for(int i=0;i<active;i++) {
+            ArtStamp cache=p.stamps();
+            boolean cached=brightness[i]<=0 || (cache!=null && cache.waterGlow(px[i],py[i],
+                    radius[i]*2.8f,radius[i]*2.8f*.72f,Math.round(46*fade*brightness[i])));
             float previous=0;
-            for(int layer=0;layer<12;layer++) {
+            for(int layer=0;!cached && layer<12;layer++) {
                 float distance=2.8f*(1-layer/12f);
                 float opacity=46*fade*brightness[i]*(float)Math.exp(-.5f*distance*distance);
                 int alpha=Math.round(opacity)-Math.round(previous);previous=opacity;

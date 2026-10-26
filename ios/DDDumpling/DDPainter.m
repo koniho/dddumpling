@@ -39,6 +39,7 @@ static void DDAppendPolygon(CGContextRef context, IOSFloatArray *points) {
 @interface DDIOSPainter () {
   CGImageRef _forest[6];
   CGImageRef _reef[DDUnderwater_ROCK_COUNT];
+  CGImageRef _waterBand,_waterGlow;
   CGImageRef _crystal[DDCrystalField_LAYERS],_crystalArena[DDCrystalField_LAYERS];
   jint _crystalArenaArt[DDCrystalField_LAYERS];
   CGImageRef _basin[DDSlimeBasinArt_COUNT];
@@ -113,6 +114,52 @@ static void DDAppendPolygon(CGContextRef context, IOSFloatArray *points) {
   CGContextSetInterpolationQuality(context,kCGInterpolationMedium);
   CGContextDrawImage(context,CGRectMake(-radius*2.5,-radius*2.5,radius*5,radius*5),image);
   CGContextRestoreGState(context);return YES;
+}
+
+- (CGImageRef)waterImage:(BOOL)band {
+  CGImageRef cached=band?_waterBand:_waterGlow;if(cached)return cached;
+  size_t width=band?2:DDUnderwater_WATER_TEXTURE,height=DDUnderwater_WATER_TEXTURE;
+  CGContextRef bitmap=CGBitmapContextCreate(NULL,width,height,8,width*4,_colorSpace,
+      kCGBitmapByteOrder32Big|kCGImageAlphaPremultipliedLast);
+  if(!bitmap)return NULL;
+  uint8_t *pixels=CGBitmapContextGetData(bitmap);
+  for(size_t y=0;y<height;y++)for(size_t x=0;x<width;x++) {
+    uint32_t color=(uint32_t)[DDUnderwater waterPixelWithInt:(jint)x withInt:(jint)y withBoolean:band];
+    uint32_t alpha=color>>24;uint8_t *pixel=pixels+(y*width+x)*4;
+    pixel[0]=((color>>16)&255)*alpha/255;pixel[1]=((color>>8)&255)*alpha/255;
+    pixel[2]=(color&255)*alpha/255;pixel[3]=alpha;
+  }
+  cached=CGBitmapContextCreateImage(bitmap);CGContextRelease(bitmap);
+  if(band)_waterBand=cached;else _waterGlow=cached;return cached;
+}
+
+- (jboolean)waterBandWithFloatArray:(IOSFloatArray *)xy withFloat:(jfloat)radius withInt:(jint)alpha {
+  if(!self.context || !xy || xy->size_<4 || (xy->size_&1) || radius<=0)return NO;
+  const jfloat *v=xy->buffer_;
+  for(jint i=0;i<xy->size_-2;i+=2)if(v[i+2]<=v[i])return NO;
+  CGImageRef image=[self waterImage:YES];if(!image)return NO;
+  CGContextRef ctx=self.context;CGContextSaveGState(ctx);
+  CGContextSetAlpha(ctx,MAX(0,MIN(255,alpha))/255.0);
+  CGContextSetInterpolationQuality(ctx,kCGInterpolationMedium);
+  for(jint i=0;i<xy->size_-2;i+=2) {
+    CGFloat width=v[i+2]-v[i],slope=(v[i+3]-v[i+1])/width;
+    CGContextSaveGState(ctx);
+    CGContextConcatCTM(ctx,CGAffineTransformMake(1,slope,0,1,v[i],v[i+1]-radius));
+    CGContextDrawImage(ctx,CGRectMake(0,0,width,radius*2),image);
+    CGContextRestoreGState(ctx);
+  }
+  CGContextRestoreGState(ctx);return YES;
+}
+
+- (jboolean)waterGlowWithFloat:(jfloat)x withFloat:(jfloat)y withFloat:(jfloat)rx
+                    withFloat:(jfloat)ry withInt:(jint)alpha {
+  if(!self.context || rx<=0 || ry<=0)return NO;
+  CGImageRef image=[self waterImage:NO];if(!image)return NO;
+  CGContextSaveGState(self.context);
+  CGContextSetAlpha(self.context,MAX(0,MIN(255,alpha))/255.0);
+  CGContextSetInterpolationQuality(self.context,kCGInterpolationMedium);
+  CGContextDrawImage(self.context,CGRectMake(x-rx,y-ry,rx*2,ry*2),image);
+  CGContextRestoreGState(self.context);return YES;
 }
 
 - (jboolean)reefRockWithInt:(jint)art withFloat:(jfloat)x withFloat:(jfloat)y
@@ -228,6 +275,7 @@ static void DDAppendPolygon(CGContextRef context, IOSFloatArray *points) {
 }
 
 - (void)dealloc {
+  CGImageRelease(_waterBand);CGImageRelease(_waterGlow);
   for (NSUInteger i=0;i<DDUnderwater_ROCK_COUNT;i++)CGImageRelease(_reef[i]);
   for (NSUInteger i=0;i<DDCrystalField_LAYERS;i++){CGImageRelease(_crystal[i]);CGImageRelease(_crystalArena[i]);}
   for (NSUInteger i=0;i<DDSlimeBasinArt_COUNT;i++) CGImageRelease(_basin[i]);

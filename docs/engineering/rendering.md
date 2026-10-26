@@ -151,7 +151,13 @@ of an underwater stage followed by the Octopulse cave. It uses the same warm-up,
 measurement, and restore flow above, writing `build/underwater-profile-*`.
 The comparison switches immutable artwork caching; both paths use the shared
 sampled refraction field and moving haze. Android and iOS cache twelve shaded
-rock images (under 3 MiB), with live position and bounded squeeze from the water.
+rock images (under 3 MiB), anchored to their seabed scroll without ambient distortion.
+Soft haze and clear glows share two immutable Gaussian textures (65 KiB total).
+Android bends the strip with a small bitmap mesh; iOS draws affine strip segments.
+Both avoid stacking translucent polygons over the same screen area each frame.
+The 2026-10-25 Android replay measured 21.54% janky frames before this cache pass
+and 0.12% afterward; median GPU time fell from 13 ms to 8 ms. Both captures
+reported thermal status 1. These are device measurements, not iOS performance results.
 
 ### Mushroom forest drawing cost
 

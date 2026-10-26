@@ -7,6 +7,7 @@
 - (CGColorRef)cachedColor:(jint)color;
 - (CGImageRef)basinImage:(jint)art;
 - (CGImageRef)forestImage:(jint)art color:(jint)color;
+- (CGImageRef)waterImage:(BOOL)band;
 @end
 
 @interface DDPainterTests : XCTestCase
@@ -33,6 +34,31 @@
     XCTAssertTrue(CGAffineTransformEqualToTransform(before,CGContextGetCTM(context)));
   }
   XCTAssertFalse([painter crystalWithInt:999 withFloat:0 withFloat:0 withFloat:128 withFloat:256 withInt:255]);
+  [painter fillRectWithFloat:0 withFloat:0 withFloat:128 withFloat:256 withInt:(jint)0xFFFFFFFF];
+  XCTAssertEqual(pixels[3],255);
+  painter.context=NULL;CGContextRelease(context);CGColorSpaceRelease(space);
+}
+
+- (void)testSoftWaterCacheRestoresContextAndOpacity {
+  unsigned char pixels[128*256*4]={0};
+  CGColorSpaceRef space=CGColorSpaceCreateDeviceRGB();
+  CGContextRef context=CGBitmapContextCreate(pixels,128,256,8,128*4,space,kCGImageAlphaPremultipliedLast);
+  DDIOSPainter *painter=[DDIOSPainter new];painter.context=context;
+  CGAffineTransform before=CGContextGetCTM(context);
+  IOSFloatArray *points=[IOSFloatArray arrayWithLength:6];
+  points->buffer_[0]=0;points->buffer_[1]=80;points->buffer_[2]=64;
+  points->buffer_[3]=95;points->buffer_[4]=128;points->buffer_[5]=85;
+  XCTAssertEqual([painter waterImage:YES],[painter waterImage:YES]);
+  XCTAssertEqual(CGImageGetWidth([painter waterImage:YES]),2u);
+  XCTAssertEqual(CGImageGetWidth([painter waterImage:NO]),128u);
+  XCTAssertTrue([painter waterBandWithFloatArray:points withFloat:40 withInt:50]);
+  unsigned char peak=0;for(int i=3;i<sizeof(pixels);i+=4)peak=MAX(peak,pixels[i]);
+  XCTAssertGreaterThan(peak,0);XCTAssertLessThanOrEqual(peak,50);
+  memset(pixels,0,sizeof(pixels));
+  XCTAssertTrue([painter waterGlowWithFloat:64 withFloat:128 withFloat:50 withFloat:40 withInt:80]);
+  peak=0;for(int i=3;i<sizeof(pixels);i+=4)peak=MAX(peak,pixels[i]);
+  XCTAssertGreaterThan(peak,0);XCTAssertLessThanOrEqual(peak,80);
+  XCTAssertTrue(CGAffineTransformEqualToTransform(before,CGContextGetCTM(context)));
   [painter fillRectWithFloat:0 withFloat:0 withFloat:128 withFloat:256 withInt:(jint)0xFFFFFFFF];
   XCTAssertEqual(pixels[3],255);
   painter.context=NULL;CGContextRelease(context);CGColorSpaceRelease(space);

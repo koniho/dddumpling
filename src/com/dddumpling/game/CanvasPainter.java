@@ -23,6 +23,7 @@ final class CanvasPainter implements Painter, ArtStamp {
     private CanvasSlimeStamps slimeStamps;
     private CanvasCrystalStamps crystalStamps;
     private CanvasReefStamps reefStamps;
+    private CanvasWaterStamps waterStamps;
     boolean cacheArt=true;
     public ArtStamp stamps() {return cacheArt && canvas!=null && canvas.isHardwareAccelerated()?this:null;}
     void warmArt() {
@@ -44,6 +45,16 @@ final class CanvasPainter implements Painter, ArtStamp {
         artStamps.draw(canvas,art,x,y,w,h,angle,tint,amount,phase);return true;
     }
 
+    public boolean waterBand(float[] xy,float radius,int alpha) {
+        if(stamps()==null || xy==null || xy.length<4 || (xy.length&1)!=0 || radius<=0)return false;
+        if(waterStamps==null)waterStamps=new CanvasWaterStamps();
+        waterStamps.band(canvas,xy,radius,alpha);return true;
+    }
+    public boolean waterGlow(float x,float y,float rx,float ry,int alpha) {
+        if(stamps()==null || rx<=0 || ry<=0)return false;
+        if(waterStamps==null)waterStamps=new CanvasWaterStamps();
+        waterStamps.glow(canvas,x,y,rx,ry,alpha);return true;
+    }
     public boolean reefRock(int art,float x,float y,float w,float h,int alpha) {
         if(stamps()==null || art<0 || art>=Underwater.ROCK_COUNT || w<=0 || h<=0)return false;
         if(reefStamps==null)reefStamps=new CanvasReefStamps();
