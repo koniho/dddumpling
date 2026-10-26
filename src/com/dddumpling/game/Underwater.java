@@ -78,12 +78,12 @@ final class Underwater extends Draw {
             float depthFade=depth==0?fade*fade*.42f:fade*.88f;
             if(depthFade<.025f)continue;
             int seed=1253+depth*103+side*43+i*67;
-            float span=L.h*1.65f,slot=span/3;
-            // Each outcrop occupies less than half a slot: open water visibly separates cliffs.
+            // Wide, low outcrops leave open water between each shelf.
             float y=reefY(c,L,depth,side,i,arrival);
-            float h=slot*(.20f+hash(seed+1)*.045f),w=L.w*(.12f+hash(seed+2)*.11f)*(depth==0?.75f:1);
+            float w=L.w*(.23f+hash(seed+2)*.04f)*(depth==0?.80f:1);
+            float h=w*(.19f+hash(seed+1)*.06f);
             // Occasional low, broad shelves reach beyond the middle, alternating banks.
-            if(depth==1 && i==side){w=L.w*(.60f+hash(seed+2)*.06f);h=L.h*.055f;}
+            if(depth==1 && i==side){w=L.w*(.60f+hash(seed+2)*.06f);h=w*.13f;}
             if(y+h<-20 || y-h>L.h+20)continue;
             cliff(p,L.w*side,y,w,h,side==0?1:-1,depthFade,seed);
         }
@@ -99,7 +99,7 @@ final class Underwater extends Draw {
         float clear=1;
         for(int side=0;side<2;side++) {
             float shelfY=reefY(c,L,1,side,side,cave*L.h*.36f);
-            float distance=Math.abs(y-shelfY)-L.h*.070f-radius;
+            float distance=Math.abs(y-shelfY)-L.w*.105f-radius;
             clear=Math.min(clear,smooth(distance/(L.h*.045f)));
         }
         return clear;
@@ -163,7 +163,7 @@ final class Underwater extends Draw {
             float r=L.w*(.025f+hash(seed)*.045f),span=L.h+r*6;
             float y=(hash(seed+11)*span+c.skyClock*L.h*(.010f+i%2*.006f))%span-r*3;
             float x=L.w*scatterX(seed,r/L.w);
-            rock(p,x,y,r,r*(.64f+hash(seed+19)*.60f),fade*(.22f+i%3*.065f),seed);
+            rock(p,x,y,r,r*(.28f+hash(seed+19)*.22f),fade*(.22f+i%3*.065f),seed);
         }
     }
 
@@ -183,8 +183,8 @@ final class Underwater extends Draw {
             p.fillPoly(roof,ink(layer==0?0xFF3B3F49:layer==1?0xFF252A35:0xFF121822,fade*(135+layer*45)));
         }
         for(int side=0;side<2;side++) {
-            cliff(p,L.w*side,L.h*.48f,L.w*.18f,L.h*.36f,side==0?1:-1,fade,991+side);
-            cliff(p,L.w*side,L.deckTop-L.h*.06f,L.w*.28f,L.h*.13f,side==0?1:-1,fade,953+side);
+            cliff(p,L.w*side,L.h*.43f,L.w*.26f,L.w*.065f,side==0?1:-1,fade,991+side);
+            cliff(p,L.w*side,L.deckTop-L.h*.06f,L.w*.32f,L.w*.070f,side==0?1:-1,fade,953+side);
 
         }
         // Sand-lit hollow under Octopulse; rim is textured rather than a hard horizon.
