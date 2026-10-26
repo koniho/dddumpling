@@ -24,7 +24,7 @@ final class WaterRipples {
         for(int i=0;i<COUNT;i++) {
             float age=c.clock-born[i];if(age<0 || age>=DURATION)continue;
             float fade=1-age/DURATION,r=L.w*(.28f+age*.35f);
-            px[active]=x[i]*L.w;py[active]=y[i]*L.h+(c.skyClock-sky[i])*L.h*.016f;
+            px[active]=x[i]*L.w;py[active]=y[i]*L.h+(c.skyClock-sky[i])*L.h*Underwater.SCROLL;
             amplitude[active]=L.w*.055f*fade*fade*(float)Math.sin(age*19);
             radius2[active]=r*r;active++;
         }

@@ -3,6 +3,7 @@ package com.dddumpling.game;
 /** Broken reef walls, quiet sea life and a sheltered cave. Cosmetic motion never uses game RNG. */
 final class Underwater extends Draw {
     static final int LAND=2,ROCK_COUNT=12,ROCK_WIDTH=248,ROCK_HEIGHT=236;
+    static final float SCROLL=.016f;
     private static final int WATER=0xFF080F24, LIGHT=0xFF8BCFDF;
     private static final float[][] ROCK_RIMS=rockRims();
     private Underwater() {}
@@ -84,25 +85,30 @@ final class Underwater extends Draw {
             // Wide, low outcrops leave open water between each shelf.
             float y=reefY(c,L,depth,side,i,arrival);
             float w=L.w*(.23f+hash(seed+2)*.04f)*(depth==0?.80f:1);
-            float h=w*(.34f+hash(seed+1)*.06f);
+            float h=w*(.39f+hash(seed+1)*.07f);
             // Occasional low, broad shelves reach beyond the middle, alternating banks.
-            if(depth==1 && i==side){w=L.w*(.60f+hash(seed+2)*.06f);h=w*.21f;}
+            if(depth==1 && i==side){w=L.w*(.60f+hash(seed+2)*.06f);h=w*(.30f+hash(seed+1)*.05f);}
             if(y+h<-20 || y-h>L.h+20)continue;
             cliff(p,L.w*side,y,w,h,side==0?1:-1,depthFade,seed);
         }
+    }
+
+    private static float scrollY(GameCore c,Layout L,float depth) {
+        // Grounded scenery shares one current; only a small depth offset separates its layers.
+        return c.skyClock*L.h*SCROLL*(1+depth*.03f);
     }
 
     private static float reefY(GameCore c,Layout L,int depth,int side,int row,float arrival) {
         int seed=1253+depth*103+side*43+row*67;
         float span=L.h*1.65f,slot=span/3;
         return (row*slot+side*slot*.43f+hash(seed)*slot*.12f
-                +c.skyClock*L.h*(.015f+depth*.012f)+arrival)%span-L.h*.30f;
+                +scrollY(c,L,depth==0?-1:1)+arrival)%span-L.h*.30f;
     }
     private static float shelfPlantFade(GameCore c,Layout L,float y,float radius,float cave) {
         float clear=1;
         for(int side=0;side<2;side++) {
             float shelfY=reefY(c,L,1,side,side,cave*L.h*.36f);
-            float distance=Math.abs(y-shelfY)-L.w*.165f-radius;
+            float distance=Math.abs(y-shelfY)-L.w*.255f-radius;
             clear=Math.min(clear,smooth(distance/(L.h*.045f)));
         }
         return clear;
@@ -159,7 +165,7 @@ final class Underwater extends Draw {
             int seed=3809+i*83,depth=i%2;
             float r=L.w*(.16f+hash(seed)*.22f),height=r*(.12f+hash(seed+5)*.13f);
             float span=L.h+height*8,x=L.w*(.15f+hash(seed+9)*.70f);
-            float y=(hash(seed+13)*span+c.skyClock*L.h*(depth==0?.009f:.019f))%span-height*4;
+            float y=(hash(seed+13)*span+scrollY(c,L,depth==0?-1:0))%span-height*4;
             float slope=(hash(seed+17)-.5f)*.38f;
             for(int layer=0;layer<3;layer++) {
                 for(int j=0;j<11;j++) {
@@ -183,9 +189,9 @@ final class Underwater extends Draw {
         for(int i=0;i<10;i++) {
             int seed=2803+i*53;
             float r=L.w*(.025f+hash(seed)*.045f),span=L.h+r*6;
-            float y=(hash(seed+11)*span+c.skyClock*L.h*(.010f+i%2*.006f))%span-r*3;
+            float y=(hash(seed+11)*span+scrollY(c,L,i%2==0?-.5f:.5f))%span-r*3;
             float x=L.w*scatterX(seed,r/L.w);
-            rock(p,x,y,r,r*(.55f+hash(seed+19)*.20f),fade*(.22f+i%3*.065f),seed);
+            rock(p,x,y,r,r*(.70f+hash(seed+19)*.20f),fade*(.22f+i%3*.065f),seed);
         }
     }
 
@@ -205,8 +211,8 @@ final class Underwater extends Draw {
             p.fillPoly(roof,ink(layer==0?0xFF3B3F49:layer==1?0xFF252A35:0xFF121822,fade*(135+layer*45)));
         }
         for(int side=0;side<2;side++) {
-            cliff(p,L.w*side,L.h*.43f,L.w*.26f,L.w*.090f,side==0?1:-1,fade,991+side);
-            cliff(p,L.w*side,L.deckTop-L.h*.06f,L.w*.32f,L.w*.100f,side==0?1:-1,fade,953+side);
+            cliff(p,L.w*side,L.h*.43f,L.w*.26f,L.w*.110f,side==0?1:-1,fade,991+side);
+            cliff(p,L.w*side,L.deckTop-L.h*.06f,L.w*.32f,L.w*.120f,side==0?1:-1,fade,953+side);
 
         }
         // Sand-lit hollow under Octopulse; rim is textured rather than a hard horizon.
@@ -231,7 +237,7 @@ final class Underwater extends Draw {
         float stageFade=fade*smooth((1-cave-.55f)/.45f);
         if(stageFade>.025f)for(int i=0;i<5;i++) {
             int seed=4103+i*97;
-            float span=L.h*1.5f,y=(i*span/5+hash(seed)*L.h*.08f+c.skyClock*L.h*.016f)%span-L.h*.20f;
+            float span=L.h*1.5f,y=(i*span/5+hash(seed)*L.h*.08f+scrollY(c,L,0))%span-L.h*.20f;
             float r=L.w*(.039f+hash(seed+3)*.008f);
             if(y+r<0 || y-r*5>L.h)continue;
             float plants=stageFade*shelfPlantFade(c,L,y,r,cave);
@@ -298,7 +304,7 @@ final class Underwater extends Draw {
     private static void haze(Painter p,GameCore c,Layout L,float fade) {
         float[] ribbon=new float[36],centre=new float[9];
         for(int i=0;i<3;i++) {
-            float span=L.h*1.5f,y=(i*span/3+hash(i+571)*L.h*.12f+c.skyClock*L.h*.016f)%span-L.h*.25f;
+            float span=L.h*1.5f,y=(i*span/3+hash(i+571)*L.h*.12f+scrollY(c,L,0))%span-L.h*.25f;
             float phase=c.clock*.40f+i*2.1f,r=L.h*(.070f+hash(i+21)*.025f);
             float pulse=.85f+.15f*(float)Math.sin(phase);
             for(int j=0;j<9;j++) {
