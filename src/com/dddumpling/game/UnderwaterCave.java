@@ -207,28 +207,39 @@ final class UnderwaterCave extends Draw {
             for(int side=0;side<2;side++)
                 buttress(distant,x+w*inset,y+h*(plane==0?.17f:.08f),w*(1-inset*2),h*(plane==0?.70f:.88f),side,0,fade);
         }
-        // A softly lit, irregular floor continues under the keys, without a horizon seam.
-        for(int layer=0;layer<18;layer++) {
-            float[] floor=new float[44];float inset=layer*.008f;
+        // Dark sand fills the hollow; a soft, uneven lip tucks beneath the distant walls.
+        float[] floor=new float[44];
+        for(int layer=0;layer<24;layer++) {
             for(int j=0;j<20;j++) {
                 float u=j/19f;
-                floor[j*2]=x+w*(u*(1-inset*2)+inset);
-                floor[j*2+1]=y+h*(.69f+inset*.65f+.10f*(u-.5f)*(u-.5f)
+                floor[j*2]=x+w*u;
+                floor[j*2+1]=y+h*(.61f+layer*.0018f+.022f*(u-.5f)*(u-.5f)
                         +.008f*(float)Math.sin(u*11)+.004f*(float)Math.sin(u*29));
             }
             floor[40]=x+w;floor[41]=y+h*1.1f;floor[42]=x;floor[43]=y+h*1.1f;
-            p.fillPoly(floor,ink(0xFF59716F,fade*5));
+            p.fillPoly(floor,ink(0xFF363E37,fade*15));
         }
-        for(int row=0;row<15;row++) {
-            float t=row/14f,yy=y+h*(.72f+t*.34f),span=w*(.18f+t*.80f);
-            float[] ridge=new float[26];
+        // Wider, farther-apart ripples establish the slope toward the foreground.
+        for(int row=0;row<17;row++) {
+            float t=(float)Math.pow(row/16f,1.65),yy=y+h*(.65f+t*.45f),span=w*(.19f+t*1.10f);
+            float[] ridge=new float[26],lee=new float[26];
             for(int j=0;j<13;j++) {
                 float u=j/12f;
-                ridge[j*2]=x+w*.5f+(u-.5f)*span;
-                ridge[j*2+1]=yy+h*(.003f+t*.006f)*(float)Math.sin(u*7+row*1.9f);
+                ridge[j*2]=x+w*(.5f+.022f*(float)Math.sin(row*1.8f))+(u-.5f)*span;
+                ridge[j*2+1]=yy+h*(.002f+t*.006f)*(float)Math.sin(u*7+row*1.9f);
+                lee[j*2]=ridge[j*2];lee[j*2+1]=ridge[j*2+1]+h*(.001f+t*.002f);
             }
-            p.polyline(ridge,ink(0xFF8CA6A0,fade*(9+t*9)),w*(.001f+t*.004f));
+            p.polyline(lee,ink(0xFF07121C,fade*(28+t*18)),w*(.002f+t*.004f));
+            p.polyline(ridge,ink(0xFF8B9582,fade*(15+t*12)),w*(.001f+t*.002f));
         }
+        // Fine grain is baked once with the floor, rather than animated particles.
+        for(int i=0;i<210;i++) {
+            float t=hash(591+i*17),xx=x+w*(.5f+(hash(887+i*29)-.5f)*(.18f+t*1.08f));
+            float yy=y+h*(.655f+t*.44f),length=w*(.001f+t*.004f)*(1+hash(i+811));
+            p.line(xx,yy,xx+length,yy-h*.0005f,
+                    ink(i%3==0?0xFF060F18:0xFF9B9B7D,fade*(i%3==0?28:14)),w*(.0006f+t*.0008f));
+        }
+
     }
 
     private static final class DepthStone extends OpacityPainter {
