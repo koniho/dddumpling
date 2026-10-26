@@ -3199,6 +3199,15 @@ final class Preview {
             TestBossRetry.ready(loss,L);step(loss,L,.6f);
             shot(dir,"boss-arena-loss-"+kind+"-retry",loss,L,w,h,ss);
         }
+        if(wanted("monochrome-scenery-")) {
+            for(int scene=0;scene<4;scene++)for(int step=1;step<=2;step++) {
+                GameCore c=scene==0?TestUnderwater.stage(L):scene==1?TestBossRetry.fight(L,Boss.OCTOPUS)
+                        :scene==3?TestCrystalField.arenaScene(L,7):TestUnderwater.stage(L);
+                if(scene==2)c.enterStage(7);
+                c.landBlend=1;c.stageBanner=0;c.clock=c.skyClock=17;c.monochromeFade=step*.5f;
+                shot(dir,"monochrome-scenery-"+scene+"-"+step,c,L,w,h,ss);
+            }
+        }
         if(wanted("underwater-coral-kinds")) {
             RasterPainter coralSheet=new RasterPainter(w,h,ss);coralSheet.clear(0xFF080F24);
             for(int kind=0;kind<5;kind++)UnderwaterCoral.draw(coralSheet,w*.50f,h*(.17f+kind*.18f),w*.14f,3.5f,kind,1);

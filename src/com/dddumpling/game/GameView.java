@@ -29,13 +29,16 @@ public class GameView extends View implements InputManager.InputDeviceListener {
     }
     void gatorProfile(String mode,String token) {
         if(!BuildFlags.DEVELOPER)return;
-        boolean slime="slime-cached".equals(mode) || "slime-vector".equals(mode);
-        boolean divide="divide-cached".equals(mode) || "divide-vector".equals(mode);
-        boolean water="underwater-cached".equals(mode) || "underwater-vector".equals(mode);
-        if(!slime && !divide && !water && !"cached".equals(mode) && !"vector".equals(mode) && !"stop".equals(mode))return;
+        boolean monochrome=mode.contains("mono-");
+        String sceneMode=mode.replace("mono-","");
+        boolean crystal="crystal-cached".equals(sceneMode) || "crystal-vector".equals(sceneMode);
+        boolean slime="slime-cached".equals(sceneMode) || "slime-vector".equals(sceneMode);
+        boolean divide="divide-cached".equals(sceneMode) || "divide-vector".equals(sceneMode);
+        boolean water="underwater-cached".equals(sceneMode) || "underwater-vector".equals(sceneMode);
+        if(!slime && !divide && !water && !crystal && !"cached".equals(sceneMode) && !"vector".equals(sceneMode) && !"stop".equals(mode))return;
         cancelPointers();
         painter.cacheArt=!mode.endsWith("vector");
-        gatorReplay="stop".equals(mode)?null:new GatorReplay(water?Boss.OCTOPUS:divide?Boss.SPLITTER:slime?Boss.SLIME:Boss.ALLIGATOR);
+        gatorReplay="stop".equals(mode)?null:new GatorReplay(water?Boss.OCTOPUS:divide || crystal?Boss.SPLITTER:slime?Boss.SLIME:Boss.ALLIGATOR,monochrome,water || crystal);
         replayMode=mode;replayToken=token;replayReady=false;replayLoops=0;
         if(gatorReplay!=null)painter.warmArt();
         last=0;refreshNavigation();invalidate();

@@ -24,7 +24,8 @@ final class CanvasCrystalStamps {
         else {arena[slot]=b;arenaArt[slot]=layer;}
         return b;
     }
-    void draw(Canvas canvas,int layer,float x,float y,float w,float h,int alpha) {
+    void draw(Canvas canvas,int layer,float x,float y,float w,float h,int alpha,android.graphics.ColorFilter filter) {
+        paint.setColorFilter(filter);
         paint.setAlpha(Math.max(0,Math.min(255,alpha)));bounds.set(x,y,x+w,y+h);
         canvas.drawBitmap(image(layer),null,bounds,paint);
     }

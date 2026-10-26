@@ -34,7 +34,7 @@ final class TestGatorRendering extends Check {
         int actual=Glyph.mix(AlligatorArt.SKIN,cache.tint,cache.mix);
         boolean match=true;for(int shift=0;shift<=16;shift+=8)match &= Math.abs(((expected>>>shift)&255)-((actual>>>shift)&255))<=2;
         check("cached tint composition follows nested vector palette",match && cache.x==5 && cache.y==6 && cache.angle==.3f);
-        check("grayscale and opacity effects fall back safely",new MonochromePainter(cache,1).stamps()==null
+        check("unsupported grayscale artwork and opacity effects fall back safely",!new MonochromePainter(cache,1).stamps().stamp(ArtStamp.PALM,0,0,1,1,0,0,0)
                 && new ColorFadePainter(cache,0,.5f,.5f).stamps()==null && new OpacityPainter(cache,.5f).stamps()==null);
         palette(l);
 

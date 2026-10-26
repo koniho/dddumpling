@@ -31,6 +31,26 @@ class OpacityPainter implements Painter, ArtStamp {
         ArtStamp cache=stamps()==null?null:p.stamps();
         return cache!=null && cache.reefRock(art,x,y,w,h,alpha);
     }
+    public boolean waterBand(float[] xy,float radius,int alpha,float mono) {
+        ArtStamp cache=stamps()==null?null:p.stamps();
+        return cache!=null && cache.waterBand(xy,radius,alpha,mono);
+    }
+    public boolean waterGlow(float x,float y,float rx,float ry,int alpha,float mono) {
+        ArtStamp cache=stamps()==null?null:p.stamps();
+        return cache!=null && cache.waterGlow(x,y,rx,ry,alpha,mono);
+    }
+    public boolean reefVista(int art,float x,float y,float w,float h,int alpha,float mono) {
+        ArtStamp cache=stamps()==null?null:p.stamps();
+        return cache!=null && cache.reefVista(art,x,y,w,h,alpha,mono);
+    }
+    public boolean reefRock(int art,float x,float y,float w,float h,int alpha,float mono) {
+        ArtStamp cache=stamps()==null?null:p.stamps();
+        return cache!=null && cache.reefRock(art,x,y,w,h,alpha,mono);
+    }
+    public boolean crystal(int art,float x,float y,float w,float h,int alpha,float mono) {
+        ArtStamp cache=stamps()==null?null:p.stamps();
+        return cache!=null && cache.crystal(art,x,y,w,h,alpha,mono);
+    }
     public boolean crystal(int layer,float x,float y,float w,float h,int alpha) {
         ArtStamp cache=stamps()==null?null:p.stamps();
         return cache!=null && cache.crystal(layer,x,y,w,h,alpha);

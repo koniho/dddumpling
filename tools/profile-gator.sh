@@ -9,7 +9,8 @@ remote() {
     else adb shell "$1"; fi
 }
 scene=${PROFILE_SCENE:-gator}
-case "$scene" in gator) scene_prefix='';; slime) scene_prefix=slime-;; divide) scene_prefix=divide-;; underwater) scene_prefix=underwater-;; *) echo 'PROFILE_SCENE must be gator, slime, divide or underwater' >&2; exit 1;; esac
+case "$scene" in gator) scene_prefix='';; slime) scene_prefix=slime-;; divide) scene_prefix=divide-;; underwater) scene_prefix=underwater-;; *) echo 'PROFILE_SCENE must be gator, slime, divide, crystal or underwater' >&2; exit 1;; esac
+if [ "${PROFILE_MONOCHROME:-0}" = 1 ]; then scene_prefix="${scene_prefix}mono-"; fi
 mode=${1:-both}
 case "$mode" in both) modes='vector cached';; vector|cached) modes=$mode;;
     *) echo 'usage: sh tools/profile-gator.sh [both|vector|cached]' >&2; exit 1;; esac

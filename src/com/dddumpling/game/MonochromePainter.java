@@ -1,11 +1,33 @@
 package com.dddumpling.game;
 
 /** Applies a smooth grayscale palette to every primitive without changing its opacity. */
-final class MonochromePainter implements Painter {
+final class MonochromePainter implements Painter,ArtStamp {
     public int skin() { return p.skin(); }
     public DuckBodies ducks() { return p.ducks(); }
     public GatorCompanion gator() { return p.gator(); }
-    public ArtStamp stamps() { return amount==0?p.stamps():null; }
+    public ArtStamp stamps() { return p.stamps()==null?null:amount==0?p.stamps():this; }
+    public boolean stamp(int art,float x,float y,float w,float h,float angle,int tint,float mix) {return false;}
+    public boolean waterBand(float[] xy,float radius,int alpha) {
+        return p.stamps().waterBand(xy,radius,alpha,amount);
+    }
+    public boolean waterGlow(float x,float y,float rx,float ry,int alpha) {
+        return p.stamps().waterGlow(x,y,rx,ry,alpha,amount);
+    }
+    public boolean reefVista(int art,float x,float y,float w,float h,int alpha) {
+        return p.stamps().reefVista(art,x,y,w,h,alpha,amount);
+    }
+    public boolean reefRock(int art,float x,float y,float w,float h,int alpha) {
+        return p.stamps().reefRock(art,x,y,w,h,alpha,amount);
+    }
+    public boolean crystal(int layer,float x,float y,float w,float h,int alpha) {
+        return p.stamps().crystal(layer,x,y,w,h,alpha,amount);
+    }
+    static void matrix(float[] values,float amount) {
+        java.util.Arrays.fill(values,0);
+        for(int row=0;row<3;row++)for(int col=0;col<3;col++)
+            values[row*5+col]=(col==0?54/256f:col==1?183/256f:19/256f)*amount+(row==col?1-amount:0);
+        values[18]=1;
+    }
     final Painter p;
     final float amount;
     MonochromePainter(Painter p,float amount) { this.p=p; this.amount=amount; }

@@ -150,13 +150,21 @@ Use `PROFILE_SCENE=underwater sh tools/profile-gator.sh both` for an isolated re
 of an underwater stage followed by the Octopulse cave. It uses the same warm-up,
 measurement, and restore flow above, writing `build/underwater-profile-*`.
 The comparison switches immutable artwork caching; both paths use the shared
-sampled refraction field and moving haze. Android and iOS cache twelve shaded
+sampled refraction field and moving haze. Add `PROFILE_MONOCHROME=1` to exercise
+full grayscale and its fade transitions; `PROFILE_SCENE=crystal` similarly covers
+the crystal stage followed by its arena. Neither replay changes saved progress.
+Android and iOS cache twelve shaded
 rock images (under 3 MiB), anchored to their seabed scroll without ambient distortion.
 The stage reef corridor additionally caches one lit water/wall painting and six coral
 colonies (2.56 MiB). Their shared perspective projection controls placement, scale,
 and accelerating downward travel. Colonies fade in at the far plane and recycle
 after leaving the viewport; kelp, light ripples, and drifting motes remain live.
-The Octopulse cave keeps its fixed arena composition.
+The Octopulse cave keeps its fixed arena composition. Underwater and crystal caches
+remain active during monochrome: Android applies a luminance color matrix, while
+iOS lazily retains one grayscale copy per live image slot. Partial iOS fades blend
+the premultiplied endpoints inside a local layer to preserve alpha. Arena grayscale
+slots are released together with replaced crystal phases; no per-frame textures
+are generated. Unsupported host caches retain the vector fallback.
 Soft haze and clear glows share two immutable Gaussian textures (65 KiB total).
 Android bends the strip with a small bitmap mesh; iOS draws affine strip segments.
 Both avoid stacking translucent polygons over the same screen area each frame.

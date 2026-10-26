@@ -49,6 +49,7 @@ final class TestUnderwater extends Check {
         clearGlows(L);
         cachedScenery(L);
         perspective(L);
+        monochrome(L);
         geometry(L);
     }
     private static void clearGlows(Layout L) {
@@ -176,6 +177,62 @@ final class TestUnderwater extends Check {
             bounded&=stamps[0]>4 && stamps[0]<=9 && calls[0]<70;
         }
         check("detailed reef artwork stays cached and bounded throughout travel",valid[0] && bounded);
+    }
+    private static void monochrome(Layout L) {
+        final int[] calls={0},stamps={0};final float[] received={-1};
+        ArtStamp cache=(ArtStamp)java.lang.reflect.Proxy.newProxyInstance(ArtStamp.class.getClassLoader(),new Class<?>[]{ArtStamp.class},(proxy,method,args)-> {
+            String name=method.getName();
+            boolean supported=name.equals("reefVista") || name.equals("reefRock") || name.equals("waterBand")
+                    || name.equals("waterGlow") || name.equals("crystal");
+            if(supported) {
+                stamps[0]++;Object last=args[args.length-1];received[0]=last instanceof Float?(Float)last:0;
+            }
+            return supported;
+        });
+        Painter probe=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),new Class<?>[]{Painter.class},(proxy,method,args)-> {
+            if(method.getName().equals("stamps"))return cache;
+            calls[0]++;return null;
+        });
+        for(int scene=0;scene<4;scene++) {
+            GameCore c=scene==0?stage(L):scene==1?TestBossRetry.fight(L,Boss.OCTOPUS)
+                    :scene==3?TestCrystalField.arenaScene(L,7):stage(L);
+            if(scene==2)c.enterStage(7);
+            c.landBlend=1;c.clock=c.skyClock=17;
+            if(scene<2)c.waterRipples.cleared(c,L,L.w*.5f,L.h*.4f);
+            c.clock+=.1f;
+            int baseline=0,baselineStamps=0;
+            for(float mono:new float[]{0,.01f,.5f,1,.4f}) {
+                calls[0]=stamps[0]=0;received[0]=-1;
+                Painter filtered=new OpacityPainter(new MonochromePainter(new OpacityPainter(probe,1),mono),1);
+                if(scene<2){Underwater.backdrop(filtered,c,L);Underwater.veil(filtered,c,L);}
+                else c.crystalField.draw(filtered,c,L,1);
+                if(mono==0){baseline=calls[0];baselineStamps=stamps[0];}
+                check("monochrome keeps cached scenery in scene "+scene+" at "+mono,
+                        stamps[0]>0 && stamps[0]==baselineStamps && calls[0]<=baseline+2 && received[0]==mono);
+            }
+        }
+        float[] matrix=new float[20];boolean colors=true;
+        for(float amount:new float[]{0,.1f,.5f,1}) {
+            MonochromePainter.matrix(matrix,amount);
+            MonochromePainter mono=new MonochromePainter(probe,amount);
+            for(int ink:new int[]{0x0073DA91,0x8073DA91,0xFFFF0055,0x80000000,0xFFFFFFFF}) {
+                int expected=mono.color(ink),r=(ink>>>16)&255,g=(ink>>>8)&255,b=ink&255;
+                for(int channel=0;channel<3;channel++) {
+                    float actual=matrix[channel*5]*r+matrix[channel*5+1]*g+matrix[channel*5+2]*b;
+                    colors&=Math.abs(actual-((expected>>>(16-channel*8))&255))<=1.1f;
+                }
+                colors&=matrix[18]==1 && matrix[19]==0;
+            }
+        }
+        check("cached monochrome matrix matches vector luminance and preserves alpha",colors);
+        for(int boss:new int[]{Boss.OCTOPUS,Boss.SPLITTER}) {
+            GatorReplay replay=new GatorReplay(boss,true,true);boolean partial=false,full=false,arena=false;
+            for(int tick=0;tick<24*60;tick++) {
+                replay.step(L);partial|=replay.core.monochromeFade>0 && replay.core.monochromeFade<1;
+                full|=replay.core.monochromeFade==1;arena|=replay.core.boss.fighting();
+            }
+            check("monochrome replay includes fades and arena for boss "+boss,partial && full && arena && replay.core.store==null);
+        }
     }
     private static void geometry(Layout L) {
         // Count shared vector work: neither mobile renderer should need a blur or texture rebuild.

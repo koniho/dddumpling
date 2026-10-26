@@ -64,6 +64,33 @@
   painter.context=NULL;CGContextRelease(context);CGColorSpaceRelease(space);
 }
 
+- (void)testMonochromeSceneryCachesPreserveAlphaAndRestoreColor {
+  unsigned char pixels[128*256*4]={0},original[128*256*4]={0};
+  CGColorSpaceRef space=CGColorSpaceCreateDeviceRGB();
+  CGContextRef context=CGBitmapContextCreate(pixels,128,256,8,128*4,space,kCGImageAlphaPremultipliedLast);
+  DDIOSPainter *painter=[DDIOSPainter new];painter.context=context;
+  CGAffineTransform before=CGContextGetCTM(context);
+  for(int scene=0;scene<5;scene++)for(NSNumber *value in @[@0,@0.25,@1,@0.5,@0]) {
+    float mono=value.floatValue;memset(pixels,0,sizeof(pixels));BOOL drawn=NO;
+    if(scene==0)drawn=[painter reefVistaWithInt:0 withFloat:0 withFloat:0 withFloat:128 withFloat:256 withInt:80 withFloat:mono];
+    if(scene==1)drawn=[painter reefRockWithInt:2 withFloat:64 withFloat:120 withFloat:28 withFloat:40 withInt:80 withFloat:mono];
+    if(scene==2 || scene==3)drawn=[painter crystalWithInt:(scene==2?1:24) withFloat:0 withFloat:0 withFloat:128 withFloat:256 withInt:80 withFloat:mono];
+    if(scene==4)drawn=[painter waterGlowWithFloat:64 withFloat:128 withFloat:50 withFloat:40 withInt:80 withFloat:mono];
+    XCTAssertTrue(drawn);BOOL gray=YES,alpha=YES;int peak=0;
+    if(mono==0)memcpy(original,pixels,sizeof(pixels));
+    for(int i=0;i<sizeof(pixels);i+=4) {
+      peak=MAX(peak,pixels[i+3]);
+      alpha&=abs((int)pixels[i+3]-original[i+3])<=2;
+      gray&=abs((int)pixels[i]-pixels[i+1])<=1 && abs((int)pixels[i+1]-pixels[i+2])<=1;
+    }
+    XCTAssertTrue(alpha);XCTAssertGreaterThan(peak,0);XCTAssertLessThanOrEqual(peak,82);
+    if(mono==1)XCTAssertTrue(gray);
+    XCTAssertEqual(painter.context,context);
+    XCTAssertTrue(CGAffineTransformEqualToTransform(before,CGContextGetCTM(context)));
+  }
+  painter.context=NULL;CGContextRelease(context);CGColorSpaceRelease(space);
+}
+
 - (void)testReefVistaCachesRespectOpacityAndRestoreContext {
   unsigned char pixels[128*256*4]={0};
   CGColorSpaceRef space=CGColorSpaceCreateDeviceRGB();

@@ -19,16 +19,18 @@ final class CanvasWaterStamps {
         cached=Bitmap.createBitmap(pixels,width,height,Bitmap.Config.ARGB_8888);cached.prepareToDraw();
         if(strip)band=cached;else glow=cached;return cached;
     }
-    void band(Canvas canvas,float[] xy,float radius,int alpha) {
+    void band(Canvas canvas,float[] xy,float radius,int alpha,android.graphics.ColorFilter filter) {
         if(mesh.length!=xy.length*2)mesh=new float[xy.length*2];
         for(int i=0;i<xy.length;i+=2) {
             mesh[i]=mesh[i+xy.length]=xy[i];
             mesh[i+1]=xy[i+1]-radius;mesh[i+xy.length+1]=xy[i+1]+radius;
         }
+        paint.setColorFilter(filter);
         paint.setAlpha(Math.max(0,Math.min(255,alpha)));
         canvas.drawBitmapMesh(image(true),xy.length/2-1,1,mesh,0,null,0,paint);
     }
-    void glow(Canvas canvas,float x,float y,float rx,float ry,int alpha) {
+    void glow(Canvas canvas,float x,float y,float rx,float ry,int alpha,android.graphics.ColorFilter filter) {
+        paint.setColorFilter(filter);
         paint.setAlpha(Math.max(0,Math.min(255,alpha)));rect.set(x-rx,y-ry,x+rx,y+ry);
         canvas.drawBitmap(image(false),null,rect,paint);
     }

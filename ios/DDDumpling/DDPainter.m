@@ -37,12 +37,41 @@ static void DDAppendPolygon(CGContextRef context, IOSFloatArray *points) {
   CGContextClosePath(context);
 }
 
+// Grayscale copies are bounded by the corresponding live artwork slots.
+static CGImageRef DDGrayImage(CGImageRef image,CGColorSpaceRef space) {
+  size_t w=CGImageGetWidth(image),h=CGImageGetHeight(image);
+  CGContextRef bitmap=CGBitmapContextCreate(NULL,w,h,8,w*4,space,
+      kCGBitmapByteOrder32Big|kCGImageAlphaPremultipliedLast);
+  if(!bitmap)return NULL;
+  CGContextDrawImage(bitmap,CGRectMake(0,0,w,h),image);
+  uint8_t *p=CGBitmapContextGetData(bitmap);
+  for(size_t i=0;i<w*h;i++,p+=4) {
+    uint8_t gray=(p[0]*54+p[1]*183+p[2]*19)/256;
+    p[0]=p[1]=p[2]=gray;
+  }
+  CGImageRef result=CGBitmapContextCreateImage(bitmap);CGContextRelease(bitmap);return result;
+}
+
+static void DDDrawCachedImage(CGContextRef ctx,CGRect rect,CGImageRef color,CGImageRef gray,float mono) {
+  if(mono<=0){CGContextDrawImage(ctx,rect,color);return;}
+  if(mono>=1){CGContextDrawImage(ctx,rect,gray);return;}
+  // Add premultiplied endpoints inside a local layer so the fade preserves image alpha.
+  CGContextSaveGState(ctx);
+  CGContextBeginTransparencyLayerWithRect(ctx,rect,NULL);
+  CGContextSetBlendMode(ctx,kCGBlendModeCopy);CGContextSetAlpha(ctx,1-mono);
+  CGContextDrawImage(ctx,rect,color);
+  CGContextSetBlendMode(ctx,kCGBlendModePlusLighter);CGContextSetAlpha(ctx,mono);
+  CGContextDrawImage(ctx,rect,gray);
+  CGContextEndTransparencyLayer(ctx);CGContextRestoreGState(ctx);
+}
+
 @interface DDIOSPainter () {
   CGImageRef _forest[6];
-  CGImageRef _reefVista[DDUnderwaterVista_COUNT];
-  CGImageRef _reef[DDUnderwater_ROCK_COUNT];
-  CGImageRef _waterBand,_waterGlow;
+  CGImageRef _reefVista[DDUnderwaterVista_COUNT],_reefVistaGray[DDUnderwaterVista_COUNT];
+  CGImageRef _reef[DDUnderwater_ROCK_COUNT],_reefGray[DDUnderwater_ROCK_COUNT];
+  CGImageRef _waterBand,_waterGlow,_waterBandGray,_waterGlowGray;
   CGImageRef _crystal[DDCrystalField_LAYERS],_crystalArena[DDCrystalField_LAYERS];
+  CGImageRef _crystalGray[DDCrystalField_LAYERS],_crystalArenaGray[DDCrystalField_LAYERS];
   jint _crystalArenaArt[DDCrystalField_LAYERS];
   CGImageRef _basin[DDSlimeBasinArt_COUNT];
   CGImageRef _forestTinted[16];
@@ -136,10 +165,16 @@ static void DDAppendPolygon(CGContextRef context, IOSFloatArray *points) {
 }
 
 - (jboolean)waterBandWithFloatArray:(IOSFloatArray *)xy withFloat:(jfloat)radius withInt:(jint)alpha {
+  return [self waterBandWithFloatArray:xy withFloat:radius withInt:alpha withFloat:0];
+}
+
+- (jboolean)waterBandWithFloatArray:(IOSFloatArray *)xy withFloat:(jfloat)radius withInt:(jint)alpha withFloat:(jfloat)mono {
   if(!self.context || !xy || xy->size_<4 || (xy->size_&1) || radius<=0)return NO;
   const jfloat *v=xy->buffer_;
   for(jint i=0;i<xy->size_-2;i+=2)if(v[i+2]<=v[i])return NO;
   CGImageRef image=[self waterImage:YES];if(!image)return NO;
+  if(mono>0 && !_waterBandGray)_waterBandGray=DDGrayImage(image,_colorSpace);
+  if(mono>0 && !_waterBandGray)return NO;
   CGContextRef ctx=self.context;CGContextSaveGState(ctx);
   CGContextSetAlpha(ctx,MAX(0,MIN(255,alpha))/255.0);
   CGContextSetInterpolationQuality(ctx,kCGInterpolationMedium);
@@ -147,7 +182,7 @@ static void DDAppendPolygon(CGContextRef context, IOSFloatArray *points) {
     CGFloat width=v[i+2]-v[i],slope=(v[i+3]-v[i+1])/width;
     CGContextSaveGState(ctx);
     CGContextConcatCTM(ctx,CGAffineTransformMake(1,slope,0,1,v[i],v[i+1]-radius));
-    CGContextDrawImage(ctx,CGRectMake(0,0,width,radius*2),image);
+    DDDrawCachedImage(ctx,CGRectMake(0,0,width,radius*2),image,_waterBandGray,mono);
     CGContextRestoreGState(ctx);
   }
   CGContextRestoreGState(ctx);return YES;
@@ -155,17 +190,29 @@ static void DDAppendPolygon(CGContextRef context, IOSFloatArray *points) {
 
 - (jboolean)waterGlowWithFloat:(jfloat)x withFloat:(jfloat)y withFloat:(jfloat)rx
                     withFloat:(jfloat)ry withInt:(jint)alpha {
+  return [self waterGlowWithFloat:x withFloat:y withFloat:rx withFloat:ry withInt:alpha withFloat:0];
+}
+
+- (jboolean)waterGlowWithFloat:(jfloat)x withFloat:(jfloat)y withFloat:(jfloat)rx
+                    withFloat:(jfloat)ry withInt:(jint)alpha withFloat:(jfloat)mono {
   if(!self.context || rx<=0 || ry<=0)return NO;
   CGImageRef image=[self waterImage:NO];if(!image)return NO;
+  if(mono>0 && !_waterGlowGray)_waterGlowGray=DDGrayImage(image,_colorSpace);
+  if(mono>0 && !_waterGlowGray)return NO;
   CGContextSaveGState(self.context);
   CGContextSetAlpha(self.context,MAX(0,MIN(255,alpha))/255.0);
   CGContextSetInterpolationQuality(self.context,kCGInterpolationMedium);
-  CGContextDrawImage(self.context,CGRectMake(x-rx,y-ry,rx*2,ry*2),image);
+  DDDrawCachedImage(self.context,CGRectMake(x-rx,y-ry,rx*2,ry*2),image,_waterGlowGray,mono);
   CGContextRestoreGState(self.context);return YES;
 }
 
 - (jboolean)reefVistaWithInt:(jint)art withFloat:(jfloat)x withFloat:(jfloat)y
                   withFloat:(jfloat)w withFloat:(jfloat)h withInt:(jint)alpha {
+  return [self reefVistaWithInt:art withFloat:x withFloat:y withFloat:w withFloat:h withInt:alpha withFloat:0];
+}
+
+- (jboolean)reefVistaWithInt:(jint)art withFloat:(jfloat)x withFloat:(jfloat)y
+                  withFloat:(jfloat)w withFloat:(jfloat)h withInt:(jint)alpha withFloat:(jfloat)mono {
   if(!self.context || _drawingForest || art<0 || art>=DDUnderwaterVista_COUNT || w<=0 || h<=0)return NO;
   if(!_reefVista[art]) {
     size_t width=DDUnderwaterVista_WIDTH,height=[DDUnderwaterVista heightWithInt:art];
@@ -178,15 +225,22 @@ static void DDAppendPolygon(CGContextRef context, IOSFloatArray *points) {
     _reefVista[art]=CGBitmapContextCreateImage(bitmap);CGContextRelease(bitmap);
     if(!_reefVista[art])return NO;
   }
+  if(mono>0 && !_reefVistaGray[art])_reefVistaGray[art]=DDGrayImage(_reefVista[art],_colorSpace);
+  if(mono>0 && !_reefVistaGray[art])return NO;
   CGContextSaveGState(self.context);
   CGContextSetAlpha(self.context,MAX(0,MIN(255,alpha))/255.0);
   CGContextSetInterpolationQuality(self.context,kCGInterpolationMedium);
-  CGContextDrawImage(self.context,CGRectMake(x,y,w,h),_reefVista[art]);
+  DDDrawCachedImage(self.context,CGRectMake(x,y,w,h),_reefVista[art],_reefVistaGray[art],mono);
   CGContextRestoreGState(self.context);return YES;
 }
 
 - (jboolean)reefRockWithInt:(jint)art withFloat:(jfloat)x withFloat:(jfloat)y
                  withFloat:(jfloat)w withFloat:(jfloat)h withInt:(jint)alpha {
+  return [self reefRockWithInt:art withFloat:x withFloat:y withFloat:w withFloat:h withInt:alpha withFloat:0];
+}
+
+- (jboolean)reefRockWithInt:(jint)art withFloat:(jfloat)x withFloat:(jfloat)y
+                 withFloat:(jfloat)w withFloat:(jfloat)h withInt:(jint)alpha withFloat:(jfloat)mono {
   if (!self.context || _drawingForest || art<0 || art>=DDUnderwater_ROCK_COUNT || w<=0 || h<=0)return NO;
   if (!_reef[art]) {
     size_t width=DDUnderwater_ROCK_WIDTH,height=DDUnderwater_ROCK_HEIGHT;
@@ -199,20 +253,28 @@ static void DDAppendPolygon(CGContextRef context, IOSFloatArray *points) {
     _reef[art]=CGBitmapContextCreateImage(bitmap);CGContextRelease(bitmap);
     if (!_reef[art])return NO;
   }
+  if(mono>0 && !_reefGray[art])_reefGray[art]=DDGrayImage(_reef[art],_colorSpace);
+  if(mono>0 && !_reefGray[art])return NO;
   CGContextSaveGState(self.context);
   CGContextSetAlpha(self.context,MAX(0,MIN(255,alpha))/255.0);
   CGContextSetInterpolationQuality(self.context,kCGInterpolationMedium);
-  CGContextDrawImage(self.context,CGRectMake(x-w*1.3,y-h*1.35,w*3.1,h*2.95),_reef[art]);
+  DDDrawCachedImage(self.context,CGRectMake(x-w*1.3,y-h*1.35,w*3.1,h*2.95),_reef[art],_reefGray[art],mono);
   CGContextRestoreGState(self.context);return YES;
 }
 
 - (jboolean)crystalWithInt:(jint)layer withFloat:(jfloat)x withFloat:(jfloat)y
                 withFloat:(jfloat)w withFloat:(jfloat)h withInt:(jint)alpha {
+  return [self crystalWithInt:layer withFloat:x withFloat:y withFloat:w withFloat:h withInt:alpha withFloat:0];
+}
+
+- (jboolean)crystalWithInt:(jint)layer withFloat:(jfloat)x withFloat:(jfloat)y
+                withFloat:(jfloat)w withFloat:(jfloat)h withInt:(jint)alpha withFloat:(jfloat)mono {
   if (!self.context || _drawingForest || ![DDCrystalArena validArtWithInt:layer] || w<=0 || h<=0)return NO;
   jint slot=layer%DDCrystalField_LAYERS;
   CGImageRef *image=layer<DDCrystalField_LAYERS?&_crystal[slot]:&_crystalArena[slot];
+  CGImageRef *gray=layer<DDCrystalField_LAYERS?&_crystalGray[slot]:&_crystalArenaGray[slot];
   if (layer>=DDCrystalField_LAYERS && _crystalArenaArt[slot]!=layer) {
-    CGImageRelease(*image);*image=NULL;_crystalArenaArt[slot]=layer;
+    CGImageRelease(*image);*image=NULL;CGImageRelease(*gray);*gray=NULL;_crystalArenaArt[slot]=layer;
   }
   if (!*image) {
     size_t width=DDCrystalField_STAMP_WIDTH,height=DDCrystalField_STAMP_HEIGHT;
@@ -225,10 +287,12 @@ static void DDAppendPolygon(CGContextRef context, IOSFloatArray *points) {
     *image=CGBitmapContextCreateImage(bitmap);CGContextRelease(bitmap);
     if (!*image)return NO;
   }
+  if(mono>0 && !*gray)*gray=DDGrayImage(*image,_colorSpace);
+  if(mono>0 && !*gray)return NO;
   CGContextSaveGState(self.context);
   CGContextSetAlpha(self.context,MAX(0,MIN(255,alpha))/255.0);
   CGContextSetInterpolationQuality(self.context,kCGInterpolationMedium);
-  CGContextDrawImage(self.context,CGRectMake(x,y,w,h),*image);
+  DDDrawCachedImage(self.context,CGRectMake(x,y,w,h),*image,*gray,mono);
   CGContextRestoreGState(self.context);return YES;
 }
 
@@ -299,9 +363,10 @@ static void DDAppendPolygon(CGContextRef context, IOSFloatArray *points) {
 
 - (void)dealloc {
   CGImageRelease(_waterBand);CGImageRelease(_waterGlow);
-  for(NSUInteger i=0;i<DDUnderwaterVista_COUNT;i++)CGImageRelease(_reefVista[i]);
-  for (NSUInteger i=0;i<DDUnderwater_ROCK_COUNT;i++)CGImageRelease(_reef[i]);
-  for (NSUInteger i=0;i<DDCrystalField_LAYERS;i++){CGImageRelease(_crystal[i]);CGImageRelease(_crystalArena[i]);}
+  CGImageRelease(_waterBandGray);CGImageRelease(_waterGlowGray);
+  for(NSUInteger i=0;i<DDUnderwaterVista_COUNT;i++){CGImageRelease(_reefVista[i]);CGImageRelease(_reefVistaGray[i]);}
+  for (NSUInteger i=0;i<DDUnderwater_ROCK_COUNT;i++){CGImageRelease(_reef[i]);CGImageRelease(_reefGray[i]);}
+  for (NSUInteger i=0;i<DDCrystalField_LAYERS;i++){CGImageRelease(_crystal[i]);CGImageRelease(_crystalArena[i]);CGImageRelease(_crystalGray[i]);CGImageRelease(_crystalArenaGray[i]);}
   for (NSUInteger i=0;i<DDSlimeBasinArt_COUNT;i++) CGImageRelease(_basin[i]);
   for (NSUInteger i=0;i<6;i++) CGImageRelease(_forest[i]);
   for (NSUInteger i=0;i<16;i++) CGImageRelease(_forestTinted[i]);

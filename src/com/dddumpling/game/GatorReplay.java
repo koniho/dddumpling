@@ -9,17 +9,22 @@ final class GatorReplay {
     private float remainder;
     private final boolean slime;
     private final int kind;
+    private final boolean monochrome,stageLead;
     GatorReplay() {this(false);}
     GatorReplay(boolean slime) {this(slime?Boss.SLIME:Boss.ALLIGATOR);}
-    GatorReplay(int kind) {this.kind=kind;this.slime=kind==Boss.SLIME;reset();}
+    GatorReplay(int kind) {this(kind,false,kind==Boss.OCTOPUS);}
+    GatorReplay(int kind,boolean monochrome,boolean stageLead) {
+        this.kind=kind;this.slime=kind==Boss.SLIME;
+        this.monochrome=monochrome;this.stageLead=stageLead;reset();
+    }
     private void reset() {
         core=new GameCore(null,168,false);
         core.collected=Collect.MASK;core.landSeen=LandPicker.stateMask();
         core.onboarding.saved=Onboarding.SKIPPED;core.onboarding.savedPowers=-1;
         core.modes.restore(ModeSelector.TIME_ATTACK);core.timeAttack.selected=kind;
-        if(kind==Boss.OCTOPUS)core.modes.restore(ModeSelector.ADVENTURE);
+        if(stageLead)core.modes.restore(ModeSelector.ADVENTURE);
         core.startGame();
-        if(kind==Boss.OCTOPUS){core.enterStage(Lands.firstStage(Underwater.LAND)+1);core.stageGap=0;}
+        if(stageLead){core.enterStage(WorldCatalog.bossStage(kind)-3);core.stageGap=0;}
         core.stageBanner=0;core.landBlend=1;tick=0;
     }
     void update(float elapsed,Layout l) {
@@ -27,12 +32,21 @@ final class GatorReplay {
         while(remainder>=STEP) {remainder-=STEP;step(l);}
     }
     void step(Layout l) {
+        advance(l);
+        if(monochrome) {
+            int phase=tick%600;
+            core.monochromeFade=Math.max(0,Math.min(1,Math.min((phase-60)/36f,(540-phase)/36f)));
+        }
+    }
+    private void advance(Layout l) {
         if(tick>=LENGTH) {loops++;reset();}
-        if(kind==Boss.OCTOPUS) {
-            if(tick==18*60){core.enterStage(WorldCatalog.bossStage(Boss.OCTOPUS));core.stageBanner=0;}
+        if(stageLead && tick==18*60){core.enemies.clear();core.enterStage(WorldCatalog.bossStage(kind));core.stageBanner=0;}
+        if(kind==Boss.OCTOPUS || (stageLead && tick<18*60)) {
             if(tick%90==0 && !core.enemies.isEmpty()) {
                 GameCore.Enemy e=core.enemies.get(0);core.destroyWord(e,core.enemyCentreX(e),e.y,l,false);
             }
+            // Keep this timed scene out of stage-completion minigames.
+            if(tick<18*60)core.spawnedThisStage=Math.min(core.spawnedThisStage,core.stageQuota()-1);
             core.lives=3;core.update(STEP,l);tick++;return;
         }
         Boss b=core.boss;

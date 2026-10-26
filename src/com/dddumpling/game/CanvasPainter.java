@@ -24,6 +24,17 @@ final class CanvasPainter implements Painter, ArtStamp {
     private CanvasCrystalStamps crystalStamps;
     private CanvasReefStamps reefStamps;
     private CanvasWaterStamps waterStamps;
+    private final float[] monoValues=new float[20];
+    private float priorMono=-1;
+    private android.graphics.ColorMatrixColorFilter monoFilter;
+    private android.graphics.ColorFilter monoFilter(float amount) {
+        if(amount==0)return null;
+        if(amount!=priorMono) {
+            MonochromePainter.matrix(monoValues,amount);
+            monoFilter=new android.graphics.ColorMatrixColorFilter(monoValues);priorMono=amount;
+        }
+        return monoFilter;
+    }
     boolean cacheArt=true;
     public ArtStamp stamps() {return cacheArt && canvas!=null && canvas.isHardwareAccelerated()?this:null;}
     void warmArt() {
@@ -46,29 +57,44 @@ final class CanvasPainter implements Painter, ArtStamp {
     }
 
     public boolean waterBand(float[] xy,float radius,int alpha) {
+        return waterBand(xy,radius,alpha,0);
+    }
+    public boolean waterBand(float[] xy,float radius,int alpha,float mono) {
         if(stamps()==null || xy==null || xy.length<4 || (xy.length&1)!=0 || radius<=0)return false;
         if(waterStamps==null)waterStamps=new CanvasWaterStamps();
-        waterStamps.band(canvas,xy,radius,alpha);return true;
+        waterStamps.band(canvas,xy,radius,alpha,monoFilter(mono));return true;
     }
     public boolean waterGlow(float x,float y,float rx,float ry,int alpha) {
+        return waterGlow(x,y,rx,ry,alpha,0);
+    }
+    public boolean waterGlow(float x,float y,float rx,float ry,int alpha,float mono) {
         if(stamps()==null || rx<=0 || ry<=0)return false;
         if(waterStamps==null)waterStamps=new CanvasWaterStamps();
-        waterStamps.glow(canvas,x,y,rx,ry,alpha);return true;
+        waterStamps.glow(canvas,x,y,rx,ry,alpha,monoFilter(mono));return true;
     }
     public boolean reefVista(int art,float x,float y,float w,float h,int alpha) {
+        return reefVista(art,x,y,w,h,alpha,0);
+    }
+    public boolean reefVista(int art,float x,float y,float w,float h,int alpha,float mono) {
         if(stamps()==null || art<0 || art>=UnderwaterVista.COUNT || w<=0 || h<=0)return false;
         if(reefStamps==null)reefStamps=new CanvasReefStamps();
-        reefStamps.vista(canvas,art,x,y,w,h,alpha);return true;
+        reefStamps.vista(canvas,art,x,y,w,h,alpha,monoFilter(mono));return true;
     }
     public boolean reefRock(int art,float x,float y,float w,float h,int alpha) {
+        return reefRock(art,x,y,w,h,alpha,0);
+    }
+    public boolean reefRock(int art,float x,float y,float w,float h,int alpha,float mono) {
         if(stamps()==null || art<0 || art>=Underwater.ROCK_COUNT || w<=0 || h<=0)return false;
         if(reefStamps==null)reefStamps=new CanvasReefStamps();
-        reefStamps.draw(canvas,art,x,y,w,h,alpha);return true;
+        reefStamps.draw(canvas,art,x,y,w,h,alpha,monoFilter(mono));return true;
     }
     public boolean crystal(int layer,float x,float y,float w,float h,int alpha) {
+        return crystal(layer,x,y,w,h,alpha,0);
+    }
+    public boolean crystal(int layer,float x,float y,float w,float h,int alpha,float mono) {
         if(stamps()==null || !CrystalArena.validArt(layer))return false;
         if(crystalStamps==null)crystalStamps=new CanvasCrystalStamps();
-        crystalStamps.draw(canvas,layer,x,y,w,h,alpha);return true;
+        crystalStamps.draw(canvas,layer,x,y,w,h,alpha,monoFilter(mono));return true;
     }
     public boolean basin(int art,float x,float y,float w,float h,int alpha) {
         if(stamps()==null || art<0 || art>=SlimeBasinArt.COUNT)return false;
