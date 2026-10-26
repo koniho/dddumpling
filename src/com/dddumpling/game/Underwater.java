@@ -28,8 +28,8 @@ final class Underwater extends Draw {
         if(fade<=.001f)return;
         float cave=caveProgress(c);
         p=new WaterPainter(p,c,L,1);
-        p.save();p.clipRect(0,0,L.w,L.deckTop);
-        p.fillRect(0,0,L.w,L.deckTop,ink(WATER,245*fade));
+        p.save();p.clipRect(0,0,L.w,L.h);
+        p.fillRect(0,0,L.w,L.h,ink(WATER,245*fade));
         // A few nested pools of blue give depth without blur passes or full-screen distortion.
         for(int layer=3;layer>=0;layer--)p.fillEllipse(L.w*.54f,L.h*.40f,
                 L.w*(.38f+layer*.15f),L.h*(.23f+layer*.12f),ink(0xFF243B69,fade*(6+layer*2)*(1-cave*.65f)));
@@ -38,6 +38,13 @@ final class Underwater extends Draw {
         if(cave>0)cave(p,c,L,fade,cave);
         caustics(p,c,L,fade*(1-cave*.45f),false);
         fish(p,c,L,fade);
+        // Scenery continues behind the keys; a gradual darkening replaces the cut-off horizon.
+        float start=L.deckTop-L.h*.045f;
+        for(int band=0;band<14;band++) {
+            float top=start+(L.h-start)*band/14f,bottom=start+(L.h-start)*(band+1)/14f;
+            float t=(band+.5f)/14f;
+            p.fillRect(0,top,L.w,bottom,ink(WATER,fade*180*t*t*(3-2*t)));
+        }
         p.restore();
     }
 
@@ -62,9 +69,11 @@ final class Underwater extends Draw {
             // Each outcrop occupies less than half a slot: open water visibly separates cliffs.
             float y=(i*slot+side*slot*.43f+hash(seed)*slot*.12f+c.skyClock*L.h*(.015f+depth*.012f)+arrival)%span-L.h*.30f;
             float h=slot*(.20f+hash(seed+1)*.045f),w=L.w*(.12f+hash(seed+2)*.11f)*(depth==0?.75f:1);
-            if(y+h<-20 || y-h>L.deckTop+20)continue;
+            if(y+h<-20 || y-h>L.h+20)continue;
             cliff(p,L.w*side,y,w,h,side==0?1:-1,depthFade,seed);
-            if(depth==1)garden(p,c,L,L.w*side+(side==0?1:-1)*w*.58f,y-h*.18f,w*.65f,fade,seed,(i+side*3)%5);
+            // Retire distant plant detail before the cave's foreground colonies arrive.
+            float plants=smooth((fade-.55f)/.45f);
+            if(depth==1 && plants>.025f)garden(p,c,L,L.w*side+(side==0?1:-1)*w*.58f,y-h*.18f,w*.65f,plants,seed,(i+side*3)%5);
         }
     }
 
@@ -110,7 +119,8 @@ final class Underwater extends Draw {
         for(int side=0;side<2;side++) {
             cliff(p,L.w*side,L.h*.48f,L.w*.18f,L.h*.36f,side==0?1:-1,fade,991+side);
             cliff(p,L.w*side,L.deckTop-L.h*.06f,L.w*.28f,L.h*.13f,side==0?1:-1,fade,953+side);
-            garden(p,c,L,L.w*(side==0?.13f:.87f),L.deckTop-L.h*.065f,L.w*.12f,fade,373+side,side==0?2:3);
+            float plants=fade*smooth((progress-.45f)/.55f);
+            if(plants>.025f)garden(p,c,L,L.w*(side==0?.13f:.87f),L.deckTop-L.h*.065f,L.w*.12f,plants,373+side,side==0?2:3);
         }
         // Sand-lit hollow under Octopulse; rim is textured rather than a hard horizon.
         for(int layer=2;layer>=0;layer--)p.fillEllipse(L.w*.5f,L.deckTop-L.h*.08f,L.w*(.34f+layer*.07f),L.h*(.034f+layer*.018f),ink(0xFF435783,fade*(8+layer*2)));
@@ -142,7 +152,7 @@ final class Underwater extends Draw {
                 p.fillPoly(ribbon,ink(layer==0?0xFF274C51:0xFF669280,fade*(layer==0?210:100)));
             }
         }
-        UnderwaterCoral.draw(p,x+r*.25f,y+r*.04f,r*.85f,c.clock+seed,kind,fade);
+        UnderwaterCoral.draw(p,x+r*.25f,y+r*.04f,r*.85f,c.clock+seed,kind,fade,seed);
     }
 
     private static void fish(Painter p,GameCore c,Layout L,float fade) {
