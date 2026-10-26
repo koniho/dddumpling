@@ -2,40 +2,41 @@ package com.dddumpling.game;
 
 /** A lit reef corridor: immutable scenery passes through a small perspective field. */
 final class UnderwaterVista extends Draw {
-    static final int COUNT=7,WIDTH=256;
-    static int height(int art) {return art==0?512:352;}
+    static final int COUNT=7,WIDTH=256,ROWS=5;
+    static int height(int art) {return art==0?512:768;}
     private UnderwaterVista() {}
     private static int ink(int color,float alpha) {return Glyph.withAlpha(color,(int)alpha);}
     private static float smooth(float v) {v=Math.max(0,Math.min(1,v));return v*v*(3-2*v);}
     static float depth(float travel) {return travel/(4-3*travel);}
     static float visibility(float travel) {return smooth(travel/.22f);}
-    static float rootY(float travel) {return .19f+depth(travel)*1.71f;}
-    static float scale(float travel) {return .15f+depth(travel)*1.35f;}
+    static float rootY(float travel) {return .50f+depth(travel)*.82f;}
+    static float scale(float travel) {return .16f+depth(travel)*1.50f;}
+
+    static float columnX(float travel,int side) {
+        return .5f+(side==0?-1:1)*(.14f+depth(travel)*.90f);
+    }
+    static float travel(float clock,int row,int side) {
+        float phase=clock*.10f+side*.43f;
+        return (row+phase-(float)Math.floor(phase))/ROWS;
+    }
 
     static void draw(Painter p,GameCore c,Layout L,float fade) {
         if(fade<.004f)return;
         if(p instanceof WaterPainter)p=((WaterPainter)p).anchored();
         image(p,0,0,0,L.w,L.h,fade);
         surface(p,c,L,fade);
-        // Far to near, with the same projection for placement, size, and movement.
-        // New scenery is invisible at the far plane; recycling happens below the screen.
-        for(int row=0;row<4;row++)for(int side=0;side<2;side++) {
-            float clock=c.skyClock*.065f+side*.21f;
+        ground(p,c,L,fade);
+        // Each column and all its decorations share one cached image and projection.
+        // The two rows of five emerge at the horizon and leave through the side edges.
+        for(int row=0;row<ROWS;row++)for(int side=0;side<2;side++) {
+            float clock=c.skyClock*.10f+side*.43f;
             int cycle=(int)Math.floor(clock);
-            float travel=(row+clock-cycle)/4f,d=depth(travel),s=scale(travel);
+            float t=travel(c.skyClock,row,side),d=depth(t),s=scale(t);
             int art=1+Math.floorMod(row-cycle+side*3,6);
-            float x=L.w*(.5f+(side==0?-1:1)*(.14f+d*.60f));
-            float y=L.h*rootY(travel),w=L.w*.65f*s,h=w*352/256;
-            if(y-h>L.h || x+w*.5f<0 || x-w*.5f>L.w)continue;
-            float alpha=fade*visibility(travel)*(.45f+.55f*smooth(d*2.4f));
-            image(p,art,x-w*.5f,y-h*.86f,w,h,alpha);
-        }
-        // Living fronds remain vectors, while the detailed colonies travel as cached images.
-        for(int side=0;side<2;side++) {
-            float t=c.skyClock*.016f+side*.5f;t-=(int)t;
-            float d=depth(t),s=scale(t),x=L.w*(.5f+(side==0?-1:1)*(.13f+d*.59f));
-            float y=L.h*rootY(t),r=L.w*.035f*s;
-            Underwater.kelp(p,c,x,y,r,fade*visibility(t)*.65f,791+side*71,2);
+            float x=L.w*columnX(t,side),y=L.h*rootY(t),w=L.w*.60f*s,h=w*height(art)/WIDTH;
+            if(x+w*.5f<0 || x-w*.5f>L.w)continue;
+            float alpha=fade*visibility(t)*(.38f+.62f*smooth(d*2.4f));
+            image(p,art,x-w*.5f,y-h*.90f,w,h,alpha);
         }
         for(int i=0;i<18;i++) {
             float t=(hash(727+i)*1.0f+c.skyClock*.018f)%1,d=depth(t);
@@ -54,23 +55,45 @@ final class UnderwaterVista extends Draw {
     static void paint(Painter p,int art) {artwork(p,art,0,0,WIDTH,height(art),1);}
     private static void artwork(Painter p,int art,float x,float y,float w,float h,float fade) {
         if(art==0){backdrop(p,x,y,w,h,fade);return;}
-        float r=w*.34f,cx=x+w*.5f,root=y+h*.86f;
+        float r=w*.34f,cx=x+w*.5f,root=y+h*.90f;
         int seed=419+art*83;
-        // Tall sea fans and grasses sit behind a rounded, shaded rock foot.
-        fan(p,cx-r*.58f,root-r*.28f,r*.77f,seed,0xFF578E97,fade);
-        fan(p,cx+r*.53f,root-r*.13f,r*.60f,seed+41,0xFF666A9C,fade);
-        stone(p,cx,root-r*.12f,r*.95f,r*.60f,seed,fade);
-        stone(p,cx-r*.68f,root+r*.10f,r*.43f,r*.31f,seed+7,fade);
-        stone(p,cx+r*.64f,root+r*.17f,r*.44f,r*.34f,seed+11,fade);
-        UnderwaterCoral.colony(p,cx-r*.30f,root-r*.36f,r*.58f,seed,art%5,fade,seed,
-                art%3==0?0xFF77ABA1:art%3==1?0xFFA77B9F:0xFF8A8CB7);
-        plume(p,cx+r*.48f,root-r*.19f,r*.62f,seed+17,
-                art%3==0?0xFF76A798:art%3==1?0xFFB688A6:0xFF7799BF,fade);
-        plume(p,cx-r*.57f,root+r*.13f,r*.40f,seed+37,
-                art%2==0?0xFF7299B3:0xFFC49C7C,fade);
-        for(int i=0;i<3;i++) {
-            float xx=cx+(hash(seed+i+92)-.5f)*r*1.30f,yy=root+r*(.16f+hash(seed+i+85)*.20f);
-            stone(p,xx,yy,r*.16f,r*.11f,seed+i+19,fade);
+        // Crown and ledge plants are painted with the rock, so nothing floats independently.
+        fan(p,cx-r*.12f,y+h*.22f,r*.63f,seed,0xFF578E97,fade*.65f);
+        column(p,x,y,w,h,seed,fade);
+        for(int ledge=0;ledge<3;ledge++) {
+            float sign=(ledge+art)%2==0?-1:1;
+            float yy=y+h*(.30f+ledge*.23f),xx=cx+sign*r*(.48f+hash(seed+ledge)*.13f);
+            stone(p,xx,yy,r*.42f,r*.24f,seed+ledge*19,fade);
+            if(ledge==1)UnderwaterCoral.colony(p,xx,yy-r*.10f,r*.46f,seed,art%5,fade*.80f,seed,
+                    art%3==0?0xFF77ABA1:art%3==1?0xFFA77B9F:0xFF8A8CB7);
+            else plume(p,xx,yy-r*.10f,r*(.38f+ledge*.04f),seed+ledge*31,
+                    art%2==0?0xFF7299B3:0xFFAD87A0,fade*.85f);
+        }
+        stone(p,cx-r*.48f,root-r*.05f,r*.47f,r*.26f,seed+7,fade);
+        plume(p,cx+r*.35f,root-r*.08f,r*.55f,seed+37,0xFF719B9D,fade);
+    }
+    private static void column(Painter p,float x,float y,float w,float h,int seed,float a) {
+        float[] rim=new float[52];
+        float crown=.09f+hash(seed+61)*.12f;
+        for(int layer=0;layer<3;layer++) {
+            for(int j=0;j<13;j++) {
+                float t=j/12f,yy=y+h*(crown+t*(.90f-crown));
+                float taper=.45f+.55f*(float)Math.sin(Math.PI*(.12f+t*.78f));
+                float left=.25f+.055f*(float)Math.sin(j*1.9f+seed)+.025f*hash(seed+j);
+                float right=.27f+.055f*(float)Math.sin(j*1.7f+seed+2);
+                float mid=x+w*(.48f+.025f*(float)Math.sin(t*7+seed));
+                rim[j*2]=mid-w*left*taper*(1-layer*.18f)-w*layer*.018f;
+                rim[j*2+1]=yy-h*layer*.008f;
+                rim[(25-j)*2]=mid+w*right*taper*(1-layer*.27f)-w*layer*.018f;
+                rim[(25-j)*2+1]=yy-h*layer*.008f+h*.015f*(float)Math.sin(j*1.3f+seed);
+            }
+            p.fillPoly(rim,ink(layer==0?0xFF102B46:layer==1?0xFF2C5068:0xFF53798B,a*(layer==2?130:245)));
+        }
+        for(int i=0;i<7;i++) {
+            float yy=y+h*(.25f+i*.085f),xx=x+w*(.33f+hash(seed+i)*.10f);
+            p.polyline(new float[]{xx,yy,xx+w*.12f,yy+h*.012f,xx+w*.27f,yy-h*.01f},
+                    ink(0xFF112C43,a*60),w*.012f);
+            p.line(xx,yy-h*.008f,xx+w*.16f,yy-h*.005f,ink(0xFF8BB0B6,a*36),w*.009f);
         }
     }
     private static void backdrop(Painter p,float x,float y,float w,float h,float a) {
@@ -97,31 +120,26 @@ final class UnderwaterVista extends Draw {
             }
             p.fillPoly(path,ink(0xFFA2ADA0,a*3));
         }
-        // Receding walls frame open water; foreground colonies add the moving relief.
-        for(int side=0;side<2;side++)for(int layer=0;layer<3;layer++) {
-            float[] wall=new float[132];
-            wall[0]=x+w*side;wall[1]=y-h*.05f;
-            for(int i=0;i<64;i++) {
-                float t=i/63f;
-                float edge=.065f+.060f*(float)Math.cos(t*5)+.025f*(float)Math.sin(t*18+side*2)
-                        +.012f*(float)Math.cos(t*31+side)+(.045f-layer*.035f);
-                wall[2+i*2]=x+w*(side==0?edge:1-edge);wall[3+i*2]=y+h*(t*1.1f-.05f);
+    }
+    private static void ground(Painter p,GameCore c,Layout L,float a) {
+        float[] line=new float[26];
+        // Fixed rows in depth, projected into accelerating, widening sand ripples.
+        for(int row=0;row<12;row++) {
+            float phase=c.skyClock*.20f;
+            int cycle=(int)Math.floor(phase);
+            float t=(row+phase-cycle)/12f,d=depth(t),yy=L.h*rootY(t);
+            float alpha=a*visibility(t)*smooth((1.12f-yy/L.h)/.12f);
+            if(alpha<=.001f || yy>L.h*1.04f)continue;
+            int seed=Math.floorMod(row-cycle,12);
+            float span=L.w*(.08f+d*1.75f);
+            for(int j=0;j<13;j++) {
+                float u=j/12f;
+                line[j*2]=L.w*.5f+(u-.5f)*span;
+                line[j*2+1]=yy+L.h*d*(.012f*(float)Math.sin(u*8+seed*1.3f)+.024f*(u-.5f)*(u-.5f));
             }
-            wall[130]=x+w*side;wall[131]=y+h*1.05f;
-            p.fillPoly(wall,ink(layer==0?0xFF28617A:layer==1?0xFF1B405E:0xFF112C4B,a*(layer==0?70:layer==1?150:205)));
-        }
-        // Rounded relief and reef life live inside the cached wall painting.
-        for(int side=0;side<2;side++)for(int i=0;i<8;i++) {
-            int seed=1709+side*317+i*83;
-            float yy=y+h*(.07f+i*.135f+hash(seed+29)*.04f);
-            float inset=-.025f+hash(seed+19)*.065f,xx=x+w*(side==0?inset:1-inset);
-            float rx=w*(.09f+hash(seed)*.07f),ry=rx*(.75f+hash(seed+13)*.35f);
-            stone(p,xx,yy,rx,ry,seed,a*.75f);
-            float inward=side==0?1:-1;
-            float plantX=xx+inward*rx*.45f,plantY=yy-ry*.15f;
-            fan(p,plantX,plantY,w*(.040f+i*.004f),seed,0xFF6D9EA8,a*.30f);
-            if(i%2==0)plume(p,xx+inward*rx*.60f,yy+ry*.35f,w*(.043f+i*.004f),seed+51,
-                    i%4==0?0xFF779EAE:0xFF8D7DA1,a*.55f);
+            float width=L.w*(.001f+d*.014f);
+            p.polyline(line,ink(0xFF9BAEAD,alpha*(7+d*9)),width*2.4f);
+            p.polyline(line,ink(0xFF9BAEAD,alpha*(10+d*10)),width);
         }
     }
     private static void surface(Painter p,GameCore c,Layout L,float a) {

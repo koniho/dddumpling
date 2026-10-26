@@ -3213,7 +3213,7 @@ final class Preview {
             for(int kind=0;kind<5;kind++)UnderwaterCoral.draw(coralSheet,w*.50f,h*(.17f+kind*.18f),w*.14f,3.5f,kind,1);
             Png.write(new File(dir,"underwater-coral-kinds.png"),coralSheet.resolve(),w,h);
         }
-        if(wanted("underwater-")) {
+        if(wantedGroup("underwater-")) {
             GameCore water=TestUnderwater.stage(L);
             for(int i=0;i<3;i++) {
                 GameCore.Enemy e=new GameCore.Enemy();e.word=new int[]{i,(i+1)%6,(i+3)%6};
@@ -3240,7 +3240,7 @@ final class Preview {
             TestBossRetry.lose(loss,L);TestBossRetry.ready(loss,L);step(loss,L,.6f);
             shot(dir,"underwater-cave-retry",loss,L,w,h,ss);
         }
-        if(wanted("crystal-arena-")) {
+        if(wantedGroup("crystal-arena-")) {
             for(float time:new float[]{0,.35f,.8f,1.2f,1.59f}) {
                 GameCore entry=TestCrystalField.arenaScene(L,0);
                 entry.boss.intro=Boss.INTRO-time;entry.clock=entry.skyClock=5+time;entry.shake=entry.flash=0;

@@ -155,9 +155,20 @@ final class TestUnderwater extends Check {
         check("reef perspective moves down and grows continuously",advancing && accelerating);
         check("reef colonies fade in at the distant plane",UnderwaterVista.visibility(0)==0
                 && UnderwaterVista.visibility(.05f)<UnderwaterVista.visibility(.15f));
-        // The tallest colony has completely passed the viewport before recycling.
-        float top=UnderwaterVista.rootY(1)*L.h-L.w*.65f*UnderwaterVista.scale(1)*352/256*.86f;
-        check("reef colonies recycle beyond the bottom",top>L.h);
+        float halfWidth=.30f*UnderwaterVista.scale(1);
+        check("reef columns recycle beyond the side edges",UnderwaterVista.columnX(1,0)+halfWidth<0
+                && UnderwaterVista.columnX(1,1)-halfWidth>1);
+        check("reef columns and sand emerge at mid-screen",UnderwaterVista.rootY(0)==.5f
+                && UnderwaterVista.rootY(1)>1);
+        boolean outward=true,staggered=true;
+        for(int i=0;i<100;i++) {
+            float t=i/100f;
+            outward&=UnderwaterVista.columnX(t,0)>UnderwaterVista.columnX(t+.01f,0)
+                    && UnderwaterVista.columnX(t,1)<UnderwaterVista.columnX(t+.01f,1);
+            for(int row=0;row<UnderwaterVista.ROWS;row++)
+                staggered&=UnderwaterVista.travel(i,row,0)!=UnderwaterVista.travel(i,row,1);
+        }
+        check("five column layers move outward on independently staggered sides",UnderwaterVista.ROWS==5 && outward && staggered);
         final int[] stamps={0},calls={0};final boolean[] valid={true};
         ArtStamp cache=new ArtStamp() {
             public boolean stamp(int art,float x,float y,float w,float h,float angle,int tint,float amount){return false;}
@@ -174,7 +185,7 @@ final class TestUnderwater extends Check {
         for(int i=0;i<180;i++) {
             stamps[0]=calls[0]=0;c.skyClock=i*3.17f;
             UnderwaterVista.draw(new OpacityPainter(probe,1),c,L,1);
-            bounded&=stamps[0]>4 && stamps[0]<=9 && calls[0]<70;
+            bounded&=stamps[0]>4 && stamps[0]<=11 && calls[0]<80;
         }
         check("detailed reef artwork stays cached and bounded throughout travel",valid[0] && bounded);
     }

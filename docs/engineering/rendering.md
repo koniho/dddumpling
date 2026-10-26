@@ -155,10 +155,13 @@ full grayscale and its fade transitions; `PROFILE_SCENE=crystal` similarly cover
 the crystal stage followed by its arena. Neither replay changes saved progress.
 Android and iOS cache twelve shaded
 rock images (under 3 MiB), anchored to their seabed scroll without ambient distortion.
-The stage reef corridor additionally caches one lit water/wall painting and six coral
-colonies (2.56 MiB). Their shared perspective projection controls placement, scale,
-and accelerating downward travel. Colonies fade in at the far plane and recycle
-after leaving the viewport; kelp, light ripples, and drifting motes remain live.
+The stage reef corridor additionally caches one lit water painting and six decorated
+rock columns (5 MiB before optional grayscale copies). Five staggered depth layers
+per side share a projection for placement, scale, and accelerating outward travel.
+Columns fade in near mid-screen and recycle beyond the side edges; their coral and
+plants stay attached inside the same cached image. No static side rocks are baked
+into the backdrop. Sand ripples grow and scroll from mid-screen to below the viewport;
+surface light and drifting motes remain live.
 The Octopulse cave keeps its fixed arena composition. Underwater and crystal caches
 remain active during monochrome: Android applies a luminance color matrix, while
 iOS lazily retains one grayscale copy per live image slot. Partial iOS fades blend
