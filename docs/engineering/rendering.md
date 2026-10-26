@@ -156,9 +156,12 @@ the crystal stage followed by its arena. Neither replay changes saved progress.
 Android and iOS cache twelve shaded
 rock images (under 3 MiB), anchored to their seabed scroll without ambient distortion.
 The stage reef corridor additionally caches one lit water painting, ten decorated
-rock columns, and a shared soft sunbeam (8.5 MiB before optional grayscale copies). Five staggered depth layers
+rock columns, a shared soft sunbeam, and ten half-resolution feathered silhouettes (10.375 MiB before optional grayscale copies). Five staggered depth layers
 per side share a projection for placement, scale, and accelerating outward travel.
 Columns fade in briefly near mid-screen, then use RGB depth shading at full opacity.
+Distant columns draw a cached feathered silhouette behind the solid artwork; its opacity
+falls to zero toward the foreground. Both native hosts use the same small textures,
+without per-frame blur or extra full-resolution color variants.
 Android filters the cached image; iOS tints within a clipped local layer without changing
 image alpha. No extra color-variant textures are retained. Columns recycle beyond the side edges; their coral and
 plants stay attached inside the same cached image. No static side rocks are baked

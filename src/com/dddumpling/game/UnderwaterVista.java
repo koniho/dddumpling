@@ -2,9 +2,10 @@ package com.dddumpling.game;
 
 /** A lit reef corridor: immutable scenery passes through a small perspective field. */
 final class UnderwaterVista extends Draw {
-    static final int COUNT=12,WIDTH=256,ROWS=5,RAY=11;
+    static final int COUNT=22,WIDTH=256,ROWS=5,RAY=11,SOFT=12;
     static final float COLUMN_WIDTH=1.08f;
-    static int height(int art) {return art==0 || art==RAY?512:768;}
+    static int width(int art) {return art>=SOFT?128:WIDTH;}
+    static int height(int art) {return art>=SOFT?384:art==0 || art==RAY?512:768;}
     private UnderwaterVista() {}
     private static int ink(int color,float alpha) {return Glyph.withAlpha(color,(int)alpha);}
     private static float smooth(float v) {v=Math.max(0,Math.min(1,v));return v*v*(3-2*v);}
@@ -12,6 +13,7 @@ final class UnderwaterVista extends Draw {
     static float visibility(float travel) {return smooth(travel/.22f);}
     static float rootY(float travel) {return .50f+depth(travel)*.82f;}
     static float depthShade(float travel) {return .48f+.52f*smooth(depth(travel)*1.8f);}
+    static float edgeSoftness(float travel) {return 1-smooth((depth(travel)-.04f)/.40f);}
     static float scale(float travel) {return .16f+depth(travel)*1.50f;}
 
     static float columnHeight(float travel,float width) {
@@ -43,6 +45,8 @@ final class UnderwaterVista extends Draw {
             float x=L.w*columnX(t,side),y=L.h*rootY(t),w=L.w*COLUMN_WIDTH*s,h=columnHeight(t,L.w*.60f*s);
             if(x+w*.5f<0 || x-w*.5f>L.w)continue;
             float alpha=fade*visibility(t);
+            float soft=alpha*edgeSoftness(t);
+            if(soft>.004f)shadedImage(p,SOFT+art-1,x-w*.5f,y-h*.90f,w,h,soft,depthShade(t));
             shadedImage(p,art,x-w*.5f,y-h*.90f,w,h,alpha,depthShade(t));
         }
         for(int i=0;i<18;i++) {
@@ -74,30 +78,33 @@ final class UnderwaterVista extends Draw {
         int color(int c){return shadeColor(c,shade);}
         public ArtStamp stamps(){return null;}
     }
-    static void paint(Painter p,int art) {artwork(p,art,0,0,WIDTH,height(art),1);}
+    static void paint(Painter p,int art) {artwork(p,art,0,0,width(art),height(art),1);}
     private static void artwork(Painter p,int art,float x,float y,float w,float h,float fade) {
         if(art==0){backdrop(p,x,y,w,h,fade);return;}
         if(art==RAY){sunbeam(p,x,y,w,h,fade);return;}
+        boolean soft=art>=SOFT;
+        if(soft)art=art-SOFT+1;
         p=new CurvedColumn(p,art,y,w,h);
         float r=w*.34f,cx=x+w*.5f,root=y+h*.90f;
         int seed=419+art*83;
         // Crown and ledge plants are painted with the rock, so nothing floats independently.
-        fan(p,cx-r*.12f,y+h*.22f,r*.63f,seed,0xFF578E97,fade*.65f);
-        column(p,x,y,w,h,seed,fade);
+        if(!soft)fan(p,cx-r*.12f,y+h*.22f,r*.63f,seed,0xFF578E97,fade*.65f);
+        column(p,x,y,w,h,seed,fade,soft);
         for(int ledge=0;ledge<3;ledge++) {
             float sign=(ledge+art)%2==0?-1:1;
             float yy=y+h*(.30f+ledge*.23f),xx=cx+sign*r*(.48f+hash(seed+ledge)*.13f);
-            stone(p,xx,yy,r*.42f,r*.24f,seed+ledge*19,fade);
+            stone(p,xx,yy,r*.42f,r*.24f,seed+ledge*19,fade,soft);
+            if(soft)continue;
             if(ledge==1)UnderwaterCoral.colony(p,xx,yy-r*.10f,r*.46f,seed,art%5,fade*.80f,seed,
                     art%3==0?0xFF77ABA1:art%3==1?0xFFA77B9F:0xFF8A8CB7);
             else plume(p,xx,yy-r*.10f,r*(.38f+ledge*.04f),seed+ledge*31,
                     art%2==0?0xFF7299B3:0xFFAD87A0,fade*.85f);
         }
         // Broad attached footing and loose toe stones meet the sand without a flat cut.
-        stone(p,cx,root-r*.025f,r*1.12f,r*.26f,seed+7,fade);
-        stone(p,cx-r*.76f,root+r*.025f,r*.35f,r*.18f,seed+29,fade);
-        stone(p,cx+r*.72f,root+r*.05f,r*.30f,r*.17f,seed+53,fade);
-        plume(p,cx+r*.35f,root-r*.08f,r*.55f,seed+37,0xFF719B9D,fade);
+        stone(p,cx,root-r*.025f,r*1.12f,r*.26f,seed+7,fade,soft);
+        stone(p,cx-r*.76f,root+r*.025f,r*.35f,r*.18f,seed+29,fade,soft);
+        stone(p,cx+r*.72f,root+r*.05f,r*.30f,r*.17f,seed+53,fade,soft);
+        if(!soft)plume(p,cx+r*.35f,root-r*.08f,r*.55f,seed+37,0xFF719B9D,fade);
     }
     static float bow(int art,float y) {
         float t=Math.max(0,Math.min(1,(.91f-y)/.82f));
@@ -143,7 +150,15 @@ final class UnderwaterVista extends Draw {
             }
         }
     }
-    private static void column(Painter p,float x,float y,float w,float h,int seed,float a) {
+    // Feathered silhouette is rasterized once at half resolution, never blurred live.
+    private static void softEdge(Painter p,float[] contour,float w,float alpha) {
+        for(int i=0;i<10;i++) {
+            float radius=3*(1-i/10f),outer=radius+.3f;
+            float opacity=(float)(Math.exp(-radius*radius*.5)-Math.exp(-outer*outer*.5));
+            p.strokePoly(contour,ink(0xFF102B46,alpha*255*opacity),w*.050f*radius);
+        }
+    }
+    private static void column(Painter p,float x,float y,float w,float h,int seed,float a,boolean soft) {
         float[] contour=new float[72],rim=new float[72];
         float crown=.09f+hash(seed+61)*.12f;
         for(int j=0;j<13;j++) {
@@ -165,11 +180,12 @@ final class UnderwaterVista extends Draw {
             contour[(31+i)*2+1]=crown-.020f*(float)Math.sin(u*Math.PI)
                     +.012f*(float)Math.sin(u*13+seed)+hash(seed+i+31)*.008f;
         }
-        for(int layer=0;layer<3;layer++) {
+        for(int layer=0;layer<(soft?1:3);layer++) {
             for(int j=0;j<contour.length;j+=2) {
                 rim[j]=x+w*(.48f+(contour[j]-.48f)*(1-layer*.19f)-layer*.018f);
                 rim[j+1]=y+h*(contour[j+1]-layer*.006f);
             }
+            if(soft){softEdge(p,rim,w,a);return;}
             p.fillPoly(rim,ink(layer==0?0xFF102B46:layer==1?0xFF2C5068:0xFF53798B,a*(layer==2?130:245)));
         }
         for(int i=0;i<7;i++) {
@@ -264,15 +280,16 @@ final class UnderwaterVista extends Draw {
             image(p,RAY,x,-L.h*.035f,w,h,alpha);
         }
     }
-    private static void stone(Painter p,float x,float y,float rx,float ry,int seed,float a) {
+    private static void stone(Painter p,float x,float y,float rx,float ry,int seed,float a,boolean soft) {
         float[] rim=new float[56];
-        for(int layer=0;layer<3;layer++) {
+        for(int layer=0;layer<(soft?1:3);layer++) {
             for(int j=0;j<28;j++) {
                 float angle=j*Softbody.TAU/28;
                 float edge=.91f+.06f*(float)Math.sin(angle*3+seed)+.035f*(float)Math.cos(angle*5+seed*.7f);
                 rim[j*2]=x-rx*layer*.055f+(float)Math.cos(angle)*rx*edge*(1-layer*.14f);
                 rim[j*2+1]=y-ry*layer*.15f+(float)Math.sin(angle)*ry*edge*(1-layer*.21f);
             }
+            if(soft){softEdge(p,rim,rx*3,a);return;}
             p.fillPoly(rim,ink(layer==0?0xFF102B46:layer==1?0xFF2C5068:0xFF53798B,a*(layer==2?140:245)));
         }
         for(int i=0;i<3;i++) {

@@ -189,6 +189,11 @@ final class TestUnderwater extends Check {
         check("nearby reef crowns stretch above the screen",nearTop<0);
         int dim=UnderwaterVista.shadeColor(0x7F80C040,.5f);
         check("reef shading halves RGB without changing alpha",dim==0x7F406020);
+        check("column feather fades out toward the foreground",UnderwaterVista.edgeSoftness(.1f)==1
+                && UnderwaterVista.edgeSoftness(.5f)>.1f && UnderwaterVista.edgeSoftness(.85f)==0);
+        long bytes=0;
+        for(int art=0;art<UnderwaterVista.COUNT;art++)bytes+=4L*UnderwaterVista.width(art)*UnderwaterVista.height(art);
+        check("reef cache including soft silhouettes stays below 11 MiB",bytes<11*1024*1024);
         final int[] stamps={0},calls={0},solid={0};final boolean[] valid={true};
         ArtStamp cache=new ArtStamp() {
             public boolean stamp(int art,float x,float y,float w,float h,float angle,int tint,float amount){return false;}
@@ -209,7 +214,7 @@ final class TestUnderwater extends Check {
         for(int i=0;i<180;i++) {
             stamps[0]=calls[0]=solid[0]=0;c.skyClock=i*3.17f;
             UnderwaterVista.draw(new OpacityPainter(probe,1),c,L,1);
-            bounded&=stamps[0]>4 && stamps[0]<=21 && calls[0]<80 && solid[0]>=4;
+            bounded&=stamps[0]>4 && stamps[0]<=31 && calls[0]<80 && solid[0]>=4;
         }
         check("detailed reef artwork stays cached and bounded throughout travel",valid[0] && bounded);
     }

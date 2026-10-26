@@ -13,7 +13,7 @@ final class CanvasReefStamps {
     private final RectF bounds=new RectF();
     void vista(Canvas canvas,int art,float x,float y,float w,float h,int alpha,android.graphics.ColorFilter filter) {
         if(vista[art]==null) {
-            Bitmap image=Bitmap.createBitmap(UnderwaterVista.WIDTH,UnderwaterVista.height(art),Bitmap.Config.ARGB_8888);
+            Bitmap image=Bitmap.createBitmap(UnderwaterVista.width(art),UnderwaterVista.height(art),Bitmap.Config.ARGB_8888);
             CanvasPainter p=new CanvasPainter();p.bind(new Canvas(image));UnderwaterVista.paint(p,art);
             image.prepareToDraw();vista[art]=image;
         }

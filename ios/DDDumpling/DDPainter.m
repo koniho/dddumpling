@@ -220,7 +220,7 @@ static void DDDrawCachedImage(CGContextRef ctx,CGRect rect,CGImageRef color,CGIm
                   withFloat:(jfloat)w withFloat:(jfloat)h withInt:(jint)alpha withFloat:(jfloat)shade withFloat:(jfloat)mono {
   if(!self.context || _drawingForest || art<0 || art>=DDUnderwaterVista_COUNT || w<=0 || h<=0)return NO;
   if(!_reefVista[art]) {
-    size_t width=DDUnderwaterVista_WIDTH,height=[DDUnderwaterVista heightWithInt:art];
+    size_t width=[DDUnderwaterVista widthWithInt:art],height=[DDUnderwaterVista heightWithInt:art];
     CGContextRef bitmap=CGBitmapContextCreate(NULL,width,height,8,width*4,_colorSpace,
         kCGBitmapByteOrder32Big|kCGImageAlphaPremultipliedLast);
     if(!bitmap)return NO;
