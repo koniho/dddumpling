@@ -80,12 +80,29 @@ final class Underwater extends Draw {
             int seed=1253+depth*103+side*43+i*67;
             float span=L.h*1.65f,slot=span/3;
             // Each outcrop occupies less than half a slot: open water visibly separates cliffs.
-            float y=(i*slot+side*slot*.43f+hash(seed)*slot*.12f+c.skyClock*L.h*(.015f+depth*.012f)+arrival)%span-L.h*.30f;
+            float y=reefY(c,L,depth,side,i,arrival);
             float h=slot*(.20f+hash(seed+1)*.045f),w=L.w*(.12f+hash(seed+2)*.11f)*(depth==0?.75f:1);
+            // Occasional low, broad shelves reach beyond the middle, alternating banks.
+            if(depth==1 && i==side){w=L.w*(.60f+hash(seed+2)*.06f);h=L.h*.055f;}
             if(y+h<-20 || y-h>L.h+20)continue;
             cliff(p,L.w*side,y,w,h,side==0?1:-1,depthFade,seed);
-
         }
+    }
+
+    private static float reefY(GameCore c,Layout L,int depth,int side,int row,float arrival) {
+        int seed=1253+depth*103+side*43+row*67;
+        float span=L.h*1.65f,slot=span/3;
+        return (row*slot+side*slot*.43f+hash(seed)*slot*.12f
+                +c.skyClock*L.h*(.015f+depth*.012f)+arrival)%span-L.h*.30f;
+    }
+    private static float shelfPlantFade(GameCore c,Layout L,float y,float radius,float cave) {
+        float clear=1;
+        for(int side=0;side<2;side++) {
+            float shelfY=reefY(c,L,1,side,side,cave*L.h*.36f);
+            float distance=Math.abs(y-shelfY)-L.h*.070f-radius;
+            clear=Math.min(clear,smooth(distance/(L.h*.045f)));
+        }
+        return clear;
     }
 
     private static void cliff(Painter p,float x,float y,float w,float h,int side,float fade,int seed) {
@@ -195,7 +212,8 @@ final class Underwater extends Draw {
             float span=L.h*1.5f,y=(i*span/5+hash(seed)*L.h*.08f+c.skyClock*L.h*.016f)%span-L.h*.20f;
             float r=L.w*(.039f+hash(seed+3)*.008f);
             if(y+r<0 || y-r*5>L.h)continue;
-            garden(p,c,L,L.w*(i%2==0?.35f:.65f),y,r,stageFade,seed,i);
+            float plants=stageFade*shelfPlantFade(c,L,y,r,cave);
+            if(plants>.025f)garden(p,c,L,L.w*(i%2==0?.35f:.65f),y,r,plants,seed,i);
         }
         float caveFade=fade*smooth((cave-.45f)/.55f);
         if(caveFade>.025f)for(int i=0;i<2;i++)garden(p,c,L,L.w*(i==0?.35f:.65f),
