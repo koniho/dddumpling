@@ -32,7 +32,9 @@ final class Lands extends Draw {
     }
     static int cloudTint(GameCore c, int layer) {
         if (c.state == GameCore.TITLE || c.survival.active) return Sky.CLOUD_TINT[layer];
-        int target = Glyph.mix(Sky.CLOUD_TINT[layer], TINT[forStage(visualStage(c))], 0.36f);
+        int land=forStage(visualStage(c));
+        int target=land==RAINBOW?RainbowLand.SKY_CLOUD_TINT[layer]
+                :Glyph.mix(Sky.CLOUD_TINT[layer],TINT[land],.36f);
         return Glyph.mix(c.landCloudFrom[layer], target, blend(c));
     }
     static void fromIntro(GameCore c) {

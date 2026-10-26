@@ -48,7 +48,7 @@ final class Sky extends Draw {
     static void clouds(Painter p, GameCore c, Layout L, int layer, float hurt) {
         int base = Lands.cloudTint(c, layer);
         int tint = Glyph.mix(base, BG_HURT, hurt * 0.55f);
-        int alpha = CLOUD_ALPHA[layer];
+        int alpha = Math.round(CLOUD_ALPHA[layer]*(1+RainbowLand.presence(c)*(layer==CLOUD_FRONT_LAYER?.45f:.85f)));
 
         // A landed press washes the sky with that letter's colour; a cleared word floods it
         // yellow. Brightening the alpha as well as the hue is what makes it read as a glow

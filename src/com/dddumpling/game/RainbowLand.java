@@ -6,6 +6,13 @@ final class RainbowLand extends Draw {
     static boolean active(GameCore c) {
         return !c.survival.active && !c.timeAttack.active && Lands.forStage(c.stage)==Lands.RAINBOW;
     }
+    static final int[] SKY_CLOUD_TINT={0xFFE2E9F5,0xFFF2F6FC,0xFFFFFFFF};
+    static float presence(GameCore c) {
+        if(c.state==GameCore.TITLE || c.survival.active)return 0;
+        float mix=Lands.blend(c);
+        return (c.landFrom==Lands.RAINBOW?1-mix:0)
+                +(Lands.forStage(Lands.visualStage(c))==Lands.RAINBOW?mix:0);
+    }
     private static final int[] BAND_ORDER=bandOrder();
     private static int[] bandOrder() {
         int[] order=new int[8];
@@ -57,7 +64,7 @@ final class RainbowLand extends Draw {
         for(int side=-1;side<=1;side+=2)
             cloud(p,x+side*r*.84f,y+bob,r*.48f,r*.32f,alpha,silhouette,0,4);
     }
-    private static final int[] CLOUD_COLORS={0xFFBAA2E8,0xFFCCE2F5,0xFFE9E0FF,0xFFFFF7FF};
+    private static final int[] CLOUD_COLORS={0xFFDDE4F0,0xFFEBF1FA,0xFFF7F9FF,0xFFFFFFFF};
     /** Each depth layer is one traced puff, so overlapping lobes do not become opaque. */
     static void cloud(Painter p,float x,float y,float rx,float ry,int alpha,boolean silhouette,int from,int to) {
         for(int layer=from;layer<to;layer++) {
@@ -74,7 +81,7 @@ final class RainbowLand extends Draw {
                 outline[(65-i)*2]=xx+rx*u*scale;outline[(65-i)*2+1]=yy+ry*cap*.43f*scale;
             }
             int color=silhouette?0xFF443B64:CLOUD_COLORS[layer];
-            p.fillPoly(outline,Glyph.withAlpha(color,(int)(alpha*(.09f+layer*.035f))));
+            p.fillPoly(outline,Glyph.withAlpha(color,(int)(alpha*(silhouette?.09f+layer*.035f:.15f+layer*.045f))));
         }
     }
 
