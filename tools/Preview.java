@@ -3236,6 +3236,8 @@ final class Preview {
             }
             GameCore battle=TestBossRetry.fight(L,Boss.OCTOPUS);battle.landBlend=1;
             step(battle,L,1.25f);shot(dir,"underwater-cave-battle",battle,L,w,h,ss);
+            battle.waterRipples.cleared(battle,L,L.w*.35f,L.h*.4f);battle.clock+=.1f;
+            shot(dir,"underwater-cave-lit",battle,L,w,h,ss);
             GameCore loss=TestBossRetry.fight(L,Boss.OCTOPUS);loss.landBlend=1;
             TestBossRetry.lose(loss,L);TestBossRetry.ready(loss,L);step(loss,L,.6f);
             shot(dir,"underwater-cave-retry",loss,L,w,h,ss);

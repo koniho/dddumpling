@@ -2,10 +2,10 @@ package com.dddumpling.game;
 
 /** A lit reef corridor: immutable scenery passes through a small perspective field. */
 final class UnderwaterVista extends Draw {
-    static final int COUNT=22,WIDTH=256,ROWS=5,RAY=11,SOFT=12;
+    static final int COUNT=25,WIDTH=256,ROWS=5,RAY=11,SOFT=12,CAVE=22;
     static final float COLUMN_WIDTH=1.08f;
-    static int width(int art) {return art>=SOFT?128:WIDTH;}
-    static int height(int art) {return art>=SOFT?384:art==0 || art==RAY?512:768;}
+    static int width(int art) {return art>=SOFT && art<CAVE?128:WIDTH;}
+    static int height(int art) {return art>=CAVE?512:art>=SOFT?384:art==0 || art==RAY?512:768;}
     private UnderwaterVista() {}
     private static int ink(int color,float alpha) {return Glyph.withAlpha(color,(int)alpha);}
     private static float smooth(float v) {v=Math.max(0,Math.min(1,v));return v*v*(3-2*v);}
@@ -58,7 +58,7 @@ final class UnderwaterVista extends Draw {
         }
     }
 
-    private static void image(Painter p,int art,float x,float y,float w,float h,float fade) {
+    static void image(Painter p,int art,float x,float y,float w,float h,float fade) {
         ArtStamp cache=p.stamps();
         if(cache!=null && cache.reefVista(art,x,y,w,h,(int)(fade*255)))return;
         artwork(p,art,x,y,w,h,fade);
@@ -92,7 +92,8 @@ final class UnderwaterVista extends Draw {
         public ArtStamp stamps(){return null;}
     }
     static void paint(Painter p,int art) {artwork(p,art,0,0,width(art),height(art),1);}
-    private static void artwork(Painter p,int art,float x,float y,float w,float h,float fade) {
+    static void artwork(Painter p,int art,float x,float y,float w,float h,float fade) {
+        if(art>=CAVE){UnderwaterCave.paint(p,art-CAVE,x,y,w,h,fade);return;}
         if(art==0){backdrop(p,x,y,w,h,fade);return;}
         if(art==RAY){sunbeam(p,x,y,w,h,fade);return;}
         boolean soft=art>=SOFT;
@@ -288,6 +289,9 @@ final class UnderwaterVista extends Draw {
             }
             p.polyline(line,ink(0xFFFFF4D9,a*(20-i*1.5f)),L.w*(.003f+i*.0003f));
         }
+        beams(p,c,L,a);
+    }
+    static void beams(Painter p,GameCore c,Layout L,float a) {
         for(int i=0;i<5;i++) {
             float sway=L.w*.035f*(float)Math.sin(c.clock*.18f+i*1.7f);
             float x=L.w*(-.13f+i*.23f)+sway;

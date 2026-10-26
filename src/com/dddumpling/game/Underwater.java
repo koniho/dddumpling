@@ -47,15 +47,8 @@ final class Underwater extends Draw {
         p.save();p.clipRect(0,0,L.w,L.h);
         p.fillRect(0,0,L.w,L.h,ink(WATER,245*fade));
         if(cave<1)UnderwaterVista.draw(p,c,L,fade*(1-cave));
-        if(cave>0) {
-            rays(p,c,L,fade*cave*.30f);
-            sandDunes(p,c,L,fade*cave);
-            groundTexture(p,c,L,fade*cave);
-            scatteredRocks(p,c,L,fade*cave);
-            cave(p,c,L,fade,cave);
-            seabedGardens(p,c,L,fade,cave);
-        }
-        fish(p,c,L,fade);
+        if(cave>0)UnderwaterCave.draw(p,c,L,fade*cave,cave);
+        fish(p,c,L,fade*(1-cave*.60f));
         // Scenery continues behind the keys; a gradual darkening replaces the cut-off horizon.
         float start=L.deckTop-L.h*.045f;
         for(int band=0;band<14;band++) {
@@ -66,33 +59,10 @@ final class Underwater extends Draw {
         p.restore();
     }
 
-    private static void rays(Painter p,GameCore c,Layout L,float fade) {
-        for(int i=0;i<4;i++) {
-            float top=L.w*(-.4f+i*.31f),sway=L.w*.06f*(float)Math.sin(c.clock*.23f+i);
-            for(int layer=0;layer<2;layer++) {
-                float width=L.w*(.035f+layer*.025f);
-                p.fillPoly(new float[]{top-width,-L.h*.1f,top+width,-L.h*.1f,
-                        top+L.w*.66f+sway+width*2,L.deckTop,top+L.w*.46f+sway-width*2,L.deckTop},
-                        ink(LIGHT,fade*(layer==0?3:1)));
-            }
-        }
-    }
-
     private static float scrollY(GameCore c,Layout L,float depth) {
         return c.skyClock*L.h*SCROLL*(1+depth*.03f);
     }
 
-    private static void cliff(Painter p,float x,float y,float w,float h,int side,float fade,int seed) {
-        rock(p,x+side*w*.02f,y,w,h,fade,seed);
-    }
-
-    /** Rounded erosion contours with a broad upper-left highlight and a down-right cast shadow. */
-    private static void rock(Painter p,float x,float y,float w,float h,float fade,int seed) {
-        if(fade<=.004f)return;
-        if(p instanceof WaterPainter)p=((WaterPainter)p).anchored();
-        if(p.stamps()!=null && p.stamps().reefRock(seed%ROCK_COUNT,x,y,w,h,(int)(fade*255)))return;
-        rockVector(p,x,y,w,h,fade,seed);
-    }
     static void paintRock(Painter p,int art) {rockVector(p,104,108,80,80,1,art);}
     private static void rockVector(Painter p,float x,float y,float w,float h,float fade,int seed) {
         float[] shape=new float[40],rim=ROCK_RIMS[seed%ROCK_RIMS.length];
@@ -129,108 +99,6 @@ final class Underwater extends Draw {
         p.fillPoly(facet,ink(0xFF8A9094,fade*35));
     }
 
-    private static void sandDunes(Painter p,GameCore c,Layout L,float fade) {
-        float[] dune=new float[44];
-        for(int i=0;i<6;i++) {
-            int seed=3809+i*83,depth=i%2;
-            float r=L.w*(.16f+hash(seed)*.22f),height=r*(.12f+hash(seed+5)*.13f);
-            float span=L.h+height*8,x=L.w*(.15f+hash(seed+9)*.70f);
-            float y=(hash(seed+13)*span+scrollY(c,L,depth==0?-1:0))%span-height*4;
-            float slope=(hash(seed+17)-.5f)*.38f;
-            for(int layer=0;layer<3;layer++) {
-                for(int j=0;j<11;j++) {
-                    float u=j/10f,edge=(float)Math.sin(u*Math.PI);
-                    float xx=x+(u-.5f)*r*2;
-                    float crest=y+height*((float)Math.sin(u*4.1f+hash(seed+3)*2)*.5f+slope*u*5);
-                    // A steep lit ridge rolls into a wider, down-right lee slope; ends taper away.
-                    float above=height*edge*(layer==0?.45f:layer==1?.20f:.035f);
-                    float below=height*edge*(layer==0?1.55f:layer==1?.70f:.12f);
-                    dune[j*2]=xx+(layer==0?height*.25f:0);dune[j*2+1]=crest-above;
-                    dune[(21-j)*2]=dune[j*2];dune[(21-j)*2+1]=crest+below;
-                }
-                int color=layer==0?0xFF080F1D:layer==1?0xFF40515B:0xFF78827D;
-                float alpha=layer==0?52:layer==1?24:25;
-                p.fillPoly(dune,ink(color,fade*alpha*(depth==0?.55f:.90f)));
-            }
-        }
-    }
-
-    private static void groundTexture(Painter p,GameCore c,Layout L,float fade) {
-        float[] groove=new float[12];
-        for(int i=0;i<12;i++) {
-            int seed=6239+i*83;
-            float span=L.h*1.2f,y=(hash(seed)*span+scrollY(c,L,0))%span-L.h*.1f;
-            float x=L.w*(.10f+hash(seed+3)*.8f),r=L.w*(.025f+hash(seed+9)*.045f);
-            float slope=(hash(seed+5)-.5f)*.75f;
-            for(int layer=0;layer<2;layer++) {
-                for(int j=0;j<6;j++) {
-                    float u=j/5f;
-                    groove[j*2]=x+(u-.5f)*r*2+layer*L.w*.002f;
-                    groove[j*2+1]=y+r*(slope*u+.12f*(float)Math.sin(u*5+seed))+layer*L.w*.003f;
-                }
-                p.polyline(groove,ink(layer==0?0xFF829394:0xFF020A14,fade*(layer==0?14:45)),
-                        L.w*(layer==0?.0015f:.003f));
-            }
-        }
-    }
-
-    private static void scatteredRocks(Painter p,GameCore c,Layout L,float fade) {
-        for(int i=0;i<10;i++) {
-            int seed=2803+i*53;
-            float r=L.w*(.025f+hash(seed)*.015f),span=L.h*2.4f,slot=span/10;
-            float y=(i*slot+hash(seed+11)*slot*.12f+scrollY(c,L,0))%span-L.h*.30f;
-            if(y+r*2<0 || y-r*2>L.h)continue;
-            // A clear central channel separates loose stones from both banks.
-            float x=L.w*(.49f+hash(seed+7)*.02f);
-            rock(p,x,y,r,r*(.70f+hash(seed+19)*.20f),fade*(.22f+i%3*.065f),seed);
-        }
-    }
-
-    private static void cave(Painter p,GameCore c,Layout L,float fade,float progress) {
-        p.save();p.translate(0,-(1-progress)*L.h*.68f);
-        // An irregular roof and receding rock arches enclose a dark, open central chamber.
-        float[] roof=new float[50];
-        for(int layer=0;layer<3;layer++) {
-            float top=L.h*(.24f-layer*.042f);
-            roof[0]=-L.w*.1f;roof[1]=-L.h;
-            for(int j=0;j<=21;j++) {
-                float x=(j/21f*1.2f-.1f)*L.w,u=Math.abs(x/L.w-.51f)*2;
-                roof[2+j*2]=x;
-                roof[3+j*2]=top+L.h*(.20f*u*u+.011f*(float)Math.sin(j*.72f+layer));
-            }
-            roof[46]=L.w*1.1f;roof[47]=-L.h;roof[48]=-L.w*.1f;roof[49]=-L.h;
-            p.fillPoly(roof,ink(layer==0?0xFF3B3F49:layer==1?0xFF252A35:0xFF121822,fade*(135+layer*45)));
-        }
-        float rockFade=fade*smooth((progress-.5f)*2);
-        for(int side=0;side<2;side++) {
-            cliff(p,L.w*side,L.h*.43f,L.w*.24f,L.w*.175f,side==0?1:-1,rockFade,991+side);
-            cliff(p,L.w*side,L.deckTop-L.h*.06f,L.w*.29f,L.w*.215f,side==0?1:-1,rockFade,953+side);
-
-        }
-        // Sand-lit hollow under Octopulse; rim is textured rather than a hard horizon.
-        for(int layer=2;layer>=0;layer--)p.fillEllipse(L.w*.5f,L.deckTop-L.h*.08f,L.w*(.34f+layer*.07f),L.h*(.034f+layer*.018f),ink(0xFF435783,fade*(8+layer*2)));
-        for(int i=0;i<12;i++) {
-            float x=L.w*(.10f+i*.073f),y=L.h*(.22f+.18f*(float)Math.pow(Math.abs(x/L.w-.51f)*2,2));
-            float r=L.w*(.003f+hash(i+71)*.004f),pulse=.65f+.35f*(float)Math.sin(c.clock*1.3f+i*2.1f);
-            p.fillCircle(x,y,r*2.9f,ink(LIGHT,fade*pulse*12));
-            p.fillCircle(x,y,r,ink(LIGHT,fade*pulse*105));
-        }
-        p.restore();
-    }
-
-    private static void seabedGardens(Painter p,GameCore c,Layout L,float fade,float cave) {
-        float caveFade=fade*smooth((cave-.45f)/.55f);
-        if(caveFade>.025f)for(int i=0;i<2;i++)garden(p,c,L,L.w*(i==0?.35f:.65f),
-                L.deckTop-L.h*.055f,L.w*.043f,caveFade,4261+i*79,i==0?2:3);
-        if(caveFade>.025f)for(int i=0;i<4;i++)kelp(p,c,L.w*(.36f+i*.09f),
-                L.deckTop-L.h*(.09f+hash(533+i)*.15f),L.w*(.021f+hash(87+i)*.008f),
-                caveFade,5591+i*73,2);
-    }
-
-    private static void garden(Painter p,GameCore c,Layout L,float x,float y,float r,float fade,int seed,int kind) {
-        kelp(p,c,x,y,r,fade,seed,3);
-        UnderwaterCoral.draw(p,x+r*.25f,y+r*.04f,r*.85f,c.clock+seed,kind,fade,seed);
-    }
     static void kelp(Painter p,GameCore c,float x,float y,float r,float fade,int seed,int stems) {
         float[] blade=c.waterRipples.kelpBlade,shadow=c.waterRipples.kelpShadow,edge=c.waterRipples.kelpEdge;
         for(int stem=0;stem<stems;stem++) {
@@ -282,9 +150,9 @@ final class Underwater extends Draw {
     static void veil(Painter p,GameCore c,Layout L) {
         float fade=presence(c)*(1-BossVictory.backdropDrain(c));if(fade<=.001f)return;
         p.save();p.clipRect(0,0,L.w,L.h);
-        p.fillRect(0,0,L.w,L.h,ink(0xFF538BA0,fade*10));
+        p.fillRect(0,0,L.w,L.h,ink(0xFF538BA0,fade*(10-7*caveProgress(c))));
         c.waterRipples.drawGlows(p,c,L,fade);
-        haze(p,c,L,fade);
+        haze(p,c,L,fade*(1-.60f*caveProgress(c)));
         for(int i=0;i<14;i++) {
             float span=L.deckTop+40,y=span-(hash(234+i)*span+c.clock*(8+i%3*3))%span;
             float x=L.w*hash(877+i)+(float)Math.sin(c.clock*.8f+i)*L.w*.013f,r=L.w*(.002f+hash(57+i)*.003f);

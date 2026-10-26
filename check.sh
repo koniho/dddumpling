@@ -200,6 +200,7 @@ src/com/dddumpling/game/MushroomSkits.java
 src/com/dddumpling/game/MushroomForest.java
 src/com/dddumpling/game/Underwater.java
 src/com/dddumpling/game/UnderwaterVista.java
+src/com/dddumpling/game/UnderwaterCave.java
 src/com/dddumpling/game/UnderwaterCoral.java
 src/com/dddumpling/game/WaterPainter.java
 src/com/dddumpling/game/WaterRipples.java
