@@ -47,6 +47,7 @@ final class TestUnderwater extends Check {
         c.survival.active=true;
         check("enemy refraction is absent in other modes",Underwater.enemyShift(c,x,y,L)==0);
         clearGlows(L);
+        beamLighting(L);
         cachedScenery(L);
         perspective(L);
         backdropSeams();
@@ -85,6 +86,28 @@ final class TestUnderwater extends Check {
         check("clear glows and plankton fully fade out",calls[0]==0 && dots[0]==0);
         c.waterRipples.cleared(c,L,x,y);c.toTitle();calls[0]=dots[0]=0;c.waterRipples.drawGlows(probe,c,L,1);
         check("return to title clears glows and plankton",calls[0]==0 && dots[0]==0);
+    }
+    private static void beamLighting(Layout L) {
+        GameCore c=stage(L);float start=c.clock;
+        check("idle beams start without clear flashes",c.waterRipples.beamPulse(start,.5f)==0);
+        c.waterRipples.cleared(c,L,L.w*.25f,L.h*.6f);
+        float local=c.waterRipples.beamPulse(start+.1f,.25f);
+        check("clears brighten nearby beams most",local>.8f
+                && c.waterRipples.beamPulse(start+.1f,.9f)<local*.4f);
+        check("beam flash rises then smoothly fades",c.waterRipples.beamPulse(start,.25f)==0
+                && c.waterRipples.beamPulse(start+.7f,.25f)<local
+                && c.waterRipples.beamPulse(start+1.5f,.25f)==0);
+        for(int i=0;i<20;i++)c.waterRipples.cleared(c,L,L.w*.25f,L.h*.6f);
+        check("rapid clears cap beam brightness",c.waterRipples.beamPulse(start+.1f,.25f)==1);
+        c.toTitle();check("leaving play clears beam flashes",c.waterRipples.beamPulse(start+.1f,.25f)==0);
+        float low=1,high=0;boolean gradual=true,staggered=false;
+        for(int i=0;i<1200;i++)for(int beam=0;beam<5;beam++) {
+            float t=i/30f,a=UnderwaterVista.beamIdle(t,beam);
+            low=Math.min(low,a);high=Math.max(high,a);
+            gradual&=Math.abs(a-UnderwaterVista.beamIdle(t+1/60f,beam))<.004f;
+            staggered|=Math.abs(a-UnderwaterVista.beamIdle(t,(beam+1)%5))>.25f;
+        }
+        check("idle beam fades are slow, staggered, and visibly varied",gradual && staggered && low<.04f && high>.47f);
     }
     private static void cachedScenery(Layout L) {
         GameCore c=stage(L);c.waterRipples.prepare(c,L);

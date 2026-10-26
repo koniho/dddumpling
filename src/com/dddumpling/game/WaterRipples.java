@@ -28,6 +28,18 @@ final class WaterRipples {
         born[next]=c.clock;sky[next]=c.skyClock;x[next]=cx/L.w;y[next]=cy/L.h;
         next=(next+1)%COUNT;prepared=-1;
     }
+    float beamPulse(float clock,float beamX) {
+        float light=0;
+        for(int i=0;i<COUNT;i++) {
+            float age=clock-born[i];
+            if(age<0 || age>=1.4f)continue;
+            float rise=Math.min(1,age/.10f),fade=1-age/1.4f;
+            float distance=Math.abs(beamX-x[i]);
+            float local=Math.max(0,1-distance/.65f);
+            light+=rise*fade*fade*(.28f+.72f*local*local);
+        }
+        return Math.min(1,light);
+    }
     void prepare(GameCore c,Layout L) {
         if(prepared==c.clock && preparedSky==c.skyClock && preparedWidth==L.w && preparedHeight==L.h)return;
         prepared=c.clock;preparedSky=c.skyClock;preparedWidth=L.w;preparedHeight=L.h;active=0;

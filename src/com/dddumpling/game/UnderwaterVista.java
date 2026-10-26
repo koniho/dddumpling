@@ -272,6 +272,10 @@ final class UnderwaterVista extends Draw {
             p.polyline(line,ink(0xFFC3C8B2,alpha*(14+d*12)),width);
         }
     }
+    static float beamIdle(float clock,int beam) {
+        float wave=.5f+.5f*(float)Math.sin(clock*(.38f+beam*.035f)+beam*2.1f);
+        return .035f+.44f*wave*wave;
+    }
     private static void surface(Painter p,GameCore c,Layout L,float a) {
         float[] line=new float[22];
         for(int i=0;i<9;i++) {
@@ -287,7 +291,8 @@ final class UnderwaterVista extends Draw {
         for(int i=0;i<5;i++) {
             float sway=L.w*.035f*(float)Math.sin(c.clock*.18f+i*1.7f);
             float x=L.w*(-.13f+i*.23f)+sway;
-            float alpha=a*(.34f+.08f*(float)Math.sin(c.clock*.31f+i));
+            float pulse=c.waterRipples.beamPulse(c.clock,x/L.w+.22f);
+            float alpha=a*Math.min(1,beamIdle(c.clock,i)+pulse*.72f);
             float w=L.w*(.58f+i%2*.16f),h=L.h*(.51f+i%3*.07f);
             image(p,RAY,x-w*.18f,-L.h*.035f,w*1.6f,h*1.1f,alpha*.40f);
             image(p,RAY,x,-L.h*.035f,w,h,alpha);
