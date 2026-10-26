@@ -103,12 +103,17 @@
     XCTAssertTrue([painter reefVistaShadedWithInt:3 withFloat:0 withFloat:0 withFloat:96 withFloat:128 withInt:180 withFloat:1 withFloat:mono]);
     memcpy(baseline,pixels,sizeof(pixels));memset(pixels,0,sizeof(pixels));
     XCTAssertTrue([painter reefVistaShadedWithInt:3 withFloat:0 withFloat:0 withFloat:96 withFloat:128 withInt:180 withFloat:.5f withFloat:mono]);
-    BOOL sameAlpha=YES;long light=0,dark=0;
+    BOOL sameAlpha=YES,tinted=YES;
+    jint water=[DDUnderwaterVista waterColorWithFloat:mono];
     for(int i=0;i<sizeof(pixels);i+=4) {
       sameAlpha&=abs((int)pixels[i+3]-(int)baseline[i+3])<=1;
-      for(int c=0;c<3;c++){light+=baseline[i+c];dark+=pixels[i+c];}
+      for(int c=0;c<3;c++) {
+        float channel=(water>>(16-c*8))&255;
+        float expected=baseline[i+c]*.5f+channel*baseline[i+3]/255.f*.5f;
+        tinted&=fabsf(pixels[i+c]-expected)<=3;
+      }
     }
-    XCTAssertTrue(sameAlpha);XCTAssertGreaterThan(dark,light*.40);XCTAssertLessThan(dark,light*.60);
+    XCTAssertTrue(sameAlpha);XCTAssertTrue(tinted);
     XCTAssertEqual(painter.context,context);
     XCTAssertTrue(CGAffineTransformEqualToTransform(before,CGContextGetCTM(context)));
   }

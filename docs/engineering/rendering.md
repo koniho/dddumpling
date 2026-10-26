@@ -158,7 +158,8 @@ rock images (under 3 MiB), anchored to their seabed scroll without ambient disto
 The stage reef corridor additionally caches one lit water painting, ten decorated
 rock columns, a shared soft sunbeam, and ten half-resolution feathered silhouettes (10.375 MiB before optional grayscale copies). Five staggered depth layers
 per side share a projection for placement, scale, and accelerating outward travel.
-Columns fade in briefly near mid-screen, then use RGB depth shading at full opacity.
+Columns fade in briefly near mid-screen, then blend their RGB toward water teal at distance, at full opacity.
+The cached base palette is darkened for the foreground; atmospheric tint recedes as columns approach.
 Distant columns draw a cached feathered silhouette behind the solid artwork; its opacity
 falls to zero toward the foreground. Both native hosts use the same small textures,
 without per-frame blur or extra full-resolution color variants.

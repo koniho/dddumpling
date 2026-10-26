@@ -187,6 +187,12 @@ final class TestUnderwater extends Check {
         float near=.93f,nearWidth=L.w*.60f*UnderwaterVista.scale(near);
         float nearTop=L.h*UnderwaterVista.rootY(near)-UnderwaterVista.columnHeight(near,nearWidth)*.68f;
         check("nearby reef crowns stretch above the screen",nearTop<0);
+        check("water depth tint preserves alpha and approaches water at distance",
+                UnderwaterVista.depthColor(0x7FABCDEF,0)==0x7F17445C
+                && UnderwaterVista.depthColor(0x7FABCDEF,1)==0x7FABCDEF);
+        int monoWater=UnderwaterVista.waterColor(1);
+        check("depth tint follows monochrome",((monoWater>>>16)&255)==(monoWater&255)
+                && ((monoWater>>>8)&255)==(monoWater&255));
         int dim=UnderwaterVista.shadeColor(0x7F80C040,.5f);
         check("reef shading halves RGB without changing alpha",dim==0x7F406020);
         check("column feather fades out toward the foreground",UnderwaterVista.edgeSoftness(.1f)==1
@@ -243,7 +249,7 @@ final class TestUnderwater extends Check {
             curved|=Math.abs(UnderwaterVista.horizon(.3f+i*.01f)-UnderwaterVista.horizon(.3f))>.002f;
         }
         check("distant seabed reaches beneath both banks with a meandering horizon",overlap && curved);
-        check("distant columns darken their palette and recover near colors",UnderwaterVista.depthShade(.1f)<.55f
+        check("distant columns blend into water and recover the dark near palette",UnderwaterVista.depthShade(.1f)<.15f
                 && UnderwaterVista.depthShade(.7f)>UnderwaterVista.depthShade(.1f) && UnderwaterVista.depthShade(1)==1);
     }
     private static void monochrome(Layout L) {

@@ -12,7 +12,7 @@ final class UnderwaterVista extends Draw {
     static float depth(float travel) {return travel/(4-3*travel);}
     static float visibility(float travel) {return smooth(travel/.22f);}
     static float rootY(float travel) {return .50f+depth(travel)*.82f;}
-    static float depthShade(float travel) {return .48f+.52f*smooth(depth(travel)*1.8f);}
+    static float depthShade(float travel) {return .12f+.88f*smooth(depth(travel)*1.8f);}
     static float edgeSoftness(float travel) {return 1-smooth((depth(travel)-.04f)/.40f);}
     static float scale(float travel) {return .16f+depth(travel)*1.50f;}
 
@@ -72,10 +72,23 @@ final class UnderwaterVista extends Draw {
         return (color&0xFF000000)|((int)(((color>>>16)&255)*shade)<<16)
                 |((int)(((color>>>8)&255)*shade)<<8)|(int)((color&255)*shade);
     }
+    static int waterColor(float mono) {
+        int color=0xFF17445C;
+        int gray=(23*54+68*183+92*19)/256;
+        return Glyph.mix(color,0xFF000000|(gray<<16)|(gray<<8)|gray,mono);
+    }
+    static int depthColor(int color,float clarity) {
+        return (color&0xFF000000)|(Glyph.mix(waterColor(0),color,clarity)&0xFFFFFF);
+    }
+    private static final class RockPalette extends OpacityPainter {
+        RockPalette(Painter p){super(p,1);}
+        int color(int c){return shadeColor(c,.76f);}
+        public ArtStamp stamps(){return null;}
+    }
     private static final class DimPainter extends OpacityPainter {
         final float shade;
         DimPainter(Painter p,float shade){super(p,1);this.shade=shade;}
-        int color(int c){return shadeColor(c,shade);}
+        int color(int c){return depthColor(c,shade);}
         public ArtStamp stamps(){return null;}
     }
     static void paint(Painter p,int art) {artwork(p,art,0,0,width(art),height(art),1);}
@@ -84,7 +97,7 @@ final class UnderwaterVista extends Draw {
         if(art==RAY){sunbeam(p,x,y,w,h,fade);return;}
         boolean soft=art>=SOFT;
         if(soft)art=art-SOFT+1;
-        p=new CurvedColumn(p,art,y,w,h);
+        p=new CurvedColumn(new RockPalette(p),art,y,w,h);
         float r=w*.34f,cx=x+w*.5f,root=y+h*.90f;
         int seed=419+art*83;
         // Crown and ledge plants are painted with the rock, so nothing floats independently.

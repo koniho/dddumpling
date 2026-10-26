@@ -8,6 +8,7 @@ interface ArtStamp {
     default boolean waterBand(float[] xy,float radius,int alpha) {return false;}
     default boolean waterGlow(float x,float y,float rx,float ry,int alpha) {return false;}
     default boolean reefVista(int art,float x,float y,float w,float h,int alpha) {return false;}
+    // shade is palette clarity: 0 uses water color, 1 uses the cached rock palette.
     default boolean reefVistaShaded(int art,float x,float y,float w,float h,int alpha,float shade,float mono) {
         return shade==1 && reefVista(art,x,y,w,h,alpha,mono);
     }

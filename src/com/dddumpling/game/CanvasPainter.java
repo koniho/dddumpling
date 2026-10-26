@@ -89,7 +89,12 @@ final class CanvasPainter implements Painter, ArtStamp {
         if(shadeMono!=mono){java.util.Arrays.fill(shadeFilters,null);shadeMono=mono;}
         if(shadeFilters[level]==null) {
             float[] values=new float[20];MonochromePainter.matrix(values,mono);
-            for(int i=0;i<15;i++)values[i]*=level/64f;
+            float clarity=level/64f;
+            for(int i=0;i<15;i++)values[i]*=clarity;
+            int water=UnderwaterVista.waterColor(mono);
+            values[4]=((water>>>16)&255)*(1-clarity);
+            values[9]=((water>>>8)&255)*(1-clarity);
+            values[14]=(water&255)*(1-clarity);
             shadeFilters[level]=new android.graphics.ColorMatrixColorFilter(values);
         }
         reefStamps.vista(canvas,art,x,y,w,h,alpha,shadeFilters[level]);return true;

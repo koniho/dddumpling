@@ -242,7 +242,9 @@ static void DDDrawCachedImage(CGContextRef ctx,CGRect rect,CGImageRef color,CGIm
   if(shade<1) {
     // Tint only the image's RGB, keeping its alpha and the horizon fade intact.
     CGContextSetBlendMode(self.context,kCGBlendModeSourceAtop);
-    CGContextSetRGBFillColor(self.context,0,0,0,1-shade);
+    jint water=[DDUnderwaterVista waterColorWithFloat:mono];
+    CGContextSetRGBFillColor(self.context,((water>>16)&255)/255.0,
+        ((water>>8)&255)/255.0,(water&255)/255.0,1-shade);
     CGContextFillRect(self.context,rect);
     CGContextEndTransparencyLayer(self.context);
   }
