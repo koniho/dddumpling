@@ -114,10 +114,29 @@ final class TestUnderwater extends Check {
             draws[0]++;return null;
         });
         Underwater.backdrop(new OpacityPainter(probe,1),c,L);
-        check("rock cache survives painter wrappers and cuts vector work",valid[0] && stamps[0]>=10 && draws[0]<240);
+        check("rock cache survives painter wrappers and cuts vector work",valid[0] && stamps[0]>=8 && draws[0]<240);
         float[] first=rocks.clone();int count=stamps[0];stamps[0]=0;c.clock+=1;
         Underwater.backdrop(new OpacityPainter(probe,1),c,L);
         check("ambient motion never shifts or squeezes anchored rocks",count==stamps[0] && java.util.Arrays.equals(first,rocks));
+        boolean separated=true,proportioned=true;
+        // Cover repeated wraps and cave arrival, not just one convenient screenshot.
+        for(int phase=0;phase<3;phase++)for(int tick=0;tick<180;tick++) {
+            GameCore scene=phase==0?stage(L):TestBossRetry.fight(L,Boss.OCTOPUS);
+            scene.landBlend=1;scene.skyClock=scene.clock=tick*7.31f;
+            if(phase==1)scene.boss.intro=Boss.INTRO*(1-tick/179f);
+            stamps[0]=0;Underwater.backdrop(probe,scene,L);
+            for(int i=0;i<stamps[0];i++) {
+                int a=i*4;proportioned&=rocks[a+2]/rocks[a+3]<1.9f;
+                for(int j=0;j<i;j++) {
+                    int b=j*4;
+                    // Conservative silhouette bounds include the soft edge, excluding cast shadows.
+                    separated&=Math.abs(rocks[a]-rocks[b])>1.20f*(rocks[a+2]+rocks[b+2])
+                            || Math.abs(rocks[a+1]-rocks[b+1])>1.25f*(rocks[a+3]+rocks[b+3]);
+                }
+            }
+        }
+        check("rock silhouettes stay separate through scroll wraps and cave arrival",separated);
+        check("rocks retain full proportions rather than stretched shelves",proportioned);
         c.waterRipples.cleared(c,L,L.w*.5f,L.h*.5f);c.clock+=.1f;draws[0]=0;
         Underwater.veil(new OpacityPainter(probe,1),c,L);
         check("soft water effects use cached textures through wrappers",bands[0]==3 && glows[0]==1 && draws[0]<40);

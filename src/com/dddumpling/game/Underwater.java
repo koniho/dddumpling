@@ -53,7 +53,7 @@ final class Underwater extends Draw {
         sandDunes(p,c,L,fade);
         groundTexture(p,c,L,fade);
         scatteredRocks(p,c,L,fade);
-        if(cave<1)reefs(p,c,L,fade*(1-cave),cave*L.h*.36f);
+        if(cave<.5f)reefs(p,c,L,fade*(1-smooth(cave*2)),cave*L.h*.36f);
         if(cave>0)cave(p,c,L,fade,cave);
         seabedGardens(p,c,L,fade,cave);
         fish(p,c,L,fade);
@@ -84,12 +84,9 @@ final class Underwater extends Draw {
             float depthFade=depth==0?fade*fade*.42f:fade*.88f;
             if(depthFade<.025f)continue;
             int seed=1253+depth*103+side*43+i*67;
-            // Wide, low outcrops leave open water between each shelf.
             float y=reefY(c,L,depth,side,i,arrival);
-            float w=L.w*(.23f+hash(seed+2)*.04f)*(depth==0?.80f:1);
-            float h=w*(.39f+hash(seed+1)*.07f);
-            // Occasional low, broad shelves reach beyond the middle, alternating banks.
-            if(depth==1 && i==side){w=L.w*(.60f+hash(seed+2)*.06f);h=w*(.30f+hash(seed+1)*.05f);}
+            float w=L.w*(.23f+hash(seed+2)*.11f)*(depth==0?.80f:1);
+            float h=Math.min(w*(.68f+hash(seed+1)*.20f),L.h*.136f);
             if(y+h<-20 || y-h>L.h+20)continue;
             cliff(p,L.w*side,y,w,h,side==0?1:-1,depthFade,seed);
         }
@@ -102,9 +99,12 @@ final class Underwater extends Draw {
 
     private static float reefY(GameCore c,Layout L,int depth,int side,int row,float arrival) {
         int seed=1253+depth*103+side*43+row*67;
-        float span=L.h*1.65f,slot=span/3;
-        return (row*slot+side*slot*.43f+hash(seed)*slot*.12f
-                +scrollY(c,L,depth==0?-1:1)+arrival)%span-L.h*.30f;
+        // Interleaved slots keep near/far rocks separate throughout a long run.
+        // Bounded depth motion preserves parallax without layers eventually overtaking.
+        float span=L.h*2.4f,slot=span/6;
+        float depthOffset=L.h*.012f*(float)Math.sin(c.skyClock*.10f+depth*2);
+        return ((row*2+depth)*slot+side*slot*.21f+hash(seed)*slot*.04f
+                +scrollY(c,L,0)+depthOffset+arrival)%span-L.h*.30f;
     }
     private static float shelfPlantFade(GameCore c,Layout L,float y,float radius,float cave) {
         float clear=1;
@@ -122,6 +122,7 @@ final class Underwater extends Draw {
 
     /** Rounded erosion contours with a broad upper-left highlight and a down-right cast shadow. */
     private static void rock(Painter p,float x,float y,float w,float h,float fade,int seed) {
+        if(fade<=.004f)return;
         if(p instanceof WaterPainter)p=((WaterPainter)p).anchored();
         if(p.stamps()!=null && p.stamps().reefRock(seed%ROCK_COUNT,x,y,w,h,(int)(fade*255)))return;
         rockVector(p,x,y,w,h,fade,seed);
@@ -210,9 +211,11 @@ final class Underwater extends Draw {
     private static void scatteredRocks(Painter p,GameCore c,Layout L,float fade) {
         for(int i=0;i<10;i++) {
             int seed=2803+i*53;
-            float r=L.w*(.025f+hash(seed)*.045f),span=L.h+r*6;
-            float y=(hash(seed+11)*span+scrollY(c,L,i%2==0?-.5f:.5f))%span-r*3;
-            float x=L.w*scatterX(seed,r/L.w);
+            float r=L.w*(.025f+hash(seed)*.015f),span=L.h*2.4f,slot=span/10;
+            float y=(i*slot+hash(seed+11)*slot*.12f+scrollY(c,L,0))%span-L.h*.30f;
+            if(y+r*2<0 || y-r*2>L.h)continue;
+            // A clear central channel separates loose stones from both banks.
+            float x=L.w*(.49f+hash(seed+7)*.02f);
             rock(p,x,y,r,r*(.70f+hash(seed+19)*.20f),fade*(.22f+i%3*.065f),seed);
         }
     }
@@ -232,9 +235,10 @@ final class Underwater extends Draw {
             roof[46]=L.w*1.1f;roof[47]=-L.h;roof[48]=-L.w*.1f;roof[49]=-L.h;
             p.fillPoly(roof,ink(layer==0?0xFF3B3F49:layer==1?0xFF252A35:0xFF121822,fade*(135+layer*45)));
         }
+        float rockFade=fade*smooth((progress-.5f)*2);
         for(int side=0;side<2;side++) {
-            cliff(p,L.w*side,L.h*.43f,L.w*.26f,L.w*.110f,side==0?1:-1,fade,991+side);
-            cliff(p,L.w*side,L.deckTop-L.h*.06f,L.w*.32f,L.w*.120f,side==0?1:-1,fade,953+side);
+            cliff(p,L.w*side,L.h*.43f,L.w*.24f,L.w*.175f,side==0?1:-1,rockFade,991+side);
+            cliff(p,L.w*side,L.deckTop-L.h*.06f,L.w*.29f,L.w*.215f,side==0?1:-1,rockFade,953+side);
 
         }
         // Sand-lit hollow under Octopulse; rim is textured rather than a hard horizon.
