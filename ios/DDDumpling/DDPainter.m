@@ -8,6 +8,7 @@
 #import "com/dddumpling/game/SlimeBasinArt.h"
 #import "com/dddumpling/game/CrystalField.h"
 #import "com/dddumpling/game/CrystalArena.h"
+#import "com/dddumpling/game/Underwater.h"
 #import "IOSObjectArray.h"
 #import "IOSPrimitiveArray.h"
 
@@ -37,6 +38,7 @@ static void DDAppendPolygon(CGContextRef context, IOSFloatArray *points) {
 
 @interface DDIOSPainter () {
   CGImageRef _forest[6];
+  CGImageRef _reef[DDUnderwater_ROCK_COUNT];
   CGImageRef _crystal[DDCrystalField_LAYERS],_crystalArena[DDCrystalField_LAYERS];
   jint _crystalArenaArt[DDCrystalField_LAYERS];
   CGImageRef _basin[DDSlimeBasinArt_COUNT];
@@ -111,6 +113,27 @@ static void DDAppendPolygon(CGContextRef context, IOSFloatArray *points) {
   CGContextSetInterpolationQuality(context,kCGInterpolationMedium);
   CGContextDrawImage(context,CGRectMake(-radius*2.5,-radius*2.5,radius*5,radius*5),image);
   CGContextRestoreGState(context);return YES;
+}
+
+- (jboolean)reefRockWithInt:(jint)art withFloat:(jfloat)x withFloat:(jfloat)y
+                 withFloat:(jfloat)w withFloat:(jfloat)h withInt:(jint)alpha {
+  if (!self.context || _drawingForest || art<0 || art>=DDUnderwater_ROCK_COUNT || w<=0 || h<=0)return NO;
+  if (!_reef[art]) {
+    size_t width=DDUnderwater_ROCK_WIDTH,height=DDUnderwater_ROCK_HEIGHT;
+    CGContextRef bitmap=CGBitmapContextCreate(NULL,width,height,8,width*4,_colorSpace,
+        kCGBitmapByteOrder32Big|kCGImageAlphaPremultipliedLast);
+    if (!bitmap)return NO;
+    CGContextRef prior=self.context;self.context=bitmap;_drawingForest=YES;
+    [DDUnderwater paintRockWithDDPainter:self withInt:art];
+    _drawingForest=NO;self.context=prior;
+    _reef[art]=CGBitmapContextCreateImage(bitmap);CGContextRelease(bitmap);
+    if (!_reef[art])return NO;
+  }
+  CGContextSaveGState(self.context);
+  CGContextSetAlpha(self.context,MAX(0,MIN(255,alpha))/255.0);
+  CGContextSetInterpolationQuality(self.context,kCGInterpolationMedium);
+  CGContextDrawImage(self.context,CGRectMake(x-w*1.3,y-h*1.35,w*3.1,h*2.95),_reef[art]);
+  CGContextRestoreGState(self.context);return YES;
 }
 
 - (jboolean)crystalWithInt:(jint)layer withFloat:(jfloat)x withFloat:(jfloat)y
@@ -205,6 +228,7 @@ static void DDAppendPolygon(CGContextRef context, IOSFloatArray *points) {
 }
 
 - (void)dealloc {
+  for (NSUInteger i=0;i<DDUnderwater_ROCK_COUNT;i++)CGImageRelease(_reef[i]);
   for (NSUInteger i=0;i<DDCrystalField_LAYERS;i++){CGImageRelease(_crystal[i]);CGImageRelease(_crystalArena[i]);}
   for (NSUInteger i=0;i<DDSlimeBasinArt_COUNT;i++) CGImageRelease(_basin[i]);
   for (NSUInteger i=0;i<6;i++) CGImageRelease(_forest[i]);

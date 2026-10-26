@@ -2,12 +2,12 @@ package com.dddumpling.game;
 
 /** Broken reef walls, quiet sea life and a sheltered cave. Cosmetic motion never uses game RNG. */
 final class Underwater extends Draw {
-    static final int LAND=2;
+    static final int LAND=2,ROCK_COUNT=12,ROCK_WIDTH=248,ROCK_HEIGHT=236;
     private static final int WATER=0xFF080F24, LIGHT=0xFF8BCFDF;
     private static final float[][] ROCK_RIMS=rockRims();
     private Underwater() {}
     private static float[][] rockRims() {
-        float[][] shapes=new float[12][40];
+        float[][] shapes=new float[ROCK_COUNT][40];
         for(int seed=0;seed<shapes.length;seed++)for(int j=0;j<20;j++) {
             float angle=j*Softbody.TAU/20;
             float edge=1+.065f*(float)Math.sin(angle*3+seed*.7f)+.035f*(float)Math.cos(angle*5+seed);
@@ -38,7 +38,7 @@ final class Underwater extends Draw {
         float fade=presence(c)*(1-BossVictory.backdropDrain(c));
         if(fade<=.001f)return;
         float cave=caveProgress(c);
-        p=new WaterPainter(p,c,L,1);
+        p=new WaterPainter(p,c,L,1.8f);
         p.save();p.clipRect(0,0,L.w,L.h);
         p.fillRect(0,0,L.w,L.h,ink(WATER,245*fade));
         // A few nested pools of blue give depth without blur passes or full-screen distortion.
@@ -49,6 +49,7 @@ final class Underwater extends Draw {
         scatteredRocks(p,c,L,fade);
         if(cave<1)reefs(p,c,L,fade*(1-cave),cave*L.h*.36f);
         if(cave>0)cave(p,c,L,fade,cave);
+        seabedGardens(p,c,L,fade,cave);
         caustics(p,c,L,fade*(1-cave*.45f),false);
         fish(p,c,L,fade);
         // Scenery continues behind the keys; a gradual darkening replaces the cut-off horizon.
@@ -84,9 +85,7 @@ final class Underwater extends Draw {
             float h=slot*(.20f+hash(seed+1)*.045f),w=L.w*(.12f+hash(seed+2)*.11f)*(depth==0?.75f:1);
             if(y+h<-20 || y-h>L.h+20)continue;
             cliff(p,L.w*side,y,w,h,side==0?1:-1,depthFade,seed);
-            // Retire distant plant detail before the cave's foreground colonies arrive.
-            float plants=smooth((fade-.55f)/.45f);
-            if(depth==1 && plants>.025f)garden(p,c,L,L.w*side+(side==0?1:-1)*w*.58f,y-h*.18f,w*.65f,plants,seed,(i+side*3)%5);
+
         }
     }
 
@@ -96,6 +95,11 @@ final class Underwater extends Draw {
 
     /** Rounded erosion contours with a broad upper-left highlight and a down-right cast shadow. */
     private static void rock(Painter p,float x,float y,float w,float h,float fade,int seed) {
+        if(p.stamps()!=null && p.stamps().reefRock(seed%ROCK_COUNT,x,y,w,h,(int)(fade*255)))return;
+        rockVector(p,x,y,w,h,fade,seed);
+    }
+    static void paintRock(Painter p,int art) {rockVector(p,104,108,80,80,1,art);}
+    private static void rockVector(Painter p,float x,float y,float w,float h,float fade,int seed) {
         float[] shape=new float[40],rim=ROCK_RIMS[seed%ROCK_RIMS.length];
         for(int layer=0;layer<6;layer++) {
             float scale=layer==0?1.20f:layer==1?1.06f:layer==2?1.07f:layer==3?1:layer==4?.88f:.66f;
@@ -142,7 +146,7 @@ final class Underwater extends Draw {
             int seed=2803+i*53;
             float r=L.w*(.025f+hash(seed)*.045f),span=L.h+r*6;
             float y=(hash(seed+11)*span+c.skyClock*L.h*(.010f+i%2*.006f))%span-r*3;
-            float x=L.w*(.07f+hash(seed+7)*.86f);
+            float x=L.w*scatterX(seed,r/L.w);
             rock(p,x,y,r,r*(.64f+hash(seed+19)*.60f),fade*(.22f+i%3*.065f),seed);
         }
     }
@@ -165,8 +169,7 @@ final class Underwater extends Draw {
         for(int side=0;side<2;side++) {
             cliff(p,L.w*side,L.h*.48f,L.w*.18f,L.h*.36f,side==0?1:-1,fade,991+side);
             cliff(p,L.w*side,L.deckTop-L.h*.06f,L.w*.28f,L.h*.13f,side==0?1:-1,fade,953+side);
-            float plants=fade*smooth((progress-.45f)/.55f);
-            if(plants>.025f)garden(p,c,L,L.w*(side==0?.13f:.87f),L.deckTop-L.h*.065f,L.w*.12f,plants,373+side,side==0?2:3);
+
         }
         // Sand-lit hollow under Octopulse; rim is textured rather than a hard horizon.
         for(int layer=2;layer>=0;layer--)p.fillEllipse(L.w*.5f,L.deckTop-L.h*.08f,L.w*(.34f+layer*.07f),L.h*(.034f+layer*.018f),ink(0xFF435783,fade*(8+layer*2)));
@@ -177,6 +180,27 @@ final class Underwater extends Draw {
             p.fillCircle(x,y,r,ink(LIGHT,fade*pulse*105));
         }
         p.restore();
+    }
+
+    static float scatterX(int seed,float radius) {
+        for(int tryX=0;tryX<12;tryX++) {
+            float x=.07f+hash(seed+7+tryX*73)*.86f;
+            if(Math.abs(x-.35f)>radius*1.1f+.07f && Math.abs(x-.65f)>radius*1.1f+.07f)return x;
+        }
+        return .5f;
+    }
+    private static void seabedGardens(Painter p,GameCore c,Layout L,float fade,float cave) {
+        float stageFade=fade*smooth((1-cave-.55f)/.45f);
+        if(stageFade>.025f)for(int i=0;i<5;i++) {
+            int seed=4103+i*97;
+            float span=L.h*1.5f,y=(i*span/5+hash(seed)*L.h*.08f+c.skyClock*L.h*.016f)%span-L.h*.20f;
+            float r=L.w*(.039f+hash(seed+3)*.008f);
+            if(y+r<0 || y-r*5>L.h)continue;
+            garden(p,c,L,L.w*(i%2==0?.35f:.65f),y,r,stageFade,seed,i);
+        }
+        float caveFade=fade*smooth((cave-.45f)/.55f);
+        if(caveFade>.025f)for(int i=0;i<2;i++)garden(p,c,L,L.w*(i==0?.35f:.65f),
+                L.deckTop-L.h*.055f,L.w*.043f,caveFade,4261+i*79,i==0?2:3);
     }
 
     private static void garden(Painter p,GameCore c,Layout L,float x,float y,float r,float fade,int seed,int kind) {
@@ -218,11 +242,12 @@ final class Underwater extends Draw {
         }
     }
 
-    /** Sparse refracted light continues in front of words, with the same phase as their sheen. */
+    /** Broad, layered haze passes over all playfield artwork; the HUD stays crisp above it. */
     static void veil(Painter p,GameCore c,Layout L) {
         float fade=presence(c)*(1-BossVictory.backdropDrain(c));if(fade<=.001f)return;
         p=new WaterPainter(p,c,L,.6f);
-        p.save();p.clipRect(0,L.playTop,L.w,L.h);
+        p.save();p.clipRect(0,0,L.w,L.h);
+        p.fillRect(0,0,L.w,L.h,ink(0xFF538BA0,fade*10));
         caustics(p,c,L,fade,true);
         for(int i=0;i<14;i++) {
             float span=L.deckTop+40,y=span-(hash(234+i)*span+c.clock*(8+i%3*3))%span;
@@ -233,13 +258,13 @@ final class Underwater extends Draw {
     }
     private static void caustics(Painter p,GameCore c,Layout L,float fade,boolean front) {
         float[] ribbon=new float[52];
-        int count=front?7:6;
+        int count=front?5:6;
         for(int i=0;i<count;i++) {
             float span=L.h*1.3f,y=(hash(i+571)*span+c.skyClock*L.h*.016f)%span-L.h*.15f;
-            float x=L.w*hash(i+813),r=L.w*(.27f+hash(i+21)*.22f),phase=c.clock*.63f+i;
+            float x=L.w*hash(i+813),r=L.w*((front?.55f:.27f)+hash(i+21)*.22f),phase=c.clock*.63f+i;
             float pulse=.6f+.4f*(float)Math.pow(Math.sin(phase),2);
-            for(int layer=0;layer<(front?3:1);layer++) {
-                float breadth=front?(.16f-layer*.052f):.10f;
+            for(int layer=0;layer<(front?4:1);layer++) {
+                float breadth=front?(.32f-layer*.073f):.10f;
                 for(int j=0;j<13;j++) {
                     float u=j/12f;
                     float xx=x+(u-.5f)*r*2;
@@ -248,7 +273,7 @@ final class Underwater extends Draw {
                     ribbon[j*2]=ribbon[(25-j)*2]=xx;
                     ribbon[j*2+1]=yy-width;ribbon[(25-j)*2+1]=yy+width;
                 }
-                p.fillPoly(ribbon,ink(LIGHT,fade*pulse*(front?6:4)));
+                p.fillPoly(ribbon,ink(LIGHT,fade*pulse*(front?8:4)));
             }
         }
     }
@@ -256,7 +281,7 @@ final class Underwater extends Draw {
     static float enemyShift(GameCore c,float x,float y,Layout L) {
         float water=presence(c);if(water<=0)return 0;
         c.waterRipples.prepare(c,L);
-        return WaterPainter.shift(c.clock,x,y,L.w,water*.24f)+c.waterRipples.shift(x,y,L.w)*water*.24f;
+        return c.waterRipples.refract(x,y)*water*.24f;
     }
     static int enemyColor(GameCore c,int color,float y,Layout L) {
         float amount=presence(c)*(.08f+.045f*(1+(float)Math.sin(c.clock*1.5f-y/L.h*11)));

@@ -22,6 +22,7 @@ final class CanvasPainter implements Painter, ArtStamp {
     private CanvasForestStamps forestStamps;
     private CanvasSlimeStamps slimeStamps;
     private CanvasCrystalStamps crystalStamps;
+    private CanvasReefStamps reefStamps;
     boolean cacheArt=true;
     public ArtStamp stamps() {return cacheArt && canvas!=null && canvas.isHardwareAccelerated()?this:null;}
     void warmArt() {
@@ -43,6 +44,11 @@ final class CanvasPainter implements Painter, ArtStamp {
         artStamps.draw(canvas,art,x,y,w,h,angle,tint,amount,phase);return true;
     }
 
+    public boolean reefRock(int art,float x,float y,float w,float h,int alpha) {
+        if(stamps()==null || art<0 || art>=Underwater.ROCK_COUNT || w<=0 || h<=0)return false;
+        if(reefStamps==null)reefStamps=new CanvasReefStamps();
+        reefStamps.draw(canvas,art,x,y,w,h,alpha);return true;
+    }
     public boolean crystal(int layer,float x,float y,float w,float h,int alpha) {
         if(stamps()==null || !CrystalArena.validArt(layer))return false;
         if(crystalStamps==null)crystalStamps=new CanvasCrystalStamps();

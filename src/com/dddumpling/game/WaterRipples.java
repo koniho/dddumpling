@@ -6,6 +6,9 @@ final class WaterRipples {
     static final float DURATION=1.6f;
     private final float[] born=new float[COUNT],sky=new float[COUNT],x=new float[COUNT],y=new float[COUNT];
     private final float[] px=new float[COUNT],py=new float[COUNT],amplitude=new float[COUNT],radius2=new float[COUNT];
+    private static final int COLS=8,ROWS=64;
+    private final float[] field=new float[(COLS+1)*(ROWS+1)];
+    final float[][] buffers=new float[96][];
     private int next,active;
     private float prepared=-1,preparedSky=-1,preparedWidth=-1,preparedHeight=-1;
     WaterRipples(){reset();}
@@ -25,6 +28,19 @@ final class WaterRipples {
             amplitude[active]=L.w*.055f*fade*fade*(float)Math.sin(age*19);
             radius2[active]=r*r;active++;
         }
+        // Evaluate waves once on a reusable grid, not for every vertex of every translucent layer.
+        for(int row=0;row<=ROWS;row++)for(int col=0;col<=COLS;col++) {
+            float xx=(col*2f/COLS-.5f)*L.w,yy=(row*2f/ROWS-.5f)*L.h;
+            field[row*(COLS+1)+col]=WaterPainter.shift(c.clock,xx,yy,L.w,1)+shift(xx,yy,L.w);
+        }
+    }
+    float refract(float x,float y) {
+        float gx=Math.max(0,Math.min(COLS-.001f,(x/preparedWidth+.5f)*COLS*.5f));
+        float gy=Math.max(0,Math.min(ROWS-.001f,(y/preparedHeight+.5f)*ROWS*.5f));
+        int ix=(int)gx,iy=(int)gy,at=iy*(COLS+1)+ix;float u=gx-ix,v=gy-iy;
+        float top=field[at]+(field[at+1]-field[at])*u;
+        float bottom=field[at+COLS+1]+(field[at+COLS+2]-field[at+COLS+1])*u;
+        return top+(bottom-top)*v;
     }
     float shift(float x,float y,float width) {
         float sum=0;

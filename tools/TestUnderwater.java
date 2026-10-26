@@ -47,6 +47,7 @@ final class TestUnderwater extends Check {
         c.survival.active=true;
         check("enemy refraction is absent in other modes",Underwater.enemyShift(c,x,y,L)==0);
         ripples(L);
+        cachedScenery(L);
         geometry(L);
     }
     private static void ripples(Layout L) {
@@ -62,6 +63,38 @@ final class TestUnderwater extends Check {
         check("local clear wobble fully settles",c.waterRipples.shift(x,y,L.w)==0);
         c.waterRipples.cleared(c,L,x,y);c.toTitle();c.waterRipples.prepare(c,L);
         check("return to title clears water impulses",c.waterRipples.shift(x,y,L.w)==0);
+    }
+    private static void cachedScenery(Layout L) {
+        GameCore c=stage(L);c.waterRipples.prepare(c,L);
+        float error=0;
+        for(int row=0;row<40;row++)for(int col=0;col<12;col++) {
+            float x=L.w*col/11,y=L.h*row/39;
+            error=Math.max(error,Math.abs(c.waterRipples.refract(x,y)-WaterPainter.shift(c.clock,x,y,L.w,1)));
+        }
+        check("sampled water field stays close to analytic waves",error<L.w*.0008f);
+        boolean clear=true;
+        for(int seed=0;seed<1000;seed++) {
+            float r=.03f+.04f*Draw.hash(seed),x=Underwater.scatterX(seed,r);
+            clear&=Math.abs(x-.35f)>r*1.1f+.07f && Math.abs(x-.65f)>r*1.1f+.07f;
+        }
+        check("scattered rocks leave both plant root lanes clear",clear);
+        final int[] stamps={0},draws={0};final boolean[] valid={true};
+        ArtStamp cache=new ArtStamp() {
+            public boolean stamp(int art,float x,float y,float w,float h,float angle,int tint,float amount){return false;}
+            public boolean reefRock(int art,float x,float y,float w,float h,int alpha) {
+                stamps[0]++;valid[0]&=art>=0 && art<Underwater.ROCK_COUNT && w>0 && h>0 && alpha>0 && alpha<=255;
+                return true;
+            }
+        };
+        Painter probe=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),new Class<?>[]{Painter.class},(proxy,method,args)-> {
+            if(method.getName().equals("stamps"))return cache;
+            draws[0]++;return null;
+        });
+        Underwater.backdrop(new OpacityPainter(probe,1),c,L);
+        check("rock cache survives painter wrappers and cuts vector work",valid[0] && stamps[0]>=10 && draws[0]<240);
+        GatorReplay replay=new GatorReplay(Boss.OCTOPUS);
+        for(int tick=0;tick<24*60;tick++)replay.step(L);
+        check("underwater profile reaches settled cave without playing manually",replay.core.boss.kind==Boss.OCTOPUS && Underwater.caveProgress(replay.core)==1);
     }
     private static void geometry(Layout L) {
         // Count shared vector work: neither mobile renderer should need a blur or texture rebuild.

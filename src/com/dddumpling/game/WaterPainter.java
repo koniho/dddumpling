@@ -2,18 +2,27 @@ package com.dddumpling.game;
 
 /** Small travelling refractions in vector geometry; no framebuffer or per-pixel filter. */
 final class WaterPainter extends OpacityPainter {
-    private final float clock,width,strength;
+    private final float strength;
     private final WaterRipples ripples;
-    private final float[][] buffers=new float[96][];
+    private final float[][] buffers;
     WaterPainter(Painter p,GameCore c,Layout L,float strength) {
-        super(p,1);this.clock=c.clock;this.width=L.w;this.strength=strength;
-        this.ripples=c.waterRipples;ripples.prepare(c,L);
+        super(p,1);this.strength=strength;
+        this.ripples=c.waterRipples;buffers=ripples.buffers;ripples.prepare(c,L);
     }
     static float shift(float clock,float x,float y,float width,float strength) {
         return width*strength*(.006f*(float)Math.sin(y/width*7.5f-clock*.85f)
                 +.003f*(float)Math.sin(y/width*13f+x/width*2.1f+clock*1.1f));
     }
-    private float dx(float x,float y) {return shift(clock,x,y,width,strength)+ripples.shift(x,y,width)*strength;}
+    private float dx(float x,float y) {return ripples.refract(x,y)*strength;}
+    public boolean reefRock(int art,float x,float y,float w,float h,int alpha) {
+        ArtStamp cache=p.stamps();if(cache==null)return false;
+        float left=dx(x-w,y),right=dx(x+w,y);
+        // A bounded squeeze follows the travelling wave while retaining the cached shading.
+        float bend=(dx(x,y+h)-dx(x,y-h))/Math.max(1,w);
+        float squeeze=Math.max(-.10f,Math.min(.10f,bend*.8f));
+        return cache.reefRock(art,x+(left+right)*.5f,y,
+                (w+(right-left)*.5f)*(1+squeeze),h*(1-squeeze*.45f),alpha);
+    }
     private float[] warped(float[] points) {
         float[] work;
         if(points.length>=buffers.length)work=new float[points.length];

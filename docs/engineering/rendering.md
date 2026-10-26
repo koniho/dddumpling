@@ -144,6 +144,15 @@ Android caches only two immutable Gator assets (palms and skin texture), totalin
 effects stay live. Tints reuse those assets. Unsupported painters, grayscale, and
 per-primitive fades keep the vector fallback so layered transparency stays correct.
 
+### Underwater device profiling
+
+Use `PROFILE_SCENE=underwater sh tools/profile-gator.sh both` for an isolated replay
+of an underwater stage followed by the Octopulse cave. It uses the same warm-up,
+measurement, and restore flow above, writing `build/underwater-profile-*`.
+The comparison switches immutable artwork caching; both paths use the shared
+sampled refraction field and moving haze. Android and iOS cache twelve shaded
+rock images (under 3 MiB), with live position and bounded squeeze from the water.
+
 ### Mushroom forest drawing cost
 
 Android and iOS keep six reusable foliage textures (1.5 MiB). Android warms them with the

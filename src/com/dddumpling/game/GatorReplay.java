@@ -17,7 +17,10 @@ final class GatorReplay {
         core.collected=Collect.MASK;core.landSeen=LandPicker.stateMask();
         core.onboarding.saved=Onboarding.SKIPPED;core.onboarding.savedPowers=-1;
         core.modes.restore(ModeSelector.TIME_ATTACK);core.timeAttack.selected=kind;
-        core.startGame();core.stageBanner=0;core.landBlend=1;tick=0;
+        if(kind==Boss.OCTOPUS)core.modes.restore(ModeSelector.ADVENTURE);
+        core.startGame();
+        if(kind==Boss.OCTOPUS){core.enterStage(Lands.firstStage(Underwater.LAND)+1);core.stageGap=0;}
+        core.stageBanner=0;core.landBlend=1;tick=0;
     }
     void update(float elapsed,Layout l) {
         remainder+=Math.max(0,Math.min(.1f,elapsed));
@@ -25,6 +28,13 @@ final class GatorReplay {
     }
     void step(Layout l) {
         if(tick>=LENGTH) {loops++;reset();}
+        if(kind==Boss.OCTOPUS) {
+            if(tick==18*60){core.enterStage(WorldCatalog.bossStage(Boss.OCTOPUS));core.stageBanner=0;}
+            if(tick%90==0 && !core.enemies.isEmpty()) {
+                GameCore.Enemy e=core.enemies.get(0);core.destroyWord(e,core.enemyCentreX(e),e.y,l,false);
+            }
+            core.lives=3;core.update(STEP,l);tick++;return;
+        }
         Boss b=core.boss;
         if(slime) {
             if(b.fighting() && tick%18==0)for(int key=0;key<Glyph.COUNT;key++)
