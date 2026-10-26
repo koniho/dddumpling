@@ -50,7 +50,6 @@ final class Underwater extends Draw {
         if(cave<1)reefs(p,c,L,fade*(1-cave),cave*L.h*.36f);
         if(cave>0)cave(p,c,L,fade,cave);
         seabedGardens(p,c,L,fade,cave);
-        caustics(p,c,L,fade*(1-cave*.45f),false);
         fish(p,c,L,fade);
         // Scenery continues behind the keys; a gradual darkening replaces the cut-off horizon.
         float start=L.deckTop-L.h*.045f;
@@ -248,7 +247,7 @@ final class Underwater extends Draw {
         p=new WaterPainter(p,c,L,.6f);
         p.save();p.clipRect(0,0,L.w,L.h);
         p.fillRect(0,0,L.w,L.h,ink(0xFF538BA0,fade*10));
-        caustics(p,c,L,fade,true);
+        haze(p,c,L,fade);
         for(int i=0;i<14;i++) {
             float span=L.deckTop+40,y=span-(hash(234+i)*span+c.clock*(8+i%3*3))%span;
             float x=L.w*hash(877+i)+(float)Math.sin(c.clock*.8f+i)*L.w*.013f,r=L.w*(.002f+hash(57+i)*.003f);
@@ -256,24 +255,31 @@ final class Underwater extends Draw {
         }
         p.restore();
     }
-    private static void caustics(Painter p,GameCore c,Layout L,float fade,boolean front) {
-        float[] ribbon=new float[52];
-        int count=front?5:6;
-        for(int i=0;i<count;i++) {
-            float span=L.h*1.3f,y=(hash(i+571)*span+c.skyClock*L.h*.016f)%span-L.h*.15f;
-            float x=L.w*hash(i+813),r=L.w*((front?.55f:.27f)+hash(i+21)*.22f),phase=c.clock*.63f+i;
-            float pulse=.6f+.4f*(float)Math.pow(Math.sin(phase),2);
-            for(int layer=0;layer<(front?4:1);layer++) {
-                float breadth=front?(.32f-layer*.073f):.10f;
-                for(int j=0;j<13;j++) {
-                    float u=j/12f;
-                    float xx=x+(u-.5f)*r*2;
-                    float yy=y+r*(.23f*(float)Math.sin(u*5+phase*.6f)+.07f*(float)Math.sin(u*9-phase*.4f));
-                    float width=r*breadth*(float)Math.sin(u*Math.PI);
-                    ribbon[j*2]=ribbon[(25-j)*2]=xx;
-                    ribbon[j*2+1]=yy-width;ribbon[(25-j)*2+1]=yy+width;
+    private static void haze(Painter p,GameCore c,Layout L,float fade) {
+        float[] ribbon=new float[36],centre=new float[9];
+        for(int i=0;i<3;i++) {
+            float span=L.h*1.5f,y=(i*span/3+hash(i+571)*L.h*.12f+c.skyClock*L.h*.016f)%span-L.h*.25f;
+            float phase=c.clock*.40f+i*2.1f,r=L.h*(.070f+hash(i+21)*.025f);
+            float pulse=.85f+.15f*(float)Math.sin(phase);
+            for(int j=0;j<9;j++) {
+                float u=j/8f;
+                // The whole strip crosses the viewport: its ends never taper inside the scene.
+                ribbon[j*2]=ribbon[(17-j)*2]=L.w*(-.25f+u*1.5f);
+                centre[j]=y+L.w*(.085f*(float)Math.sin(u*4+phase)
+                        +.025f*(float)Math.sin(u*7-phase*.7f));
+            }
+            float previous=0;
+            // Tiny Gaussian opacity increments replace the four visibly stepped bands.
+            for(int layer=0;layer<16;layer++) {
+                float distance=3*(1-layer/16f),width=r*distance;
+                float opacity=25*fade*pulse*(float)Math.exp(-.5f*distance*distance);
+                int alpha=Math.round(opacity)-Math.round(previous);previous=opacity;
+                if(alpha<=0)continue;
+                for(int j=0;j<9;j++) {
+                    ribbon[j*2+1]=centre[j]-width;
+                    ribbon[(17-j)*2+1]=centre[j]+width;
                 }
-                p.fillPoly(ribbon,ink(LIGHT,fade*pulse*(front?8:4)));
+                p.fillPoly(ribbon,ink(LIGHT,alpha));
             }
         }
     }
