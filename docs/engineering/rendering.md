@@ -172,6 +172,12 @@ The 2026-10-25 Android replay measured 21.54% janky frames before this cache pas
 and 0.12% afterward; median GPU time fell from 13 ms to 8 ms. Both captures
 reported thermal status 1. These are device measurements, not iOS performance results.
 
+After the monochrome cache fix, the 2026-10-26 Android replays (including fades,
+stages, and boss arenas) measured 0.19% janky frames for underwater and 0.16% for
+crystal. Median frame times were 21 ms and 18 ms; median GPU times were 5 ms and
+3 ms respectively. Both reported thermal status 0. These captures validate the
+installed Android path; iOS device performance remains unmeasured.
+
 ### Mushroom forest drawing cost
 
 Android and iOS keep six reusable foliage textures (1.5 MiB). Android warms them with the
