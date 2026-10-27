@@ -208,7 +208,7 @@ final class Kawaii {
     }
 
     /** Round steamed-bun body with the pinched, folded crown of a mystery dumpling. */
-    private static void dumplingBody(Painter p, float cx, float cy, float rx, float ry,
+    static void dumplingBody(Painter p, float cx, float cy, float rx, float ry,
             int body) {
         // Trace one continuous bao silhouette: a tiny pinched tip opens into folded shoulders,
         // then a broad, nearly round belly. Extra points keep it smooth on both painters.

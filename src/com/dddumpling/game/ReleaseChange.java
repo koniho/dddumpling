@@ -183,13 +183,7 @@ final class ReleaseChange extends Draw {
             for(int line=-1;line<=1;line++)
                 p.line(x-r*.467f,y+line*r*.3f,x+r*.467f,y+line*r*.3f,INK_DIM,r*.117f);
         } else if(id==MISC) {
-            Skits.face(p,Kawaii.DUMPLING,x-r*.12f,y+r*.15f,r*.65f,255,1f,1f);
-            for(int i=0;i<3;i++) {
-                float sx=x+r*(i==0 ? -.72f : i==1 ? .08f : .72f);
-                float sy=y-r*(i==1 ? .82f : .38f);
-                float sr=r*(.20f+.025f*(float)Math.sin(time*2f+i));
-                p.fillPoly(star(sx,sy,sr,sr*.28f,4,0f),i==1 ? GOLD : 0xFFBCE9DA);
-            }
+            ReleaseMascots.dumpling(p,x,y,r,time,celebration);
         } else if(id==NEWS) {
             powerHalo(p,x,y,r*.6f,time,Glyph.cycle(time*.7f),1f);
             ReleaseMascot.steamer(p,x,y,r*.85f,time);
@@ -202,25 +196,7 @@ final class ReleaseChange extends Draw {
             p.polyline(new float[]{x-r*.9f,y+r*.8f,x-r*.4f,y+r*.35f,x+r*.15f,y+r*.6f,x+r*.6f,y-r*.6f},0xFFAE9ADA,r*.14f);
             p.fillPoly(star(x+r*.35f,y-r*.35f,r*.65f,r*.32f,5,.1f),GOLD);
         } else if(id==BUGS) {
-            int ink=0xFF574563;
-            for(int side=-1;side<=1;side+=2) {
-                for(int leg=0;leg<3;leg++)
-                    p.line(x+side*r*.48f,y+r*(leg*.27f-.12f),x+side*r*.81f,y+r*(leg*.33f-.19f),ink,r*.08f);
-                p.line(x+side*r*.23f,y-r*.53f,x+side*r*.42f,y-r*.87f,ink,r*.065f);
-                p.fillCircle(x+side*r*.42f,y-r*.87f,r*.095f,0xFFECAAAD);
-            }
-            p.fillEllipse(x,y+r*.18f,r*.65f,r*.64f,0xFFED8A9E);
-            p.arc(x,y+r*.18f,r*.08f,r*.58f,90,180,0xFFBD6581,r*.06f);
-            for(int side=-1;side<=1;side+=2) {
-                p.fillCircle(x+side*r*.32f,y+r*.16f,r*.115f,ink);
-                p.fillCircle(x+side*r*.26f,y+r*.49f,r*.08f,ink);
-            }
-            p.fillEllipse(x,y-r*.36f,r*.49f,r*.36f,0xFFC5ABD9);
-            for(int side=-1;side<=1;side+=2) {
-                p.fillCircle(x+side*r*.17f,y-r*.40f,r*.067f,ink);
-                p.fillEllipse(x+side*r*.30f,y-r*.27f,r*.08f,r*.04f,0xFFFFB5B9);
-            }
-            p.arc(x,y-r*.30f,r*.10f,r*.08f,0,180,ink,r*.035f);
+            ReleaseMascots.bug(p,x,y,r,time,celebration);
         } else if(id==SHUFFLE) {
             p.fillPoly(Glyph.hex(x,y,r*.94f),0xFFAE9ADA);
             p.text("?",x,y+r*.48f,r*1.5f,GOLD,Painter.CENTER,true);

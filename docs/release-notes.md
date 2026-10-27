@@ -129,8 +129,8 @@ Keep a separate entry only when it communicates a distinct change the player nee
 | `pair` | Linked-pair gameplay | Interactive linked pair |
 | `flex` | A pair rejecting a single hit | Flexed arm |
 | `team` | Linked pairs during power-ups | Frenzy character |
-| `misc` | Small improvements grouped into one entry | Dumpling with little sparkles |
-| `bugs` | Standalone fixes not already covered by a feature | Cute bug |
+| `misc` | Small improvements grouped into one entry | Golden glitter dumpling with rosy cheeks; tap for giggles, hops and golden sparkles |
+| `bugs` | Standalone fixes not already covered by a feature | Scuttling bug with wiggling legs; tap to squash and spring back |
 
 An icon also chooses its illustration. Reuse one only when its meaning and demo match the change. A genuinely new mechanic needs a matching drawing/demo in `ReleaseChange` and a supported tool icon; ask for that as part of implementing the mechanic. Normal copy updates and new releases using existing icons require no Java edits.
 

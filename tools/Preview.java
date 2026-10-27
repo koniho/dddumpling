@@ -2019,6 +2019,20 @@ final class Preview {
         adventureTitleFrames(dir,L,w,h,ss);
         survivalEndingFrames(dir,L,w,h,ss);
 
+        for(int icon:new int[]{ReleaseChange.MISC,ReleaseChange.BUGS}) {
+            GameCore mascot=new GameCore(new Check.Mem(),212);
+            ReleaseNotes notes=mascot.releaseNotes;
+            notes.show(mascot,L);notes.update(ReleaseTransition.DURATION,L);
+            int feature=icon==ReleaseChange.MISC?2:3;
+            notes.select(0,feature,L);notes.update(ReleaseNotes.PAGE_TIME,L);notes.update(3,L);
+            shot(dir,"212-mascot-"+icon+"-idle",mascot,L,w,h,ss);
+            notes.touch(mascot,L,L.w*.5f,(notes.demoTop(L)+notes.demoBottom(L))*.5f);
+            float before=0;
+            for(float elapsed:new float[]{.12f,.4f,.9f,2.1f,3f}) {
+                notes.update(elapsed-before,L);before=elapsed;
+                shot(dir,"212-mascot-"+icon+"-"+(int)(elapsed*100),mascot,L,w,h,ss);
+            }
+        }
         for(int scene=0;scene<2;scene++) {
             GameCore tour=new GameCore(new Check.Mem(),211);
             tour.releaseNotes.show(tour,L);tour.releaseNotes.update(ReleaseTransition.DURATION,L);

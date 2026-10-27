@@ -37,7 +37,7 @@ final class TestVisuals extends Check {
 
     private static void releaseBook(Layout L) {
         TestUpdatePrompt.run(L);
-        releaseHistory();releaseEntryBounds();releaseHomes(L);
+        releaseHistory();releaseEntryBounds();releaseHomes(L);releaseMascots(L);
         releaseOutside(L);
         releaseFeedback(L);
         try(ReleaseExamples examples=new ReleaseExamples()) { releaseNavigation(L);releaseDetailOutside(L);releaseBookExamples(L); }
@@ -68,6 +68,27 @@ final class TestVisuals extends Check {
             for(int i=0;i<ReleaseHomes.HOSTS.length;i++)
                 check("home tour visits refreshed land "+i,ReleaseHomes.stop((i+.5f)*ReleaseHomes.PERIOD)==i);
         } finally {ReleaseContent.ICONS[item]=saved;ReleaseContent.AUTO_RESET[item]=reset;}
+    }
+    private static void releaseMascots(Layout L) {
+        for(int icon:new int[]{ReleaseChange.MISC,ReleaseChange.BUGS}) {
+            int release=-1,feature=-1;
+            for(int r=0;r<ReleaseChange.ITEMS.length && release<0;r++)
+                for(int f=0;f<ReleaseChange.ITEMS[r].length;f++)
+                    if(ReleaseContent.ICONS[ReleaseChange.ITEMS[r][f]]==icon) {release=r;feature=f;break;}
+            GameCore c=new GameCore(new Mem(),212);Ear ear=new Ear();c.sound=ear;
+            ReleaseNotes n=c.releaseNotes;n.show(c,L);n.update(ReleaseTransition.DURATION,L);
+            n.select(release,feature,L);n.update(ReleaseNotes.PAGE_TIME,L);
+            check("opening mascot card starts its reaction "+icon,n.celebration>=0);
+            int sounds=ear.squishes;
+            n.touch(c,L,L.w*.5f,(n.demoTop(L)+n.demoBottom(L))*.5f);
+            check("mascot tap restarts its reaction "+icon,n.celebration==0);
+            n.update(.4f,L);
+            check("mascot audio follows reaction beats "+icon,ear.squishes-sounds==(icon==ReleaseChange.MISC?3:1));
+            n.update(1.7f,L);
+            check("mascot reaction survives former reset timer "+icon,n.celebration>2);
+            n.update(.8f,L);
+            check("mascot settles back to idle on the same card "+icon,n.celebration<0 && n.page==release && n.feature==feature && !n.listing);
+        }
     }
     private static void releaseNavigation(Layout L) {
         GameCore c=new GameCore(new Mem(),7210L);Ear ear=new Ear();c.sound=ear;
