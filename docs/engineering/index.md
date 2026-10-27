@@ -16,6 +16,7 @@ These notes preserve past failures, including historical values that may no long
 | Adding a land or boss | [Integration checklist](adding-lands-and-bosses.md) |
 | Boss rules, soft bodies, geometry | [Bosses and physics](bosses-physics.md) |
 | Build tools, installation, crashes | [Build](build.md), [README](../../README.md) |
+| Native review requests and developer preview | [Review prompts](review-prompts.md) |
 | Releases | [Release procedure](../releasing.md) |
 | Promotional illustrations and App Store Asset Library uploads | [Promotional artwork](../../ios/docs/promotional-assets.md) |
 | Repository Apple and Google Play skills | [Skill catalog and setup](../../.agents/skills/README.md) |

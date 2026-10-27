@@ -71,6 +71,9 @@ abstract class Check {
         String highScores="";
         public String loadHighScores() { return highScores; }
         public void saveHighScores(String value) { highScores=value; }
+        String reviewPrompt="";
+        public String loadReviewPrompt() { return reviewPrompt; }
+        public void saveReviewPrompt(String value) { reviewPrompt=value; }
         String storeUpdate="";
         long updateTime=1800000000000L;
         public long updateTimeMillis() { return updateTime; }

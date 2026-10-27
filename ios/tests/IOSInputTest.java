@@ -944,6 +944,16 @@ public final class IOSInputTest extends Check {
             tap(game,l.w*.5f,UpdatePrompt.buttonY(l,choice));game.update(.4f);
             check("native update action reaches host once",game.takeUpdateAction()==(choice==1) && !game.takeUpdateAction());
             check("native preview leaves reminders unchanged",reminders.equals(save.storeUpdate));
+            c.openSettings();c.settingsPage=1;c.settingsTab=SettingsUi.PROGRESS;game.update(.4f);
+            String reviewHistory=save.reviewPrompt;
+            tap(game,(ui.testChipL(0,2)+ui.testChipR(0,2))*.5f,ui.reviewPromptY+ui.testH*.5f);
+            check("native review chip waits for settings",c.reviewPrompt.preview && game.takeReviewAction()==0);
+            game.back();game.update(.4f);game.update(.4f);
+            check("native review preview reaches host exactly once",game.takeReviewAction()==2 && game.takeReviewAction()==0);
+            check("native review preview preserves history",reviewHistory.equals(save.reviewPrompt));
+            game.reviewAvailable(true);
+            check("debug host never automatically requests reviews",!c.reviewPrompt.available);
+
         }
     }
 

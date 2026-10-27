@@ -148,6 +148,7 @@ final class Interlude {
         if (c.collectTotal < Integer.MAX_VALUE) c.collectTotal++;
         if (c.prizeNew) {
             c.collected = Collect.add(c.collected, c.prize);
+            c.reviewPrompt.milestone(c);
             if (c.store != null) c.store.saveCollected(Collect.encode(c.collected));
         } else c.score += GameCore.DUPE_BONUS;
         c.progress.reward(c.prize, c.prizeNew, source, c.score);

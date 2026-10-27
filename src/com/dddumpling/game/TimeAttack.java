@@ -117,6 +117,7 @@ final class TimeAttack extends Draw {
     void finish(GameCore c,boolean success) {
         if(!active || finished)return;
         snapshot(c,success,true);
+        if(!success)c.reviewPrompt.pending=false;
         versus.clear();finished=true;won=success;
         if(success && challenge==ALL && cleared==Boss.COUNT) c.progress.gauntletComplete();
         long duration=millis();

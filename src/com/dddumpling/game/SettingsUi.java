@@ -11,7 +11,7 @@ final class SettingsUi {
             HIT_GENERAL = 9, HIT_MINIGAMES = 10, HIT_EASIER = 11, HIT_HARDER = 12, HIT_RESET_NEWS = 13, HIT_ALL_LANDS = 14;
     static final int GENERAL = 0, MINIGAMES = 1, POWERS = 2, PROGRESS = 3;
     static final int HIT_POWERS = 15, HIT_PROGRESS = 16, HIT_COLLECT_ALL = 17, HIT_RESET_PROGRESS = 18;
-    static final int HIT_COMPLETE_BOSSES = 19, HIT_RESET_UPDATE_PROMPT = 20, HIT_INFINITE_LIVES = 21, HIT_TEST_UPDATE = 22;
+    static final int HIT_COMPLETE_BOSSES = 19, HIT_RESET_UPDATE_PROMPT = 20, HIT_INFINITE_LIVES = 21, HIT_TEST_UPDATE = 22, HIT_TEST_REVIEW = 23, HIT_RESET_REVIEW = 24;
     static final String[] TABS = {"RUN", "MINIGAMES", "POWERS", "PROGRESS"};
     /** Power shortcuts and minigame shortcuts share action IDs, not a row. */
     static final int HIT_TEST = 200;
@@ -48,7 +48,7 @@ final class SettingsUi {
     /** Next-run roster toggle and end-current-run button. */
     float runLabelY, runY, runH, infiniteLivesY;
     /** Reset for persistent difficulty progression. */
-    float difficultyLabelY, difficultyY, difficultyH, updatePromptY;
+    float difficultyLabelY, difficultyY, difficultyH, updatePromptY, reviewPromptY;
     /** Empty-the-display-case button, at the foot of the panel. */
     float clearLabelY, clearY, clearH, collectAllY, resetProgressY, completeBossesY;
 
@@ -78,7 +78,8 @@ final class SettingsUi {
             completeBossesY=debuffY+s*3f;
             difficultyLabelY=panelT+s*16f;difficultyY=difficultyLabelY+s*.5f;
             updatePromptY=difficultyY+s*2.5f;
-            clearLabelY=panelT+s*22f;clearY=clearLabelY+s*.5f;
+            reviewPromptY=updatePromptY+s*2.5f;
+            clearLabelY=panelT+s*25f;clearY=clearLabelY+s*.5f;
             collectAllY=clearY+s*3f;resetProgressY=collectAllY+s*3f;
         }
         if(tab==MINIGAMES) {
@@ -141,6 +142,10 @@ final class SettingsUi {
             if(y>=updatePromptY && y<=updatePromptY+testH) {
                 if(inChip(x,0,2))return HIT_RESET_UPDATE_PROMPT;
                 if(inChip(x,1,2))return HIT_TEST_UPDATE;
+            }
+            if(y>=reviewPromptY && y<=reviewPromptY+testH) {
+                if(inChip(x,0,2))return HIT_TEST_REVIEW;
+                if(inChip(x,1,2))return HIT_RESET_REVIEW;
             }
             if(y>=completeBossesY && y<=completeBossesY+testH && inChip(x,0,1)) return HIT_COMPLETE_BOSSES;
             if(y>=clearY && y<=clearY+clearH) return HIT_CLEAR;

@@ -36,7 +36,7 @@ final class TestVisuals extends Check {
     }
 
     private static void releaseBook(Layout L) {
-        TestUpdatePrompt.run(L);
+        TestUpdatePrompt.run(L);TestReviewPrompt.run(L);
         releaseHistory();releaseEntryBounds();releaseHomes(L);releaseMascots(L);
         releaseOutside(L);
         releaseFeedback(L);

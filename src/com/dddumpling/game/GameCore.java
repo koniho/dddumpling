@@ -182,6 +182,8 @@ final class GameCore {
         default boolean saveTown(String value) { return true; }
         /** Native marketing version and build number, independent of the shared news catalog. */
         default String appVersion() { return BuildFlags.BUILD_ID; }
+        default String loadReviewPrompt() { return ""; }
+        default void saveReviewPrompt(String value) {}
         default String loadStoreUpdate() { return ""; }
         default void saveStoreUpdate(String value) {}
         default long updateTimeMillis() { return System.currentTimeMillis(); }
@@ -611,6 +613,7 @@ final class GameCore {
     final HighScores highScores=new HighScores();
     final HighScoreScreen highScoreScreen=new HighScoreScreen();
     final ReleaseNotes releaseNotes=new ReleaseNotes();
+    final ReviewPrompt reviewPrompt=new ReviewPrompt();
     final StoreUpdate storeUpdate=new StoreUpdate();
     final UpdatePrompt updatePrompt=new UpdatePrompt();
     final ReleaseMascot releaseMascot=new ReleaseMascot();
@@ -1639,6 +1642,7 @@ final class GameCore {
     GameCore(Store store, long seed, boolean trackProgress) {
         this.store = store;
         storeUpdate.load(store);
+        reviewPrompt.load(store);
         updatePrompt.launch(this);
         onboarding.saved = store == null ? Onboarding.SKIPPED : store.loadTutorials();
         onboarding.savedPowers = store == null ? 0 : store.loadPowerTutorials();
@@ -2006,6 +2010,7 @@ final class GameCore {
     void startGame() {
         slimeBubbles.reset();slimeBanks.reset();crystalField.reset();waterRipples.reset();
         if(!modes.playable(this))return;
+        reviewPrompt.play(this);
         bossRetry.finish(this);bossRetry.clear();
         titleKeyHint = 0f;
         diagnostic("start-game");
@@ -3754,6 +3759,7 @@ final class GameCore {
      * early returns, or clear it where the early return is taken. There is no third way.
      */
     private void die() {
+        reviewPrompt.pending=false;
         pairSpawnSlots = 0;
         diagnostic("game-over");
         fastEnemyNext = false;

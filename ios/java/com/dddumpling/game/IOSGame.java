@@ -25,6 +25,9 @@ public final class IOSGame {
     public boolean beginUpdateCheck() { return !BuildFlags.DEVELOPER && core.storeUpdate.beginCheck(core); }
     public void storeUpdateAvailable(String version) { core.storeUpdate.result(version); }
     public boolean takeUpdateAction() { return !core.updatePrompt.open && core.storeUpdate.takeRequest(); }
+    public void reviewAvailable(boolean enabled) { core.reviewPrompt.available=enabled && !BuildFlags.DEVELOPER; }
+    public int takeReviewAction() { return core.reviewPrompt.takeRequest(core); }
+    public boolean reviewSafe() { return ReviewPrompt.safe(core); }
     public static String storeCountry(String alpha3) { return StoreUpdate.country(alpha3); }
     public void externalFinished() { core.preferences.externalFinished(core); }
     public int achievementCount() { return Achievements.size(); }

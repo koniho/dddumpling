@@ -34,11 +34,25 @@ final class PlayBridge implements Progress.Sink {
 
     PlayBridge(MainActivity activity, GameCore core) {
         this.activity = activity; this.core = core;
+        core.reviewPrompt.available=!BuildFlags.DEVELOPER;
         core.preferences.achievementsEnabled = BuildFlags.PLAY_GAMES;
         core.cloudUi.playGames = true;
         core.cloudUi.status(BuildFlags.PLAY_GAMES ? CloudSaveUi.SIGN_IN : CloudSaveUi.OFF);
     }
 
+    void requestReview() {
+        if(closed || !ReviewPrompt.safe(core))return;
+        try {
+            com.google.android.play.core.review.ReviewManager manager=
+                    com.google.android.play.core.review.ReviewManagerFactory.create(activity);
+            manager.requestReviewFlow().addOnSuccessListener(info -> {
+                // The player may have started a run while Play fetched the review token.
+                if(closed || activity.isFinishing() || !activity.hasWindowFocus() || !ReviewPrompt.safe(core))return;
+                try { manager.launchReviewFlow(activity,info); }
+                catch(RuntimeException ignored) { /* Reviews are always optional. */ }
+            });
+        } catch(RuntimeException ignored) { /* Missing store or quota: continue normally. */ }
+    }
     private void checkUpdate() {
         if(closed || BuildFlags.DEVELOPER || !core.storeUpdate.beginCheck(core))return;
         try {

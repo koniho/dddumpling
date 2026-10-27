@@ -132,6 +132,8 @@ final class SettingsInput {
             if(c.devInfiniteLives && c.state==GameCore.PLAY)c.lives=GameCore.START_LIVES;
         }
         else if(h==SettingsUi.HIT_RESET_NEWS) c.releaseMascot.reset(c);
+        else if(h==SettingsUi.HIT_TEST_REVIEW) c.reviewPrompt.test();
+        else if(h==SettingsUi.HIT_RESET_REVIEW) c.reviewPrompt.reset(c);
         else if(h==SettingsUi.HIT_TEST_UPDATE) c.storeUpdate.preview();
         else if(h==SettingsUi.HIT_RESET_UPDATE_PROMPT) c.updatePrompt.rearm(c);
         else if(h==SettingsUi.HIT_ALL_LANDS) LandPicker.enableAll(c);

@@ -107,6 +107,16 @@ public class MainActivity extends Activity implements GameCore.Store {
         if(game!=null)game.core().diagnostic(event);
         else RuntimeDiagnostics.record(event+" no-game");
     }
+    void requestReview(boolean preview) {
+        if(preview && BuildFlags.DEVELOPER) {
+            new android.app.AlertDialog.Builder(this).setTitle("Review prompt preview")
+                    .setMessage("The store review sheet would be requested here. This preview does not submit a rating or change the review cooldown. An unpublished Dev app may not show the real Play sheet.")
+                    .setNegativeButton("Close",null)
+                    .setPositiveButton("Try store flow",(dialog,which) -> game.postDelayed(() -> {
+                        if(play!=null)play.requestReview();
+                    },250)).show();
+        } else if(play!=null)play.requestReview();
+    }
     void signInPlayGames() {if(play!=null)play.signIn();}
     void openAppAction(int action) {
         if (action == PlayerSettings.ACHIEVEMENTS) {
@@ -253,6 +263,8 @@ public class MainActivity extends Activity implements GameCore.Store {
             return "android:"+info.versionName+":"+build;
         } catch(android.content.pm.PackageManager.NameNotFoundException unavailable) { return "android:unknown"; }
     }
+    @Override public String loadReviewPrompt() { return prefs.getString("review_prompt", ""); }
+    @Override public void saveReviewPrompt(String value) { prefs.edit().putString("review_prompt",value).apply(); }
     @Override public String loadStoreUpdate() { return prefs.getString("store_update", ""); }
     public void saveStoreUpdate(String value) { prefs.edit().putString("store_update",value).apply(); }
     void openUpdateListing() {

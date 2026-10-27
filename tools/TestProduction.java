@@ -9,6 +9,7 @@ final class TestProduction extends Check {
         check("production flag is compiled off", !BuildFlags.DEVELOPER);
         Layout L = new Layout();
         L.compute(640, 1400, 0, 0, 0, 0);
+        TestReviewPrompt.run(L);
         GameCore reader=new GameCore(new Mem(),7190L);
         reader.releaseNotes.show(reader,L);
         check("release notes are available in production",reader.releaseNotes.open);

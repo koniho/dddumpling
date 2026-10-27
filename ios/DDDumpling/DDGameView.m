@@ -3,6 +3,7 @@
 #import "DDAudio.h"
 #import "DDStore.h"
 #import "DDAppUpdate.h"
+#import "DDAppReview.h"
 #import "DDFrameMetrics.h"
 #import "DDGameCenter.h"
 #import "DDGameCloud.h"
@@ -25,6 +26,7 @@
 @property(nonatomic, strong) DDIOSAudio *audio;
 @property(nonatomic, strong) DDIOSStore *store;
 @property(nonatomic, strong) DDAppUpdate *appUpdate;
+@property(nonatomic, strong) DDAppReview *appReview;
 @property(nonatomic, strong) DDIOSPainter *painter;
 @property(nonatomic, strong) CADisplayLink *displayLink;
 @property(nonatomic, strong) NSMutableArray<UITouch *> *pointers;
@@ -333,7 +335,8 @@
     if (_active == active) return;
     _active = active;
     if(!self.appUpdate)self.appUpdate=[DDAppUpdate new];
-    if(active)[self.appUpdate check:self.game];
+    if(!self.appReview)self.appReview=[DDAppReview new];
+    if(active) { [self.appUpdate check:self.game]; [self.appReview configure:self.game]; }
     [self refreshActivity];
 #if DDDUMPLING_GAME_CENTER
     [self.gameCenter refreshActive:active && !self.storeAlertVisible];
@@ -372,6 +375,10 @@
     CFTimeInterval start = CACurrentMediaTime();
     [self.game updateWithFloat:elapsed];
     if([self.game takeUpdateAction])[self.appUpdate openListing];
+    if(!self.storeAlertVisible && !self.gameCenterVisible && !self.window.rootViewController.presentedViewController) {
+        int review=[self.game takeReviewAction];
+        if(review)[self.appReview request:self.game view:self preview:review==2];
+    }
     [self.frameMetrics recordUpdateMilliseconds:(CACurrentMediaTime() - start) * 1000];
     [self showStoreErrorIfNeeded];
     [self refreshNavigation];

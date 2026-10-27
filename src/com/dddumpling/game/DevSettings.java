@@ -54,6 +54,8 @@ final class DevSettings extends Draw {
             chip(p,u,u.difficultyY,0,1,"RESET NEWS",s,false);
             chip(p,u,u.updatePromptY,0,2,"NEWS POPUP",s,c.updatePrompt.pending);
             chip(p,u,u.updatePromptY,1,2,"TEST UPDATE",s,c.storeUpdate.preview && !c.storeUpdate.shown);
+            chip(p,u,u.reviewPromptY,0,2,"TEST REVIEW",s,c.reviewPrompt.preview);
+            chip(p,u,u.reviewPromptY,1,2,"RESET REVIEW",s,false);
             label(p,u,u.clearLabelY,"COLLECTION: "+Collect.owned(c.collected)+" / "+Collect.COUNT,s);
             chip(p,u,u.clearY,0,1,c.clearArmed?"TAP AGAIN TO EMPTY":"EMPTY COLLECTION",s,c.clearArmed);
             chip(p,u,u.collectAllY,0,1,"COLLECT ALL",s,Collect.complete(c.collected));
@@ -95,6 +97,7 @@ final class DevSettings extends Draw {
         if(!c.resetHighScores()) {c.resetProgressArmed=false;return;}
         c.closeSettings();c.boss.leave();c.starter.clear();c.devInfiniteLives=false;
         c.progress.resetForDeveloper();
+        c.reviewPrompt.reset(c);
         c.clearArmed=true;CaseUi.tapClear(c);
         c.resetDifficultyScaling();
         c.onboarding.reset(c);

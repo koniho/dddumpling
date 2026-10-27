@@ -37,6 +37,7 @@ final class DuckReward extends Draw {
         // Replaying the remaining writes uses absolute floors and an idempotent cloud event.
         if(c.store!=null)c.store.saveSurvivalAward(journal(c));
         apply(c);
+        if(fresh)c.reviewPrompt.milestone(c);
     }
     private void apply(GameCore c) {
         c.prize=who;c.prizeNew=fresh;
