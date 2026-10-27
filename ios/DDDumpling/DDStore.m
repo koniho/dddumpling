@@ -254,6 +254,9 @@ static NSString *const DDStoreWriterKey = @"progressWriter";
           [bundle objectForInfoDictionaryKey:@"CFBundleShortVersionString"] ?: @"unknown",
           [bundle objectForInfoDictionaryKey:@"CFBundleVersion"] ?: @"unknown"];
 }
+- (NSString *)loadStoreUpdate { return [self stringForKey:@"storeUpdate" validWriter:NO] ?: @""; }
+- (void)saveStoreUpdateWithNSString:(NSString *)value { [self setValue:value forKey:@"storeUpdate"]; }
+- (jlong)updateTimeMillis { return (jlong)(NSDate.date.timeIntervalSince1970 * 1000); }
 - (NSString *)loadUpdateState { return [self stringForKey:@"updatePrompt" validWriter:NO] ?: @""; }
 - (void)saveUpdateStateWithNSString:(NSString *)value { [self setValue:value forKey:@"updatePrompt"]; }
 - (NSString *)loadReleaseSeen { return [self stringForKey:@"releaseSeen" validWriter:NO] ?: @""; }

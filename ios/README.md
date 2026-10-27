@@ -142,6 +142,13 @@ runtime's LICENSE/NOTICE files into the bundled `ThirdPartyNotices.txt`; review 
 against the final archive before release.
 
 The default Release app uses offline local storage, with no Play SDK, account sign-in, ads, tracking or analytics.
+App Store installs also check Apple’s public lookup API for an optional update notice on foregrounding,
+at most once every six hours. The current StoreKit storefront is used; unknown storefronts, unavailable
+listings, incompatible iOS versions, and network errors stay silent. Debug and TestFlight installs skip
+these checks. Update opens the App Store listing; Later defers that version for seven days. The shared
+title notice waits for gameplay/tutorials/overlays and never forces an update. Its local reminder state
+is independent of cloud progress and the installed-update “What’s new” history.
+
 The privacy link opens the existing policy in the system browser. `PrivacyInfo.xcprivacy` declares
 local timing and sandbox file metadata uses. Before an App Store upload, review the final archive's
 privacy report against [Apple's required-reason API documentation](https://developer.apple.com/documentation/bundleresources/describing-use-of-required-reason-api).

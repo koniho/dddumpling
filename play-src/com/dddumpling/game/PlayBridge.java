@@ -39,7 +39,19 @@ final class PlayBridge implements Progress.Sink {
         core.cloudUi.status(BuildFlags.PLAY_GAMES ? CloudSaveUi.SIGN_IN : CloudSaveUi.OFF);
     }
 
+    private void checkUpdate() {
+        if(closed || BuildFlags.DEVELOPER || !core.storeUpdate.beginCheck(core))return;
+        try {
+            com.google.android.play.core.appupdate.AppUpdateManagerFactory.create(activity).getAppUpdateInfo()
+                .addOnSuccessListener(info -> {
+                    if(!closed)core.storeUpdate.result(info.updateAvailability()==
+                            com.google.android.play.core.install.model.UpdateAvailability.UPDATE_AVAILABLE
+                            ?Integer.toString(info.availableVersionCode()):"");
+                });
+        } catch(RuntimeException ignored) { /* Store unavailable: play normally. */ }
+    }
     void resume() {
+        checkUpdate();
         if (closed || !BuildFlags.PLAY_GAMES || !core.progress.available()) return;
         foreground = true; authenticated = false; blocked = false; dirty = true;
         handler.removeCallbacks(achievementPoll);

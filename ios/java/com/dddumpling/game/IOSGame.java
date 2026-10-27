@@ -22,6 +22,10 @@ public final class IOSGame {
     private int settingsPointer=-1;
     private boolean cloudPreview;
     public void setHost(Host host) { this.host = host; }
+    public boolean beginUpdateCheck() { return !BuildFlags.DEVELOPER && core.storeUpdate.beginCheck(core); }
+    public void storeUpdateAvailable(String version) { core.storeUpdate.result(version); }
+    public boolean takeUpdateAction() { return !core.updatePrompt.open && core.storeUpdate.takeRequest(); }
+    public static String storeCountry(String alpha3) { return StoreUpdate.country(alpha3); }
     public void externalFinished() { core.preferences.externalFinished(core); }
     public int achievementCount() { return Achievements.size(); }
     public void achievementsEnabled(boolean enabled) { core.preferences.achievementsEnabled=enabled; }
