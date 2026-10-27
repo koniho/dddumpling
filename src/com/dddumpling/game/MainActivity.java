@@ -253,7 +253,16 @@ public class MainActivity extends Activity implements GameCore.Store {
             return "android:"+info.versionName+":"+build;
         } catch(android.content.pm.PackageManager.NameNotFoundException unavailable) { return "android:unknown"; }
     }
-    @Override public String loadUpdateState() { return prefs.getString("update_prompt", ""); }
+    @Override public String loadStoreUpdate() { return prefs.getString("store_update", ""); }
+    public void saveStoreUpdate(String value) { prefs.edit().putString("store_update",value).apply(); }
+    void openUpdateListing() {
+        try { startActivity(new android.content.Intent(android.content.Intent.ACTION_VIEW,
+                android.net.Uri.parse(PlayerSettings.PUBLIC_ANDROID_URL))); }
+        catch(android.content.ActivityNotFoundException | SecurityException e) {
+            android.widget.Toast.makeText(this,"The store could not be opened. Please try again later.",android.widget.Toast.LENGTH_LONG).show();
+        }
+    }
+    public String loadUpdateState() { return prefs.getString("update_prompt", ""); }
     @Override public void saveUpdateState(String value) { prefs.edit().putString("update_prompt", value).apply(); }
     @Override public String loadReleaseSeen() { return prefs.getString("release_seen", ""); }
     @Override public void saveReleaseSeen(String value) { prefs.edit().putString("release_seen", value).apply(); }

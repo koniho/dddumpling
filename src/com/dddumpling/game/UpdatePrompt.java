@@ -5,6 +5,7 @@ final class UpdatePrompt extends Draw {
     boolean pending, highlight, open, closing;
     float slide;
     private String identity="", catalog="";
+    boolean storeOffer;
     private boolean readAfterClose, gesture;
     private int pointer=-1, pressed;
 
@@ -40,7 +41,11 @@ final class UpdatePrompt extends Draw {
     }
     boolean update(GameCore c,float elapsed,Layout L) {
         if(!open) {
-            if(!pending || !suitable(c))return false;
+            if(!suitable(c))return false;
+            storeOffer=!pending && c.storeUpdate.ready(c);
+            if(!pending && !storeOffer)return false;
+            // Never stack two unsolicited notices in the same session.
+            c.storeUpdate.show();
             open=true;closing=false;slide=0f;Pause.release(c);c.titleTouchDown=false;
             if(c.sound!=null)c.sound.uiBloop();
         }
@@ -53,7 +58,9 @@ final class UpdatePrompt extends Draw {
     }
     void choose(GameCore c,boolean read) {
         if(!open || closing || slide<1f)return;
-        pending=false;save(c);closing=true;readAfterClose=read;
+        if(storeOffer)c.storeUpdate.choose(c,read);
+        else { pending=false;save(c); }
+        closing=true;readAfterClose=!storeOffer && read;
         if(c.sound!=null)c.sound.uiBloop();
     }
     void cancelTouch() { pointer=-1;pressed=0;gesture=false; }
@@ -85,12 +92,12 @@ final class UpdatePrompt extends Draw {
         Painter glass=new OpacityPainter(p,PANEL_OPACITY);
         glassPanel(glass,L.w*.10f,t,L.w*.90f,t+s*12.5f,s);
         ReleaseMascot.steamer(glass,x,t+s*3f,s*1.25f,c.clock);
-        glass.text("WHAT'S NEW?",x,t+s*5.6f,type(s*.8f),GOLD,Painter.CENTER,true);
+        glass.text(storeOffer?"UPDATE AVAILABLE":"WHAT'S NEW?",x,t+s*5.6f,type(s*.8f),GOLD,Painter.CENTER,true);
         for(int choice=1;choice<=2;choice++) {
             float y=buttonY(L,choice);
             glass.fillRect(L.w*.18f,y-s*1.1f,L.w*.82f,y+s*1.1f,
                     pressed==choice?0x9971618A:choice==1?0x664DCEAA:0x334DCEAA);
-            glass.text(choice==1?"SEE WHAT'S NEW":"SKIP",x,y+s*.25f,type(s*.60f),INK,Painter.CENTER,true);
+            glass.text(storeOffer?(choice==1?"UPDATE":"LATER"):(choice==1?"SEE WHAT'S NEW":"SKIP"),x,y+s*.25f,type(s*.60f),INK,Painter.CENTER,true);
         }
         p.restore();
     }

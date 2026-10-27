@@ -13,6 +13,7 @@ final class TestUpdatePrompt extends Check {
         c.updatePrompt.touch(c,L,1,7,L.w*.5f,y);
     }
     static void run(Layout L) {
+        storeOffers(L);
         group("update prompt installation history");
         Mem fresh=new Mem();fresh.tutorials=fresh.powerTutorials=0;fresh.releaseSeen="";
         GameCore first=new GameCore(fresh,204);first.update(.4f,L);
@@ -97,4 +98,72 @@ final class TestUpdatePrompt extends Check {
                     && UpdatePrompt.top(box)+12.5f*UpdatePrompt.size(box)<box.dangerY);
         }
     }
+    private static void storeOffers(Layout L) {
+        group("optional store updates");
+        Mem save=new Mem();GameCore c=new GameCore(save,210);
+        c.storeUpdate.result("38");c.update(.4f,L);
+        check("no update offer before first boss",!c.updatePrompt.open);
+        c.best=9999;c.stage=25;c.update(.4f,L);
+        check("stage or score alone cannot unlock update offers",!c.updatePrompt.open);
+        save.collected=Collect.encode(Collect.add(c.collected,Collect.bossPrize(Boss.SLIME)));
+        save.landState=2; // The newly unlocked Crystal land has already been introduced.
+        c=new GameCore(save,210);
+        check("first foreground checks store",c.storeUpdate.beginCheck(c));
+        check("repeat foreground check throttled",!c.storeUpdate.beginCheck(c));
+        c=new GameCore(save,210);
+        check("check cooldown survives restart",!c.storeUpdate.beginCheck(c));
+        save.updateTime+=StoreUpdate.CHECK_INTERVAL;
+        check("store check resumes after cooldown",c.storeUpdate.beginCheck(c));
+        c.storeUpdate.result(null);c.update(.4f,L);
+        check("offline or current store result stays silent",!c.updatePrompt.open);
+        c.state=GameCore.PLAY;c.storeUpdate.result("38");
+        check("store result cannot interrupt play",!c.updatePrompt.update(c,.4f,L));
+        c.state=GameCore.TITLE;c.settingsOpen=true;
+        check("store offer waits for settings",!c.updatePrompt.update(c,.4f,L));
+        c.settingsOpen=false;c.update(.4f,L);
+        check("available update uses shared animated title notice",c.updatePrompt.open && c.updatePrompt.storeOffer);
+        c.storeUpdate.result(""); // Foreground refresh while the offer is already visible.
+        tap(c,L,2);c.update(.4f,L);
+        check("later keeps play available and never opens store",!c.updatePrompt.open && !c.storeUpdate.takeRequest());
+        c=new GameCore(save,210);c.storeUpdate.result("38");c.update(.4f,L);
+        check("later persists across launches",!c.updatePrompt.open);
+        save.updateTime+=StoreUpdate.REMIND_INTERVAL;
+        c=new GameCore(save,210);c.storeUpdate.result("38");c.update(.4f,L);
+        check("same version can remind after seven days",c.updatePrompt.open);
+        tap(c,L,1);c.update(.4f,L);
+        check("update requests store exactly once after exit",!c.updatePrompt.open && c.storeUpdate.takeRequest() && !c.storeUpdate.takeRequest());
+        c.storeUpdate.result("39");c.update(.4f,L);
+        check("new store result cannot repeat within session",!c.updatePrompt.open);
+        c=new GameCore(save,210);c.storeUpdate.result("39");c.update(.4f,L);
+        check("new version is not silenced by older reminder",c.updatePrompt.open);
+        Pause.back(c);c.update(.4f,L);
+        check("back treats store offer as Later",!c.updatePrompt.open && !c.storeUpdate.takeRequest());
+        c=new GameCore(updated(),210);c.storeUpdate.result("40");c.update(.4f,L);
+        check("installed news has priority",c.updatePrompt.open && !c.updatePrompt.storeOffer);
+        tap(c,L,2);c.update(.4f,L);c.update(.4f,L);
+        check("news and store notices never stack",!c.updatePrompt.open);
+        save.storeUpdate="1\n38\ninvalid\n12";c=new GameCore(save,210);
+        check("malformed reminder doesn't suppress updates",c.storeUpdate.beginCheck(c));
+        save.updateTime-=StoreUpdate.REMIND_INTERVAL*2;
+        check("clock rollback doesn't permanently suppress checks",c.storeUpdate.beginCheck(c));
+        check("store country conversion",StoreUpdate.country("USA").equals("US") && StoreUpdate.country("GBR").equals("GB")
+                && StoreUpdate.country(null).isEmpty() && StoreUpdate.country("BAD").isEmpty());
+        boolean countries=true;
+        for(String country:java.util.Locale.getISOCountries())
+            countries&=StoreUpdate.country(new java.util.Locale("",country).getISO3Country()).equals(country);
+        check("iOS-safe country map covers every ISO country",countries);
+        save=new Mem();c=new GameCore(save,210);c.settingsOpen=true;c.settingsPage=1;
+        String history=save.storeUpdate;
+        SettingsInput.action(c,L,SettingsUi.HIT_TEST_UPDATE);c.update(.4f,L);
+        check("test chip waits until settings closes",!c.updatePrompt.open && c.storeUpdate.preview);
+        c.settingsOpen=false;c.update(.4f,L);
+        check("test chip bypasses boss gate without unlocking progress",c.updatePrompt.open && !ModeSelector.bossUnlocked(c,Boss.SLIME));
+        tap(c,L,1);c.update(.4f,L);
+        check("test update opens store without changing reminder history",c.storeUpdate.takeRequest() && save.storeUpdate.equals(history));
+        SettingsInput.action(c,L,SettingsUi.HIT_TEST_UPDATE);c.update(.4f,L);
+        check("test chip can be repeated without waiting seven days",c.updatePrompt.open);
+        tap(c,L,2);c.update(.4f,L);
+        check("test later leaves store closed and reminder history alone",!c.storeUpdate.takeRequest() && save.storeUpdate.equals(history));
+    }
+
 }

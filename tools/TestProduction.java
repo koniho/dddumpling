@@ -44,6 +44,8 @@ final class TestProduction extends Check {
         c.tapClearCase(); c.tapClearCase();
         DevSettings.resetProgress(c);DevSettings.resetProgress(c);
         SettingsInput.action(c,L,SettingsUi.HIT_RESET_PROGRESS);
+        SettingsInput.action(c,L,SettingsUi.HIT_TEST_UPDATE);c.storeUpdate.preview();
+        check("production cannot simulate an update",!c.storeUpdate.preview && c.storeUpdate.available.isEmpty());
         check("settings actions cannot change music", ear.music == Music.SWING_STYLE);
         check("settings actions cannot change the roster", c.fullRoster == roster && store.rosterSaves == 0);
         check("settings actions cannot reset progression", c.steamer.opens == 5 && c.stars.wins == 3);

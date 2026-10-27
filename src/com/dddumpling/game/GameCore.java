@@ -182,6 +182,9 @@ final class GameCore {
         default boolean saveTown(String value) { return true; }
         /** Native marketing version and build number, independent of the shared news catalog. */
         default String appVersion() { return BuildFlags.BUILD_ID; }
+        default String loadStoreUpdate() { return ""; }
+        default void saveStoreUpdate(String value) {}
+        default long updateTimeMillis() { return System.currentTimeMillis(); }
         default String loadUpdateState() { return ""; }
         default void saveUpdateState(String value) {}
         default String loadReleaseSeen() { return BuildFlags.BUILD_ID; }
@@ -608,6 +611,7 @@ final class GameCore {
     final HighScores highScores=new HighScores();
     final HighScoreScreen highScoreScreen=new HighScoreScreen();
     final ReleaseNotes releaseNotes=new ReleaseNotes();
+    final StoreUpdate storeUpdate=new StoreUpdate();
     final UpdatePrompt updatePrompt=new UpdatePrompt();
     final ReleaseMascot releaseMascot=new ReleaseMascot();
     int settingsTab;
@@ -1634,6 +1638,7 @@ final class GameCore {
 
     GameCore(Store store, long seed, boolean trackProgress) {
         this.store = store;
+        storeUpdate.load(store);
         updatePrompt.launch(this);
         onboarding.saved = store == null ? Onboarding.SKIPPED : store.loadTutorials();
         onboarding.savedPowers = store == null ? 0 : store.loadPowerTutorials();

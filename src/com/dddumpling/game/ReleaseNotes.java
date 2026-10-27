@@ -71,6 +71,7 @@ final class ReleaseNotes extends Draw {
         float overflow=contentHeight(L)-(listBottom(L)-listTop(L));
         return overflow>size(L)*.01f ? overflow : 0f;
     }
+    float homeTime() { return age+homeStep*ReleaseHomes.PERIOD; }
     int item() { return ReleaseChange.ITEMS[page][feature]; }
     int change() { return ReleaseContent.ICONS[item()]; }
     float windowHeight(Layout L) {
@@ -179,7 +180,7 @@ final class ReleaseNotes extends Draw {
         cancelTouch();entrySlide=1f;pendingFeature=-1;far=null;
         if(listing) close();else pageReturning=true;
     }
-    private void activated() { restartIn=ReleaseContent.AUTO_RESET[item()] ? RESTART_DELAY : -1f; }
+    private void activated() { restartIn=!ReleaseChange.homes(change()) && ReleaseContent.AUTO_RESET[item()] ? RESTART_DELAY : -1f; }
     void reset(Layout L) {
         age=0f;restartIn=-1f;celebration=-1f;homes=null;homeStep=0;
         if(!ReleaseChange.playable(change())) { demo=null;return; }
@@ -322,7 +323,7 @@ final class ReleaseNotes extends Draw {
         if(edge!=0) { step(edge,L);return true; }
         if(y<demoTop(L) || y>demoBottom(L) || x<L.w*.14f || x>L.w*.86f) return true;
         if(ReleaseChange.homes(change())) {
-            homeStep++;age=0f;activated();feedback();return true;
+            homeStep=ReleaseHomes.stop(homeTime())+1;age=0f;activated();feedback();return true;
         }
         if(demo==null) {
             age=0f;
@@ -405,7 +406,7 @@ final class ReleaseNotes extends Draw {
         float artH=demoBottom(L)-demoTop(L);
         if(ReleaseChange.homes(change())) {
             if(homes==null)homes=new ReleaseHomes(change()==ReleaseChange.ARENA_HOMES);
-            homes.draw(p,0,0,L.w*.72f,artH,age+homeStep*ReleaseHomes.PERIOD,true);
+            homes.draw(p,0,0,L.w*.72f,artH,homeTime(),true);
         } else if(demo==null) {
             float bounce=(float)Math.sin(Math.min(1f,age/.5f)*Math.PI)*s*.35f;
             ReleaseChange.icon(p,change(),L.w*.36f,artH*.5f-bounce,s*1.7f,c.clock+age,celebration);

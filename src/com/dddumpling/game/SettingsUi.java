@@ -11,7 +11,7 @@ final class SettingsUi {
             HIT_GENERAL = 9, HIT_MINIGAMES = 10, HIT_EASIER = 11, HIT_HARDER = 12, HIT_RESET_NEWS = 13, HIT_ALL_LANDS = 14;
     static final int GENERAL = 0, MINIGAMES = 1, POWERS = 2, PROGRESS = 3;
     static final int HIT_POWERS = 15, HIT_PROGRESS = 16, HIT_COLLECT_ALL = 17, HIT_RESET_PROGRESS = 18;
-    static final int HIT_COMPLETE_BOSSES = 19, HIT_RESET_UPDATE_PROMPT = 20, HIT_INFINITE_LIVES = 21;
+    static final int HIT_COMPLETE_BOSSES = 19, HIT_RESET_UPDATE_PROMPT = 20, HIT_INFINITE_LIVES = 21, HIT_TEST_UPDATE = 22;
     static final String[] TABS = {"RUN", "MINIGAMES", "POWERS", "PROGRESS"};
     /** Power shortcuts and minigame shortcuts share action IDs, not a row. */
     static final int HIT_TEST = 200;
@@ -138,7 +138,10 @@ final class SettingsUi {
                 if(inChip(x,1,2)) return HIT_RESET_LANDS;
             }
             if(y>=difficultyY && y<=difficultyY+difficultyH) return HIT_RESET_NEWS;
-            if(y>=updatePromptY && y<=updatePromptY+testH) return HIT_RESET_UPDATE_PROMPT;
+            if(y>=updatePromptY && y<=updatePromptY+testH) {
+                if(inChip(x,0,2))return HIT_RESET_UPDATE_PROMPT;
+                if(inChip(x,1,2))return HIT_TEST_UPDATE;
+            }
             if(y>=completeBossesY && y<=completeBossesY+testH && inChip(x,0,1)) return HIT_COMPLETE_BOSSES;
             if(y>=clearY && y<=clearY+clearH) return HIT_CLEAR;
             if(y>=resetProgressY && y<=resetProgressY+testH && inChip(x,0,1)) return HIT_RESET_PROGRESS;

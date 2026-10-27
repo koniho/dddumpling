@@ -918,6 +918,8 @@ public class GameView extends View implements InputManager.InputDeviceListener {
                     cancelPointers();core.clock+=Math.min(elapsed,.1f);
                 } else core.update(dt, elapsed, layout);
                 if (!KeyboardInput.available(core)) keyboard.clear();
+                if(!core.updatePrompt.open && core.storeUpdate.takeRequest())
+                    ((MainActivity)getContext()).openUpdateListing();
                 int external=core.preferences.takeExternal(core);
                 if(external!=0) ((MainActivity)getContext()).openAppAction(external);
                 if(core.cloudUi.takeAction()!=0) ((MainActivity)getContext()).signInPlayGames();

@@ -927,13 +927,23 @@ public final class IOSInputTest extends Check {
             c.openSettings();c.settingsPage=1;c.settingsTab=SettingsUi.PROGRESS;game.update(.4f);
             SettingsUi ui=new SettingsUi();ui.compute(l,SettingsUi.PROGRESS);
             String seen=save.releaseSeen;
-            tap(game,l.w*.5f,ui.updatePromptY+ui.testH*.5f);game.update(.4f);
+            tap(game,(ui.testChipL(0,2)+ui.testChipR(0,2))*.5f,ui.updatePromptY+ui.testH*.5f);game.update(.4f);
             check("native developer chip re-arms without covering settings",c.updatePrompt.pending && !c.updatePrompt.open
                     && save.releaseSeen.equals(seen));
             game.back();game.update(.4f);game.update(.4f);
             check("native reset prompt appears after settings exit",c.updatePrompt.open);
             game.back();game.update(.4f);
             check("native Back skips only the update prompt",!c.updatePrompt.open && !c.updatePrompt.pending && !c.starting());
+            c.openSettings();c.settingsPage=1;c.settingsTab=SettingsUi.PROGRESS;game.update(.4f);
+            String reminders=save.storeUpdate;
+            tap(game,(ui.testChipL(1,2)+ui.testChipR(1,2))*.5f,ui.updatePromptY+ui.testH*.5f);game.update(.4f);
+            check("native update preview waits for settings",c.storeUpdate.preview && !c.updatePrompt.open);
+            game.back();game.update(.4f);game.update(.4f);
+            check("native store preview opens without a boss victory",c.updatePrompt.open && c.updatePrompt.storeOffer
+                    && !ModeSelector.bossUnlocked(c,Boss.SLIME));
+            tap(game,l.w*.5f,UpdatePrompt.buttonY(l,choice));game.update(.4f);
+            check("native update action reaches host once",game.takeUpdateAction()==(choice==1) && !game.takeUpdateAction());
+            check("native preview leaves reminders unchanged",reminders.equals(save.storeUpdate));
         }
     }
 

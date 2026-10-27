@@ -218,3 +218,17 @@ References: [setup](https://developer.android.com/games/pgs/console/setup),
 [events](https://developer.android.com/games/pgs/android/events),
 [saved games and conflicts](https://developer.android.com/games/pgs/android/saved-games),
 [SDK data disclosure](https://developer.android.com/games/pgs/data-collection).
+
+## Optional update notice
+
+Play-enabled production builds query Play Core App Update availability on foregrounding (at most
+once every six hours). This uses the update available to the installed app/account, including its
+testing track, rather than GitHub versions. Update opens the Play listing; Later defers the offered
+version for seven days. The shared title notice waits until gameplay, tutorials and overlays finish.
+Developer and offline builds never perform this check. Failed checks are silent. Reminder/check state
+stays local and separate from cloud progress and the installed-update news.
+
+Update offers require the same saved Super Slime victory that unlocks Survival. In developer builds,
+Settings → Dev → Progress → **Test update** simulates availability after closing Settings. It bypasses
+that victory gate and reminder delay, opens the actual store listing on Update, and does not alter real
+reminder history. **News popup** remains the separate preview of installed-update news.

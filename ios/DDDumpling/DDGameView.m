@@ -2,6 +2,7 @@
 #import "DDPainter.h"
 #import "DDAudio.h"
 #import "DDStore.h"
+#import "DDAppUpdate.h"
 #import "DDFrameMetrics.h"
 #import "DDGameCenter.h"
 #import "DDGameCloud.h"
@@ -23,6 +24,7 @@
 @property(nonatomic, strong) DDIOSGame *game;
 @property(nonatomic, strong) DDIOSAudio *audio;
 @property(nonatomic, strong) DDIOSStore *store;
+@property(nonatomic, strong) DDAppUpdate *appUpdate;
 @property(nonatomic, strong) DDIOSPainter *painter;
 @property(nonatomic, strong) CADisplayLink *displayLink;
 @property(nonatomic, strong) NSMutableArray<UITouch *> *pointers;
@@ -330,6 +332,8 @@
 - (void)setActive:(BOOL)active {
     if (_active == active) return;
     _active = active;
+    if(!self.appUpdate)self.appUpdate=[DDAppUpdate new];
+    if(active)[self.appUpdate check:self.game];
     [self refreshActivity];
 #if DDDUMPLING_GAME_CENTER
     [self.gameCenter refreshActive:active && !self.storeAlertVisible];
@@ -367,6 +371,7 @@
 #endif
     CFTimeInterval start = CACurrentMediaTime();
     [self.game updateWithFloat:elapsed];
+    if([self.game takeUpdateAction])[self.appUpdate openListing];
     [self.frameMetrics recordUpdateMilliseconds:(CACurrentMediaTime() - start) * 1000];
     [self showStoreErrorIfNeeded];
     [self refreshNavigation];

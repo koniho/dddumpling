@@ -142,6 +142,13 @@ runtime's LICENSE/NOTICE files into the bundled `ThirdPartyNotices.txt`; review 
 against the final archive before release.
 
 The default Release app uses offline local storage, with no Play SDK, account sign-in, ads, tracking or analytics.
+App Store installs also check Apple’s public lookup API for an optional update notice on foregrounding,
+at most once every six hours. The current StoreKit storefront is used; unknown storefronts, unavailable
+listings, incompatible iOS versions, and network errors stay silent. Debug and TestFlight installs skip
+these checks. Update opens the App Store listing; Later defers that version for seven days. The shared
+title notice waits for gameplay/tutorials/overlays and never forces an update. Its local reminder state
+is independent of cloud progress and the installed-update “What’s new” history.
+
 The privacy link opens the existing policy in the system browser. `PrivacyInfo.xcprivacy` declares
 local timing and sandbox file metadata uses. Before an App Store upload, review the final archive's
 privacy report against [Apple's required-reason API documentation](https://developer.apple.com/documentation/bundleresources/describing-use-of-required-reason-api).
@@ -208,3 +215,8 @@ separate guide for editing the in-game catalog.
 Keep `MARKETING_VERSION` fixed for TestFlight iterations (currently `0.1.17`). Only bump it when preparing a public App Store release, not for Android tags, feature builds, or beta fixes. The release workflow already supplies a unique `IOS_BUILD_NUMBER` from its run number and attempt; this updates `CURRENT_PROJECT_VERSION` without changing the marketing version. Update `ios/store/en-US/what_to_test.txt` for each beta.
 
 Every uploaded build still undergoes Apple processing. Later builds of the same version may avoid a full TestFlight review, but immediate availability to external testers is not guaranteed. See https://developer.apple.com/help/app-store-connect/test-a-beta-version/invite-external-testers .
+
+Update offers require the same saved Super Slime victory that unlocks Survival. In developer builds,
+Settings → Dev → Progress → **Test update** simulates availability after closing Settings. It bypasses
+that victory gate and reminder delay, opens the actual store listing on Update, and does not alter real
+reminder history. **News popup** remains the separate preview of installed-update news.
