@@ -11,6 +11,33 @@ def ios_production_notes!(root)
   UI.user_error!('Add Apple release notes (1–4000 characters)') unless (1..4000).cover?(notes.length)
   notes
 end
+# Only replace an explicitly named, older submission containing this app version alone.
+def ios_replace_pending!(app, editable, version, replace:, apply: false, wait: -> { sleep(3) })
+  return if editable.nil? || editable.version_string == version
+  old = editable.version_string
+  allowed = %w[PREPARE_FOR_SUBMISSION DEVELOPER_REJECTED REJECTED METADATA_REJECTED WAITING_FOR_REVIEW]
+  unless replace == old && old.match?(/\A\d+\.\d+\.\d+\z/) &&
+      (old.split('.').map(&:to_i) <=> version.split('.').map(&:to_i)) == -1 && allowed.include?(editable.app_store_state)
+    UI.user_error!('A different App Store draft already exists; name the exact older pending version to replace')
+  end
+  return unless editable.app_store_state == 'WAITING_FOR_REVIEW'
+  submission = app.get_in_progress_review_submission(platform: 'IOS', includes: 'appStoreVersionForReview,items')
+  unless submission && submission.state == 'WAITING_FOR_REVIEW' &&
+      submission.app_store_version_for_review&.id == editable.id && Array(submission.items).length == 1
+    UI.user_error!('Refusing to replace a review submission with different or additional items')
+  end
+  return unless apply
+  submission.cancel_submission
+  40.times do
+    current = app.get_edit_app_store_version(platform: 'IOS')
+    unless current && current.id == editable.id && current.version_string == old
+      UI.user_error!('Pending Apple version changed during cancellation')
+    end
+    return if %w[PREPARE_FOR_SUBMISSION DEVELOPER_REJECTED REJECTED METADATA_REJECTED].include?(current.app_store_state)
+    wait.call
+  end
+  UI.user_error!('Apple review cancellation is still processing; retry after the version becomes editable')
+end
 # Enable the version-level link required by builds with the Game Center entitlement.
 def ios_game_center_version!(version_id, request:, apply: false)
   path = "/appStoreVersions/#{version_id}/gameCenterAppVersion"
@@ -55,7 +82,9 @@ platform :ios do
     versions = app.get_app_store_versions(filter: {platform: 'IOS'})
     versions.each { |v| UI.message("App Store #{v.version_string}: #{v.app_store_state}, release #{v.release_type}") }
     editable = app.get_edit_app_store_version(platform: 'IOS')
-    UI.user_error!('A different App Store draft already exists') if editable && editable.version_string != version
+    replacing = editable && editable.version_string != version
+    ios_replace_pending!(app, editable, version, replace: ENV.fetch('IOS_REPLACE_VERSION', ''))
+    UI.message("Replace pending App Store #{editable.version_string} with #{version}") if replacing
     UI.message("Selected #{version} (#{build_number}), build ID #{builds.first.id}; automatic release after approval")
     require_relative '../tools/store-release-notes'
     request = lambda do |method, path, body|
@@ -67,6 +96,8 @@ platform :ios do
       UI.message("Game Center version link: #{link ? link.dig('attributes', 'enabled') : 'missing'}")
     end
     if ENV['APPLY'] == 'true'
+      ios_replace_pending!(app, app.get_edit_app_store_version(platform: 'IOS'), version,
+                           replace: ENV.fetch('IOS_REPLACE_VERSION', ''), apply: true)
       app.ensure_version!(version, platform: 'IOS')
       selected = app.get_edit_app_store_version(platform: 'IOS')
       UI.user_error!('Expected selected editable Apple version') unless selected && selected.version_string == version

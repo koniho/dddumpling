@@ -90,6 +90,50 @@ Dir.mktmpdir do |root|
   File.write(path, "x" * 4001)
   rejects("Apple release notes") { ios_production_notes!(root) }
 end
+PendingVersion = Struct.new(:id, :version_string, :app_store_state)
+PendingReview = Struct.new(:app_store_version_for_review, :items, :state, :cancellations) do
+  def cancel_submission
+    self.cancellations += 1
+    app_store_version_for_review.app_store_state = 'DEVELOPER_REJECTED'
+  end
+end
+PendingApp = Struct.new(:version, :submission) do
+  def get_in_progress_review_submission(**); submission; end
+  def get_edit_app_store_version(**); version; end
+end
+old = PendingVersion.new('v35', '0.1.35', 'WAITING_FOR_REVIEW')
+review = PendingReview.new(old, ['app-version-item'], 'WAITING_FOR_REVIEW', 0)
+app = PendingApp.new(old, review)
+ios_replace_pending!(app, old, '0.1.36', replace: '0.1.35')
+assert(review.cancellations == 0, 'replacement preflight never cancels review')
+['', '0.1.34'].each do |wrong|
+  rejects('different App Store draft') { ios_replace_pending!(app, old, '0.1.36', replace: wrong, apply: true) }
+end
+rejects('different App Store draft') { ios_replace_pending!(app, old, '0.1.34', replace: '0.1.35', apply: true) }
+old.app_store_state = 'IN_REVIEW'
+rejects('different App Store draft') { ios_replace_pending!(app, old, '0.1.36', replace: '0.1.35', apply: true) }
+old.app_store_state = 'WAITING_FOR_REVIEW'
+review.items << 'another-item'
+rejects('different or additional items') { ios_replace_pending!(app, old, '0.1.36', replace: '0.1.35', apply: true) }
+review.items.pop
+review.state = 'IN_REVIEW'
+rejects('different or additional items') { ios_replace_pending!(app, old, '0.1.36', replace: '0.1.35', apply: true) }
+review.state = 'WAITING_FOR_REVIEW'
+review.app_store_version_for_review = PendingVersion.new('other', '0.1.35', 'WAITING_FOR_REVIEW')
+rejects('different or additional items') { ios_replace_pending!(app, old, '0.1.36', replace: '0.1.35', apply: true) }
+review.app_store_version_for_review = old
+assert(review.cancellations == 0, 'all guard failures preserve the pending review')
+ios_replace_pending!(app, old, '0.1.36', replace: '0.1.35', apply: true)
+assert(review.cancellations == 1 && old.app_store_state == 'DEVELOPER_REJECTED', 'only the authorized review is cancelled')
+ios_replace_pending!(app, old, '0.1.36', replace: '0.1.35', apply: true)
+assert(review.cancellations == 1, 'retry after cancellation does not cancel again')
+old.app_store_state = 'WAITING_FOR_REVIEW'
+def review.cancel_submission; self.cancellations += 1; end
+waits = 0
+rejects('still processing') do
+  ios_replace_pending!(app, old, '0.1.36', replace: '0.1.35', apply: true, wait: -> { waits += 1 })
+end
+assert(waits == 40, 'slow Apple cancellation is bounded')
 state = nil
 calls = []
 request = lambda do |method, path, body|

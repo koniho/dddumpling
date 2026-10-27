@@ -28,6 +28,10 @@ on:
         description: Exact uploaded Apple build number
         type: string
         required: true
+      replace_ios_version:
+        description: Optional exact older Apple version to replace while pending review
+        type: string
+        default: ''
 permissions:
   contents: read
 concurrency:
@@ -74,6 +78,7 @@ jobs:
           APPLY: ${{ inputs.apply }}
           IOS_RELEASE_VERSION: ${{ inputs.ios_version }}
           IOS_BUILD_NUMBER: ${{ inputs.ios_build }}
+          IOS_REPLACE_VERSION: ${{ inputs.replace_ios_version }}
           IOS_APPSTORE_KEY_ID: ${{ secrets.IOS_APPSTORE_KEY_ID }}
           IOS_APPSTORE_ISSUER_ID: ${{ secrets.IOS_APPSTORE_ISSUER_ID }}
           IOS_APPSTORE_KEY_BASE64: ${{ secrets.IOS_APPSTORE_KEY_BASE64 }}

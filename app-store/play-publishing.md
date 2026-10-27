@@ -239,6 +239,13 @@ stay in TestFlight. Google uses the version-specific Play changelog. Apple promo
 enables and verifies the selected App Store version's Game Center link before submission,
 reusing the app's existing Game Center configuration.
 
+If an older Apple version is still waiting for review, `replace_ios_version` may name that
+exact version when replacing it has been authorized. Preflight verifies the older version
+and its single-item submission without changing it. Apply cancels that submission, waits
+for the version to become editable, and preserves its listing while selecting the new
+version/build. Other versions, active reviews, and submissions with additional items are
+not replaced. An empty value keeps the default refusal to replace a different draft.
+
 ## Update listing text
 
 For an authorized open-testing rollout, dispatch `production-release.yml` with
