@@ -169,9 +169,11 @@ final class ReleaseNotes extends Draw {
     void select(int release,Layout L) { select(release,0,L); }
     void select(int release,int item,Layout L) {
         if(release<0 || release>=VERSIONS.length || item<0 || item>=ReleaseChange.ITEMS[release].length) return;
-        if(open && listing && !transition.moving()) feedback();
+        boolean tapped=open && listing && !transition.moving();
+        if(tapped)feedback();
         cancelTouch();entrySlide=1f;pendingFeature=-1;far=null;
         page=release;feature=item;listing=false;pageSlide=0f;pageReturning=false;reset(L);prepareNeighbors(L);
+        if(tapped && ReleaseMascots.active(change()))celebrateMascot();
     }
     boolean pageMoving() { return !listing && (pageReturning || pageSlide<1f || entrySlide<1f); }
     float pageTravel() { return panelTravel(pageSlide); }
@@ -180,7 +182,11 @@ final class ReleaseNotes extends Draw {
         cancelTouch();entrySlide=1f;pendingFeature=-1;far=null;
         if(listing) close();else pageReturning=true;
     }
-    private void activated() { restartIn=!ReleaseChange.homes(change()) && ReleaseContent.AUTO_RESET[item()] ? RESTART_DELAY : -1f; }
+    private void celebrateMascot() {
+        celebration=0;
+        if(feedbackSound!=null)feedbackSound.squish(change()==ReleaseChange.MISC?Kawaii.DUMPLING:Kawaii.BLOB,0);
+    }
+    private void activated() { restartIn=!ReleaseChange.homes(change()) && !ReleaseMascots.active(change()) && ReleaseContent.AUTO_RESET[item()] ? RESTART_DELAY : -1f; }
     void reset(Layout L) {
         age=0f;restartIn=-1f;celebration=-1f;homes=null;homeStep=0;
         if(!ReleaseChange.playable(change())) { demo=null;return; }
@@ -226,7 +232,13 @@ final class ReleaseNotes extends Draw {
     }
     private void advanceContent(float dt,Layout L) {
         age+=dt;
-        if(celebration>=0f) { celebration+=dt;if(celebration>=2.8f)celebration=-1f; }
+        if(celebration>=0f) {
+            float before=celebration;celebration+=dt;
+            if(change()==ReleaseChange.MISC && feedbackSound!=null)
+                for(int beat=1;beat<=2;beat++)if(before<beat*.18f && celebration>=beat*.18f)
+                    feedbackSound.squish(Kawaii.DUMPLING,beat);
+            if(celebration>=2.8f)celebration=-1f;
+        }
         if(demo==null) return;
         geometry(L);demo.clock+=dt;
         if(change()==ReleaseChange.TRAVEL) LandPicker.updateTravel(demo,dt);
@@ -326,8 +338,9 @@ final class ReleaseNotes extends Draw {
             homeStep=ReleaseHomes.stop(homeTime())+1;age=0f;activated();feedback();return true;
         }
         if(demo==null) {
-            age=0f;
+            if(!ReleaseMascots.active(change()))age=0f;
             if(change()==ReleaseChange.ACHIEVEMENTS) { celebration=0f;feedback(); }
+            else if(ReleaseMascots.active(change())) { celebrateMascot();feedback(); }
             activated();return true;
         }
         float dx=x-L.w*.14f,dy=y-demoTop(L);
