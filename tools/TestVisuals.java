@@ -53,10 +53,16 @@ final class TestVisuals extends Check {
                 n.touch(c,L,L.w*.5f,(n.demoTop(L)+n.demoBottom(L))*.5f);
                 check("home visit tap advances the tour "+icon,n.homeStep==1);
                 n.update(ReleaseNotes.RESTART_DELAY+.1f,L);
-                check("home visit resets the cycle after interaction "+icon,n.homeStep==0 && n.demo==null);
+                check("home visit does not jump back after interaction "+icon,n.homeStep==1 && n.demo==null);
                 ReleaseHomes visit=new ReleaseHomes(icon==ReleaseChange.ARENA_HOMES);n.homes=visit;
                 n.update(ReleaseNotes.RESTART_DELAY+.1f,L);
-                check("home visit reset does not repeat while idle "+icon,n.homes==visit && n.homeStep==0);
+                check("home visit preserves its scenery while idle "+icon,n.homes==visit && n.homeStep==1);
+                n.update(ReleaseHomes.PERIOD*1.5f,L);
+                int visible=ReleaseHomes.stop(n.homeTime());
+                n.touch(c,L,L.w*.5f,(n.demoTop(L)+n.demoBottom(L))*.5f);
+                check("home tap advances from visible timed stop "+icon,ReleaseHomes.stop(n.homeTime())==(visible+1)%ReleaseHomes.HOSTS.length);
+                n.update(ReleaseNotes.RESTART_DELAY+.1f,L);
+                check("advanced home stop survives old reset delay "+icon,ReleaseHomes.stop(n.homeTime())==(visible+1)%ReleaseHomes.HOSTS.length);
             }
             check("home tour returns to its first land",ReleaseHomes.stop(ReleaseHomes.PERIOD*ReleaseHomes.HOSTS.length)==0);
             for(int i=0;i<ReleaseHomes.HOSTS.length;i++)

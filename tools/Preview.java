@@ -2019,6 +2019,16 @@ final class Preview {
         adventureTitleFrames(dir,L,w,h,ss);
         survivalEndingFrames(dir,L,w,h,ss);
 
+        for(int scene=0;scene<2;scene++) {
+            GameCore tour=new GameCore(new Check.Mem(),211);
+            tour.releaseNotes.show(tour,L);tour.releaseNotes.update(ReleaseTransition.DURATION,L);
+            tour.releaseNotes.select(0,scene,L);tour.releaseNotes.update(ReleaseNotes.PAGE_TIME,L);
+            tour.releaseNotes.update(1.6f,L);
+            for(int stop=0;stop<ReleaseHomes.HOSTS.length;stop++) {
+                if(stop>0)tour.releaseNotes.update(ReleaseHomes.PERIOD,L);
+                shot(dir,"211-tour-"+scene+"-"+stop,tour,L,w,h,ss);
+            }
+        }
         GameCore availableUpdate=new GameCore(new Check.Mem(),210);
         availableUpdate.storeUpdate.result("99");availableUpdate.update(.4f,L);
         shot(dir,"210-store-update",availableUpdate,L,w,h,ss);
