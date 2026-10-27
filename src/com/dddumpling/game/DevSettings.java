@@ -52,7 +52,8 @@ final class DevSettings extends Draw {
             chip(p,u,u.completeBossesY,0,1,"COMPLETE ALL BOSSES",s,ModeSelector.allBossesUnlocked(c));
             label(p,u,u.difficultyLabelY,"RELEASE BOOK",s);
             chip(p,u,u.difficultyY,0,1,"RESET NEWS",s,false);
-            chip(p,u,u.updatePromptY,0,1,"RESET UPDATE PROMPT",s,c.updatePrompt.pending);
+            chip(p,u,u.updatePromptY,0,2,"NEWS POPUP",s,c.updatePrompt.pending);
+            chip(p,u,u.updatePromptY,1,2,"TEST UPDATE",s,c.storeUpdate.preview && !c.storeUpdate.shown);
             label(p,u,u.clearLabelY,"COLLECTION: "+Collect.owned(c.collected)+" / "+Collect.COUNT,s);
             chip(p,u,u.clearY,0,1,c.clearArmed?"TAP AGAIN TO EMPTY":"EMPTY COLLECTION",s,c.clearArmed);
             chip(p,u,u.collectAllY,0,1,"COLLECT ALL",s,Collect.complete(c.collected));

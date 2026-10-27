@@ -101,6 +101,13 @@ final class TestUpdatePrompt extends Check {
     private static void storeOffers(Layout L) {
         group("optional store updates");
         Mem save=new Mem();GameCore c=new GameCore(save,210);
+        c.storeUpdate.result("38");c.update(.4f,L);
+        check("no update offer before first boss",!c.updatePrompt.open);
+        c.best=9999;c.stage=25;c.update(.4f,L);
+        check("stage or score alone cannot unlock update offers",!c.updatePrompt.open);
+        save.collected=Collect.encode(Collect.add(c.collected,Collect.bossPrize(Boss.SLIME)));
+        save.landState=2; // The newly unlocked Crystal land has already been introduced.
+        c=new GameCore(save,210);
         check("first foreground checks store",c.storeUpdate.beginCheck(c));
         check("repeat foreground check throttled",!c.storeUpdate.beginCheck(c));
         c=new GameCore(save,210);
@@ -141,6 +148,22 @@ final class TestUpdatePrompt extends Check {
         check("clock rollback doesn't permanently suppress checks",c.storeUpdate.beginCheck(c));
         check("store country conversion",StoreUpdate.country("USA").equals("US") && StoreUpdate.country("GBR").equals("GB")
                 && StoreUpdate.country(null).isEmpty() && StoreUpdate.country("BAD").isEmpty());
+        boolean countries=true;
+        for(String country:java.util.Locale.getISOCountries())
+            countries&=StoreUpdate.country(new java.util.Locale("",country).getISO3Country()).equals(country);
+        check("iOS-safe country map covers every ISO country",countries);
+        save=new Mem();c=new GameCore(save,210);c.settingsOpen=true;c.settingsPage=1;
+        String history=save.storeUpdate;
+        SettingsInput.action(c,L,SettingsUi.HIT_TEST_UPDATE);c.update(.4f,L);
+        check("test chip waits until settings closes",!c.updatePrompt.open && c.storeUpdate.preview);
+        c.settingsOpen=false;c.update(.4f,L);
+        check("test chip bypasses boss gate without unlocking progress",c.updatePrompt.open && !ModeSelector.bossUnlocked(c,Boss.SLIME));
+        tap(c,L,1);c.update(.4f,L);
+        check("test update opens store without changing reminder history",c.storeUpdate.takeRequest() && save.storeUpdate.equals(history));
+        SettingsInput.action(c,L,SettingsUi.HIT_TEST_UPDATE);c.update(.4f,L);
+        check("test chip can be repeated without waiting seven days",c.updatePrompt.open);
+        tap(c,L,2);c.update(.4f,L);
+        check("test later leaves store closed and reminder history alone",!c.storeUpdate.takeRequest() && save.storeUpdate.equals(history));
     }
 
 }

@@ -2030,7 +2030,7 @@ final class Preview {
             }
         }
         GameCore availableUpdate=new GameCore(new Check.Mem(),210);
-        availableUpdate.storeUpdate.result("99");availableUpdate.update(.4f,L);
+        availableUpdate.storeUpdate.preview();availableUpdate.update(.4f,L);
         shot(dir,"210-store-update",availableUpdate,L,w,h,ss);
         GameCore updateNews=new GameCore(TestUpdatePrompt.updated(),204);
         updateNews.update(.16f,L);
