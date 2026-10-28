@@ -71,7 +71,7 @@ final class WardrobeScreen extends Draw {
             float iy=trayY(L,.46f),ir=s*(Accessories.count(slot)>3?1.05f:1.25f);
             if(slot==Accessories.HAT)iy+=ir*.25f;
             AccessoryArt.item(new OpacityPainter(p,c.wardrobe.owned[item]?1:.38f),item,cx,iy,ir,c.clock);
-            p.text(Accessories.NAME[item],cx,trayY(L,.62f),Math.min(type(s*.56f),(right-left)*.90f/(Accessories.NAME[item].length()*.72f)),INK,Painter.CENTER,true);
+            if(wearing)p.text(Accessories.NAME[item],cx,trayY(L,.62f),Math.min(type(s*.56f),(right-left)*.90f/(Accessories.NAME[item].length()*.72f)),INK,Painter.CENTER,true);
             String status=!c.wardrobe.owned[item]?"LOCKED":wearing?"ON YOU":"";
             p.text(status,cx,trayY(L,.69f),type(s*.46f),Accessories.COLOR[item],Painter.CENTER,true);
         }
