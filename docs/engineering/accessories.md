@@ -5,11 +5,15 @@ achievement, earn it, then customize a favorite companion in the display case.
 The current art is a first pass for iterative review. Scene portraits and gallery
 exports belong to follow-on #215.
 
-Open a collected squishy's story, then **Dress Up**. Selecting a card previews it
-without changing the save. **Wear It** and **Remove** save immediately for that squishy.
+Open a collected squishy's story to see the accessory tray directly below it.
+Tap an earned accessory or drag it onto the featured squishy to equip and save
+immediately. Dropping elsewhere or cancelling a drag leaves the outfit unchanged.
+Locked cards show their achievement goal without changing the outfit. **Remove**
+clears the current category immediately. No extra Dress Up screen or Wear It step.
+Each change plays the shared Star Path sparkle/star-outline burst, followed by a
+random nonrepeating dance; cosmetic randomness is separate from gameplay RNG.
 An earned style can be worn by any number of squishies at the same time. Editing
-one outfit never removes items from another. There is one item per slot, and all
-five slots combine. Reopening Dress Up shows the saved outfit, not a new preview.
+one outfit never removes items from another. One item per slot; all five combine.
 No item affects gameplay. Ninja hides conflicting head/face accessories temporarily.
 Equipped hats and boots replace the contextual explorer equipment in those slots.
 

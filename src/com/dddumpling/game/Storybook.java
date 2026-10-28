@@ -48,13 +48,9 @@ final class Storybook extends Draw {
     }
     static void tap(GameCore c,Layout L,float x,float y) {
         if(!c.storyOpen())return;
-        if(Math.abs(x-L.w*.5f)<L.w*.34f && Math.abs(y-dressY(L))<L.unit*.8f) {
-            c.wardrobe.screen.show(c,c.story);return;
-        }
         if(heroHit(c,L,x,y)) {c.storyPulse=0f;c.ducks.react(c.story,.7f);if(c.story==Collect.ALLIGATOR_FRIEND)c.gator.react(.7f);}
         else c.closeStory();
     }
-    static float dressY(Layout L) {return L.h*.47f+L.unit*7.5f;}
     static int glowColor(int who,int ring) {
         return Glyph.mix(Collect.BODY[who],Collect.ACCENT[who],ring/4f);
     }
@@ -71,6 +67,9 @@ final class Storybook extends Draw {
     private static void hero(Painter p,GameCore c,Layout L) {
         float x=heroX(c,L),y=heroY(c,L),r=radius(c,L),pulse=reaction(c);
         glowRings(p,c.story,x,y,r,c.storyPulse);
+        if(c.wardrobe.screen.danceT<WardrobeScreen.FLASH+WardrobeScreen.DANCE) {
+            c.wardrobe.screen.hero(p,c,x,y,r);return;
+        }
         Trinket.drawReacting(p,c.story,x,y,r*(1f+.13f*pulse),c.clock,1f,
                 pulse>.1f?4:-1,(float)Math.sin(c.storyPulse*12f)*pulse*.4f);
     }
@@ -126,13 +125,8 @@ final class Storybook extends Draw {
         }
 
         float pulse = 0.55f + 0.45f * (float) Math.sin(c.clock * 3.2f);
-        p.text("TAP BELOW TO CLOSE", cx, cy + hh - s * 0.55f, type(s * 0.54f),
+        p.text("TAP OUTSIDE TO CLOSE", cx, cy + hh - s * 0.55f, type(s * 0.54f),
                 Glyph.withAlpha(INK_DIM, (int) (255 * pulse)), Painter.CENTER, true);
-        float by=dressY(L);
-        p.fillRect(cx-L.w*.34f,by-s*.8f,cx+L.w*.34f,by+s*.8f,0xFF4A4968);
-        p.strokePoly(new float[]{cx-L.w*.34f,by-s*.8f,cx+L.w*.34f,by-s*.8f,
-                cx+L.w*.34f,by+s*.8f,cx-L.w*.34f,by+s*.8f},0xFFFFD893,s*.07f);
-        p.text("DRESS UP",cx,by+s*.27f,type(s*.78f),0xFFFFE7AE,Painter.CENTER,true);
         hero(p,c,L);
     }
 

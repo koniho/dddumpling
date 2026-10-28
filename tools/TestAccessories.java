@@ -52,7 +52,7 @@ final class TestAccessories extends Check {
         GameCore restored=new GameCore(c.store,216,true);
         check("flair saved independently with outfit",restored.wardrobe.equipped(0,Accessories.FLAIR)==item);
         WardrobeScreen ui=c.wardrobe.screen;ui.show(c,0);
-        int tab=ui.hit(L,L.w*.82f,WardrobeScreen.y(L,.45f));ui.choose(c,tab);
+        int tab=ui.hit(L,L.w*.82f,WardrobeScreen.trayY(L,.20f));ui.choose(c,tab);
         check("fifth wardrobe tab opens flair",tab==10+Accessories.FLAIR && ui.slot==Accessories.FLAIR);
         for(int variant=0;variant<Accessories.count(Accessories.FLAIR);variant++) {
             FlairProbe first=new FlairProbe(),same=new FlairProbe(),later=new FlairProbe();
@@ -128,7 +128,7 @@ final class TestAccessories extends Check {
     private static void sharedOutfits() {
         GameCore c=ready();grant(c);Wardrobe w=c.wardrobe;
         check("equip owned accessory",w.equip(c,0,0) && w.equipped(0,0)==0);
-        w.screen.show(c,1);w.screen.selected=0;w.screen.choose(c,2);
+        w.screen.show(c,1);w.screen.selected=0;w.screen.choose(c,20);
         check("same accessory equips immediately on another squishy",w.equipped(0,0)==0 && w.equipped(1,0)==0);
         w.equip(c,1,1);
         check("replace only changes chosen squishy",w.equipped(0,0)==0 && w.equipped(1,0)==1 && w.owned[0]);
@@ -139,9 +139,9 @@ final class TestAccessories extends Check {
         check("each outfit and removal survive restart",reload.wardrobe.equipped(1,1)==3
                 && reload.wardrobe.equipped(1,0)<0 && reload.wardrobe.equipped(0,0)==0);
         w.equip(c,0,1);w.screen.show(c,1);
-        check("editor opens actual saved outfit",w.screen.selected==0 && !w.screen.previewing);
-        w.screen.choose(c,21);w.screen.back();
-        check("discarded preview leaves both saved outfits",w.equipped(0,0)==0 && w.equipped(1,0)==0);
+        check("editor opens actual saved outfit",w.screen.selected==0);
+        w.screen.choose(c,21);w.screen.back(c);
+        check("leaving preserves immediate outfit edit",w.equipped(0,0)==0 && w.equipped(1,0)==1);
         TestProgress.Storage store=new TestProgress.Storage("broken");
         Progress broken=new Progress(store,true);store.broken=true;
         check("failed write does not create ownership",!broken.accessories(new String[]{Accessories.key("owned",0)},new long[]{1},false)
@@ -195,20 +195,39 @@ final class TestAccessories extends Check {
     }
     private static void ui(Layout L) {
         GameCore c=ready();grant(c);WardrobeScreen ui=c.wardrobe.screen;
-        ui.show(c,0);ui.selected=5;
-        check("preview does not equip",c.wardrobe.equipped(0,Accessories.GLASSES)<0);
+        c.caseOpen=true;c.caseIndex=0;c.openStory();c.storyT=2;
+        check("story opens wardrobe inline",ui.open && c.storyOpen() && !ui.reward);
         ui.choose(c,10+Accessories.MASK);
         float fourthX=L.w*.80f;
-        int hit=ui.hit(L,fourthX,WardrobeScreen.y(L,.57f));ui.choose(c,hit);
+        int hit=ui.hit(L,fourthX,WardrobeScreen.trayY(L,.50f));ui.choose(c,hit);
         int lastMask=Accessories.item(Accessories.MASK,3);
-        check("fourth mask card selects new hero style",hit==23 && ui.selected==lastMask);
-        ui.choose(c,2);check("fourth mask equips in shared mask slot",c.wardrobe.equipped(0,Accessories.MASK)==lastMask);
-        int state=c.state;c.screenKey(0);check("keyboard cannot start through wardrobe",c.state==state && !c.starting());
+        check("card immediately equips fourth mask",hit==23 && c.wardrobe.equipped(0,Accessories.MASK)==lastMask);
+        check("equip starts flash before dance",ui.danceT==0);
+        int priorDance=ui.dance;ui.choose(c,20);
+        check("next outfit picks another dance",ui.dance!=priorDance && ui.danceT==0);
+        check("inline animation does not pause story",!ui.update(c,.1f));
+        GameCore reload=new GameCore(c.store,214,true);
+        check("tap outfit persists without confirmation",reload.wardrobe.equipped(0,Accessories.MASK)==Accessories.item(Accessories.MASK,0));
+        ui.choose(c,10+Accessories.HAT);
+        float cardX=L.w*.50f,cardY=WardrobeScreen.trayY(L,.50f),hx=Storybook.heroX(c,L),hy=Storybook.heroY(c,L);
+        ui.touch(c,L,0,7,cardX,cardY);ui.touch(c,L,2,7,hx,hy);
+        check("drag carries accessory without saving early",ui.dragging && c.wardrobe.equipped(0,Accessories.HAT)<0);
+        ui.touch(c,L,1,8,hx,hy);
+        check("different pointer cannot finish drag",ui.dragging);
+        ui.touch(c,L,1,7,hx,hy);
+        check("drop on squishy equips",!ui.dragging && c.wardrobe.equipped(0,Accessories.HAT)==1);
+        ui.touch(c,L,0,7,L.w*.23f,cardY);ui.touch(c,L,2,7,0,0);ui.touch(c,L,1,7,0,0);
+        check("drop outside preserves outfit",c.wardrobe.equipped(0,Accessories.HAT)==1 && c.storyOpen());
+        ui.touch(c,L,0,7,L.w*.23f,cardY);ui.touch(c,L,2,7,hx,hy);ui.touch(c,L,3,7,hx,hy);
+        check("cancelled drag preserves outfit",!ui.dragging && c.wardrobe.equipped(0,Accessories.HAT)==1);
+        ui.choose(c,2);check("remove saves immediately",c.wardrobe.equipped(0,Accessories.HAT)<0);
+        c.wardrobe.owned[0]=false;ui.choose(c,20);
+        check("locked accessory cannot equip",c.wardrobe.equipped(0,Accessories.HAT)<0 && ui.selected==0);
         check("update notice waits for editor",!UpdatePrompt.suitable(c));
-        Pause.back(c);check("back closes wardrobe without confirmation",!ui.open);
-        ui.show(c,0);
-        ui.touch(c,L,0,7,L.w*.5f,WardrobeScreen.y(L,.94f));
-        ui.touch(c,L,1,7,L.w*.5f,WardrobeScreen.y(L,.94f));check("complete dismiss gesture consumed",!ui.open);
+        int state=c.state;c.screenKey(0);
+        check("game key dismisses inline wardrobe without starting",c.state==state && !c.starting() && !ui.open && !c.storyOpen() && c.caseOpen);
+        c.openStory();
+        Pause.back(c);check("back closes story and inline wardrobe together",!ui.open && !c.storyOpen());
         c.state=GameCore.PLAY;ui.update(c,.1f);check("reward waits until title",!ui.open);
         c.state=GameCore.TITLE;c.onboarding.titleGuide=true;ui.update(c,.1f);
         check("reward never interrupts tutorial",!ui.open);
@@ -217,7 +236,7 @@ final class TestAccessories extends Check {
             SettingsUi settings=new SettingsUi();settings.compute(small,SettingsUi.PROGRESS);
             check("developer accessory chips stay in panel",settings.accessoryY+settings.testH<settings.panelB);
             check("editor buttons fit portrait",WardrobeScreen.y(small,.89f)<small.h-small.padB);
-            check("story dress button above deck",Storybook.dressY(small)+small.unit*.8f<small.h-small.padB);
+            check("inline tray stays below story and above inset",WardrobeScreen.trayTop(small)>small.h*.47f+small.unit*6.2f && WardrobeScreen.trayY(small,1)<small.h-small.padB);
         }
     }
 }

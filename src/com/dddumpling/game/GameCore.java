@@ -872,6 +872,7 @@ final class GameCore {
         storyFromColumn=caseSlide;storyFromRow=caseSlideY;
         storyFromScale=.86f*.82f*1.16f;
         storyPulse=0f;
+        wardrobe.screen.show(this,story);
         if (sound != null) {
             sound.achievement();
             sound.narrate(story);
@@ -2279,7 +2280,7 @@ final class GameCore {
     void screenKey(int g) {
         if (townOpen) return;
         if (settingsOpen) return;
-        if(wardrobe.screen.open || releaseNotes.open || updatePrompt.open || highScoreScreen.open) return;
+        if((wardrobe.screen.open && !storyOpen()) || releaseNotes.open || updatePrompt.open || highScoreScreen.open) return;
         if (returnFade > 0f) return;
         if (!keyActive(g) || rosterSceneT > 0f) return;
         // Nothing is dismissable until the summary is up and settled — the death sequence is not

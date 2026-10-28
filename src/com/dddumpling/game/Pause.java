@@ -20,7 +20,7 @@ final class Pause extends Draw {
                 || c.starting() || c.starter.open || c.state != GameCore.TITLE || !c.modes.adventure();
     }
     static boolean back(GameCore c) {
-        if(c.wardrobe.screen.open) {c.wardrobe.screen.back();return true;}
+        if(c.wardrobe.screen.open) {c.wardrobe.screen.back(c);return true;}
         if(c.cloudUi.open) { c.cloudUi.close(c);return true; }
         if(c.updatePrompt.open) { c.updatePrompt.choose(c,false);return true; }
         if(c.starter.open) { c.cancelStart();return true; }

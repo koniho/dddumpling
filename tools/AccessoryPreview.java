@@ -9,7 +9,7 @@ final class AccessoryPreview {
         RasterPainter settings=new RasterPainter(w,h,ss);settings.clear(Draw.BG);
         PlayerSettings.draw(settings,c,L);
         Png.write(new File(dir,"214-developer-accessories.png"),settings.resolve(),w,h);
-        c.settingsOpen=false;
+        c.settingsOpen=false;c.caseOpen=true;c.caseIndex=0;c.openStory();c.storyT=2;
         for(int i=0;i<3;i++) {
             c.wardrobe.screen.show(c,0);c.wardrobe.screen.selected=i==0?0:3;
             if(i==1) {c.wardrobe.equip(c,3,1);c.wardrobe.equip(c,3,0);c.wardrobe.screen.slot=Accessories.GLASSES;}
@@ -47,12 +47,24 @@ final class AccessoryPreview {
             }
             Png.write(new File(dir,"214-"+(slot==Accessories.MASK?"masks":slot==Accessories.FLAIR?"flair":"footwear")+".png"),review.resolve(),w,h);
         }
-        c.wardrobe.screen.show(c,0);c.wardrobe.screen.slot=Accessories.MASK;c.wardrobe.screen.selected=Accessories.item(Accessories.MASK,3);c.wardrobe.screen.previewing=true;
+        c.wardrobe.screen.show(c,0);c.wardrobe.screen.slot=Accessories.MASK;c.wardrobe.screen.selected=Accessories.item(Accessories.MASK,3);c.wardrobe.equip(c,c.wardrobe.screen.selected,0);
         RasterPainter masks=new RasterPainter(w,h,ss);Renderer.draw(masks,c,L);
         Png.write(new File(dir,"214-mask-editor.png"),masks.resolve(),w,h);
         c.wardrobe.screen.slot=Accessories.FLAIR;c.wardrobe.screen.selected=Accessories.item(Accessories.FLAIR,0);
         RasterPainter flairEditor=new RasterPainter(w,h,ss);Renderer.draw(flairEditor,c,L);
         Png.write(new File(dir,"214-flair-editor.png"),flairEditor.resolve(),w,h);
+        c.wardrobe.screen.choose(c,20);c.wardrobe.screen.danceT=.10f;
+        RasterPainter flash=new RasterPainter(w,h,ss);Renderer.draw(flash,c,L);
+        Png.write(new File(dir,"214-inline-flash.png"),flash.resolve(),w,h);
+        c.wardrobe.screen.danceT=.8f;
+        RasterPainter dance=new RasterPainter(w,h,ss);Renderer.draw(dance,c,L);
+        Png.write(new File(dir,"214-inline-dance.png"),dance.resolve(),w,h);
+        c.wardrobe.screen.touch(c,L,0,7,L.w*.5f,WardrobeScreen.trayY(L,.5f));
+        c.wardrobe.screen.touch(c,L,2,7,L.w*.65f,L.h*.4f);
+        if(!c.wardrobe.screen.dragging)throw new AssertionError("preview drag did not start");
+        RasterPainter drag=new RasterPainter(w,h,ss);Renderer.draw(drag,c,L);
+        Png.write(new File(dir,"214-inline-drag.png"),drag.resolve(),w,h);
+        c.wardrobe.screen.cancelTouch();
         int[] cast={0,4,7,12,18,24,30,35,45,46,47,48,49,57,60,61};
         RasterPainter canvas=new RasterPainter(w,h,ss);canvas.clear(0xFF211D36);
         Painter p=new OpacityPainter(canvas,1) {

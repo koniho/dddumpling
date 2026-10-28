@@ -1413,16 +1413,23 @@ public final class IOSInputTest extends Check {
         float age=c.storyT;
         tap(game,Storybook.heroX(c,l),Storybook.heroY(c,l));
         check("native featured-dumpling tap reacts without dismissing",c.story==chosen && c.storyPulse==0f && c.storyT==age);
-        tap(game,l.w*.5f,l.h*.7f);
+        tap(game,l.w*.02f,l.h*.40f);
         check("native popup tap still dismisses without starting a run",!c.storyOpen() && c.caseOpen && !c.starting());
         c.caseIndex=0;c.caseSlide=c.caseSlideY=0;
         game.touch(one(0,2,x,y));game.touch(one(2,2,x-l.unit*2,y));game.touch(one(1,2,x-l.unit*2,y));
         check("shelf drag does not accidentally open a story",!c.storyOpen() && !c.caseDragging);
         c.caseOpen=true;c.caseIndex=0;c.collected=Collect.add(c.collected,0);c.openStory();
-        tap(game,l.w*.5f,Storybook.dressY(l));
-        check("native story opens wardrobe",c.wardrobe.screen.open && c.storyOpen());
-        tap(game,l.w*.5f,WardrobeScreen.y(l,.94f));
-        check("native wardrobe returns to same story",!c.wardrobe.screen.open && c.storyOpen() && !c.starting());
+        check("native story includes inline wardrobe",c.wardrobe.screen.open && c.storyOpen());
+        c.wardrobe.developer(c,1);c.storyT=2;
+        float cardY=WardrobeScreen.trayY(l,.5f);
+        tap(game,l.w*.23f,cardY);
+        check("native accessory tap saves immediately",c.wardrobe.equipped(0,Accessories.HAT)==0 && c.storyOpen());
+        game.touch(one(0,4,l.w*.50f,cardY));
+        game.touch(one(2,4,Storybook.heroX(c,l),Storybook.heroY(c,l)));
+        game.touch(one(1,4,Storybook.heroX(c,l),Storybook.heroY(c,l)));
+        check("native drag equips without dismissing story",c.wardrobe.equipped(0,Accessories.HAT)==1 && c.storyOpen());
+        tap(game,l.w*.02f,l.h*.4f);
+        check("native dismissal closes inline wardrobe",!c.wardrobe.screen.open && !c.storyOpen() && !c.starting());
 
     }
 
