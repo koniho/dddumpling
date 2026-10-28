@@ -60,8 +60,11 @@ final class DevSettings extends Draw {
             chip(p,u,u.clearY,0,1,c.clearArmed?"TAP AGAIN TO EMPTY":"EMPTY COLLECTION",s,c.clearArmed);
             chip(p,u,u.collectAllY,0,1,"COLLECT ALL",s,Collect.complete(c.collected));
             chip(p,u,u.accessoryY,0,3,"GIFT ACCESSORY",s,false);
-            chip(p,u,u.accessoryY,1,3,"ALL OUTFITS",s,false);
+            chip(p,u,u.accessoryY,1,3,"ALL ACCESSORIES",s,false);
             chip(p,u,u.accessoryY,2,3,"RESET OUTFITS",s,false);
+            for(int category=0;category<Accessories.SLOTS;category++)
+                chip(p,u,u.accessoryCategoryY[category/2],category%2,2,"ALL "+Accessories.SLOT[category],s,
+                        c.wardrobe.categoryOwned(category));
             chip(p,u,u.resetProgressY,0,1,c.resetProgressArmed?"TAP AGAIN: START FRESH":"CLEAR ALL PROGRESS",s,c.resetProgressArmed);
             return;
         }

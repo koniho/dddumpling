@@ -12,7 +12,37 @@ final class TestAccessories extends Check {
         check("wardrobe grant persisted",c.progress.accessories(keys,values,false));c.wardrobe.refresh(c);
     }
     static void all(Layout L) {
-        catalog();rewards();transfers();merge();ui(L);
+        catalog();rewards();transfers();merge();ui(L);developerCategories(L);
+    }
+    private static void developerCategories(Layout L) {
+        if(!BuildFlags.DEVELOPER)return;
+        for(int slot=0;slot<Accessories.SLOTS;slot++) {
+            GameCore c=new GameCore(new Mem(),214,false);c.collected=1;
+            c.wardrobe.developer(c,slot+3);
+            for(int i=0;i<Accessories.COUNT;i++)check("category grant stays in selected slot "+slot+":"+i,
+                    c.wardrobe.owned[i]==(Accessories.slot(i)==slot));
+            check("category chip reflects ownership",c.wardrobe.categoryOwned(slot));
+            byte[] granted=c.progress.snapshot();c.wardrobe.developer(c,slot+3);
+            check("repeat category grant is idempotent",java.util.Arrays.equals(granted,c.progress.snapshot()));
+            c.wardrobe.equip(c,slot*3,0);c.wardrobe.developer(c,1);
+            for(boolean owned:c.wardrobe.owned)check("all accessories chip grants every style",owned);
+            check("grant all preserves equipped outfit",c.wardrobe.equipped(0,slot)==slot*3);
+            check("developer gifts do not forge achievements",c.progress.maximum("highest_stage")==0
+                    && c.progress.count("rewards_total")==0);
+            GameCore reload=new GameCore(c.store,214,false);
+            check("category gifts persist in developer saves",reload.wardrobe.categoryOwned(slot));
+            c.wardrobe.developer(c,2);
+            for(boolean owned:c.wardrobe.owned)check("reset clears gifted wardrobe",!owned);
+        }
+        for(int[] size:new int[][]{{320,568},{640,1400},{1080,2340}}) {
+            Layout small=new Layout();small.compute(size[0],size[1],0,20,0,24);
+            SettingsUi u=new SettingsUi();u.compute(small,SettingsUi.PROGRESS);
+            for(int slot=0;slot<Accessories.SLOTS;slot++) {
+                float x=(u.testChipL(slot%2,2)+u.testChipR(slot%2,2))*.5f,y=u.accessoryCategoryY[slot/2]+u.testH*.5f;
+                check("category chip routes to matching grant",u.hit(x,y)==SettingsUi.HIT_ACCESSORY_CATEGORY+slot);
+            }
+            check("category chips fit panel",u.accessoryCategoryY[1]+u.testH<u.panelB);
+        }
     }
     private static void catalog() {
         java.util.HashSet<String> ids=new java.util.HashSet<>();

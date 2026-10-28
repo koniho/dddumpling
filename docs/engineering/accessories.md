@@ -53,7 +53,8 @@ Score and tutorial resets preserve the wardrobe. Developer **Reset Outfits**
 clears wardrobe records behind a separate merge epoch; stale cloud outfits cannot
 resurrect them. Retained achievements regrant eligible items on reconciliation.
 **Clear All Progress** clears the underlying achievements too. Developer builds
-can use **Gift Accessory**, **All Outfits**, and **Reset Outfits** in Progress
+can use **Gift Accessory**, **All Accessories**, category chips (**All Hats**, **All Shades**,
+**All Boots**, **All Masks**), and **Reset Outfits** in Progress
 without recording fake achievement progress or reporting to platform services.
 
 ## Attachment extension points

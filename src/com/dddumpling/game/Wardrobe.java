@@ -64,13 +64,19 @@ final class Wardrobe {
         for(int i=0;i<keys.length;i++){keys[i]=Accessories.key("seen",i);values[i]=owned[i]?1:0;}
         return c.progress.accessories(keys,values,false);
     }
+    boolean categoryOwned(int category) {
+        for(int i=0;i<Accessories.COUNT;i++)if(Accessories.slot(i)==category && !owned[i])return false;
+        return category>=0 && category<Accessories.SLOTS;
+    }
     void developer(GameCore c,int action) {
-        if(!BuildFlags.DEVELOPER)return;
+        if(!BuildFlags.DEVELOPER || action<0 || action>=3+Accessories.SLOTS)return;
+        refresh(c);
         if(action==2) {
             c.progress.accessories(new String[0],new long[0],true);screen.close();
         } else {
             int first=0,last=Accessories.COUNT;
             if(action==0) {while(first<last && owned[first])first++;last=Math.min(last,first+1);}
+            if(action>=3) {first=(action-3)*3;last=first+3;}
             String[] keys=new String[last-first];long[] values=new long[keys.length];
             for(int i=first;i<last;i++){keys[i-first]=Accessories.key("owned",i);values[i-first]=1;}
             c.progress.accessories(keys,values,false);

@@ -133,6 +133,8 @@ final class SettingsInput {
         }
         else if(h==SettingsUi.HIT_RESET_NEWS) c.releaseMascot.reset(c);
         else if(h>=SettingsUi.HIT_ACCESSORY_GRANT && h<=SettingsUi.HIT_ACCESSORY_RESET) c.wardrobe.developer(c,h-SettingsUi.HIT_ACCESSORY_GRANT);
+        else if(h>=SettingsUi.HIT_ACCESSORY_CATEGORY && h<SettingsUi.HIT_ACCESSORY_CATEGORY+Accessories.SLOTS)
+            c.wardrobe.developer(c,3+h-SettingsUi.HIT_ACCESSORY_CATEGORY);
         else if(h==SettingsUi.HIT_TEST_REVIEW) c.reviewPrompt.test();
         else if(h==SettingsUi.HIT_RESET_REVIEW) c.reviewPrompt.reset(c);
         else if(h==SettingsUi.HIT_TEST_UPDATE) c.storeUpdate.preview();

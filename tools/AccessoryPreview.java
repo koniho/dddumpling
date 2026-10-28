@@ -5,6 +5,11 @@ import java.io.File;
 final class AccessoryPreview {
     static void frames(File dir,Layout L,int w,int h,int ss) throws Exception {
         GameCore c=TestAccessories.ready();TestAccessories.grant(c);c.clock=1.2f;
+        c.settingsOpen=true;c.settingsPage=1;c.settingsTab=SettingsUi.PROGRESS;
+        RasterPainter settings=new RasterPainter(w,h,ss);settings.clear(Draw.BG);
+        PlayerSettings.draw(settings,c,L);
+        Png.write(new File(dir,"214-developer-accessories.png"),settings.resolve(),w,h);
+        c.settingsOpen=false;
         for(int i=0;i<3;i++) {
             c.wardrobe.screen.show(c,0);c.wardrobe.screen.selected=i==0?0:3;
             if(i==1) {c.wardrobe.equip(c,3,1);c.wardrobe.screen.confirming=true;}
