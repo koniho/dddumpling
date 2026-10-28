@@ -3355,11 +3355,14 @@ final class Preview {
                 shot(dir,"slime-basin-death-"+Math.round(at*1000),death,L,w,h,ss);
             }
         }
-        if(wanted("slime-basin-")) {
+        if(wantedGroup("slime-basin-")) {
             GameCore basin=toBoss(L,Boss.SLIME,764L,false);
             basin.stage=5;basin.landBlend=1;basin.stageBanner=basin.rosterSceneT=0;
             step(basin,L,SlimeArrival.DURATION+1);
             shot(dir,"slime-basin-idle",basin,L,w,h,ss);
+            basin.slimeBanks.reset();
+            for(int i=0;i<60*12 && basin.slimeBanks.dipAt[0]<0;i++)step(basin,L,DT);
+            step(basin,L,.4f);shot(dir,"slime-basin-dip",basin,L,w,h,ss);
             basin.boss.hurt=1;
             basin.slimeBanks.flash(basin.clock,basin.boss.bodyX(L)+Boss.bodyR(L)*.55f,basin.boss.bodyY(L),false);
             shot(dir,"slime-basin-impact",basin,L,w,h,ss);

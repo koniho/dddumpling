@@ -28,6 +28,22 @@ final class SlimeBasin extends Draw {
         float span=L.deckTop-L.playTop;
         return L.playTop+(span-bankHeight(time,side,L))*.5f+span*.0015f*(float)Math.sin(time*.5f+side);
     }
+    static float layerWidth(float time,int side,int layer,Layout L) {
+        return bankWidth(time,side,L)*(1+.014f*(float)Math.sin(time*(.31f+layer*.045f)+layer*1.9f+side*2.4f));
+    }
+    static float layerTop(float time,int side,int layer,Layout L) {
+        return bankTop(time,side,L)+(L.deckTop-L.playTop)*.007f
+                *(float)Math.sin(time*(.26f+layer*.037f)+layer*2.1f+side*1.7f);
+    }
+    private static void bankArt(Painter p,GameCore c,Layout L,int side,int layer,boolean lit,int alpha) {
+        float t=c.clock,w=layerWidth(t,side,layer,L),h=bankHeight(t,side,L),y=layerTop(t,side,layer,L);
+        float x=side==0?0:L.w-w;int art=SlimeBasinArt.bank(side,layer,lit);
+        // Only the front lip needs a drag mesh; deeper layers keep their inexpensive idle motion.
+        if(layer>0 || !c.slimeBanks.recoiling(t,side)) {art(p,art,x,y,w,h,alpha);return;}
+        float[] offsets=c.slimeBanks.offsets(t,side,L);ArtStamp cache=p.stamps();
+        if(cache==null || !cache.basinMesh(art,x,y,w,h,offsets,alpha))
+            SlimeBasinArt.paint(new SlimeBanks.Warp(p,alpha,side,x,y,w,h,offsets),art,w,h);
+    }
     static float surfaceLight(GameCore c,Layout L,float x,float y,float hit) {
         float strength=hit*.18f;
         for(int i=0;i<2;i++) {
@@ -52,8 +68,8 @@ final class SlimeBasin extends Draw {
             float head=Math.min(1,phase*1.3f),tail=Math.max(0,phase*1.3f-.30f);
             float alpha=fade*Math.min(1,Math.min(phase/.13f,(1-phase)/.22f));
             int side=ribbon-1;
-            float width=side<0?L.w:bankWidth(c.clock,side,L);
-            float[] offsets=side<0?null:c.slimeBanks.offsets(c.clock,side,L);
+            float width=side<0?L.w:layerWidth(c.clock,side,0,L);
+            float[] offsets=side<0 || !c.slimeBanks.recoiling(c.clock,side)?null:c.slimeBanks.offsets(c.clock,side,L);
             for(int j=0;j<line.length/2;j++) {
                 float u=tail+(head-tail)*j/(line.length/2-1f),x,y;
                 if(side<0) {
@@ -63,9 +79,9 @@ final class SlimeBasin extends Draw {
                 } else {
                     u=.42f+u*.49f;
                     x=(SlimeBasinArt.inset(u,side,L.w)-L.w*.018f)*width/(L.w*SlimeBasinArt.BANK_FRACTION);
-                    x+=x/width*SlimeBanks.sample(offsets,u);
+                    if(offsets!=null)x+=x/width*SlimeBanks.sample(offsets,u);
                     if(side==1)x=L.w-x;
-                    y=bankTop(c.clock,side,L)+bankHeight(c.clock,side,L)*u;
+                    y=layerTop(c.clock,side,0,L)+bankHeight(c.clock,side,L)*u;
                 }
                 line[j*2]=x;line[j*2+1]=y;
             }
@@ -90,19 +106,11 @@ final class SlimeBasin extends Draw {
         art(p,SlimeBasinArt.SCENE,0,L.playTop,L.w,span,(int)(fade*255));
         if(hit>.01f)art(p,SlimeBasinArt.REAR_LIT,0,L.playTop,L.w,span,
                 (int)(fade*surfaceLight(c,L,L.w*.5f,L.playTop+span*.27f,hit)*170));
-        // Each bank breathes around its outer edge; the central pool never stretches.
-        for(int side=0;side<2;side++) {
-            float width=bankWidth(t,side,L);
-            int bank=side==0?SlimeBasinArt.LEFT_BANK:SlimeBasinArt.RIGHT_BANK;
-            float x=side==0?0:L.w-width,y=bankTop(t,side,L),h=bankHeight(t,side,L);
-            float[] offsets=c.slimeBanks.offsets(t,side,L);ArtStamp cache=p.stamps();
-            if(cache==null || !cache.basinMesh(bank,x,y,width,h,offsets,(int)(fade*255)))
-                SlimeBasinArt.paint(new SlimeBanks.Warp(p,(int)(fade*255),side,x,y,width,h,offsets),bank,width,h);
+        for(int side=0;side<2;side++)for(int layer=0;layer<SlimeBasinArt.LAYERS;layer++) {
+            bankArt(p,c,L,side,layer,false,(int)(fade*255));
             if(hit>.01f) {
-                int lit=side==0?SlimeBasinArt.LEFT_LIT:SlimeBasinArt.RIGHT_LIT;
                 int alpha=(int)(fade*surfaceLight(c,L,side==0?L.w*.15f:L.w*.85f,L.playTop+span*.48f,hit)*230);
-                if(alpha>0 && (cache==null || !cache.basinMesh(lit,x,y,width,h,offsets,alpha)))
-                    SlimeBasinArt.paint(new SlimeBanks.Warp(p,alpha,side,x,y,width,h,offsets),lit,width,h);
+                if(alpha>0)bankArt(p,c,L,side,layer,true,alpha);
             }
         }
         shimmer(p,c,L,b,fade);
@@ -123,11 +131,11 @@ final class SlimeBasin extends Draw {
         // Small live glints and surface reflections retain motion without full-scene redraws.
         for(int side=0;side<2;side++)for(int i=0;i<3;i++) {
             float u=.46f+i*.19f+.006f*(float)Math.sin(t*.65f+i);
-            float scale=bankWidth(t,side,L)/(L.w*SlimeBasinArt.BANK_FRACTION);
+            float scale=layerWidth(t,side,0,L)/(L.w*SlimeBasinArt.BANK_FRACTION);
             float x=(SlimeBasinArt.inset(u,side,L.w)-L.w*.020f)*scale;
-            x+=x/bankWidth(t,side,L)*SlimeBanks.sample(c.slimeBanks.offsets(t,side,L),u);
+            if(c.slimeBanks.recoiling(t,side))x+=x/layerWidth(t,side,0,L)*SlimeBanks.sample(c.slimeBanks.offsets(t,side,L),u);
             if(side==1)x=L.w-x;
-            SlimeHills.jelly(p,shape,x,bankTop(t,side,L)+bankHeight(t,side,L)*u,L.w*.014f*scale*(1+hit),L.w*.008f*(1+hit*.6f),
+            SlimeHills.jelly(p,shape,x,layerTop(t,side,0,L)+bankHeight(t,side,L)*u,L.w*.014f*scale*(1+hit),L.w*.008f*(1+hit*.6f),
                     i,Glyph.withAlpha(SlimeHills.MINT,(int)(fade*(28+breath*18+hit*110))));
         }
         for(int i=0;i<6;i++) {
@@ -140,11 +148,13 @@ final class SlimeBasin extends Draw {
         float grounding=BossCollect.keepsArena(c,Boss.SLIME)?0:fade*reveal*(b.beaten?1-b.leaveProgress():1);
         art(p,SlimeBasinArt.SHADOW,cx-b.bodyR(L)*1.6f,floor-b.bodyR(L)*.30f,
                 b.bodyR(L)*3.2f,b.bodyR(L)*.60f,(int)(grounding*115));
-        for(int wave=0;wave<3;wave++) {
-            float phase=(t*.19f+wave/3f)%1;
-            float radius=b.bodyR(L)*(1.03f+phase*.8f+hit*.65f);
-            SlimeHills.ripple(p,rings,cx,floor,radius,radius*.23f,wave+t*.13f,
-                    Glyph.withAlpha(SlimeHills.MINT,(int)(grounding*(1-phase)*(28+hit*90))),.035f);
+        for(int dip=0;dip<c.slimeBanks.dipAt.length;dip++)for(int wave=0;wave<2;wave++) {
+            float age=t-c.slimeBanks.dipAt[dip]-wave*.18f;
+            if(age<0 || age>2.4f)continue;
+            float phase=age/2.4f,radius=b.bodyR(L)*(1.15f+phase*1.8f);
+            float strength=Math.min(1,age/.12f)*(1-phase)*(1-phase);
+            SlimeHills.ripple(p,rings,c.slimeBanks.dipX[dip],c.slimeBanks.dipY[dip],radius,radius*.25f,dip,
+                    Glyph.withAlpha(SlimeHills.MINT,(int)(grounding*strength*105)),.026f);
         }
         SlimeHills.clearRipples(p,c,L,fade);
     }

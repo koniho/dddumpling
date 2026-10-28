@@ -8,7 +8,32 @@ final class SlimeBanks {
     private final float[][] offsets={new float[ROWS+1],new float[ROWS+1]};
     private final float[] lightAt={-100,-100};
     final float[] lightX=new float[2],lightY=new float[2];
-    void reset(){hitAt[0]=hitAt[1]=lightAt[0]=lightAt[1]=-100;}
+    private float previousY,previousX,descending,previousTime=-1,lastDip=-100;
+    final float[] dipAt={-100,-100,-100},dipX=new float[3],dipY=new float[3];
+    private int nextDip;
+    void reset(){
+        hitAt[0]=hitAt[1]=lightAt[0]=lightAt[1]=lastDip=-100;
+        previousTime=-1;descending=0;nextDip=0;
+        java.util.Arrays.fill(dipAt,-100);
+    }
+    boolean recoiling(float time,int side) {return time>=hitAt[side] && time-hitAt[side]<4;}
+    void updateDip(GameCore c,Layout L) {
+        Boss b=c.boss;
+        if(c.state!=GameCore.PLAY || b.kind!=Boss.SLIME || !b.fighting() || b.body==null) {
+            previousTime=-1;descending=0;return;
+        }
+        float y=b.body.bottom(),x=b.body.centreX();
+        if(previousTime>=0 && c.clock>previousTime) {
+            float delta=y-previousY;
+            // A true downward-to-upward turn, not tiny spring jitter or an arrival jump.
+            if(delta<0 && descending>L.w*.0015f && c.clock-lastDip>1.4f && b.hurt<.1f) {
+                dipAt[nextDip]=c.clock;dipX[nextDip]=previousX;dipY[nextDip]=previousY-b.bodyR(L)*.08f;
+                nextDip=(nextDip+1)%dipAt.length;lastDip=c.clock;
+            }
+            if(delta>0)descending+=delta;else if(delta<0)descending=0;
+        }
+        previousY=y;previousX=x;previousTime=c.clock;
+    }
     void flash(float time,float x,float y,boolean drag) {
         int i=drag?1:0;lightAt[i]=time;lightX[i]=x;lightY[i]=y;
     }

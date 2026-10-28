@@ -811,6 +811,7 @@ final class Softbody {
 
     float centreX() { return cx; }
     float centreY() { return cy; }
+    float bottom() { return maxY; }
     /** Mean distance from the centroid to a node: the body's current radius. */
     float radius() { return meanR; }
     /**

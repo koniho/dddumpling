@@ -6,6 +6,15 @@ final class UnderwaterCave extends Draw {
     private UnderwaterCave() {}
     private static int ink(int color,float alpha){return Glyph.withAlpha(color,(int)alpha);}
 
+    static int planeArt(int plane,boolean lit) {
+        return UnderwaterVista.CAVE+(plane==0?(lit?2:1):4+(plane-1)*2+(lit?1:0));
+    }
+    static float planeX(float time,int plane,Layout L) {
+        return L.w*(-.025f+(.004f+plane*.003f)*(float)Math.sin(time*(.19f+plane*.043f)+plane*2.2f));
+    }
+    static float planeY(float time,int plane,Layout L) {
+        return L.h*(-.025f+(.003f+plane*.002f)*(float)Math.sin(time*(.23f+plane*.031f)+plane*1.8f));
+    }
     static void draw(Painter p,GameCore c,Layout L,float fade,float arrival) {
         if(p instanceof WaterPainter)p=((WaterPainter)p).anchored();
         Boss b=BossVictory.sceneBoss(c);
@@ -23,7 +32,14 @@ final class UnderwaterCave extends Draw {
                     -L.h*(.08f+i*.025f),L.w*(.85f-i*.08f),L.h*(.94f-i*.04f),fade*light);
         }
         float y=-(1-arrival)*L.h*.16f;
-        UnderwaterVista.image(p,UnderwaterVista.CAVE+1,0,y,L.w,L.h,fade);
+        float pulse=c.waterRipples.beamPulse(c.clock,.5f);
+        float shimmer=.055f+.045f*(.5f+.5f*(float)Math.sin(c.clock*.47f));
+        float relight=fade*Math.min(1,shimmer+pulse*.85f+movement*.22f+damage*1.45f);
+        for(int plane=0;plane<3;plane++) {
+            float x=planeX(c.clock,plane,L),py=y+planeY(c.clock,plane,L);
+            UnderwaterVista.image(p,planeArt(plane,false),x,py,L.w*1.05f,L.h*1.05f,fade);
+            UnderwaterVista.image(p,planeArt(plane,true),x,py,L.w*1.05f,L.h*1.05f,relight);
+        }
         for(int side=0;side<2;side++) {
             int arm=side==0?1:6;
             float reachY=b.octoPlaced && (b.octoArms&(1<<arm))!=0?b.octoY[arm][Boss.OCTO_NODES-1]:by+L.h*.15f;
@@ -31,9 +47,7 @@ final class UnderwaterCave extends Draw {
             glow(p,L.w*(side==0?.12f:.88f),gy,L.w*(.21f+damage*.10f),L.h*(.24f+damage*.09f),
                     fade*(9+movement*26+damage*110));
         }
-        float pulse=c.waterRipples.beamPulse(c.clock,.5f);
-        float shimmer=.055f+.045f*(.5f+.5f*(float)Math.sin(c.clock*.47f));
-        UnderwaterVista.image(p,UnderwaterVista.CAVE+2,0,y,L.w,L.h,fade*Math.min(1,shimmer+pulse*.85f+movement*.22f+damage*1.45f));
+
     }
 
     static float damagePulse(Boss b) {
@@ -166,10 +180,11 @@ final class UnderwaterCave extends Draw {
     static void paint(Painter p,int layer,float x,float y,float w,float h,float fade) {
         if(layer==0){chamber(p,x,y,w,h,fade);return;}
         if(layer==3){mist(p,x,y,w,h,fade);return;}
-        Painter stone=layer==2?new LitStone(p):p;
+        int plane=layer<4?0:1+(layer-4)/2;
+        Painter stone=(layer==2 || layer>=4 && layer%2==1)?new LitStone(p):p;
         // Broken buttresses have independent silhouettes, leaving an off-centre ceiling fissure.
-        for(int plane=0;plane<3;plane++)for(int side=0;side<2;side++)
-            buttress(stone,x,y,w,h,side,plane,fade);
+        for(int side=0;side<2;side++)buttress(stone,x,y,w,h,side,plane,fade);
+        if(plane!=2)return;
         shard(stone,x,y,w,h,new float[]{.32f,-.06f,.52f,-.05f,.47f,.025f,.48f,.07f,.43f,.155f,.41f,.08f,.35f,.10f},
                 0xFF081928,0xFF386B7A,fade);
         shard(stone,x,y,w,h,new float[]{.65f,-.05f,.86f,-.04f,.82f,.11f,.76f,.18f,.75f,.09f,.69f,.13f,.67f,.06f},

@@ -325,9 +325,8 @@ static void DDDrawCachedImage(CGContextRef ctx,CGRect rect,CGImageRef color,CGIm
     _drawingForest=NO;self.context=prior;
     _basin[art]=CGBitmapContextCreateImage(bitmap);CGContextRelease(bitmap);
     // Warm the matching surface highlights with the scene, before the first combat impact.
-    if (art==DDSlimeBasinArt_SCENE)[self basinImage:DDSlimeBasinArt_REAR_LIT];
-    else if (art==DDSlimeBasinArt_LEFT_BANK)[self basinImage:DDSlimeBasinArt_LEFT_LIT];
-    else if (art==DDSlimeBasinArt_RIGHT_BANK)[self basinImage:DDSlimeBasinArt_RIGHT_LIT];
+    jint highlight=[DDSlimeBasinArt highlightWithInt:art];
+    if(highlight>=0)[self basinImage:highlight];
   }
   return _basin[art];
 }

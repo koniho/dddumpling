@@ -5,7 +5,7 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.RectF;
 
-/** Eight immutable images, 8.9 MiB total; movement and lighting only change placement/alpha. */
+/** Bounded immutable layers, under 17 MiB total; movement and lighting only change placement/alpha. */
 final class CanvasSlimeStamps {
     private final Bitmap[] images=new Bitmap[SlimeBasinArt.COUNT];
     private final Paint paint=new Paint(Paint.ANTI_ALIAS_FLAG|Paint.FILTER_BITMAP_FLAG);

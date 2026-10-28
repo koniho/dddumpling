@@ -2,15 +2,22 @@ package com.dddumpling.game;
 
 /** Immutable scenery and soft light masks, rasterized once by each native host. */
 final class SlimeBasinArt extends Draw {
-    static final int SCENE=0,LIGHT=1,SHADOW=2,LEFT_BANK=3,RIGHT_BANK=4,REAR_LIT=5,LEFT_LIT=6,RIGHT_LIT=7,COUNT=8;
+    static final int SCENE=0,LIGHT=1,SHADOW=2,LEFT_BANK=3,RIGHT_BANK=4,REAR_LIT=5,LEFT_LIT=6,RIGHT_LIT=7,COUNT=20;
+    static final int LAYERS=4;
     static final float BANK_FRACTION=.70f;
-    static int base(int art) {return art==REAR_LIT?SCENE:art==LEFT_LIT?LEFT_BANK:art==RIGHT_LIT?RIGHT_BANK:art;}
-    static int side(int art) {int base=base(art);return base==LEFT_BANK?0:base==RIGHT_BANK?1:-1;}
-    static int width(int art) {return base(art)==SCENE?480:side(art)>=0?336:256;}
-    static int height(int art) {return base(art)==SCENE || side(art)>=0?960:256;}
+    static int bank(int side,int layer,boolean lit) {
+        return layer==0?LEFT_BANK+side+(lit?3:0):8+(layer-1)*4+side+(lit?2:0);
+    }
+    static int layer(int art) {return art<8?0:1+(art-8)/4;}
+    static boolean lit(int art) {return art>=5 && art<=7 || art>=8 && (art-8)%4>=2;}
+    static int base(int art) {return art==REAR_LIT?SCENE:lit(art)?art-(art<8?3:2):art;}
+    static int side(int art) {int b=base(art);return b>=8?(b-8)%2:b==LEFT_BANK?0:b==RIGHT_BANK?1:-1;}
+    static int highlight(int art) {return lit(art)?-1:art==SCENE?REAR_LIT:side(art)>=0?bank(side(art),layer(art),true):-1;}
+    static int width(int art) {return base(art)==SCENE?480:256;}
+    static int height(int art) {return base(art)==SCENE?960:side(art)>=0?768:256;}
     private SlimeBasinArt() {}
     static void paint(Painter p,int art,float w,float h) {
-        if(art>=REAR_LIT) {
+        if(lit(art)) {
             Painter lit=new OpacityPainter(p,1) {
                 int color(int color) {return Glyph.withAlpha(Glyph.mix(color,0xFFDFFFF0,.72f),color>>>24);}
             };
@@ -19,10 +26,10 @@ final class SlimeBasinArt extends Draw {
             return;
         }
         if(side(art)>=0) {
-            int side=art-LEFT_BANK;float fullWidth=w/BANK_FRACTION;
+            int side=side(art);float fullWidth=w/BANK_FRACTION;
             p.save();p.clipRect(0,0,w,h);
             if(side==1)p.translate(-(fullWidth-w),0);
-            banks(p,side,fullWidth,h);p.restore();return;
+            banks(p,side,fullWidth,h,layer(art));p.restore();return;
         }
         if(art!=SCENE) {
             // Dense enough for a smooth cached texture; never rebuilt for lighting changes.
@@ -69,7 +76,7 @@ final class SlimeBasinArt extends Draw {
             SlimeHills.jelly(p,blob,x,y,w*(.028f+hash(i+811)*.035f),h*.0025f,i,0x356EBE88);
         }
     }
-    private static void rearShoulder(Painter p,int side,float w,float h) {
+    private static void rearShoulder(Painter p,int side,float w,float h,int selected) {
         float[] blob=new float[98];
         // Unequal domes and small melting shoulders form one silhouette, not stacked ovals.
         float[] points=side==0?new float[]{
@@ -79,7 +86,7 @@ final class SlimeBasinArt extends Draw {
                 -.08f,.19f,.015f,.166f,.083f,.188f,.116f,.244f,.172f,.263f,
                 .23f,.258f,.264f,.283f,.315f,.299f,.35f,.32f,.235f,.335f,.085f,.338f,-.08f,.35f};
         float[] shape=rearContour(points);
-        for(int layer=0;layer<4;layer++) {
+        { int layer=selected;
             float scale=1-layer*.065f;
             float[] face=new float[shape.length];
             for(int j=0;j<shape.length;j+=2) {
@@ -92,7 +99,7 @@ final class SlimeBasinArt extends Draw {
         // A low, lopsided skirt flows out into the water along each shoulder's foot.
         float[] lip=rearContour(new float[]{-.04f,.319f,.045f,.309f,.12f,.316f,.19f,.309f,
                 .25f,.318f,.33f,.321f,.31f,.33f,.22f,.333f,.13f,.329f,.04f,.34f,-.04f,.342f});
-        for(int layer=0;layer<3;layer++) {
+        if(selected<3) { int layer=selected;
             float[] face=new float[lip.length];
             for(int j=0;j<lip.length;j+=2) {
                 face[j]=w*(side==0?lip[j]:1-lip[j]);
@@ -100,7 +107,7 @@ final class SlimeBasinArt extends Draw {
             }
             p.fillPoly(face,layer==0?0xFF78C38A:layer==1?0xFF4D9A6C:0xFF61AF78);
         }
-        for(int i=0;i<4;i++) {
+        if(selected==3)for(int i=0;i<4;i++) {
             float x=w*(.035f+i*.057f),y=h*(.205f+i*.030f-i*i*.002f);
             if(side==1)x=w-x;
             SlimeHills.jelly(p,blob,x,y,w*(.012f+hash(i+63)*.013f),h*.0038f,i,0x90B9E8A5);
@@ -120,10 +127,10 @@ final class SlimeBasinArt extends Draw {
         }
         return shape;
     }
-    private static void banks(Painter p,int side,float w,float h) {
+    private static void banks(Painter p,int side,float w,float h,int selected) {
         float[] shape=new float[98],bank=new float[134],shine=new float[260];
         float[] setbacks={0,.012f,.065f,.13f};
-        for(int layer=0;layer<4;layer++) {
+        { int layer=selected;
             for(int j=0;j<=64;j++) {
                 float u=j/64f;
                 float x=inset(u+layer*.006f,side,w)-w*setbacks[layer];
@@ -141,9 +148,9 @@ final class SlimeBasinArt extends Draw {
             p.fillPoly(bank,Glyph.withAlpha(color,layer==0?175:220));
             p.fillPoly(shine,Glyph.withAlpha(SlimeHills.MINT,layer==1?75:20));
         }
-        rearShoulder(p,side,w,h);
-        upperWall(p,side,w,h);
-        for(int i=0;i<16;i++) {
+        rearShoulder(p,side,w,h,selected);
+        upperWall(p,side,w,h,selected);
+        if(selected==3)for(int i=0;i<16;i++) {
             if(i%2!=side)continue;
             float u=.10f+hash(i+927)*.87f;
             float x=inset(u,side,w)-w*(.025f+hash(i+64)*.08f);if(side==1)x=w-x;
@@ -151,11 +158,11 @@ final class SlimeBasinArt extends Draw {
         }
     }
     /** One hanging slime curtain with rounded lobes, rather than separate striped rods. */
-    private static void upperWall(Painter p,int side,float w,float h) {
+    private static void upperWall(Painter p,int side,float w,float h,int selected) {
         float[] wall=new float[198],gleam=new float[34];
         // The hanging wall has its own backing, independent of the foreground bank curves.
         float[] backing=new float[102];
-        for(int layer=0;layer<4;layer++) {
+        { int layer=selected;
             for(int j=0;j<=48;j++) {
                 float u=j/48f*.32f;
                 float x=w*(.025f+.27f*bump(u,.01f,.30f)-layer*.035f
@@ -166,7 +173,7 @@ final class SlimeBasinArt extends Draw {
             backing[99]=h*.32f;backing[101]=-h*.1f;
             p.fillPoly(backing,layer==0?0xFF4F9C70:layer==1?0xFF3F855E:layer==2?0xFF30684D:0xFF244D3E);
         }
-        for(int layer=0;layer<5;layer++) {
+        for(int layer=selected;layer<=(selected==3?4:selected);layer++) {
             for(int j=0;j<=96;j++) {
                 float u=j/96f,xx=w*(u*.34f-.035f);
                 float y=curtainEdge(u,side)*h-layer*h*.006f;
@@ -178,7 +185,7 @@ final class SlimeBasinArt extends Draw {
                     :layer==3?0xFF2C6147:0xFF234D3D;
             p.fillPoly(wall,color);
         }
-        for(int i=0;i<3;i++) {
+        if(selected==3)for(int i=0;i<3;i++) {
             float u=i==0?.20f:i==1?.52f:.82f;
             float x=w*(u*.34f-.035f),y=curtainEdge(u,side)*h;
             if(side==1)x=w-x;

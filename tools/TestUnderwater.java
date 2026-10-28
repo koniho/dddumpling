@@ -207,7 +207,7 @@ final class TestUnderwater extends Check {
                 return reefVista(art,x,y,w,h,alpha);
             }
             public boolean reefVista(int art,float x,float y,float w,float h,int alpha) {
-                if(art>=UnderwaterVista.CAVE && art<UnderwaterVista.CAVE+3) {
+                if(art>=UnderwaterVista.CAVE && art!=UnderwaterVista.CAVE+3) {
                     int at=stamps[0]++*4;rocks[at]=x;rocks[at+1]=y;rocks[at+2]=w;rocks[at+3]=h;
                     valid[0]&=art<UnderwaterVista.COUNT && w>0 && h>0 && alpha>0 && alpha<=255;
                 }
@@ -222,14 +222,17 @@ final class TestUnderwater extends Check {
             draws[0]++;return null;
         });
         Underwater.backdrop(new OpacityPainter(probe,1),c,L);
-        check("cave scenery and relighting stay cached through wrappers",valid[0] && stamps[0]==3 && draws[0]<160);
+        check("cave scenery and relighting stay cached through wrappers",valid[0] && stamps[0]==7 && draws[0]<160);
         check("settled cave has no swimming fish",fishShapes[0]==0);
         float[] first=rocks.clone();int count=stamps[0];stamps[0]=0;c.clock+=1;c.skyClock+=5;
         Underwater.backdrop(new OpacityPainter(probe,1),c,L);
-        check("settled cave geometry stays anchored while lighting animates",count==stamps[0] && java.util.Arrays.equals(first,rocks));
+        check("cave planes move independently above an anchored seabed",count==stamps[0]
+                && first[0]==rocks[0] && first[1]==rocks[1] && first[2]==rocks[2] && first[3]==rocks[3]
+                && first[4]!=rocks[4] && first[12]!=rocks[12]
+                && Math.abs((rocks[4]-first[4])-(rocks[12]-first[12]))>.001f);
         c.waterRipples.cleared(c,L,L.w*.3f,L.h*.5f);c.clock+=.1f;stamps[0]=0;draws[0]=0;
         Underwater.backdrop(probe,c,L);
-        check("cave clear lighting adds no geometry or texture passes",stamps[0]==3 && draws[0]<160);
+        check("cave clear lighting adds no geometry or texture passes",stamps[0]==7 && draws[0]<160);
         c=stage(L);c.waterRipples.cleared(c,L,L.w*.5f,L.h*.5f);c.clock+=.1f;draws[0]=glows[0]=bands[0]=0;
         Underwater.veil(new OpacityPainter(probe,1),c,L);
         check("soft water effects use cached textures through wrappers",bands[0]==3 && glows[0]==1 && draws[0]<40);
@@ -290,7 +293,7 @@ final class TestUnderwater extends Check {
                 && UnderwaterVista.edgeSoftness(.5f)>.1f && UnderwaterVista.edgeSoftness(.85f)==0);
         long bytes=0;
         for(int art=0;art<UnderwaterVista.COUNT;art++)bytes+=4L*UnderwaterVista.width(art)*UnderwaterVista.height(art);
-        check("reef cache including soft silhouettes stays below 13 MiB",bytes<13*1024*1024);
+        check("reef cache including soft silhouettes stays below 15 MiB",bytes<15*1024*1024);
         final int[] stamps={0},calls={0},solid={0};final boolean[] valid={true};
         ArtStamp cache=new ArtStamp() {
             public boolean stamp(int art,float x,float y,float w,float h,float angle,int tint,float amount){return false;}

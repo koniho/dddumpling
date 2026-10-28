@@ -85,16 +85,18 @@ final class TestBoss extends Check {
         c.boss.begin(Boss.SLIME,5,c.rnd);c.boss.intro=0;c.stage=5;c.landBlend=1;
         BasinCache cache=new BasinCache();Painter p=Skins.painter(new OpacityPainter(cache,1),Skins.HALLOWEEN);
         SlimeBasin.draw(p,c,L);
-        check("basin caches five bounded images through skin wrappers",cache.mask==31 && cache.calls==5);
+        int idleMask=7;
+        for(int side=0;side<2;side++)for(int layer=0;layer<SlimeBasinArt.LAYERS;layer++)idleMask|=1<<SlimeBasinArt.bank(side,layer,false);
+        check("basin caches independent layers through skin wrappers",cache.mask==idleMask && cache.calls==11);
         int idle=cache.lightAlpha;c.boss.hurt=1;SlimeBasin.draw(p,c,L);
-        check("basin hit changes cached light alpha without changing artwork",cache.calls==13 && cache.lightAlpha>idle);
+        check("basin hit changes cached light alpha without changing artwork",cache.calls==31 && cache.lightAlpha>idle);
         cache.calls=0;SlimeBasin.draw(new OpacityPainter(cache,.5f),c,L);
         check("per primitive fades retain vector fallback",cache.calls==0);
         c.boss.hurt=0;c.slimeBanks.flash(c.clock,L.w*.4f,L.h*.3f,false);
         cache.calls=0;SlimeBasin.draw(cache,c,L);
-        check("prompt glow reuses a cached mask",cache.calls==9 && cache.mask==255);
+        check("prompt glow reuses a cached mask",cache.calls==21 && cache.mask==(1<<SlimeBasinArt.COUNT)-1);
         c.slimeBanks.hit(c.clock,L.w,L.h*.5f,L);cache.calls=0;SlimeBasin.draw(cache,c,L);
-        check("prompt and drag lights overlap with bounded cached draws",cache.calls==10 && cache.mask==255);
+        check("prompt and drag lights overlap with bounded cached draws",cache.calls==22 && cache.mask==(1<<SlimeBasinArt.COUNT)-1);
         c.slimeBanks.reset();c.slimeBanks.hit(c.clock,L.w,L.playTop+(L.deckTop-L.playTop)*.48f,L);
         check("struck bank receives more surface lighting",SlimeBasin.surfaceLight(c,L,L.w*.85f,L.h*.5f,1)
                 >SlimeBasin.surfaceLight(c,L,L.w*.15f,L.h*.5f,1));
@@ -177,6 +179,37 @@ final class TestBoss extends Check {
         check("Slime device replay is isolated and fixed step",replay.core.store==null
                 && replay.core.boss.kind==Boss.SLIME && replay.tick==chunked.tick
                 && replay.core.score==chunked.core.score && replay.core.boss.age==chunked.core.boss.age);
+    }
+
+    static void slimeDip(Layout L) {
+        GameCore c=new GameCore(new Mem(),737L);c.startGame();
+        Boss b=c.boss;b.begin(Boss.SLIME,5,c.rnd);b.intro=0;c.stage=5;
+        float x=L.w*.5f,y=L.h*.4f,r=Boss.bodyR(L);
+        for(int i=0;i<3;i++) {
+            b.body.reset(x,y+i*L.w*.01f,r,2);c.clock=10+i*.1f;c.slimeBanks.updateDip(c,L);
+        }
+        check("descending slime does not emit early",c.slimeBanks.dipAt[0]<0);
+        b.body.reset(x,y+L.w*.015f,r,2);c.clock=10.3f;c.slimeBanks.updateDip(c,L);
+        check("lowest slime turn emits a surface ripple",c.slimeBanks.dipAt[0]==c.clock);
+        float at=c.slimeBanks.dipAt[0],contact=c.slimeBanks.dipX[0];
+        b.body.reset(x+L.w*.1f,y,r,2);c.clock=10.4f;c.slimeBanks.updateDip(c,L);
+        check("dip stays at its contact point as slime moves away",c.slimeBanks.dipAt[0]==at && c.slimeBanks.dipX[0]==contact && c.slimeBanks.dipAt[1]<0);
+        c.slimeBanks.reset();b.intro=1;c.slimeBanks.updateDip(c,L);
+        check("arrival and reset have no stale dip ripples",c.slimeBanks.dipAt[0]<0);
+        boolean independent=false,bounded=true;long bytes=0;
+        for(int art=0;art<SlimeBasinArt.COUNT;art++)bytes+=4L*SlimeBasinArt.width(art)*SlimeBasinArt.height(art);
+        for(float t=0;t<30;t+=.2f)for(int side=0;side<2;side++)for(int layer=0;layer<4;layer++) {
+            float width=SlimeBasin.layerWidth(t,side,layer,L),top=SlimeBasin.layerTop(t,side,layer,L);
+            bounded &= width>L.w*.66f && width<L.w*.74f && top<L.playTop && top+SlimeBasin.bankHeight(t,side,L)>L.deckTop;
+            if(layer>0)independent |= Math.abs(width-SlimeBasin.layerWidth(t,side,layer-1,L))>L.w*.005f;
+        }
+        check("bank layers move independently with covered screen edges",independent && bounded);
+        check("split slime textures remain below 17 MiB",bytes<17L*1024*1024);
+        b.begin(Boss.SLIME,5,c.rnd);b.intro=0;c.slimeBanks.reset();
+        for(int i=0;i<60*12;i++){c.clock+=DT;b.update(DT,L,c.rnd);c.slimeBanks.updateDip(c,L);}
+        check("natural slime motion produces dip ripples",c.slimeBanks.dipAt[0]>0);
+        b.beaten=true;c.slimeBanks.reset();c.slimeBanks.updateDip(c,L);
+        check("defeated slime cannot start a dip",c.slimeBanks.dipAt[0]<0);
     }
 
     static void slimeSurface(Layout L) {
