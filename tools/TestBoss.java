@@ -191,6 +191,9 @@ final class TestBoss extends Check {
         check("descending slime does not emit early",c.slimeBanks.dipAt[0]<0);
         b.body.reset(x,y+L.w*.015f,r,2);c.clock=10.3f;c.slimeBanks.updateDip(c,L);
         check("lowest slime turn emits a surface ripple",c.slimeBanks.dipAt[0]==c.clock);
+        float skirtY=0;float[] skirt=BossScreen.slimePromptOutline(L,b);
+        for(int i=1;i<skirt.length;i+=2)skirtY=Math.max(skirtY,skirt[i]);
+        check("dip ripple reaches the visible skirt instead of hiding inside slime",c.slimeBanks.dipY[0]>=skirtY-r*.03f);
         float at=c.slimeBanks.dipAt[0],contact=c.slimeBanks.dipX[0];
         b.body.reset(x+L.w*.1f,y,r,2);c.clock=10.4f;c.slimeBanks.updateDip(c,L);
         check("dip stays at its contact point as slime moves away",c.slimeBanks.dipAt[0]==at && c.slimeBanks.dipX[0]==contact && c.slimeBanks.dipAt[1]<0);

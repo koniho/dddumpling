@@ -27,7 +27,11 @@ final class SlimeBanks {
             float delta=y-previousY;
             // A true downward-to-upward turn, not tiny spring jitter or an arrival jump.
             if(delta<0 && descending>L.w*.0015f && c.clock-lastDip>1.4f && b.hurt<.1f) {
-                dipAt[nextDip]=c.clock;dipX[nextDip]=previousX;dipY[nextDip]=previousY-b.bodyR(L)*.08f;
+                dipAt[nextDip]=c.clock;dipX[nextDip]=previousX;
+                // The rendered skirt can cover the prompt below the physical spring body.
+                float bottom=y;float[] skirt=BossScreen.slimePromptOutline(L,b);
+                for(int i=1;i<skirt.length;i+=2)bottom=Math.max(bottom,skirt[i]);
+                dipY[nextDip]=bottom-b.bodyR(L)*.025f;
                 nextDip=(nextDip+1)%dipAt.length;lastDip=c.clock;
             }
             if(delta>0)descending+=delta;else if(delta<0)descending=0;
