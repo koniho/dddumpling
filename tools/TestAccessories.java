@@ -24,9 +24,9 @@ final class TestAccessories extends Check {
             check("category chip reflects ownership",c.wardrobe.categoryOwned(slot));
             byte[] granted=c.progress.snapshot();c.wardrobe.developer(c,slot+3);
             check("repeat category grant is idempotent",java.util.Arrays.equals(granted,c.progress.snapshot()));
-            c.wardrobe.equip(c,slot*3,0);c.wardrobe.developer(c,1);
+            c.wardrobe.equip(c,Accessories.item(slot,0),0);c.wardrobe.developer(c,1);
             for(boolean owned:c.wardrobe.owned)check("all accessories chip grants every style",owned);
-            check("grant all preserves equipped outfit",c.wardrobe.equipped(0,slot)==slot*3);
+            check("grant all preserves equipped outfit",c.wardrobe.equipped(0,slot)==Accessories.item(slot,0));
             check("developer gifts do not forge achievements",c.progress.maximum("highest_stage")==0
                     && c.progress.count("rewards_total")==0);
             GameCore reload=new GameCore(c.store,214,false);
@@ -50,7 +50,16 @@ final class TestAccessories extends Check {
             check("unique stable accessory id "+i,ids.add(Accessories.ID[i]));
             check("mapped milestone exists "+i,Achievements.id(Accessories.achievement(i)).equals(Accessories.ACHIEVEMENT[i]));
         }
-        check("three designs per category",Accessories.COUNT==Accessories.SLOTS*3);
+        for(int slot=0;slot<Accessories.SLOTS;slot++) {
+            check("category has at least three designs",Accessories.count(slot)>=3);
+            for(int v=0;v<Accessories.count(slot);v++) {
+                int item=Accessories.item(slot,v);
+                check("catalog category and variant round trip",Accessories.slot(item)==slot && Accessories.variant(item)==v);
+            }
+        }
+        check("four mask choices",Accessories.count(Accessories.MASK)==4);
+        check("redesigned masks retain existing save IDs",Accessories.ID[9].equals("petal_mask")
+                && Accessories.ID[10].equals("moon_mask") && Accessories.ID[11].equals("party_mask"));
         check("attachment geometry covers current body shapes",AccessoryAnchors.TOP.length==Collect.SHAPE_COUNT
             && AccessoryAnchors.FEET.length==Collect.SHAPE_COUNT);
         check("persisted wearer ID has space",Collect.COUNT<Wardrobe.OWNER_MASK);
@@ -125,6 +134,12 @@ final class TestAccessories extends Check {
         GameCore c=ready();grant(c);WardrobeScreen ui=c.wardrobe.screen;
         ui.show(c,0);ui.selected=5;
         check("preview does not equip",c.wardrobe.wearer(5)<0);
+        ui.choose(c,10+Accessories.MASK);
+        float fourthX=L.w*.80f;
+        int hit=ui.hit(L,fourthX,WardrobeScreen.y(L,.57f));ui.choose(c,hit);
+        int lastMask=Accessories.item(Accessories.MASK,3);
+        check("fourth mask card selects new hero style",hit==23 && ui.selected==lastMask);
+        ui.choose(c,2);check("fourth mask equips in shared mask slot",c.wardrobe.equipped(0,Accessories.MASK)==lastMask);
         int state=c.state;c.screenKey(0);check("keyboard cannot start through wardrobe",c.state==state && !c.starting());
         check("update notice waits for editor",!UpdatePrompt.suitable(c));
         ui.confirming=true;Pause.back(c);check("back cancels transfer before closing",ui.open && !ui.confirming);

@@ -30,7 +30,7 @@ final class Wardrobe {
     int equipped(int who,int slot) {
         if(who<0 || who>=Collect.COUNT)return -1;
         int best=-1;
-        for(int i=slot*3;i<slot*3+3;i++)if(owned[i] && rawOwner(i)==who
+        for(int i=0;i<Accessories.COUNT;i++)if(Accessories.slot(i)==slot && owned[i] && rawOwner(i)==who
                 && (best<0 || assignment[i]>assignment[best] || assignment[i]==assignment[best] && i>best))best=i;
         return best;
     }
@@ -74,12 +74,15 @@ final class Wardrobe {
         if(action==2) {
             c.progress.accessories(new String[0],new long[0],true);screen.close();
         } else {
-            int first=0,last=Accessories.COUNT;
-            if(action==0) {while(first<last && owned[first])first++;last=Math.min(last,first+1);}
-            if(action>=3) {first=(action-3)*3;last=first+3;}
-            String[] keys=new String[last-first];long[] values=new long[keys.length];
-            for(int i=first;i<last;i++){keys[i-first]=Accessories.key("owned",i);values[i-first]=1;}
-            c.progress.accessories(keys,values,false);
+            java.util.ArrayList<String> keys=new java.util.ArrayList<>();
+            for(int i=0;i<Accessories.COUNT;i++) {
+                if(action>=3 && Accessories.slot(i)!=action-3)continue;
+                if(action==0 && owned[i])continue;
+                keys.add(Accessories.key("owned",i));
+                if(action==0)break;
+            }
+            long[] values=new long[keys.size()];java.util.Arrays.fill(values,1);
+            c.progress.accessories(keys.toArray(new String[0]),values,false);
         }
         revision=-1;refresh(c);
     }

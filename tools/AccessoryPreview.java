@@ -26,16 +26,34 @@ final class AccessoryPreview {
                 Painter outfit=new OpacityPainter(p,1) {
                     public int accessory(int who,int slot) {return slot==Accessories.slot(selected)?selected:-1;}
                 };
-                float x=w*(.18f+(item%3)*.32f),y=h*(.19f+(item/3)*.215f),r=w*.105f;
+                float x=w*(.18f+(item%3)*.32f),y=h*(.15f+(item/3)*.17f),r=w*.09f;
                 Trinket.drawReacting(outfit,0,x,y,r,1.2f,1,0,0);
                 p.text(Accessories.NAME[item],x,y+r*1.75f,w*.025f,Accessories.COLOR[item],Painter.CENTER,true);
             }
             Png.write(new File(dir,"214-accessory-sheet-"+skin+".png"),canvas.resolve(),w,h);
         }
+        for(int slot:new int[]{Accessories.MASK,Accessories.BOOTS}) {
+            RasterPainter review=new RasterPainter(w,h,ss);review.clear(0xFF211D36);
+            review.text(slot==Accessories.MASK?"PICK YOUR SECRET IDENTITY":"HAPPY FEET",w*.5f,h*.045f,w*.04f,0xFFFFDF9A,Painter.CENTER,true);
+            int[] friends={0,Collect.bossPrize(Boss.MUSHROOM),Collect.DUCK_FIRST};
+            for(int v=0;v<Accessories.count(slot);v++) {
+                final int item=Accessories.item(slot,v);
+                Painter dressed=new OpacityPainter(review,1) {
+                    public int accessory(int who,int category) {return category==slot?item:-1;}
+                };
+                float yy=h*(.20f+v*.215f);
+                for(int col=0;col<3;col++)Trinket.drawReacting(dressed,friends[col],w*(.18f+col*.32f),yy,w*.11f,1.5f,1,0,0);
+                review.text(Accessories.NAME[item],w*.5f,yy+h*.085f,w*.028f,Accessories.COLOR[item],Painter.CENTER,true);
+            }
+            Png.write(new File(dir,"214-"+(slot==Accessories.MASK?"masks":"footwear")+".png"),review.resolve(),w,h);
+        }
+        c.wardrobe.screen.show(c,0);c.wardrobe.screen.slot=Accessories.MASK;c.wardrobe.screen.selected=Accessories.item(Accessories.MASK,3);
+        RasterPainter masks=new RasterPainter(w,h,ss);Renderer.draw(masks,c,L);
+        Png.write(new File(dir,"214-mask-editor.png"),masks.resolve(),w,h);
         int[] cast={0,4,7,12,18,24,30,35,45,46,47,48,49,57,60,61};
         RasterPainter canvas=new RasterPainter(w,h,ss);canvas.clear(0xFF211D36);
         Painter p=new OpacityPainter(canvas,1) {
-            public int accessory(int who,int slot) {return slot*3+who%3;}
+            public int accessory(int who,int slot) {return Accessories.item(slot,who%Accessories.count(slot));}
         };
         p.text("MIX, MATCH, MAKE IT YOURS",w*.5f,h*.04f,w*.04f,0xFFFFDF9A,Painter.CENTER,true);
         for(int k=0;k<cast.length;k++) {

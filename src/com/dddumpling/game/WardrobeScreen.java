@@ -63,12 +63,13 @@ final class WardrobeScreen extends Draw {
             p.fillRect(l,y(L,.425f),rr,y(L,.48f),k==slot?0xFF596477:0xFF39354F);
             p.text(Accessories.SLOT[k],(l+rr)/2,y(L,.46f),type(s*.67f),INK,Painter.CENTER,true);
         }
-        for(int v=0;v<3;v++) {
-            int item=slot*3+v;float cx=L.w*(.23f+v*.27f),left=cx-L.w*.125f,right=cx+L.w*.125f;
+        for(int v=0;v<Accessories.count(slot);v++) {
+            int item=Accessories.item(slot,v);float step=L.w*.80f/Accessories.count(slot);
+            float cx=L.w*.10f+step*(v+.5f),left=cx-step*.46f,right=cx+step*.46f;
             p.fillRect(left,y(L,.505f),right,y(L,.69f),item==selected?0xFF494762:0xFF322F49);
             if(item==selected)p.strokePoly(new float[]{left,y(L,.505f),right,y(L,.505f),right,y(L,.69f),left,y(L,.69f)},Accessories.COLOR[item],s*.085f);
             // Icon positions are neutral thumbnails, not extra previews on a hidden character.
-            float iy=y(L,.574f),ir=s*1.55f;
+            float iy=y(L,.574f),ir=s*(Accessories.count(slot)>3?1.25f:1.55f);
             if(slot==Accessories.HAT)iy+=ir*.25f;
             AccessoryArt.item(p,item,cx,iy,ir,c.clock);
             p.text(Accessories.NAME[item],cx,y(L,.646f),type(s*.56f),INK,Painter.CENTER,true);
@@ -92,7 +93,7 @@ final class WardrobeScreen extends Draw {
         float s=unit(L),x=L.w*.5f;
         p.text("Your achievements earned new accessories!",x,y(L,.14f),type(s*.67f),INK,Painter.CENTER,false);
         for(int i=0;i<Accessories.COUNT;i++) {
-            float cx=L.w*(.24f+(i%3)*.26f),cy=y(L,.25f+(i/3)*.125f);
+            int columns=4;float cx=L.w*(.20f+(i%columns)*.20f),cy=y(L,.25f+(i/columns)*.125f);
             boolean owned=c.wardrobe.owned[i];
             p.fillCircle(cx,cy,s*1.65f,owned?0xFF45425B:0xFF302D44);
             AccessoryArt.item(new OpacityPainter(p,owned?1:.22f),i,cx,cy,s*1.15f,c.clock);
@@ -109,14 +110,14 @@ final class WardrobeScreen extends Draw {
         if(f>=.82f && f<=.89f)return 2;
         if(reward || confirming)return 0;
         if(f>=.425f && f<=.48f)return 10+Math.min(3,(int)((x/L.w-.10f)/.20f));
-        if(f>=.505f && f<=.69f)return 20+Math.max(0,Math.min(2,(int)((x/L.w-.095f)/.27f)));
+        if(f>=.505f && f<=.69f)return 20+Math.max(0,Math.min(Accessories.count(slot)-1,(int)((x/L.w-.10f)/(.80f/Accessories.count(slot)))));
         return 0;
     }
     void choose(GameCore c,int action) {
         if(action==1) {back();return;}
         if(action>=10 && action<14) {
-            previewing=true;slot=action-10;int on=c.wardrobe.equipped(who,slot);selected=on>=0?on:slot*3;pulse=0;error="";
-        } else if(action>=20 && action<23) {previewing=true;selected=slot*3+action-20;pulse=0;error="";}
+            previewing=true;slot=action-10;int on=c.wardrobe.equipped(who,slot);selected=on>=0?on:Accessories.item(slot,0);pulse=0;error="";
+        } else if(action>=20 && action<20+Accessories.count(slot)) {previewing=true;selected=Accessories.item(slot,action-20);pulse=0;error="";}
         else if(action==2) {
             if(reward) {
                 int target=Collect.has(c.collected,c.caseIndex)?c.caseIndex:-1;

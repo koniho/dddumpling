@@ -108,7 +108,7 @@ final class BossCollect extends Draw {
         if (known) {
             if(mood<0) face(p, x, faceY, faceR, clock, fade);
             else Trinket.reactionFace(p,x,faceY,faceR,clock,fade,mood,look);
-            AccessoryArt.outfit(p,i,x,faceY,faceR,y-r*.86f,x,y+r*.76f,r,clock,fade,ninja);
+            AccessoryArt.outfit(p,i,x,faceY,faceR,y-r*.86f,x,y+r*.76f,r,clock,fade,ninja,boss==Boss.MUSHROOM?.58f:1f);
             if(ninja) Trinket.ninjaMask(p,x,faceY,r*.82f,fade);
         }
         if (!known) p.text("?",x,y+r*.25f,type(r*.65f),fadeBy(INK_DIM,fade),Painter.CENTER,true);

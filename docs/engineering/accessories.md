@@ -22,12 +22,22 @@ Equipped hats and boots replace the contextual explorer equipment in those slots
 | Sunglasses | Rosy Outlook | Collect 10 squishies |
 | Sunglasses | Sea Glass | Reach stage 10 |
 | Sunglasses | Stargazer | Survive 3 minutes |
-| Boots | Puddle Hoppers | Win the steamer game |
-| Boots | Cloud Steps | Survive 1 minute |
-| Boots | Comet Kicks | Complete All Bosses |
-| Mask | Petal Party | Clear 5 perfect stages |
-| Mask | Moonbeam | Reach stage 20 |
-| Mask | Confetti | Collect 25 squishies |
+| Boots | Cloud Clogs | Win the steamer game |
+| Boots | Star Steps | Survive 1 minute |
+| Boots | Party Heels | Complete All Bosses |
+| Mask | Ninja | Clear 5 perfect stages |
+| Mask | Duck | Reach stage 20 |
+| Mask | Samurai | Collect 25 squishies |
+| Mask | Sky Hero | Survive 2 minutes |
+
+The collection now has three hats, three sunglasses, three footwear styles and four
+masks. Footwear uses foam clogs, glitter shoes and rounded high heels. Fly Agaric
+uses a narrower footwear attachment span to keep the shoes under its stem. The
+Ninja cosmetic reuses the gameplay hood art but grants no power; Sky Hero is an
+original teal/violet design with a comet emblem. Mask artwork draws under glasses
+and hats. The first three mask save IDs are retained despite their new names.
+Category counts and variant lookup come from `Accessories`, rather than assuming
+three items per category.
 
 Other achievements keep their existing rewards/recognition; future collections can
 map additional accessories to them. They do not silently award duplicate copies.
