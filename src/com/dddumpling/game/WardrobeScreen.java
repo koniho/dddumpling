@@ -1,8 +1,8 @@
 package com.dddumpling.game;
 
-/** Shared portrait editor. Preview and transfer confirmation never mutate saved outfits. */
+/** Shared portrait editor. Preview never mutates saved outfits; each squishy can use any earned style. */
 final class WardrobeScreen extends Draw {
-    boolean open, reward, confirming, previewing=true;
+    boolean open, reward, previewing;
     int who, slot, selected;
     float pulse=2;
     String error="";
@@ -12,16 +12,16 @@ final class WardrobeScreen extends Draw {
         if(c.state!=GameCore.TITLE || !Collect.has(c.collected,target))return;
         c.wardrobe.refresh(c);who=target;slot=0;
         selected=Math.max(0,c.wardrobe.equipped(who,slot));
-        open=true;previewing=true;reward=confirming=false;error="";pulse=0;Pause.release(c);
+        open=true;previewing=false;reward=false;error="";pulse=0;Pause.release(c);
         if(c.sound!=null)c.sound.uiBloop();
     }
-    void close() {open=reward=confirming=false;error="";}
-    void back() {if(confirming)confirming=false;else close();}
+    void close() {open=reward=false;error="";}
+    void back() {close();}
     boolean update(GameCore c,float dt) {
         if(open && c.state!=GameCore.TITLE)close();
         if(!open && c.wardrobe.pending(c)>=0 && !c.updatePrompt.open && !c.updatePrompt.pending && !c.cloudUi.open && !c.preferences.externalBusy && !c.bossRetry.pending
                 && UpdatePrompt.suitable(c)) {
-            open=reward=true;confirming=false;pulse=0;
+            open=reward=true;pulse=0;
             if(c.sound!=null)c.sound.uiBloop();
             // One batch, even when many older achievements are backfilled together.
             c.wardrobe.acknowledge(c);
@@ -73,17 +73,17 @@ final class WardrobeScreen extends Draw {
             if(slot==Accessories.HAT)iy+=ir*.25f;
             AccessoryArt.item(p,item,cx,iy,ir,c.clock);
             p.text(Accessories.NAME[item],cx,y(L,.646f),type(s*.56f),INK,Painter.CENTER,true);
-            String status=!c.wardrobe.owned[item]?"LOCKED":c.wardrobe.wearer(item)==who?"ON YOU":c.wardrobe.wearer(item)>=0?"WORN":"OWNED";
+            String status=!c.wardrobe.owned[item]?"LOCKED":c.wardrobe.equipped(who,slot)==item?"ON YOU":"OWNED";
             p.text(status,cx,y(L,.675f),type(s*.48f),Accessories.COLOR[item],Painter.CENTER,true);
         }
-        int wearer=c.wardrobe.wearer(selected);
+        boolean wearing=c.wardrobe.equipped(who,slot)==selected;
         boolean owned=c.wardrobe.owned[selected];
-        p.text(confirming?"MOVE FROM "+Collect.NAME[wearer>=0?wearer:who]+"?":Accessories.GOAL[selected],x,y(L,.745f),type(s*.70f),INK,Painter.CENTER,true);
-        String detail=!owned?progress(c,selected):wearer>=0 && wearer!=who?"Worn by "+Collect.NAME[wearer]:"Yours to mix, match and move";
-        p.text(confirming?"Their other accessories stay put":detail,x,y(L,.78f),type(s*.60f),INK_DIM,Painter.CENTER,false);
-        String action=confirming?"MOVE HERE":!owned?"KEEP PLAYING TO UNLOCK":wearer==who?"REMOVE":wearer>=0?"TRANSFER":"WEAR IT";
+        p.text(Accessories.GOAL[selected],x,y(L,.745f),type(s*.70f),INK,Painter.CENTER,true);
+        String detail=!owned?progress(c,selected):wearing?"Saved to this squishy":previewing?"Preview - tap Wear It to save":"Wear on any squishy";
+        p.text(detail,x,y(L,.78f),type(s*.60f),INK_DIM,Painter.CENTER,false);
+        String action=!owned?"KEEP PLAYING TO UNLOCK":wearing?"REMOVE":"WEAR IT";
         button(p,L,.855f,action,owned?Accessories.COLOR[selected]:INK_DIM);
-        p.text(error.isEmpty()?(confirming?"CANCEL":"BACK TO STORY"):error,x,y(L,.94f),type(s*.68f),INK,Painter.CENTER,true);
+        p.text(error.isEmpty()?"BACK TO STORY":error,x,y(L,.94f),type(s*.68f),INK,Painter.CENTER,true);
     }
     private String progress(GameCore c,int item) {
         int a=Accessories.achievement(item);
@@ -108,7 +108,7 @@ final class WardrobeScreen extends Draw {
         if(x>L.w*.82f && f<.10f || f>.90f)return 1;
         if(x<L.w*.10f || x>L.w*.90f)return 0;
         if(f>=.82f && f<=.89f)return 2;
-        if(reward || confirming)return 0;
+        if(reward)return 0;
         if(f>=.425f && f<=.48f)return 10+Math.min(3,(int)((x/L.w-.10f)/.20f));
         if(f>=.505f && f<=.69f)return 20+Math.max(0,Math.min(Accessories.count(slot)-1,(int)((x/L.w-.10f)/(.80f/Accessories.count(slot)))));
         return 0;
@@ -116,7 +116,7 @@ final class WardrobeScreen extends Draw {
     void choose(GameCore c,int action) {
         if(action==1) {back();return;}
         if(action>=10 && action<14) {
-            previewing=true;slot=action-10;int on=c.wardrobe.equipped(who,slot);selected=on>=0?on:Accessories.item(slot,0);pulse=0;error="";
+            previewing=false;slot=action-10;int on=c.wardrobe.equipped(who,slot);selected=on>=0?on:Accessories.item(slot,0);pulse=0;error="";
         } else if(action>=20 && action<20+Accessories.count(slot)) {previewing=true;selected=Accessories.item(slot,action-20);pulse=0;error="";}
         else if(action==2) {
             if(reward) {
@@ -126,10 +126,9 @@ final class WardrobeScreen extends Draw {
                 return;
             }
             if(!c.wardrobe.owned[selected])return;
-            int wearer=c.wardrobe.wearer(selected);
-            if(wearer>=0 && wearer!=who && !confirming) {confirming=true;return;}
-            if(c.wardrobe.equip(c,selected,wearer==who?-1:who)) {
-                confirming=false;previewing=wearer!=who;pulse=0;error="";
+            boolean wearing=c.wardrobe.equipped(who,slot)==selected;
+            if(wearing?c.wardrobe.remove(c,who,slot):c.wardrobe.equip(c,selected,who)) {
+                previewing=false;pulse=0;error="";
                 c.ducks.react(who,.8f);if(who==Collect.ALLIGATOR_FRIEND)c.gator.react(.8f);
             } else error="Could not save. Try again.";
         }

@@ -6,9 +6,10 @@ The current art is a first pass for iterative review. Scene portraits and galler
 exports belong to follow-on #215.
 
 Open a collected squishy's story, then **Dress Up**. Selecting a card previews it
-without changing the save. Wear It equips it; Remove returns it to the wardrobe.
-Transfer asks before moving an item from another squishy. One globally owned copy
-of each style can have one wearer, with one item per slot. All four slots combine.
+without changing the save. **Wear It** and **Remove** save immediately for that squishy.
+An earned style can be worn by any number of squishies at the same time. Editing
+one outfit never removes items from another. There is one item per slot, and all
+four slots combine. Reopening Dress Up shows the saved outfit, not a new preview.
 No item affects gameplay. Ninja hides conflicting head/face accessories temporarily.
 Equipped hats and boots replace the contextual explorer equipment in those slots.
 
@@ -39,25 +40,30 @@ and hats. The first three mask save IDs are retained despite their new names.
 Category counts and variant lookup come from `Accessories`, rather than assuming
 three items per category.
 
-Other achievements keep their existing rewards/recognition; future collections can
-map additional accessories to them. They do not silently award duplicate copies.
+Other achievements keep their existing recognition; future collections can
+map additional accessory styles to them.
 `Accessories` owns IDs, labels, colors and this mapping. IDs must stay stable.
 
 ## Saving and merging
 
-`ProgressData` carries `accessory_owned_ID`, `accessory_seen_ID` and
-`accessory_wearer_ID` maxima. Old saves need no new format. Rewards backfill from
-local achievement progress, including cloud-restored progress, without sign-in.
-One title-screen celebration batches unlocks after tutorials and run rewards.
+`ProgressData` carries `accessory_owned_ID`, `accessory_seen_ID` and independent
+`accessory_outfit_PRIZE_SLOT` maxima. Rewards backfill from local achievement
+progress, including cloud-restored progress, without sign-in. One title-screen
+celebration batches unlocks after tutorials and run rewards.
 
-Wearer values encode a logical edit clock in the high bits and the existing,
-append-only collectible index plus one in the low 10 bits. Zero low bits means
-unequipped. Cloud merges take the maximum value. Equal clocks resolve by wearer
-index; two items claiming the same wearer/slot resolve by record then item index.
-Replacement retires every competing claim so removing the replacement cannot
-resurrect a previously hidden item. Writes persist before changing live outfits.
-Do not reorder collectible or accessory IDs. Add a migration if the owner range
-or inventory semantics change.
+Each squishy/slot record encodes a logical edit clock in the high bits and the
+append-only accessory index plus one in the low 10 bits. Zero low bits means an
+explicitly saved removal. Cloud merges take the maximum value per slot. Concurrent
+edits to different squishies or slots both survive; equal-clock edits to the same
+slot resolve by accessory index. A newer removal beats an older equipped snapshot.
+Writes persist before changing live outfits.
+
+Existing `accessory_wearer_ID` records from the exclusive-transfer prototype are
+migrated once per untouched slot, preserving the original visible outfit (including
+its conflict winner). New outfit records, including removals, always take priority
+over those legacy records, even if an old device uploads them later. Reset epochs
+cover both formats. Do not reorder collectible, slot or accessory IDs; add a
+migration before changing their identity or encoding.
 
 Score and tutorial resets preserve the wardrobe. Developer **Reset Outfits**
 clears wardrobe records behind a separate merge epoch; stale cloud outfits cannot
@@ -85,4 +91,4 @@ through this same hook. Add them to the attachment coverage test and review shee
 The small vector pieces use the shared Android/iOS drawing seam, with no blur,
 new bitmap caches, or per-frame achievement scans. Rewards reconcile only after a
 progress revision. `TestAccessories` covers rules, merge conflicts, reset and UI;
-`214-` preview frames show the editor, transfer, rewards, designs and body families.
+`214-` preview frames show the editor, shared outfits, rewards, designs and body families.

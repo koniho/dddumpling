@@ -1,59 +1,71 @@
 package com.dddumpling.game;
 
-/** One global copy of each style; logical assignment clocks resolve concurrent cloud edits. */
+/** Earn once, wear on any squishy. Each character's slots are independent saved registers. */
 final class Wardrobe {
-    // Collect indices are existing append-only prize IDs. Zero means no wearer.
-    static final int OWNER_BITS=10, OWNER_MASK=(1<<OWNER_BITS)-1;
+    static final int ITEM_BITS=10, ITEM_MASK=(1<<ITEM_BITS)-1;
+    private static final String[] SLOT_ID={"hat","glasses","boots","mask"};
     final boolean[] owned=new boolean[Accessories.COUNT];
-    final long[] assignment=new long[Accessories.COUNT];
+    final long[][] outfits=new long[Collect.COUNT][Accessories.SLOTS];
     long revision=-1;
     final WardrobeScreen screen=new WardrobeScreen();
+    static String outfitKey(int who,int slot) {
+        return "accessory_outfit_"+Collect.progressKey(who)+"_"+SLOT_ID[slot];
+    }
     void refresh(GameCore c) {
         if(revision==c.progress.revision)return;
         java.util.ArrayList<String> keys=new java.util.ArrayList<>();
+        java.util.ArrayList<Long> values=new java.util.ArrayList<>();
         for(int i=0;i<Accessories.COUNT;i++) {
             int a=Accessories.achievement(i);
             if(c.progress.maximum(Accessories.key("owned",i))==0
-                    && Achievements.steps(c.progress,a)>=Achievements.target(a))keys.add(Accessories.key("owned",i));
+                    && Achievements.steps(c.progress,a)>=Achievements.target(a)) {
+                keys.add(Accessories.key("owned",i));values.add(1L);
+            }
+        }
+        for(int who=0;who<Collect.COUNT;who++)for(int slot=0;slot<Accessories.SLOTS;slot++) {
+            long record=c.progress.maximum(outfitKey(who,slot));
+            if(record==0) {
+                record=legacyOutfit(c,who,slot);
+                if(record>0) {keys.add(outfitKey(who,slot));values.add(record);}
+            }
+            outfits[who][slot]=record;
         }
         if(!keys.isEmpty()) {
-            long[] values=new long[keys.size()];java.util.Arrays.fill(values,1);
-            c.progress.accessories(keys.toArray(new String[0]),values,false);
+            long[] out=new long[values.size()];for(int i=0;i<out.length;i++)out[i]=values.get(i);
+            c.progress.accessories(keys.toArray(new String[0]),out,false);
         }
-        for(int i=0;i<Accessories.COUNT;i++) {
-            owned[i]=c.progress.maximum(Accessories.key("owned",i))>0;
-            assignment[i]=c.progress.maximum(Accessories.key("wearer",i));
-        }
+        for(int i=0;i<Accessories.COUNT;i++)owned[i]=c.progress.maximum(Accessories.key("owned",i))>0;
         revision=c.progress.revision;
     }
-    int rawOwner(int item) {return (int)(assignment[item]&OWNER_MASK)-1;}
-    int equipped(int who,int slot) {
-        if(who<0 || who>=Collect.COUNT)return -1;
-        int best=-1;
-        for(int i=0;i<Accessories.COUNT;i++)if(Accessories.slot(i)==slot && owned[i] && rawOwner(i)==who
-                && (best<0 || assignment[i]>assignment[best] || assignment[i]==assignment[best] && i>best))best=i;
-        return best;
+    /** Import the old exclusive wearer once per slot; a saved removal also fences old cloud data. */
+    private long legacyOutfit(GameCore c,int who,int slot) {
+        long best=0;int item=-1;
+        for(int i=0;i<Accessories.COUNT;i++)if(Accessories.slot(i)==slot) {
+            long old=c.progress.maximum(Accessories.key("wearer",i));
+            if((old&ITEM_MASK)==who+1 && old>=best) {best=old;item=i;}
+        }
+        return item<0?0:(best&~(long)ITEM_MASK)|(item+1L);
     }
-    int wearer(int item) {
-        int who=rawOwner(item);
-        return equipped(who,Accessories.slot(item))==item?who:-1;
+    int equipped(int who,int slot) {
+        if(who<0 || who>=Collect.COUNT || slot<0 || slot>=Accessories.SLOTS)return -1;
+        int item=(int)(outfits[who][slot]&ITEM_MASK)-1;
+        return item>=0 && item<Accessories.COUNT && owned[item] && Accessories.slot(item)==slot?item:-1;
     }
     boolean equip(GameCore c,int item,int who) {
         refresh(c);
-        if(item<0 || item>=Accessories.COUNT || !owned[item] || who>=Collect.COUNT || who< -1
-                || who>=0 && !Collect.has(c.collected,who))return false;
-        long clock=0;
-        for(long v:assignment)clock=Math.max(clock,v>>>OWNER_BITS);
-        if(clock>=(Long.MAX_VALUE>>>OWNER_BITS)-1)return false;
-        long base=(clock+1)<<OWNER_BITS;
-        java.util.ArrayList<String> keys=new java.util.ArrayList<>();
-        java.util.ArrayList<Long> values=new java.util.ArrayList<>();
-        // Retire all competing claims, including hidden losers from cloud merges.
-        for(int i=0;i<Accessories.COUNT;i++)if(i==item || who>=0 && rawOwner(i)==who && Accessories.slot(i)==Accessories.slot(item)) {
-            keys.add(Accessories.key("wearer",i));values.add(base+(i==item?who+1:0));
-        }
-        long[] out=new long[values.size()];for(int i=0;i<out.length;i++)out[i]=values.get(i);
-        boolean ok=c.progress.accessories(keys.toArray(new String[0]),out,false);refresh(c);return ok;
+        if(item<0 || item>=Accessories.COUNT || !owned[item])return false;
+        return saveSlot(c,who,Accessories.slot(item),item);
+    }
+    boolean remove(GameCore c,int who,int slot) {
+        refresh(c);return saveSlot(c,who,slot,-1);
+    }
+    private boolean saveSlot(GameCore c,int who,int slot,int item) {
+        if(who<0 || who>=Collect.COUNT || !Collect.has(c.collected,who) || slot<0 || slot>=Accessories.SLOTS)return false;
+        long clock=outfits[who][slot]>>>ITEM_BITS;
+        if(clock>=(Long.MAX_VALUE>>>ITEM_BITS)-1)return false;
+        long record=((clock+1)<<ITEM_BITS)|(item+1L);
+        boolean ok=c.progress.accessories(new String[]{outfitKey(who,slot)},new long[]{record},false);
+        refresh(c);return ok;
     }
     int pending(GameCore c) {
         for(int i=0;i<Accessories.COUNT;i++)if(owned[i] && c.progress.maximum(Accessories.key("seen",i))==0)return i;

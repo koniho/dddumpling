@@ -12,7 +12,7 @@ final class TestAccessories extends Check {
         check("wardrobe grant persisted",c.progress.accessories(keys,values,false));c.wardrobe.refresh(c);
     }
     static void all(Layout L) {
-        catalog();rewards();transfers();merge();ui(L);developerCategories(L);
+        catalog();rewards();sharedOutfits();migration();merge();ui(L);developerCategories(L);
     }
     private static void developerCategories(Layout L) {
         if(!BuildFlags.DEVELOPER)return;
@@ -62,7 +62,7 @@ final class TestAccessories extends Check {
                 && Accessories.ID[10].equals("moon_mask") && Accessories.ID[11].equals("party_mask"));
         check("attachment geometry covers current body shapes",AccessoryAnchors.TOP.length==Collect.SHAPE_COUNT
             && AccessoryAnchors.FEET.length==Collect.SHAPE_COUNT);
-        check("persisted wearer ID has space",Collect.COUNT<Wardrobe.OWNER_MASK);
+        check("persisted style ID has space",Accessories.COUNT<Wardrobe.ITEM_MASK);
         for(int i=0;i<Collect.COUNT;i++)check("collectible attachment family "+i,Collect.bossKind(i)>=0
             || i>=Collect.DUCK_FIRST && i<Collect.DUCK_FIRST+Collect.DUCK_COUNT
             || Collect.SHAPE[i]>=0 && Collect.SHAPE[i]<AccessoryAnchors.TOP.length);
@@ -88,52 +88,78 @@ final class TestAccessories extends Check {
             check("unknown target stays undiscovered",!c.wardrobe.equip(c,0,10) && !Collect.has(c.collected,10));
         } catch(Exception e) {throw new AssertionError(e);}
     }
-    private static void transfers() {
+    private static void sharedOutfits() {
         GameCore c=ready();grant(c);Wardrobe w=c.wardrobe;
         check("equip owned accessory",w.equip(c,0,0) && w.equipped(0,0)==0);
         w.screen.show(c,1);w.screen.selected=0;w.screen.choose(c,2);
-        check("transfer asks before changing wearer",w.screen.confirming && w.wearer(0)==0);
-        w.screen.back();check("cancel preserves original outfit",w.wearer(0)==0 && !w.screen.confirming);
-        w.screen.choose(c,2);w.screen.choose(c,2);
-        check("confirmed transfer moves single copy",w.wearer(0)==1 && w.equipped(0,0)<0);
-        w.equip(c,1,1);check("replace returns old item to wardrobe",w.wearer(0)<0 && w.owned[0] && w.wearer(1)==1);
+        check("same accessory equips immediately on another squishy",w.equipped(0,0)==0 && w.equipped(1,0)==0);
+        w.equip(c,1,1);
+        check("replace only changes chosen squishy",w.equipped(0,0)==0 && w.equipped(1,0)==1 && w.owned[0]);
         w.equip(c,3,1);w.equip(c,6,1);w.equip(c,9,1);
         check("four compatible slots",w.equipped(1,0)==1 && w.equipped(1,1)==3 && w.equipped(1,2)==6 && w.equipped(1,3)==9);
-        w.equip(c,1,-1);check("remove preserves unlock",w.wearer(1)<0 && w.owned[1]);
+        w.remove(c,1,0);check("remove only affects one outfit",w.equipped(1,0)<0 && w.equipped(0,0)==0 && w.owned[1]);
         GameCore reload=new GameCore(c.store,216,true);
-        check("outfits survive restart",reload.wardrobe.equipped(1,1)==3);
+        check("each outfit and removal survive restart",reload.wardrobe.equipped(1,1)==3
+                && reload.wardrobe.equipped(1,0)<0 && reload.wardrobe.equipped(0,0)==0);
+        w.equip(c,0,1);w.screen.show(c,1);
+        check("editor opens actual saved outfit",w.screen.selected==0 && !w.screen.previewing);
+        w.screen.choose(c,21);w.screen.back();
+        check("discarded preview leaves both saved outfits",w.equipped(0,0)==0 && w.equipped(1,0)==0);
         TestProgress.Storage store=new TestProgress.Storage("broken");
         Progress broken=new Progress(store,true);store.broken=true;
         check("failed write does not create ownership",!broken.accessories(new String[]{Accessories.key("owned",0)},new long[]{1},false)
             && broken.maximum(Accessories.key("owned",0))==0);
     }
+    private static void migration() {
+        try {
+            Mem saved=new Mem();ProgressData old=new ProgressData();
+            for(int item:new int[]{0,1,6})old.maximum(Accessories.key("owned",item),1);
+            old.maximum(Accessories.key("wearer",0),(4L<<10)|1);
+            old.maximum(Accessories.key("wearer",1),(4L<<10)|1);
+            old.maximum(Accessories.key("wearer",6),(5L<<10)|2);
+            old.increment("old",Collect.progressKey(0),1);old.increment("old",Collect.progressKey(1),1);
+            saved.progress=old.encode();GameCore c=new GameCore(saved,214,true);
+            check("migration preserves legacy slot winner",c.wardrobe.equipped(0,0)==1);
+            check("migration preserves another squishy's footwear",c.wardrobe.equipped(1,Accessories.BOOTS)==6);
+            byte[] once=c.progress.snapshot();c.wardrobe.revision=-1;c.wardrobe.refresh(c);
+            check("legacy migration is idempotent",java.util.Arrays.equals(once,c.progress.snapshot()));
+            c.wardrobe.equip(c,1,1);c.wardrobe.remove(c,0,0);
+            old.maximum(Accessories.key("wearer",0),(999L<<10)|1);
+            c.progress.restore(old.encode(),c);c.wardrobe.refresh(c);
+            check("old cloud claims cannot undo new outfit edits",c.wardrobe.equipped(0,0)<0 && c.wardrobe.equipped(1,0)==1);
+            GameCore reload=new GameCore(saved,215,true);
+            check("migrated removal survives restart",reload.wardrobe.equipped(0,0)<0 && reload.wardrobe.equipped(1,0)==1);
+        } catch(Exception e) {throw new AssertionError(e);}
+    }
     private static void merge() {
         try {
             GameCore a=ready(),b=ready();grant(a);grant(b);
-            a.wardrobe.equip(a,0,0);b.wardrobe.equip(b,0,1);b.wardrobe.equip(b,1,0);
+            a.wardrobe.equip(a,0,0);b.wardrobe.equip(b,0,1);
+            a.wardrobe.equip(a,3,0);b.wardrobe.equip(b,6,0);
             ProgressData ab=ProgressData.decode(a.progress.snapshot()),ba=ProgressData.decode(b.progress.snapshot());
             byte[] aa=ab.encode(),bb=ba.encode();ab.merge(ProgressData.decode(bb));ba.merge(ProgressData.decode(aa));
-            check("concurrent edits converge",java.util.Arrays.equals(ab.encode(),ba.encode()));
+            check("concurrent outfit edits converge",java.util.Arrays.equals(ab.encode(),ba.encode()));
             a.progress.restore(ab.encode(),a);a.wardrobe.refresh(a);
-            check("one copy only after merge",a.wardrobe.wearer(0)==1 && a.wardrobe.wearer(1)==0);
-            // Equal logical clocks assigned different hats to the same squishy on two devices.
-            ProgressData conflict=ProgressData.decode(a.progress.snapshot());
-            conflict.maximum(Accessories.key("wearer",0),(10L<<Wardrobe.OWNER_BITS)+1);
-            conflict.maximum(Accessories.key("wearer",1),(10L<<Wardrobe.OWNER_BITS)+1);
-            a.progress.restore(conflict.encode(),a);a.wardrobe.refresh(a);
-            check("same slot conflicts choose stable winner",a.wardrobe.equipped(0,0)==1);
-            a.wardrobe.equip(a,2,0);a.wardrobe.equip(a,2,-1);
-            check("replaced merge losers never resurface",a.wardrobe.equipped(0,0)<0);
-            ProgressData fresh=ProgressData.decode(a.progress.snapshot());fresh.resetAccessories();
-            fresh.merge(conflict);conflict.merge(fresh);
-            check("developer reset fences old cloud outfits",java.util.Arrays.equals(fresh.encode(),conflict.encode())
-                && fresh.maximum(Accessories.key("owned",0))==0);
+            b.progress.restore(ba.encode(),b);b.wardrobe.refresh(b);
+            check("shared style survives cloud merge on both squishies",a.wardrobe.equipped(0,0)==0 && a.wardrobe.equipped(1,0)==0);
+            check("different slot edits both survive",a.wardrobe.equipped(0,1)==3 && a.wardrobe.equipped(0,2)==6);
+            a.wardrobe.equip(a,1,0);b.wardrobe.equip(b,2,0);
+            ab=ProgressData.decode(a.progress.snapshot());ba=ProgressData.decode(b.progress.snapshot());
+            aa=ab.encode();bb=ba.encode();ab.merge(ProgressData.decode(bb));ba.merge(ProgressData.decode(aa));
+            check("same-slot conflicts converge",java.util.Arrays.equals(ab.encode(),ba.encode()));
+            a.progress.restore(ab.encode(),a);a.wardrobe.refresh(a);
+            check("same-slot tie has stable style winner",a.wardrobe.equipped(0,0)==2 && a.wardrobe.equipped(1,0)==0);
+            a.wardrobe.remove(a,0,0);a.progress.restore(ba.encode(),a);a.wardrobe.refresh(a);
+            check("new removal beats older equipped snapshot",a.wardrobe.equipped(0,0)<0 && a.wardrobe.equipped(1,0)==0);
+            ProgressData fresh=ProgressData.decode(a.progress.snapshot());fresh.resetAccessories();fresh.merge(ba);ba.merge(fresh);
+            check("developer reset fences old cloud outfits",java.util.Arrays.equals(fresh.encode(),ba.encode())
+                && fresh.maximum(Accessories.key("owned",0))==0 && fresh.maximum(Wardrobe.outfitKey(1,0))==0);
         } catch(Exception e) {throw new AssertionError(e);}
     }
     private static void ui(Layout L) {
         GameCore c=ready();grant(c);WardrobeScreen ui=c.wardrobe.screen;
         ui.show(c,0);ui.selected=5;
-        check("preview does not equip",c.wardrobe.wearer(5)<0);
+        check("preview does not equip",c.wardrobe.equipped(0,Accessories.GLASSES)<0);
         ui.choose(c,10+Accessories.MASK);
         float fourthX=L.w*.80f;
         int hit=ui.hit(L,fourthX,WardrobeScreen.y(L,.57f));ui.choose(c,hit);
@@ -142,7 +168,8 @@ final class TestAccessories extends Check {
         ui.choose(c,2);check("fourth mask equips in shared mask slot",c.wardrobe.equipped(0,Accessories.MASK)==lastMask);
         int state=c.state;c.screenKey(0);check("keyboard cannot start through wardrobe",c.state==state && !c.starting());
         check("update notice waits for editor",!UpdatePrompt.suitable(c));
-        ui.confirming=true;Pause.back(c);check("back cancels transfer before closing",ui.open && !ui.confirming);
+        Pause.back(c);check("back closes wardrobe without confirmation",!ui.open);
+        ui.show(c,0);
         ui.touch(c,L,0,7,L.w*.5f,WardrobeScreen.y(L,.94f));
         ui.touch(c,L,1,7,L.w*.5f,WardrobeScreen.y(L,.94f));check("complete dismiss gesture consumed",!ui.open);
         c.state=GameCore.PLAY;ui.update(c,.1f);check("reward waits until title",!ui.open);

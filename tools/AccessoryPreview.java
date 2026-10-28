@@ -12,8 +12,8 @@ final class AccessoryPreview {
         c.settingsOpen=false;
         for(int i=0;i<3;i++) {
             c.wardrobe.screen.show(c,0);c.wardrobe.screen.selected=i==0?0:3;
-            if(i==1) {c.wardrobe.equip(c,3,1);c.wardrobe.screen.confirming=true;}
-            if(i==2) {c.wardrobe.screen.reward=true;c.wardrobe.screen.confirming=false;}
+            if(i==1) {c.wardrobe.equip(c,3,1);c.wardrobe.equip(c,3,0);c.wardrobe.screen.slot=Accessories.GLASSES;}
+            if(i==2) {c.wardrobe.screen.reward=true;}
             RasterPainter canvas=new RasterPainter(w,h,ss);Renderer.draw(canvas,c,L);
             Png.write(new File(dir,"214-wardrobe-"+i+".png"),canvas.resolve(),w,h);
         }
@@ -47,7 +47,7 @@ final class AccessoryPreview {
             }
             Png.write(new File(dir,"214-"+(slot==Accessories.MASK?"masks":"footwear")+".png"),review.resolve(),w,h);
         }
-        c.wardrobe.screen.show(c,0);c.wardrobe.screen.slot=Accessories.MASK;c.wardrobe.screen.selected=Accessories.item(Accessories.MASK,3);
+        c.wardrobe.screen.show(c,0);c.wardrobe.screen.slot=Accessories.MASK;c.wardrobe.screen.selected=Accessories.item(Accessories.MASK,3);c.wardrobe.screen.previewing=true;
         RasterPainter masks=new RasterPainter(w,h,ss);Renderer.draw(masks,c,L);
         Png.write(new File(dir,"214-mask-editor.png"),masks.resolve(),w,h);
         int[] cast={0,4,7,12,18,24,30,35,45,46,47,48,49,57,60,61};
