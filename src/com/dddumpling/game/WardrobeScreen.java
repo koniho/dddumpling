@@ -4,6 +4,7 @@ package com.dddumpling.game;
 final class WardrobeScreen extends Draw {
     boolean open, reward;
     int who, slot, selected;
+    final AccessoryPicking picking=new AccessoryPicking();
     float pulse=2;
     String error="";
     private boolean gesture;
@@ -87,8 +88,8 @@ final class WardrobeScreen extends Draw {
             AccessoryArt.item(p,dragItem,dragX,dragY-s,Storybook.heroRadius(L)*.64f,c.clock);
         }
     }
-    static float trayTop(Layout L) {return L.h*.47f+L.unit*6.65f;}
-    static float trayY(Layout L,float f) {return trayTop(L)+(L.h-L.padB-L.unit*.65f-trayTop(L))*f;}
+    static float trayTop(Layout L) {return Math.max(L.topSafe,L.unit*.7f);}
+    static float trayY(Layout L,float f) {return trayTop(L)+Math.min((L.h-L.padB-trayTop(L))*.27f,L.unit*12f)*f;}
     void hero(Painter p,GameCore c,float x,float y,float r) {
         float t=danceT-FLASH,env=t>=0&&t<DANCE?(float)Math.sin(Math.PI*t/DANCE):0;
         float beat=t*(dance==1?17:12),sx=(float)Math.sin(beat),hop=Math.abs((float)Math.sin(beat*.5f));
@@ -172,7 +173,7 @@ final class WardrobeScreen extends Draw {
     boolean touch(GameCore c,Layout L,int action,int id,float x,float yy) {
         if(!open && !gesture)return false;
         if(action==0) {
-            if(!reward && yy<trayTop(L))return false;
+            if(!reward && (yy<trayTop(L) || yy>trayY(L,1) || x<L.w*.06f || x>L.w*.94f))return false;
             gesture=true;pointer=id;pressed=hit(L,x,yy);downX=dragX=x;downY=dragY=yy;
             if(!reward && pressed>=20 && pressed<20+Accessories.count(slot)) {
                 int item=Accessories.item(slot,pressed-20);if(c.wardrobe.owned[item])dragItem=item;

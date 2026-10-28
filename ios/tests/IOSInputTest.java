@@ -1424,6 +1424,13 @@ public final class IOSInputTest extends Check {
         float cardY=WardrobeScreen.trayY(l,.5f);
         tap(game,l.w*.23f,cardY);
         check("native accessory tap saves immediately",c.wardrobe.equipped(0,Accessories.HAT)==0 && c.storyOpen());
+        c.wardrobe.screen.danceT=3;c.storyPulse=2;
+        c.wardrobe.screen.choose(c,10+Accessories.GLASSES);
+        c.wardrobe.screen.picking.capture(c,l);
+        float[] wornHat=c.wardrobe.screen.picking.targets[Accessories.HAT];
+        tap(game,(wornHat[0]+wornHat[4])*.5f,(wornHat[1]+wornHat[5])*.5f);
+        check("native worn hat opens its category without removing",c.wardrobe.screen.slot==Accessories.HAT
+                && c.wardrobe.equipped(0,Accessories.HAT)==0 && c.storyOpen());
         game.touch(one(0,4,l.w*.50f,cardY));
         game.touch(one(2,4,Storybook.heroX(c,l),Storybook.heroY(c,l)));
         game.touch(one(1,4,Storybook.heroX(c,l),Storybook.heroY(c,l)));

@@ -19,9 +19,10 @@ final class Storybook extends Draw {
     private static final float OPEN_TIME = 0.28f;
     static final float FLIGHT_TIME=.55f, GLOW_TIME=1.15f;
 
-    static float panelTop(Layout L) { return L.h*.47f-L.unit*6.2f; }
+    static float panelBottom(Layout L) {return L.h-L.padB-L.unit*.65f;}
+    static float panelTop(Layout L) {return panelBottom(L)-L.unit*12.4f;}
     static float heroRadius(Layout L) {
-        return Math.min(L.unit*2.1f,(panelTop(L)-L.topSafe)/4.7f);
+        return Math.min(L.w*.24f,(panelTop(L)-WardrobeScreen.trayY(L,1))/4.3f);
     }
     private static float flight(GameCore c) {
         float t=Math.min(1f,c.storyT/FLIGHT_TIME);
@@ -32,7 +33,7 @@ final class Storybook extends Draw {
     }
     static float heroY(GameCore c,Layout L) {
         float t=flight(c),from=Showcase.focusCy(L)+c.storyFromRow*Showcase.rowStep(L);
-        float to=panelTop(L)-heroRadius(L)*2.15f;
+        float to=(WardrobeScreen.trayY(L,1)+panelTop(L))*.5f;
         return from+(to-from)*t-heroRadius(L)*.4f*reaction(c);
     }
     private static float radius(GameCore c,Layout L) {
@@ -48,6 +49,8 @@ final class Storybook extends Draw {
     }
     static void tap(GameCore c,Layout L,float x,float y) {
         if(!c.storyOpen())return;
+        int category=c.wardrobe.screen.picking.hit(c,L,x,y);
+        if(category>=0) {c.wardrobe.screen.choose(c,10+category);return;}
         if(heroHit(c,L,x,y)) {c.storyPulse=0f;c.ducks.react(c.story,.7f);if(c.story==Collect.ALLIGATOR_FRIEND)c.gator.react(.7f);}
         else c.closeStory();
     }
@@ -64,7 +67,7 @@ final class Storybook extends Draw {
             p.strokeCircle(x,y,rr,Glyph.withAlpha(color,(int)(190*fade)),r*.065f);
         }
     }
-    private static void hero(Painter p,GameCore c,Layout L) {
+    static void hero(Painter p,GameCore c,Layout L) {
         float x=heroX(c,L),y=heroY(c,L),r=radius(c,L),pulse=reaction(c);
         glowRings(p,c.story,x,y,r,c.storyPulse);
         if(c.wardrobe.screen.danceT<WardrobeScreen.FLASH+WardrobeScreen.DANCE) {
@@ -88,7 +91,7 @@ final class Storybook extends Draw {
 
         float pw = Math.min(L.w * 0.92f, s * 21f) / 2f;
         float ph = s * 6.2f;
-        float cy = L.h * 0.47f;
+        float cy = (panelTop(L)+panelBottom(L))*.5f;
 
         p.fillRect(0, 0, L.w, L.h, Glyph.withAlpha(0xFF0D0A18, (int) (200 * open)));
 

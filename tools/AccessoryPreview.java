@@ -9,7 +9,7 @@ final class AccessoryPreview {
         RasterPainter settings=new RasterPainter(w,h,ss);settings.clear(Draw.BG);
         PlayerSettings.draw(settings,c,L);
         Png.write(new File(dir,"214-developer-accessories.png"),settings.resolve(),w,h);
-        c.settingsOpen=false;c.caseOpen=true;c.caseIndex=0;c.openStory();c.storyT=2;
+        c.settingsOpen=false;c.caseOpen=true;c.caseFade=1;c.caseIndex=0;c.openStory();c.storyT=2;
         for(int i=0;i<3;i++) {
             c.wardrobe.screen.show(c,0);c.wardrobe.screen.selected=i==0?0:3;
             if(i==1) {c.wardrobe.equip(c,3,1);c.wardrobe.equip(c,3,0);c.wardrobe.screen.slot=Accessories.GLASSES;}
@@ -65,6 +65,12 @@ final class AccessoryPreview {
         RasterPainter drag=new RasterPainter(w,h,ss);Renderer.draw(drag,c,L);
         Png.write(new File(dir,"214-inline-drag.png"),drag.resolve(),w,h);
         c.wardrobe.screen.cancelTouch();
+        for(int who:new int[]{Collect.DUCK_FIRST,Collect.bossPrize(Boss.MUSHROOM),Collect.ALLIGATOR_FRIEND,Collect.RAINBOW_CAT_FRIEND}) {
+            c.closeStory();c.collected=Collect.add(c.collected,who);c.caseIndex=who;c.openStory();c.storyT=2;c.storyPulse=2;
+            for(int category=0;category<Accessories.SLOTS;category++)c.wardrobe.equip(c,Accessories.item(category,0),who);
+            RasterPainter family=new RasterPainter(w,h,ss);Renderer.draw(family,c,L);
+            Png.write(new File(dir,"214-picker-family-"+who+".png"),family.resolve(),w,h);
+        }
         int[] cast={0,4,7,12,18,24,30,35,45,46,47,48,49,57,60,61};
         RasterPainter canvas=new RasterPainter(w,h,ss);canvas.clear(0xFF211D36);
         Painter p=new OpacityPainter(canvas,1) {

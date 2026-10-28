@@ -10,6 +10,9 @@ package com.dddumpling.game;
  */
 interface Painter {
     default int accessory(int who,int slot) {return -1;}
+    /** Optional attachment geometry for display-case picking; ordinary drawing skips it. */
+    default boolean accessoryTargets() {return false;}
+    default void accessoryTarget(int slot,float[] corners) {}
     default int skin() { return Skins.DEFAULT; }
     default DuckBodies ducks() { return null; }
     default GatorCompanion gator() { return null; }

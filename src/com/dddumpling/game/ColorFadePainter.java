@@ -4,6 +4,8 @@ package com.dddumpling.game;
 final class ColorFadePainter implements Painter, ArtStamp {
     public int skin() { return p.skin(); }
     public int accessory(int who,int slot) {return p.accessory(who,slot);}
+    public boolean accessoryTargets() {return p.accessoryTargets();}
+    public void accessoryTarget(int slot,float[] corners) {p.accessoryTarget(slot,corners);}
     public DuckBodies ducks() { return p.ducks(); }
     public GatorCompanion gator() { return p.gator(); }
     public ArtStamp stamps() { return opacity==1 && p.stamps()!=null?this:null; }

@@ -17,6 +17,8 @@
 @implementation DDPainterTests
 - (void)testCanvasStartsWithDefaultSkin {
   XCTAssertEqual([[DDIOSPainter new] skin], 0);
+  XCTAssertFalse([[DDIOSPainter new] accessoryTargets]);
+  [[DDIOSPainter new] accessoryTargetWithInt:0 withFloatArray:nil];
 }
 
 - (void)testCrystalLayersRestoreContextAndRespectOpacity {

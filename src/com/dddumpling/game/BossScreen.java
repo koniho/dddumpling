@@ -310,6 +310,8 @@ final class BossScreen extends Draw {
         public int skin() { return p.skin(); }
         final Painter p;final float ox,oy,s;
         public int accessory(int who,int slot) {return p.accessory(who,slot);}
+        public boolean accessoryTargets() {return p.accessoryTargets();}
+        public void accessoryTarget(int slot,float[] corners) {p.accessoryTarget(slot,points(corners));}
     public DuckBodies ducks(){return p.ducks();}
         public GatorCompanion gator(){return p.gator();}
         // Native stamps are intentionally disabled: they would bypass this fitted transform.

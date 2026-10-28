@@ -12,7 +12,38 @@ final class TestAccessories extends Check {
         check("wardrobe grant persisted",c.progress.accessories(keys,values,false));c.wardrobe.refresh(c);
     }
     static void all(Layout L) {
-        catalog();rewards();sharedOutfits();migration();merge();ui(L);developerCategories(L);flair(L);sounds();
+        catalog();rewards();sharedOutfits();migration();merge();ui(L);developerCategories(L);flair(L);sounds();picking(L);
+    }
+    private static void picking(Layout L) {
+        GameCore c=ready();grant(c);c.caseOpen=true;
+        int[] friends={0,7,Collect.DUCK_FIRST,Collect.bossPrize(Boss.MUSHROOM),Collect.ALLIGATOR_FRIEND,Collect.RAINBOW_CAT_FRIEND,Collect.bossPrize(Boss.OCTOPUS)};
+        for(int skin=0;skin<Skins.COUNT;skin++)for(int who:friends) {
+            c.collected=Collect.add(c.collected,who);c.closeStory();c.caseIndex=who;c.openStory();c.storyT=2;c.storyPulse=2;c.preferences.skin=skin;
+            WardrobeScreen ui=c.wardrobe.screen;
+            for(int slot=0;slot<Accessories.SLOTS;slot++) {
+                int item=Accessories.item(slot,0);c.wardrobe.equip(c,item,who);
+                for(float age:new float[]{3f,.8f}) {
+                    ui.danceT=age;ui.dance=2;ui.picking.capture(c,L);
+                    float[] q=ui.picking.targets[slot];
+                    check("attachment target exists for family/skin",q!=null);
+                    float u=slot==Accessories.FLAIR?.95f:.5f,v=slot==Accessories.MASK?.84f:.5f;
+                    float x=q[0]+(q[2]-q[0])*u+(q[6]-q[0])*v,y=q[1]+(q[3]-q[1])*u+(q[7]-q[1])*v;
+                    byte[] before=c.progress.snapshot();Storybook.tap(c,L,x,y);
+                    check("worn item selects its category through dance",ui.slot==slot && ui.selected==item && c.storyOpen());
+                    check("worn item tap does not unequip or edit save",java.util.Arrays.equals(before,c.progress.snapshot()));
+                }
+                c.wardrobe.remove(c,who,slot);
+            }
+        }
+        c.closeStory();c.caseIndex=0;c.openStory();c.storyT=2;c.storyPulse=2;
+        c.wardrobe.equip(c,Accessories.item(Accessories.MASK,0),0);
+        c.wardrobe.equip(c,Accessories.item(Accessories.GLASSES,0),0);
+        WardrobeScreen ui=c.wardrobe.screen;ui.picking.capture(c,L);
+        float[] glasses=ui.picking.targets[Accessories.GLASSES],mask=ui.picking.targets[Accessories.MASK];
+        Storybook.tap(c,L,(glasses[0]+glasses[4])*.5f,(glasses[1]+glasses[5])*.5f);
+        check("shades win overlapping face target",ui.slot==Accessories.GLASSES);
+        Storybook.tap(c,L,(mask[0]+mask[4])*.5f,mask[1]+(mask[5]-mask[1])*.87f);
+        check("lower mask remains selectable under shades",ui.slot==Accessories.MASK);
     }
     private static void sounds() {
         GameCore c=ready();grant(c);Ear ear=new Ear();c.sound=ear;
@@ -253,7 +284,7 @@ final class TestAccessories extends Check {
             SettingsUi settings=new SettingsUi();settings.compute(small,SettingsUi.PROGRESS);
             check("developer accessory chips stay in panel",settings.accessoryY+settings.testH<settings.panelB);
             check("editor buttons fit portrait",WardrobeScreen.y(small,.89f)<small.h-small.padB);
-            check("inline tray stays below story and above inset",WardrobeScreen.trayTop(small)>small.h*.47f+small.unit*6.2f && WardrobeScreen.trayY(small,1)<small.h-small.padB);
+            check("picker at top and story anchored at bottom",WardrobeScreen.trayTop(small)>=small.topSafe && WardrobeScreen.trayY(small,1)<Storybook.panelTop(small) && Storybook.panelBottom(small)<small.h-small.padB);
         }
     }
 }

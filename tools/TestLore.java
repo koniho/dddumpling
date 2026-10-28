@@ -241,7 +241,7 @@ final class TestLore extends Check {
             Layout p=new Layout();p.compute(size[0],size[1],0,size[1]*.06f,0,size[1]*.04f);
             c.storyT=2f;c.storyPulse=.25f;
             float r=Storybook.heroRadius(p),y=Storybook.heroY(c,p);
-            fits &= r>0 && y-r*2.1f>=p.topSafe && y+r*2.1f<Storybook.panelTop(p);
+            fits &= r>0 && y-r*1.65f>=WardrobeScreen.trayY(p,1) && y+r*1.65f<Storybook.panelTop(p);
         }
         check("featured dumpling and rings fit above popup on portrait screens",fits);
     }

@@ -12,8 +12,11 @@ final class AccessoryArt extends Draw {
         if(r<=0 || fade<=0)return;
         Painter out=fade==1?p:new OpacityPainter(p,fade);
         int flair=p.accessory(who,Accessories.FLAIR);
-        if(flair>=0 && flair<Accessories.COUNT && Accessories.slot(flair)==Accessories.FLAIR)
-            AccessoryFlair.draw(out,Accessories.variant(flair),feetX,(topY+feetY)*.5f,r,clock);
+        if(flair>=0 && flair<Accessories.COUNT && Accessories.slot(flair)==Accessories.FLAIR) {
+            float cy=(topY+feetY)*.5f;
+            target(out,Accessories.FLAIR,feetX-r*1.65f,cy-r*1.40f,feetX+r*1.65f,cy+r*1.40f);
+            AccessoryFlair.draw(out,Accessories.variant(flair),feetX,cy,r,clock);
+        }
         for(int slot:DRAW_ORDER) {
             int item=p.accessory(who,slot);
             // Gameplay hood owns the head/face; the saved outfit is never changed.
@@ -27,10 +30,17 @@ final class AccessoryArt extends Draw {
             }
         }
     }
+    private static void target(Painter p,int slot,float l,float t,float r,float b) {
+        if(p.accessoryTargets())p.accessoryTarget(slot,new float[]{l,t,r,t,r,b,l,b});
+    }
     static void item(Painter p,int item,float x,float y,float r,float clock) {
         if(item<0 || item>=Accessories.COUNT)return;
         int slot=Accessories.slot(item),v=Accessories.variant(item),c=Accessories.COLOR[item];
         int shade=Glyph.mix(c,0xFF3E3459,.36f),hi=Glyph.mix(c,0xFFFFFFFF,.5f);
+        if(slot==Accessories.HAT)target(p,slot,x-r*1.3f,y-r*1.25f,x+r*1.3f,y+r*.35f);
+        else if(slot==Accessories.GLASSES)target(p,slot,x-r,y-r*.46f,x+r,y+r*.46f);
+        else if(slot==Accessories.BOOTS)target(p,slot,x-r*1.05f,y-r*.40f,x+r*1.05f,y+r*.44f);
+        else if(slot==Accessories.MASK)target(p,slot,x-r*1.25f,y-r*1.15f,x+r*1.25f,y+r*1.15f);
         if(slot==Accessories.FLAIR) {AccessoryFlair.draw(p,v,x,y,r*.70f,clock);return;}
         if(slot==Accessories.HAT) {
             if(v==2) {

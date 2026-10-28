@@ -5,7 +5,10 @@ achievement, earn it, then customize a favorite companion in the display case.
 The current art is a first pass for iterative review. Scene portraits and gallery
 exports belong to follow-on #215.
 
-Open a collected squishy's story to see the accessory tray directly below it.
+Open a collected squishy to see the accessory picker at the top, a large featured
+squishy in the center, and its story at the bottom. Tap a worn accessory directly
+on the squishy to select that category; this does not remove it. Picking uses the
+renderer’s attachment geometry and follows the dance transforms across body families.
 Tap an earned accessory or drag it onto the featured squishy to equip and save
 immediately. Tap an already equipped card to remove it. Dragging an equipped item
 onto the squishy keeps it on. Dropping elsewhere or cancelling a drag leaves the outfit unchanged.
@@ -97,7 +100,11 @@ head positions directly. No lookup uses the companion's home location.
 When adding a body shape, extend `AccessoryAnchors` and inspect all slots.
 When adding a custom character renderer, call `AccessoryArt.outfit` with its live
 anchors, inside its facing/scale transform, and forward wardrobe lookups through
-any new Painter wrapper. Unknown silhouettes must not display accessories.
+any new Painter wrapper. Forward optional `accessoryTargets`/`accessoryTarget`
+geometry through wrappers too, transforming its corners with the artwork.
+`AccessoryPicking` traces those regions only on taps; ordinary rendering skips
+them. New categories need hit-region bounds and an overlap priority. Unknown
+silhouettes must not display accessories.
 Turtles are not currently in `Collect`; their eventual renderer must supply anchors
 through this same hook. Add them to the attachment coverage test and review sheet.
 
