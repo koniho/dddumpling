@@ -134,13 +134,13 @@ final class WardrobeScreen extends Draw {
     private void equip(GameCore c,int item) {
         selected=item;error="";
         if(!c.wardrobe.owned[item] || c.wardrobe.equipped(who,slot)==item)return;
-        if(c.wardrobe.equip(c,item,who))celebrate(c);
+        if(c.wardrobe.equip(c,item,who))celebrate(c,false);
         else error="Could not save. Try again.";
     }
-    private void celebrate(GameCore c) {
+    private void celebrate(GameCore c,boolean removing) {
         dance=(dance+1+celebrations.nextInt(3))%4;danceT=0;pulse=0;
         c.ducks.react(who,.8f);if(who==Collect.ALLIGATOR_FRIEND)c.gator.react(.8f);
-        if(c.sound!=null)c.sound.star(1);
+        if(c.sound!=null)c.sound.accessoryChange(slot,removing);
     }
     void choose(GameCore c,int action) {
         if(action==1) {back(c);return;}
@@ -157,7 +157,7 @@ final class WardrobeScreen extends Draw {
         } else if(action>=20 && action<20+Accessories.count(slot)) {
             equip(c,Accessories.item(slot,action-20));return;
         } else if(action==2 && c.wardrobe.equipped(who,slot)>=0) {
-            if(c.wardrobe.remove(c,who,slot))celebrate(c);else error="Could not save. Try again.";
+            if(c.wardrobe.remove(c,who,slot))celebrate(c,true);else error="Could not save. Try again.";
             return;
         }
         if(action!=0 && c.sound!=null)c.sound.uiBloop();

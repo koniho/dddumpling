@@ -4083,6 +4083,7 @@ final class Preview {
                 for(int i=0;i<pcm.length;i++)pcm[i]=(short)(pcm[i]*Sfx.NINJA_COMBO_GAIN);
             }
             String name=id<names.length?names[id]:id==Sfx.bossTauntId(Boss.RAINBOW_CAT)?"taunt-cat"
+                    :id>=Sfx.ACCESSORY_0?"accessory-"+((id-Sfx.ACCESSORY_0)/2)+((id-Sfx.ACCESSORY_0)%2==0?"-on":"-off")
                     :id==Sfx.CAT_LASER?"cat-laser":id>=Sfx.CAT_FLURRY_0?"cat-flurry-"+(id-Sfx.CAT_FLURRY_0)
                     :id>=Sfx.CAT_MEOW_0?"cat-meow-"+(id-Sfx.CAT_MEOW_0):"effect-"+id;
             Wav.write(new File(sfxDir, name + ".wav"), pcm, Sfx.RATE);

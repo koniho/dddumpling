@@ -178,6 +178,14 @@ public class TestAudioLifecycle {
   check("every prompt laser plays without meow debounce",effectTrack(a,Sfx.CAT_LASER).plays==12);
   check("soft laser uses effects volume",Math.abs(effectTrack(a,Sfx.CAT_LASER).volume-.3f*Sfx.CAT_LASER_GAIN)<.0001f);
   a.release();
+  a=fresh();a.volumes(.4f,.3f);
+  for(int slot=0;slot<Accessories.SLOTS;slot++)for(boolean off:new boolean[]{false,true}) {
+    a.accessoryChange(slot,off);AudioTrack outfit=effectTrack(a,Sfx.accessoryId(slot,off));
+    check("wardrobe cue routes at effects gain",outfit.plays==1 && Math.abs(outfit.volume-.3f*Sfx.ACCESSORY_GAIN)<.0001f);
+    a.accessoryChange(slot,off);check("wardrobe cue has no cat debounce",outfit.plays==2);
+  }
+  a.volumes(.4f,0);a.accessoryChange(Accessories.FLAIR,false);
+  check("muted flair and cheer stay silent",effectTrack(a,Sfx.accessoryId(Accessories.FLAIR,false)).volume==0);a.release();
   a=fresh();a.volumes(0,0);effect(a,0);a.selectMusic(0);ready(a);
   check("mute respected by recreated effects and music",effectTrack(a,0).volume==0 && bgm(a).volume==0);a.release();
   a=fresh();AudioTrack.failPlay=1;a.selectMusic(0);ready(a);check("music play failure retries",bgm(a).playing && AudioTrack.live==1);

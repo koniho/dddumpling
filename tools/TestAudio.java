@@ -447,6 +447,22 @@ final class TestAudio extends Check {
             check("combat sounds stop immediately on exit " + exit,
                     ear.bossCharge == 0 && ear.rocketThrust == 0);
         }
+        group("Accessory foley and squishy cheers");
+        java.util.HashSet<Integer> hashes=new java.util.HashSet<>();
+        for(int slot=0;slot<Accessories.SLOTS;slot++)for(boolean off:new boolean[]{false,true}) {
+            int id=Sfx.accessoryId(slot,off);short[] pcm=Sfx.build(id);
+            check("accessory effect is not a cat voice",!Sfx.isCatMeow(id));
+            check("each don/doff cue is distinct",hashes.add(java.util.Arrays.hashCode(pcm)));
+            check("accessory cue has short soft edges",pcm[0]==0 && pcm[pcm.length-1]==0 && pcm.length<Sfx.RATE);
+            long first=0,cheer=0;
+            for(int i=0;i<pcm.length;i++) {
+                if(i<Sfx.RATE*.32f)first+=Math.abs(pcm[i]);
+                if(i>=Sfx.RATE*AccessorySound.CHEER_START)cheer+=Math.abs(pcm[i]);
+            }
+            check("foley and delayed cheer both audible",first>100000 && cheer>100000);
+            check("cheer follows flash at dance onset",AccessorySound.CHEER_START==WardrobeScreen.FLASH);
+        }
+
         versusTitleFade(L);
         versusMusic(L);
         group("Cat chromatic descent and whole-tone flurry");

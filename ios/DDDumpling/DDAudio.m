@@ -361,6 +361,9 @@ static const jint DDStyleSwing = DDMusic_SWING_STYLE;
 }
 - (void)clearWord { [self playEffect:DDSfx_CLEAR rate:1 gain:1]; }
 - (void)shuffleBlip { [self playEffect:DDSfx_SHUFFLE_BLIP rate:1 gain:.3f]; }
+- (void)accessoryChangeWithInt:(jint)slot withBoolean:(jboolean)removing {
+  [self playEffect:[DDSfx accessoryIdWithInt:slot withBoolean:removing] rate:1 gain:DDSfx_ACCESSORY_GAIN];
+}
 - (void)uiBloop { [self playEffect:DDSfx_UI_BLOOP rate:1 gain:.22f]; }
 - (void)scoreResetConfirm { [self playEffect:DDSfx_SCORE_RESET_CONFIRM rate:1 gain:.7f]; }
 - (void)scoreResetBrushWithInt:(jint)stroke {

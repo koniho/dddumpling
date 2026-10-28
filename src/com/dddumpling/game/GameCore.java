@@ -278,6 +278,7 @@ final class GameCore {
         void slimeDragBoip();
         void landShuffle();
         void uiBloop();
+        default void accessoryChange(int slot,boolean removing) {}
         /** A high-score reset was accepted and the board is about to be cleaned. */
         default void scoreResetConfirm() {}
         /** One of the three left-to-right blackboard strokes. */

@@ -160,6 +160,8 @@ abstract class Check {
         final int[] slimeSquishCounts=new int[6];
         float bossCharge, maxBossCharge;
         float lastDivideBoingWeight = -1f;
+        int accessoryChanges,lastAccessorySlot=-1;boolean accessoryRemoved;
+        public void accessoryChange(int slot,boolean removing) {accessoryChanges++;lastAccessorySlot=slot;accessoryRemoved=removing;}
         int collects;
         /** Stars taken, and the count the last one announced. */
         int stars;

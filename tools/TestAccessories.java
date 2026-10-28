@@ -12,7 +12,20 @@ final class TestAccessories extends Check {
         check("wardrobe grant persisted",c.progress.accessories(keys,values,false));c.wardrobe.refresh(c);
     }
     static void all(Layout L) {
-        catalog();rewards();sharedOutfits();migration();merge();ui(L);developerCategories(L);flair(L);
+        catalog();rewards();sharedOutfits();migration();merge();ui(L);developerCategories(L);flair(L);sounds();
+    }
+    private static void sounds() {
+        GameCore c=ready();grant(c);Ear ear=new Ear();c.sound=ear;
+        WardrobeScreen ui=c.wardrobe.screen;ui.show(c,0);
+        for(int slot=0;slot<Accessories.SLOTS;slot++) {
+            ui.choose(c,10+slot);int before=ear.accessoryChanges;
+            ui.choose(c,20);
+            check("each slot has its own donning cue",ear.accessoryChanges==before+1 && ear.lastAccessorySlot==slot && !ear.accessoryRemoved);
+            ui.choose(c,20);check("already worn card is silent",ear.accessoryChanges==before+1);
+            ui.choose(c,2);check("removal has a doffing cue",ear.accessoryChanges==before+2 && ear.accessoryRemoved);
+            ui.choose(c,2);check("empty removal is silent",ear.accessoryChanges==before+2);
+        }
+        check("accessory audio replaces generic star cue",ear.stars==0);
     }
     private static void developerCategories(Layout L) {
         if(!BuildFlags.DEVELOPER)return;

@@ -12,6 +12,11 @@ Locked cards show their achievement goal without changing the outfit. **Remove**
 clears the current category immediately. No extra Dress Up screen or Wear It step.
 Each change plays the shared Star Path sparkle/star-outline burst, followed by a
 random nonrepeating dance; cosmetic randomness is separate from gameplay RNG.
+Each category has distinct synthesized don/doff foley: fabric swishes, glasses clicks,
+paired soft steps, elastic mask pops, and magical Flair twinkles. Each clip includes
+a short squishy cheer at the dance onset, so no delayed audio callback can outlive
+the UI. Android and iOS share PCM and gain through `Sound.accessoryChange`; all
+cues follow effects volume. Repeated taps on the worn style and cancelled drops stay silent.
 An earned style can be worn by any number of squishies at the same time. Editing
 one outfit never removes items from another. One item per slot; all five combine.
 No item affects gameplay. Ninja hides conflicting head/face accessories temporarily.

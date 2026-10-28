@@ -43,14 +43,16 @@ final class Sfx {
     static final int LEGACY_KEYS=6;
     static final int EXTRA_KEYS=EXTRA_BOSS_VOICES+Math.max(0,Boss.COUNT-LEGACY_BOSS_VOICES);
     static final int CAT_MEOW_0=EXTRA_KEYS+Math.max(0,Glyph.COUNT-LEGACY_KEYS);
-    static final int CAT_LASER=CAT_MEOW_0+CatMeowRecording.COUNT, CAT_FLURRY_0=CAT_LASER+1, COUNT=CAT_FLURRY_0+12;
+    static final int CAT_LASER=CAT_MEOW_0+CatMeowRecording.COUNT, CAT_FLURRY_0=CAT_LASER+1, ACCESSORY_0=CAT_FLURRY_0+12, COUNT=ACCESSORY_0+Accessories.SLOTS*2;
+    static final float ACCESSORY_GAIN=.62f;
+    static int accessoryId(int slot,boolean removing) {return ACCESSORY_0+Math.max(0,Math.min(Accessories.SLOTS-1,slot))*2+(removing?1:0);}
     static final float CAT_FLURRY_GAIN=.48f;
     static int catFlurryId(int note,int count) {return CAT_FLURRY_0+Math.max(0,Math.min(11,12-count+note));}
     static float catFlurryPitch(int index) {return (float)Math.pow(2,(-12+index*2)/12.0);}
     static final float CAT_LASER_GAIN=.55f;
     static final float CAT_MEOW_GAIN=.90f;
     static int catMeowId(int variant) {return CAT_MEOW_0+Math.max(0,Math.min(CatMeowRecording.COUNT-1,variant));}
-    static boolean isCatMeow(int id) {return id>=CAT_MEOW_0 && id<CAT_LASER || id>=CAT_FLURRY_0 && id<COUNT || id==bossTauntId(Boss.RAINBOW_CAT);}
+    static boolean isCatMeow(int id) {return id>=CAT_MEOW_0 && id<CAT_LASER || id>=CAT_FLURRY_0 && id<ACCESSORY_0 || id==bossTauntId(Boss.RAINBOW_CAT);}
     static int squishId(int glyph) {return glyph<LEGACY_KEYS?SQUISH_0+glyph:EXTRA_KEYS+glyph-LEGACY_KEYS;}
     static int count() {return COUNT;}
     static int bossTauntId(int boss) {return boss<LEGACY_BOSS_VOICES?BOSS_TAUNT_0+boss:EXTRA_BOSS_VOICES+boss-LEGACY_BOSS_VOICES;}
@@ -100,9 +102,10 @@ final class Sfx {
     }
 
     private static short[] renderEffect(int id) {
+        if(id>=ACCESSORY_0)return render(AccessorySound.render((id-ACCESSORY_0)/2,(id-ACCESSORY_0)%2==1));
         if(id>=CAT_MEOW_0 && id<CAT_LASER)return CatMeowRecording.build(id-CAT_MEOW_0);
         if(id==bossTauntId(Boss.RAINBOW_CAT))return catTaunt();
-        if(id>=CAT_FLURRY_0 && id<COUNT)return render(pitchedMeow(6,catFlurryPitch(id-CAT_FLURRY_0)));
+        if(id>=CAT_FLURRY_0 && id<ACCESSORY_0)return render(pitchedMeow(6,catFlurryPitch(id-CAT_FLURRY_0)));
         if(id==CAT_LASER)return catLaser();
         if(id==SLIME_VULNERABLE)return slimeVulnerable();
         if(id==SLIME_DRAG_BOIP)return slimeDragBoip();

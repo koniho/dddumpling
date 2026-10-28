@@ -375,6 +375,7 @@ final class Audio implements GameCore.Sound {
     }
 
     @Override public void shuffleBlip() { play(Sfx.SHUFFLE_BLIP, 1f, 0.3f); }
+    @Override public void accessoryChange(int slot,boolean removing) { play(Sfx.accessoryId(slot,removing),1f,Sfx.ACCESSORY_GAIN); }
     @Override public void uiBloop() { play(Sfx.UI_BLOOP, 1f, 0.22f); }
     @Override public void scoreResetConfirm() { play(Sfx.SCORE_RESET_CONFIRM,1f,.7f); }
     @Override public void scoreResetBrush(int stroke) {
