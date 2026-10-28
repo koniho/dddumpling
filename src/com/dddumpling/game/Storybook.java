@@ -49,6 +49,9 @@ final class Storybook extends Draw {
     }
     static void tap(GameCore c,Layout L,float x,float y) {
         if(!c.storyOpen())return;
+        if(x>=L.w*.06f && x<=L.w*.94f && y>=panelTop(L)+L.unit*4.5f && y<=panelBottom(L)) {
+            c.wardrobe.screen.replayNarration(c);return;
+        }
         int category=c.wardrobe.screen.picking.hit(c,L,x,y);
         if(category>=0) {c.wardrobe.screen.choose(c,10+category);return;}
         if(heroHit(c,L,x,y)) {c.storyPulse=0f;c.ducks.react(c.story,.7f);if(c.story==Collect.ALLIGATOR_FRIEND)c.gator.react(.7f);}

@@ -2,7 +2,7 @@ package com.dddumpling.game;
 
 /** Inline display-case wardrobe; earned styles equip immediately and save per squishy. */
 final class WardrobeScreen extends Draw {
-    boolean open, reward;
+    boolean open, reward, narrationPaused;
     int who, slot, selected;
     final AccessoryPicking picking=new AccessoryPicking();
     float pulse=2;
@@ -18,9 +18,9 @@ final class WardrobeScreen extends Draw {
         if(c.state!=GameCore.TITLE || !Collect.has(c.collected,target))return;
         c.wardrobe.refresh(c);who=target;slot=0;
         selected=Math.max(0,c.wardrobe.equipped(who,slot));
-        open=true;reward=false;error="";pulse=0;danceT=3;cancelTouch();
+        open=true;reward=false;narrationPaused=false;error="";pulse=0;danceT=3;cancelTouch();
     }
-    void close() {open=reward=false;error="";danceT=3;cancelTouch();}
+    void close() {open=reward=narrationPaused=false;error="";danceT=3;cancelTouch();}
     void back(GameCore c) {if(reward)close();else c.closeStory();}
     boolean update(GameCore c,float dt) {
         if(open && c.state!=GameCore.TITLE)close();
@@ -130,7 +130,16 @@ final class WardrobeScreen extends Draw {
         if(f>=.30f && f<=.72f)return 20+Math.max(0,Math.min(Accessories.count(slot)-1,(int)((x/L.w-.10f)/(.80f/Accessories.count(slot)))));
         return 0;
     }
+    void pauseNarration(GameCore c) {
+        if(narrationPaused || !c.storyOpen())return;
+        narrationPaused=true;if(c.sound!=null)c.sound.hush();
+    }
+    void replayNarration(GameCore c) {
+        if(!c.storyOpen())return;
+        narrationPaused=false;if(c.sound!=null)c.sound.narrate(c.story);
+    }
     private void equip(GameCore c,int item) {
+        pauseNarration(c);
         selected=item;error="";
         if(!c.wardrobe.owned[item] || c.wardrobe.equipped(who,slot)==item)return;
         if(c.wardrobe.equip(c,item,who))celebrate(c,false);
@@ -155,6 +164,7 @@ final class WardrobeScreen extends Draw {
             }
             return;
         }
+        if(action>=10 && action<10+Accessories.SLOTS || action>=20 && action<20+Accessories.count(slot))pauseNarration(c);
         if(action>=10 && action<10+Accessories.SLOTS) {
             slot=action-10;int on=c.wardrobe.equipped(who,slot);selected=on>=0?on:Accessories.item(slot,0);error="";
         } else if(action>=20 && action<20+Accessories.count(slot)) {
@@ -171,6 +181,7 @@ final class WardrobeScreen extends Draw {
             if(!reward && (yy<trayTop(L) || yy>trayY(L,trayEnd(c)) || x<L.w*.06f || x>L.w*.94f))return false;
             gesture=true;pointer=id;pressed=hit(L,x,yy);downX=dragX=x;downY=dragY=yy;
             if(!reward && pressed>=20 && pressed<20+Accessories.count(slot)) {
+                pauseNarration(c);
                 int item=Accessories.item(slot,pressed-20);if(c.wardrobe.owned[item])dragItem=item;
             }
         } else if(!gesture)return reward;

@@ -12,10 +12,36 @@ final class TestAccessories extends Check {
         check("wardrobe grant persisted",c.progress.accessories(keys,values,false));c.wardrobe.refresh(c);
     }
     static void all(Layout L) {
-        catalog();rewards();sharedOutfits();migration();merge();ui(L);developerCategories(L);flair(L);sounds();picking(L);detail();glitter(L);
+        catalog();rewards();sharedOutfits();migration();merge();ui(L);developerCategories(L);flair(L);sounds();picking(L);detail();glitter(L);googly();narration(L);
+    }
+    private static void narration(Layout L) {
+        GameCore c=ready();grant(c);Ear ear=new Ear();c.sound=ear;c.caseOpen=true;c.caseIndex=0;c.openStory();c.storyT=2;
+        WardrobeScreen ui=c.wardrobe.screen;
+        check("story starts reading",ear.narrations==1);
+        ui.choose(c,20);
+        check("accessory selection pauses reading",ear.hushes==1 && ui.narrationPaused && c.storyOpen());
+        ui.choose(c,21);check("browsing stays quiet",ear.hushes==1 && ear.narrations==1);
+        int worn=c.wardrobe.equipped(0,Accessories.HAT);
+        Storybook.tap(c,L,L.w*.5f,Storybook.panelBottom(L)-L.unit*2);
+        check("story text tap restarts same narration without changing outfit",ear.narrations==2 && ear.narrated==0 && !ui.narrationPaused && c.storyOpen()
+                && c.wardrobe.equipped(0,Accessories.HAT)==worn);
+        ui.touch(c,L,0,1,L.w*.23f,WardrobeScreen.trayY(L,.5f));
+        check("starting accessory drag pauses reading",ear.hushes==2 && ui.narrationPaused);
+        ui.cancelTouch();check("cancelled drag does not restart reading",ear.narrations==2);
+        c.closeStory();c.openStory();check("new story starts narration again",ear.narrations==3 && !ui.narrationPaused);
+    }
+    private static void googly() {
+        int item=Accessories.item(Accessories.GLASSES,3);
+        check("googly eyes append without shifting glitter",item==17 && Accessories.ID[item].equals("googly_eyes") && AccessoryGlitter.ITEM==16);
+        FlairProbe a=new FlairProbe(),b=new FlairProbe(),later=new FlairProbe();
+        AccessoryArt.item(a,item,100,100,80,1);AccessoryArt.item(b,item,100,100,80,1);
+        AccessoryArt.item(later,item,100,100,80,1.3f);
+        check("googly pupils animate deterministically",a.hash==b.hash && a.hash!=later.hash);
+        GameCore c=ready();grant(c);c.wardrobe.equip(c,item,0);
+        check("googly eyewear persists",new GameCore(c.store,214,true).wardrobe.equipped(0,Accessories.GLASSES)==item);
     }
     private static void glitter(Layout L) {
-        check("glitter append-only ID",Accessories.COUNT==17 && Accessories.ID[16].equals("glitter_flair") && Accessories.variant(16)==3);
+        check("glitter append-only ID",Accessories.ID[16].equals("glitter_flair") && Accessories.variant(16)==3);
         GameCore c=ready();c.wardrobe.refresh(c);
         // Surface sampling must leave holes and empty corners untouched.
         FlairProbe p=new FlairProbe();AccessoryGlitter g=new AccessoryGlitter(p,0,0,100,1,1);
@@ -187,8 +213,9 @@ final class TestAccessories extends Check {
     private static void rewards() {
         try {
             Mem m=new Mem();ProgressData data=new ProgressData();
-            data.increment("old",Collect.progressKey(0),1);data.maximum("highest_stage",5);data.maximum("achievement_run_lands",3);m.progress=data.encode();
+            data.increment("old",Collect.progressKey(0),1);data.maximum("highest_stage",5);data.maximum("achievement_run_lands",3);data.maximum("achievement_boss_octopulse",1);m.progress=data.encode();
             GameCore c=new GameCore(m,214,true);
+            check("existing Octopulse win grants googly eyes",c.wardrobe.owned[Accessories.item(Accessories.GLASSES,3)]);
             check("existing land achievement grants glitter",c.wardrobe.owned[AccessoryGlitter.ITEM]);
             check("retroactive offline rewards",c.wardrobe.owned[0] && c.wardrobe.owned[1] && !c.wardrobe.owned[2]);
             byte[] once=c.progress.snapshot();c.wardrobe.revision=-1;c.wardrobe.refresh(c);

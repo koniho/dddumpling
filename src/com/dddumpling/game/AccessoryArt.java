@@ -64,6 +64,7 @@ final class AccessoryArt extends Draw {
                 }
             }
         } else if(slot==Accessories.GLASSES) {
+            if(v==3){googly(p,x,y,r,clock,detail);return;}
             p.line(x-r*.88f,y-r*.03f,x+r*.88f,y-r*.03f,shade,r*.09f);
             for(int side=-1;side<=1;side+=2) {
                 float cx=x+side*r*.35f;
@@ -79,6 +80,28 @@ final class AccessoryArt extends Draw {
             footwear(p,v,x,y,r,clock,c,shade,hi,detail);
         } else mask(p,v,x,y,r,detail);
         if(detail>0 && !(slot==Accessories.HAT && v==2))AccessoryDetail.trim(trim,slot,v,x,y,r,clock);
+    }
+    /** Loose pupils wobble independently inside soft white domes; no physics allocation. */
+    private static void googly(Painter p,float x,float y,float r,float clock,float detail) {
+        p.line(x-r*.82f,y-r*.04f,x+r*.82f,y-r*.04f,0xFF8F8DB2,r*.075f);
+        Painter trim=detail>0?new OpacityPainter(p,detail):p;
+        for(int side=-1;side<=1;side+=2) {
+            float cx=x+side*r*.39f,cy=y-r*.04f;
+            p.fillEllipse(cx,cy+r*.035f,r*.39f,r*.375f,0xFF8F8DB2);
+            p.fillEllipse(cx,cy,r*.365f,r*.35f,0xFFE3EDF8);
+            p.fillEllipse(cx-r*.025f,cy-r*.035f,r*.32f,r*.30f,0xFFFFFFFF);
+            float phase=clock*3.7f+side*.85f;
+            float px=cx+r*(.105f*(float)Math.sin(phase)+.028f*(float)Math.sin(phase*2.3f));
+            float py=cy+r*(.095f*(float)Math.cos(phase*.87f)+.025f*(float)Math.sin(phase*2.1f));
+            p.fillCircle(px,py,r*.155f,0xFF302B45);
+            p.fillCircle(px-r*.045f,py-r*.055f,r*.045f,0xFFFFFFFF);
+            if(detail>0) {
+                trim.arc(cx,cy,r*.325f,r*.31f,20,125,0xFFBDCEDF,r*.032f);
+                trim.arc(cx-r*.025f,cy-r*.025f,r*.28f,r*.26f,210,95,0xAFFFFFFF,r*.05f);
+                trim.fillEllipse(cx-r*.17f,cy-r*.20f,r*.066f,r*.035f,0xFFFFFFFF);
+                trim.fillCircle(px+r*.058f,py+r*.052f,r*.022f,0xFFB9CDE5);
+            }
+        }
     }
     private static void footwear(Painter p,int v,float x,float y,float r,float clock,int c,int shade,int hi,float detail) {
         Painter trim=detail>0?new OpacityPainter(p,detail):p;

@@ -141,3 +141,12 @@ sample 12 sites and large views up to 72; no extra character render, framebuffer
 is used. Tapping a glittered body selects Flair. Developer Flair/all chips include it.
 The dress-up backdrop fully hides the display-case labels after opening; picker and
 story share the same margins and the hero centers within the actual remaining space.
+
+Googly Eyes is the fourth eyewear style, appended as `googly_eyes`, earned by beating
+Octopulse. Existing wins backfill it automatically. Independent clock-driven pupils
+stay inside white domes; large views add rounded rim shading/reflections and small
+views skip that trim. It uses existing eyewear attachments, equip sound and save logic.
+
+Selecting/browsing an accessory or beginning a card drag hushes story narration;
+subsequent outfit edits stay quiet. Tap the story text to replay from the beginning.
+Closing and opening a story resets this state. Cosmetic sound effects remain active.
