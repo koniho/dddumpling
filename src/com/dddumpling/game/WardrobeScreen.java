@@ -137,6 +137,10 @@ final class WardrobeScreen extends Draw {
         if(c.wardrobe.equip(c,item,who))celebrate(c,false);
         else error="Could not save. Try again.";
     }
+    private void remove(GameCore c) {
+        if(c.wardrobe.remove(c,who,slot)) {error="";celebrate(c,true);}
+        else error="Could not save. Try again.";
+    }
     private void celebrate(GameCore c,boolean removing) {
         dance=(dance+1+celebrations.nextInt(3))%4;danceT=0;pulse=0;
         c.ducks.react(who,.8f);if(who==Collect.ALLIGATOR_FRIEND)c.gator.react(.8f);
@@ -155,9 +159,11 @@ final class WardrobeScreen extends Draw {
         if(action>=10 && action<10+Accessories.SLOTS) {
             slot=action-10;int on=c.wardrobe.equipped(who,slot);selected=on>=0?on:Accessories.item(slot,0);error="";
         } else if(action>=20 && action<20+Accessories.count(slot)) {
-            equip(c,Accessories.item(slot,action-20));return;
+            int item=Accessories.item(slot,action-20);selected=item;
+            if(c.wardrobe.equipped(who,slot)==item)remove(c);else equip(c,item);
+            return;
         } else if(action==2 && c.wardrobe.equipped(who,slot)>=0) {
-            if(c.wardrobe.remove(c,who,slot))celebrate(c,true);else error="Could not save. Try again.";
+            remove(c);
             return;
         }
         if(action!=0 && c.sound!=null)c.sound.uiBloop();

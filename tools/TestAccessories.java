@@ -21,8 +21,10 @@ final class TestAccessories extends Check {
             ui.choose(c,10+slot);int before=ear.accessoryChanges;
             ui.choose(c,20);
             check("each slot has its own donning cue",ear.accessoryChanges==before+1 && ear.lastAccessorySlot==slot && !ear.accessoryRemoved);
-            ui.choose(c,20);check("already worn card is silent",ear.accessoryChanges==before+1);
-            ui.choose(c,2);check("removal has a doffing cue",ear.accessoryChanges==before+2 && ear.accessoryRemoved);
+            ui.choose(c,20);
+            check("worn card toggles off with doffing cue",ear.accessoryChanges==before+2 && ear.accessoryRemoved && c.wardrobe.equipped(0,slot)<0);
+            GameCore reload=new GameCore(c.store,214,true);
+            check("tap removal survives restart",reload.wardrobe.equipped(0,slot)<0);
             ui.choose(c,2);check("empty removal is silent",ear.accessoryChanges==before+2);
         }
         check("accessory audio replaces generic star cue",ear.stars==0);
@@ -229,6 +231,8 @@ final class TestAccessories extends Check {
         check("different pointer cannot finish drag",ui.dragging);
         ui.touch(c,L,1,7,hx,hy);
         check("drop on squishy equips",!ui.dragging && c.wardrobe.equipped(0,Accessories.HAT)==1);
+        ui.touch(c,L,0,7,cardX,cardY);ui.touch(c,L,2,7,hx,hy);ui.touch(c,L,1,7,hx,hy);
+        check("dropping worn item keeps it equipped",c.wardrobe.equipped(0,Accessories.HAT)==1);
         ui.touch(c,L,0,7,L.w*.23f,cardY);ui.touch(c,L,2,7,0,0);ui.touch(c,L,1,7,0,0);
         check("drop outside preserves outfit",c.wardrobe.equipped(0,Accessories.HAT)==1 && c.storyOpen());
         ui.touch(c,L,0,7,L.w*.23f,cardY);ui.touch(c,L,2,7,hx,hy);ui.touch(c,L,3,7,hx,hy);
