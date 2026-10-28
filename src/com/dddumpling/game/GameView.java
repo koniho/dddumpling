@@ -226,6 +226,8 @@ public class GameView extends View implements InputManager.InputDeviceListener {
                 return true;
             }
         }
+        if(core.wardrobe.screen.touch(core,layout,action,ev.getPointerId(ev.getActionIndex()),
+                ev.getX(ev.getActionIndex()),ev.getY(ev.getActionIndex())))return true;
         if(core.updatePrompt.touch(core,layout,action,ev.getPointerId(ev.getActionIndex()),
                 ev.getX(ev.getActionIndex()),ev.getY(ev.getActionIndex())))return true;
         if (core.starter.open) {

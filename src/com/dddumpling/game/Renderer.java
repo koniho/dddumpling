@@ -16,6 +16,7 @@ final class Renderer extends Draw {
     static void draw(Painter p, GameCore c, Layout L) {
         p=Skins.painter(p,c.preferences.skin);
         p=new OpacityPainter(p,1f) {
+            public int accessory(int who,int slot) {return c.wardrobe.equipped(who,slot);}
             public DuckBodies ducks() {return c.ducks;}
             public GatorCompanion gator() {return c.gator;}
         };
@@ -193,6 +194,7 @@ final class Renderer extends Draw {
         p.restore();
         c.releaseNotes.draw(p,c,L);
         c.updatePrompt.draw(p,c,L);
+        c.wardrobe.screen.draw(p,c,L);
         if(c.townReturnFade>0f) p.fillRect(0,0,L.w,L.h,
                 Glyph.withAlpha(0xFFCEF0D1,(int)(255*c.townReturnFade/GameCore.TOWN_FADE)));
         c.highScoreScreen.draw(p,c,L);

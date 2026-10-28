@@ -458,6 +458,8 @@ final class RainbowCatArt extends Draw {
     }
     static void portrait(Painter p,float x,float y,float r,float t,boolean known,float fade,int facing) {
         cat(new OpacityPainter(p,fade),x-facing*r*.12f,y,r*.67f,t,facing,null,null,false,known?1:0);
+        if(known)AccessoryArt.outfit(p,Collect.RAINBOW_CAT_FRIEND,x+facing*r*.5232f,y+r*.067f,
+                r*.58f,y-r*.44f,x,y+r*.65f,r*.84f,t,fade,false);
     }
     static void cat(Painter p,float x,float y,float r,float t,float facing,Softbody body,Softbody skull,boolean caught,float known) {
         cat(p,x,y,r,t,facing,body,skull,caught,known,0,0);

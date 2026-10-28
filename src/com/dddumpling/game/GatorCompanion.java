@@ -119,6 +119,8 @@ final class GatorCompanion extends Draw {
             p.fillPoly(AlligatorArt.form(tx,ty,r*.045f,r*.060f,
                     -1,-.42f,1,-.42f,.80f,.45f,0,1,-.80f,.45f),0xFFFFFDE8);
         }
+        if(known)AccessoryArt.outfit(p,Collect.ALLIGATOR_FRIEND,hx,faceY,faceR,hy-hh*.82f,
+                bx,by+r*.50f,r,clock,1,ninja);
         if(ninja)Trinket.ninjaMask(new MaskFit(p,faceY,.64f),hx,faceY,hw*.92f,1);
         // Tiny mitten paws wave in front of the cheeks; title punches retain their reach.
         for(int side=-1;side<=1;side+=2) {

@@ -22,6 +22,7 @@ final class Progress {
     private ProgressData data = new ProgressData();
     private Sink sink;
     private boolean healthy = true, running, stageDone;
+    long revision;
     private int stage, boss = -1, startLand;
     private final java.util.Set<Integer> runLands = new java.util.HashSet<>();
     private String minigame;
@@ -32,7 +33,7 @@ final class Progress {
     Progress(Store store, boolean enabled) {
         this.store = store; this.enabled = enabled;
         String id = "memory";
-        if (enabled && store != null) {
+        if ((enabled || BuildFlags.DEVELOPER) && store != null) {
             try { id = store.progressReplica(); data = ProgressData.decode(store.loadProgress()); }
             catch (Exception e) { fail("Local progress could not be loaded"); }
         }
@@ -45,7 +46,7 @@ final class Progress {
     }
     void resetForDeveloper() {
         if (!BuildFlags.DEVELOPER) return;
-        data=new ProgressData();
+        data=new ProgressData();revision++;
         running=stageDone=firstHit=scoresSuppressed=false;
         stage=startLand=0;boss=-1;minigame=null;bossSeconds=0;
         if (store!=null) store.saveProgress(data.encode());
@@ -56,10 +57,24 @@ final class Progress {
     byte[] snapshot() { return data.encode(); }
     private void fail(String reason) { healthy = false; error = reason; sink = null; }
     private void changed() {
+        revision++;
         if (!available()) return;
         try { if (store != null) store.saveProgress(data.encode()); }
         catch (Exception e) { fail("Local progress could not be saved"); return; }
         if (sink != null) try { sink.changed(); } catch (RuntimeException ignored) { }
+    }
+    boolean cosmeticsAvailable() {return healthy && (enabled || BuildFlags.DEVELOPER);}
+    boolean accessories(String[] keys,long[] values,boolean reset) {
+        if(!cosmeticsAvailable())return false;
+        try {
+            ProgressData next=ProgressData.decode(data.encode());
+            if(reset)next.resetAccessories();
+            for(int i=0;i<keys.length;i++)next.maximum(keys[i],values[i]);
+            if(store!=null)store.saveProgress(next.encode());
+            data=next;revision++;
+        } catch(Exception e) {error="Accessories could not be saved";return false;}
+        if(sink!=null)try {sink.changed();}catch(RuntimeException ignored) { }
+        return true;
     }
     private void event(String name) { event(name, 1); }
     private void event(String name, int amount) {
@@ -202,7 +217,7 @@ final class Progress {
         return next;
     }
     void acceptScoreReset(ProgressData next) {
-        if (next!=null) data=next;
+        if (next!=null) {data=next;revision++;}
         scoresSuppressed=true;
         if (sink!=null) try { sink.changed(); } catch (RuntimeException ignored) { }
     }

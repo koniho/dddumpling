@@ -879,6 +879,7 @@ final class GameCore {
     }
 
     void closeStory() {
+        wardrobe.screen.close();
         // Only hushes a reading that was actually under way. This is called on the way into and
         // out of half a dozen states where no story is open, and a backend should not have to
         // work out which of those it is.
@@ -1584,6 +1585,7 @@ final class GameCore {
     final Random rnd;
     final Store store;
     final Progress progress;
+    final Wardrobe wardrobe=new Wardrobe();
 
     static final int START_LIVES = 3;
     /** Pause after a stage is cleared, before the next wave starts arriving. */
@@ -1706,6 +1708,7 @@ final class GameCore {
         }
         progress.seed(this);
         progress.apply(this);
+        wardrobe.refresh(this);
         LandPicker.restoreSelection(this);
         survival.reward.restore(this);
     }
@@ -1911,7 +1914,7 @@ final class GameCore {
      * is acknowledged immediately and the triad carries over into the first wave.
      */
     void beginStart() {
-        if (state != TITLE || updatePrompt.open || starting() || starter.open || returnFade > 0f || rosterSceneT > 0f) return;
+        if (state != TITLE || wardrobe.screen.open || updatePrompt.open || starting() || starter.open || returnFade > 0f || rosterSceneT > 0f) return;
         if (townOpen || !modes.allowStart(this)) return;
         titleKeyHint = 0f;
         if (modes.adventure() && landChoice == LandPicker.TOWN) {
@@ -2165,6 +2168,7 @@ final class GameCore {
         state = TITLE;
         if (sound != null) sound.selectMusic(normalMusicChoice());
         progress.apply(this);
+        wardrobe.refresh(this);
         time = 0;
         deathT = stageDamageHold = 0f;
         bossVictoryKind = -1;
@@ -2275,7 +2279,7 @@ final class GameCore {
     void screenKey(int g) {
         if (townOpen) return;
         if (settingsOpen) return;
-        if(releaseNotes.open || updatePrompt.open || highScoreScreen.open) return;
+        if(wardrobe.screen.open || releaseNotes.open || updatePrompt.open || highScoreScreen.open) return;
         if (returnFade > 0f) return;
         if (!keyActive(g) || rosterSceneT > 0f) return;
         // Nothing is dismissable until the summary is up and settled — the death sequence is not
@@ -2829,6 +2833,7 @@ final class GameCore {
     void update(float dt, Layout L) { update(dt, dt, L); }
 
     void update(float dt, float elapsed, Layout L) {
+        wardrobe.refresh(this);
         starPickups = 0;
         starBlastHaptic = 0;
         bossDeathHaptic = 0;
@@ -2874,6 +2879,7 @@ final class GameCore {
             updateTitleSprings(elapsed,L);LandPicker.updateTravel(this,elapsed);
             return;
         }
+        if(wardrobe.screen.update(this,elapsed)) {clock+=elapsed;return;}
         releaseMascot.update(this,elapsed);
         if(updatePrompt.update(this,elapsed,L)) {
             clock+=elapsed;time+=elapsed;skyClock+=elapsed;updateTitleSprings(elapsed,L);return;

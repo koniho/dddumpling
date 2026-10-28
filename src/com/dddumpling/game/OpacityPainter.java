@@ -3,6 +3,7 @@ package com.dddumpling.game;
 /** A light translucency for overlay art, shared by both drawing backends. */
 class OpacityPainter implements Painter, ArtStamp {
     public int skin() { return p.skin(); }
+    public int accessory(int who,int slot) {return p.accessory(who,slot);}
     public DuckBodies ducks() { return p.ducks(); }
     public GatorCompanion gator() { return p.gator(); }
     // Per-primitive fading is intentionally retained during transitions.

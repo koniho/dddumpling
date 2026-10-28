@@ -448,6 +448,9 @@ public final class IOSInputTest extends Check {
         for(int i=0;i<30;i++)game.update(.05f);
         check("native result title returns with Survival selected",c.state==GameCore.TITLE && !c.starting() && !c.survival.active
                 && c.modes.selected==ModeSelector.SURVIVAL);
+        check("native reward waits until Survival summary is dismissed",c.wardrobe.screen.open && c.wardrobe.screen.reward);
+        tap(game,l.w*.5f,WardrobeScreen.y(l,.94f));
+        check("native reward dismissal does not start a run",!c.wardrobe.screen.open && !c.starting());
         tap(game,l.w*.5f,HighScoreScreen.titleY(l));
         for(int i=0;i<15;i++)game.update(.05f);
         check("native Survival score entry opens its own saved history",c.highScoreScreen.open
@@ -1415,6 +1418,12 @@ public final class IOSInputTest extends Check {
         c.caseIndex=0;c.caseSlide=c.caseSlideY=0;
         game.touch(one(0,2,x,y));game.touch(one(2,2,x-l.unit*2,y));game.touch(one(1,2,x-l.unit*2,y));
         check("shelf drag does not accidentally open a story",!c.storyOpen() && !c.caseDragging);
+        c.caseOpen=true;c.caseIndex=0;c.collected=Collect.add(c.collected,0);c.openStory();
+        tap(game,l.w*.5f,Storybook.dressY(l));
+        check("native story opens wardrobe",c.wardrobe.screen.open && c.storyOpen());
+        tap(game,l.w*.5f,WardrobeScreen.y(l,.94f));
+        check("native wardrobe returns to same story",!c.wardrobe.screen.open && c.storyOpen() && !c.starting());
+
     }
 
     private static void collectionGuidanceInput() {

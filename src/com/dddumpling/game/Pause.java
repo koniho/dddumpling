@@ -20,6 +20,7 @@ final class Pause extends Draw {
                 || c.starting() || c.starter.open || c.state != GameCore.TITLE || !c.modes.adventure();
     }
     static boolean back(GameCore c) {
+        if(c.wardrobe.screen.open) {c.wardrobe.screen.back();return true;}
         if(c.cloudUi.open) { c.cloudUi.close(c);return true; }
         if(c.updatePrompt.open) { c.updatePrompt.choose(c,false);return true; }
         if(c.starter.open) { c.cancelStart();return true; }
@@ -43,6 +44,7 @@ final class Pause extends Draw {
         return false;
     }
     static void release(GameCore c) {
+        c.wardrobe.screen.cancelTouch();
         c.boss.alligator.pointer=-1;
         c.starter.cancelTouch();
         c.modes.cancelTouch();

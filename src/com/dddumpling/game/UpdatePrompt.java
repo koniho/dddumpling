@@ -32,7 +32,7 @@ final class UpdatePrompt extends Draw {
         pending=highlight=false;save(c);
     }
     static boolean suitable(GameCore c) {
-        return ReleaseNotes.available(c) && !c.releaseNotes.open && !c.paused && !c.townOpen
+        return !c.wardrobe.screen.open && ReleaseNotes.available(c) && !c.releaseNotes.open && !c.paused && !c.townOpen
                 && !Starter.hideCase(c) && !c.starter.open && !c.onboarding.titleGuide
                 && !c.onboarding.briefing && c.onboarding.practice==null && !c.onboarding.rescueGuide
                 && !c.onboarding.collectionPending(c) && c.homeT<=0f && c.townReturnFade<=0f

@@ -22,7 +22,14 @@ final class BossCollect extends Draw {
     }
     static void draw(Painter p,int boss,float x,float y,float r,float clock,boolean known,float fade,
             int mood,float look,boolean ninja) {
-        if(boss==Boss.RAINBOW_CAT) {RainbowCatArt.portrait(p,x,y,r,clock,known,fade);return;}
+        if(boss==Boss.RAINBOW_CAT) {
+            Painter cat=ninja?new OpacityPainter(p,1) {
+                public int accessory(int who,int slot) {return slot==Accessories.BOOTS?p.accessory(who,slot):-1;}
+            }:p;
+            RainbowCatArt.portrait(cat,x,y,r,clock,known,fade);
+            if(known && ninja)Trinket.ninjaMask(p,x+r*.5232f,y+r*.067f,r*.54f,fade);
+            return;
+        }
         if(boss==Boss.ALLIGATOR) {GatorCompanion.draw(p,x,y,r,clock,known,fade,mood,look,ninja);return;}
         if(known) {
             if(boss==Boss.SLIME)p=Skins.ghost(p);
@@ -101,6 +108,7 @@ final class BossCollect extends Draw {
         if (known) {
             if(mood<0) face(p, x, faceY, faceR, clock, fade);
             else Trinket.reactionFace(p,x,faceY,faceR,clock,fade,mood,look);
+            AccessoryArt.outfit(p,i,x,faceY,faceR,y-r*.86f,x,y+r*.76f,r,clock,fade,ninja);
             if(ninja) Trinket.ninjaMask(p,x,faceY,r*.82f,fade);
         }
         if (!known) p.text("?",x,y+r*.25f,type(r*.65f),fadeBy(INK_DIM,fade),Painter.CENTER,true);

@@ -110,6 +110,11 @@ src/com/dddumpling/game/SettingsInput.java
 src/com/dddumpling/game/ProgressData.java
 src/com/dddumpling/game/Progress.java
 src/com/dddumpling/game/Achievements.java
+src/com/dddumpling/game/Accessories.java
+src/com/dddumpling/game/Wardrobe.java
+src/com/dddumpling/game/WardrobeScreen.java
+src/com/dddumpling/game/AccessoryArt.java
+src/com/dddumpling/game/AccessoryAnchors.java
 src/com/dddumpling/game/PrivacyUi.java
 src/com/dddumpling/game/ReleaseNotes.java
 src/com/dddumpling/game/UpdatePrompt.java

@@ -36,6 +36,7 @@ final class CoreTest {
         group("Linked pairs", () -> TestLinkedPairs.all(L));
         group("Swamp enemies", () -> TestSwampEnemies.all(L));
         group("Fast enemies", () -> TestFastEnemies.all(L));
+        group("Accessories", () -> TestAccessories.all(L));
         group("Progress", () -> TestProgress.all(L));
         group("Town", () -> TestTown.all(L));
 

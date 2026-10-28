@@ -605,6 +605,7 @@ final class TestBoss extends Check {
         float cx = c.boss.body.centreX(), cy = c.boss.body.centreY();
         Painter p = (Painter) java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),
                 new Class<?>[] {Painter.class}, (proxy, method, args) -> {
+                    if(method.getName().equals("accessory"))return -1;
                     if(method.getName().equals("skin"))return Skins.DEFAULT;
                     if (method.getName().equals(shape) && Math.abs((Float) args[0] - cx) < 0.01f
                             && Math.abs((Float) args[1] - cy) < 0.01f) count[0]++;
@@ -1979,6 +1980,7 @@ final class TestBoss extends Check {
         final float[] feedbackY={-1};
         Painter feedbackPainter=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),
                 new Class[]{Painter.class},(proxy,method,args)->{
+                    if(method.getName().equals("accessory"))return -1;
                     if(method.getName().equals("skin"))return Skins.DEFAULT;
                     if(method.getName().equals("text") && args[0].equals("WRONG CHOICE!"))feedbackY[0]=(Float)args[2];
                     return null;
@@ -2053,6 +2055,7 @@ final class TestBoss extends Check {
         float threshold=c.boss.baseY(L)+Boss.bodyR(L)*4.1f;
         Painter p=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),
                 new Class<?>[]{Painter.class},(proxy,method,args)->{
+                    if(method.getName().equals("accessory"))return -1;
                     if(method.getName().equals("skin"))return Skins.DEFAULT;
                     if(method.getName().equals("line") && (Float)args[3]>threshold) {
                         tips.add((Float)args[2]);tips.add((Float)args[3]);
@@ -2130,6 +2133,7 @@ final class TestBoss extends Check {
         final int[] cachedLeaves={0};
         Painter cache=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),
                 new Class<?>[]{Painter.class,ArtStamp.class},(proxy,method,args)->{
+                    if(method.getName().equals("accessory"))return -1;
                     if(method.getName().equals("skin"))return Skins.DEFAULT;
                     if(method.getName().equals("stamps"))return proxy;
                     if(method.getName().equals("forest")){cachedLeaves[0]++;return true;}

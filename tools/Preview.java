@@ -2008,6 +2008,7 @@ final class Preview {
             retry.highScoreScreen.selected=0;
             shot(dir,"206-retried-record",retry,L,w,h,ss);
         }
+        if(wantedGroup("214-"))AccessoryPreview.frames(dir,L,w,h,ss);
         rainbowFrames(dir,L,w,h,ss);
         skinFrames(dir,L,w,h,ss);
         clearSpreadFrames(dir,L,w,h,ss);

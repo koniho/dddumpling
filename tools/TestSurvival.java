@@ -75,6 +75,7 @@ final class TestSurvival extends Check {
         java.util.ArrayList<float[]> bodies=new java.util.ArrayList<>();
         Painter painter=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),
                 new Class<?>[]{Painter.class},(proxy,method,args)-> {
+                    if(method.getName().equals("accessory"))return -1;
                     if(method.getName().equals("skin"))return Skins.DEFAULT;
                     if(method.getName().equals("fillRect"))bodies.add(new float[]{(Float)args[0],(Float)args[1],
                             (Float)args[2],(Float)args[3],(Integer)args[4]});
@@ -120,6 +121,7 @@ final class TestSurvival extends Check {
         final float[] bounds={Float.MAX_VALUE,Float.MAX_VALUE,-Float.MAX_VALUE,-Float.MAX_VALUE};
         Painter painter=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),
                 new Class<?>[]{Painter.class},(proxy,method,args)-> {
+                    if(method.getName().equals("accessory"))return -1;
                     if(method.getName().equals("skin"))return Skins.DEFAULT;
                     String name=method.getName();
                     shapesOnly[0] &= name.equals("fillPoly") || name.equals("fillRect");
@@ -268,7 +270,7 @@ final class TestSurvival extends Check {
         for(int i=0;i<600;i++)bodies.update(c,DT);
         boolean bounded=true;for(float value:bodies.skin[10][0].outline())bounded&=Float.isFinite(value)&&Math.abs(value)<2;
         check("duck spring skin settles without exploding",bounded);
-        float[] frozen=bodies.skin[10][0].outline().clone();Renderer.draw((Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),new Class<?>[]{Painter.class},(proxy,method,args)->method.getName().equals("skin")?Skins.DEFAULT:null),c,L);Renderer.draw((Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),new Class<?>[]{Painter.class},(proxy,method,args)->method.getName().equals("skin")?Skins.DEFAULT:null),c,L);
+        float[] frozen=bodies.skin[10][0].outline().clone();Renderer.draw((Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),new Class<?>[]{Painter.class},(proxy,method,args)->method.getName().equals("skin")?Integer.valueOf(Skins.DEFAULT):method.getName().equals("accessory")?Integer.valueOf(-1):null),c,L);Renderer.draw((Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),new Class<?>[]{Painter.class},(proxy,method,args)->method.getName().equals("skin")?Integer.valueOf(Skins.DEFAULT):method.getName().equals("accessory")?Integer.valueOf(-1):null),c,L);
         check("drawing does not advance duck physics",java.util.Arrays.equals(frozen,bodies.skin[10][0].outline()));
     }
 
@@ -377,6 +379,7 @@ final class TestSurvival extends Check {
         java.util.ArrayList<String> labels=new java.util.ArrayList<>();
         Painter painter=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),
                 new Class<?>[]{Painter.class},(proxy,method,args)-> {
+                    if(method.getName().equals("accessory"))return -1;
                     if(method.getName().equals("skin"))return Skins.DEFAULT;
                     if(method.getName().equals("text"))labels.add((String)args[0]);
                     return null;
@@ -466,6 +469,7 @@ final class TestSurvival extends Check {
         float[] bottom={-1f};
         Painter painter=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),
                 new Class<?>[]{Painter.class},(proxy,method,args)-> {
+                    if(method.getName().equals("accessory"))return -1;
                     if(method.getName().equals("skin"))return Skins.DEFAULT;
                     if(method.getName().equals("fillCircle"))bottom[0]=Math.max(bottom[0],(Float)args[1]+(Float)args[2]);
                     return null;
@@ -494,6 +498,7 @@ final class TestSurvival extends Check {
             float[] clip=new float[4];
             Painter painter=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),
                     new Class<?>[]{Painter.class},(proxy,method,args)-> {
+                    if(method.getName().equals("accessory"))return -1;
                     if(method.getName().equals("skin"))return Skins.DEFAULT;
                         if(method.getName().equals("fillRect")) {
                             bodies.add(new float[]{(Float)args[0],(Float)args[1],(Float)args[2],(Float)args[3]});

@@ -208,6 +208,7 @@ final class LandPicker extends Draw {
 
     private static void adventure(Painter p,GameCore c,float x,float y,float r,float look) {
         Trinket.drawReacting(p,SurvivalDemo.companion(c),x,y,r*.85f,c.clock,1f,1,look);
+        if(p.accessory(SurvivalDemo.companion(c),Accessories.HAT)>=0)return;
         y-=r*.30f;
         // Soft felt crown, pinched top and a wide brim: an adventure hat.
         int felt = 0xFFC59A62, band = 0xFF795840;
@@ -268,7 +269,7 @@ final class LandPicker extends Draw {
         float r=companionRadius(c,L,scale);
         float stride=(float)Math.sin(age*Softbody.TAU*(walking ? 5f : 2f));
         p.fillEllipse(x,y+r*.87f,r*.78f,r*.12f,Glyph.withAlpha(INK,46));
-        for(int side=-1;side<=1;side+=2)
+        if(p.accessory(SurvivalDemo.companion(c),Accessories.BOOTS)<0)for(int side=-1;side<=1;side+=2)
             p.fillEllipse(x+side*r*.25f+stride*side*r*.12f,y+r*.78f,
                     r*.19f,r*.10f,0xFF795840);
         float bob=Math.abs(stride)*r*.06f;

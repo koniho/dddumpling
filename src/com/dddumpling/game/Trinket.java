@@ -86,6 +86,7 @@ final class Trinket {
         float faceY=cy+r*FACE_DY[shape],faceR=r*FACE_R[shape];
         if(mood<0) face(p, i % 3, cx, faceY, faceR, fade);
         else reactionFace(p,cx,faceY,faceR,clock,fade,mood,look);
+        AccessoryArt.outfit(p,i,cx,faceY,faceR,cy+r*AccessoryAnchors.TOP[shape],cx,cy+r*AccessoryAnchors.FEET[shape],r,clock,fade,ninja);
         if(ninja) ninjaMask(p,cx,faceY,r*.82f,fade);
     }
 

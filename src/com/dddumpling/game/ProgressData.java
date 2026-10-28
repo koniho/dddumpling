@@ -54,11 +54,26 @@ final class ProgressData {
         maximum("score_reset_epoch",scoreEpoch()+1);
         removeScores(values);
     }
+    private static boolean accessoryKey(String key) {
+        return key.startsWith("m:accessory_") && !key.equals("m:accessory_reset_epoch");
+    }
+    private static void removeAccessories(TreeMap<String,Long> map) {
+        java.util.Iterator<String> keys=map.keySet().iterator();
+        while(keys.hasNext())if(accessoryKey(keys.next()))keys.remove();
+    }
+    void resetAccessories() {
+        long epoch=maximum("accessory_reset_epoch");
+        if(epoch==Long.MAX_VALUE)throw new IllegalStateException("Wardrobe reset limit reached");
+        removeAccessories(values);maximum("accessory_reset_epoch",epoch+1);
+    }
     void merge(ProgressData other) {
         TreeMap<String, Long> merged = new TreeMap<>(values);
         if (other.scoreEpoch()>scoreEpoch()) removeScores(merged);
+        long epoch=maximum("accessory_reset_epoch"),incoming=other.maximum("accessory_reset_epoch");
+        if(incoming>epoch)removeAccessories(merged);
         for (Map.Entry<String, Long> e : other.values.entrySet()) {
             if (scoreKey(e.getKey()) && other.scoreEpoch()<scoreEpoch()) continue;
+            if(accessoryKey(e.getKey()) && incoming<epoch)continue;
             Long old = merged.get(e.getKey());
             if (old == null || e.getValue() > old) merged.put(e.getKey(), e.getValue());
         }
