@@ -268,7 +268,8 @@ final class TestAccessories extends Check {
         check("drop outside preserves outfit",c.wardrobe.equipped(0,Accessories.HAT)==1 && c.storyOpen());
         ui.touch(c,L,0,7,L.w*.23f,cardY);ui.touch(c,L,2,7,hx,hy);ui.touch(c,L,3,7,hx,hy);
         check("cancelled drag preserves outfit",!ui.dragging && c.wardrobe.equipped(0,Accessories.HAT)==1);
-        ui.choose(c,2);check("remove saves immediately",c.wardrobe.equipped(0,Accessories.HAT)<0);
+        check("removed button has no invisible target",ui.hit(L,L.w*.5f,WardrobeScreen.trayY(L,.93f))==0);
+        ui.choose(c,21);check("tap removal saves immediately",c.wardrobe.equipped(0,Accessories.HAT)<0);
         c.wardrobe.owned[0]=false;ui.choose(c,20);
         check("locked accessory cannot equip",c.wardrobe.equipped(0,Accessories.HAT)<0 && ui.selected==0);
         check("update notice waits for editor",!UpdatePrompt.suitable(c));

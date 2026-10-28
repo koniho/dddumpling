@@ -127,9 +127,6 @@ final class Storybook extends Draw {
                     Painter.CENTER, false);
         }
 
-        float pulse = 0.55f + 0.45f * (float) Math.sin(c.clock * 3.2f);
-        p.text("TAP OUTSIDE TO CLOSE", cx, cy + hh - s * 0.55f, type(s * 0.54f),
-                Glyph.withAlpha(INK_DIM, (int) (255 * pulse)), Painter.CENTER, true);
         hero(p,c,L);
     }
 

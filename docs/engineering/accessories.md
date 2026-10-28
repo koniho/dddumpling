@@ -12,8 +12,9 @@ renderer’s attachment geometry and follows the dance transforms across body fa
 Tap an earned accessory or drag it onto the featured squishy to equip and save
 immediately. Tap an already equipped card to remove it. Dragging an equipped item
 onto the squishy keeps it on. Dropping elsewhere or cancelling a drag leaves the outfit unchanged.
-Locked cards show their achievement goal without changing the outfit. **Remove**
-clears the current category immediately. No extra Dress Up screen or Wear It step.
+Locked cards show their achievement goal without changing the outfit. The picker
+has no separate Remove control or tap/drag instructions. No extra Dress Up screen
+or Wear It step.
 Each change plays the shared Star Path sparkle/star-outline burst, followed by a
 random nonrepeating dance; cosmetic randomness is separate from gameplay RNG.
 Each category has distinct synthesized don/doff foley: fabric swishes, glasses clicks,

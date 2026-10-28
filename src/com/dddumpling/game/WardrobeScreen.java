@@ -55,7 +55,7 @@ final class WardrobeScreen extends Draw {
             p.text("X",L.w*.88f,y(L,.062f),type(s),INK,Painter.CENTER,true);
             drawReward(p,c,L);return;
         }
-        p.fillRect(L.w*.06f,trayY(L,0),L.w*.94f,trayY(L,1),0xFF2A2348);
+        p.fillRect(L.w*.06f,trayY(L,0),L.w*.94f,trayY(L,trayEnd(c)),0xFF2A2348);
         p.text("MIX, MATCH, MAKE IT YOURS",x,trayY(L,.08f),type(s*.69f),0xFFFFE29A,Painter.CENTER,true);
         for(int k=0;k<Accessories.SLOTS;k++) {
             float step=L.w*.80f/Accessories.SLOTS,l=L.w*.10f+k*step,rr=l+step-L.w*.01f;
@@ -76,11 +76,9 @@ final class WardrobeScreen extends Draw {
             p.text(status,cx,trayY(L,.69f),type(s*.46f),Accessories.COLOR[item],Painter.CENTER,true);
         }
         boolean owned=c.wardrobe.owned[selected];
-        p.text(error.isEmpty()?(owned?"Tap or drag onto your squishy":Accessories.GOAL[selected]):error,x,trayY(L,.81f),type(s*.61f),INK,Painter.CENTER,false);
-        if(c.wardrobe.equipped(who,slot)>=0) {
-            p.fillRect(L.w*.32f,trayY(L,.85f),L.w*.68f,trayY(L,.99f),0xFF494762);
-            p.text("REMOVE",x,trayY(L,.95f),type(s*.62f),INK,Painter.CENTER,true);
-        } else if(!owned)p.text(progress(c,selected),x,trayY(L,.95f),type(s*.55f),INK_DIM,Painter.CENTER,false);
+        if(!error.isEmpty() || !owned)
+            p.text(error.isEmpty()?Accessories.GOAL[selected]:error,x,trayY(L,.81f),type(s*.61f),INK,Painter.CENTER,false);
+        if(!owned)p.text(progress(c,selected),x,trayY(L,.95f),type(s*.55f),INK_DIM,Painter.CENTER,false);
         if(dragging) {
             float hx=Storybook.heroX(c,L),hy=Storybook.heroY(c,L),r=Storybook.heroRadius(L);
             Storybook.glowRings(p,who,hx,hy,r,(c.clock*.6f)%Storybook.GLOW_TIME);
@@ -88,6 +86,7 @@ final class WardrobeScreen extends Draw {
             AccessoryArt.item(p,dragItem,dragX,dragY-s,Storybook.heroRadius(L)*.64f,c.clock);
         }
     }
+    private float trayEnd(GameCore c) {return c.wardrobe.owned[selected] && error.isEmpty()?.76f:1f;}
     static float trayTop(Layout L) {return Math.max(L.topSafe,L.unit*.7f);}
     static float trayY(Layout L,float f) {return trayTop(L)+Math.min((L.h-L.padB-trayTop(L))*.27f,L.unit*12f)*f;}
     void hero(Painter p,GameCore c,float x,float y,float r) {
@@ -129,7 +128,6 @@ final class WardrobeScreen extends Draw {
         float f=(yy-trayTop(L))/(trayY(L,1)-trayTop(L));
         if(f>=.12f && f<=.27f)return 10+Math.min(Accessories.SLOTS-1,(int)((x/L.w-.10f)/(.80f/Accessories.SLOTS)));
         if(f>=.30f && f<=.72f)return 20+Math.max(0,Math.min(Accessories.count(slot)-1,(int)((x/L.w-.10f)/(.80f/Accessories.count(slot)))));
-        if(f>=.85f && f<=.99f && x>=L.w*.32f && x<=L.w*.68f)return 2;
         return 0;
     }
     private void equip(GameCore c,int item) {
@@ -163,9 +161,6 @@ final class WardrobeScreen extends Draw {
             int item=Accessories.item(slot,action-20);selected=item;
             if(c.wardrobe.equipped(who,slot)==item)remove(c);else equip(c,item);
             return;
-        } else if(action==2 && c.wardrobe.equipped(who,slot)>=0) {
-            remove(c);
-            return;
         }
         if(action!=0 && c.sound!=null)c.sound.uiBloop();
     }
@@ -173,7 +168,7 @@ final class WardrobeScreen extends Draw {
     boolean touch(GameCore c,Layout L,int action,int id,float x,float yy) {
         if(!open && !gesture)return false;
         if(action==0) {
-            if(!reward && (yy<trayTop(L) || yy>trayY(L,1) || x<L.w*.06f || x>L.w*.94f))return false;
+            if(!reward && (yy<trayTop(L) || yy>trayY(L,trayEnd(c)) || x<L.w*.06f || x>L.w*.94f))return false;
             gesture=true;pointer=id;pressed=hit(L,x,yy);downX=dragX=x;downY=dragY=yy;
             if(!reward && pressed>=20 && pressed<20+Accessories.count(slot)) {
                 int item=Accessories.item(slot,pressed-20);if(c.wardrobe.owned[item])dragItem=item;
