@@ -9,7 +9,8 @@ final class AccessoryFlair {
     static void draw(Painter p,int variant,float x,float y,float r,float clock) {
         if(r<=0)return;
         float d=AccessoryArt.detail(p,r);
-        if(variant==0)stars(p,x,y,r,clock,d);
+        if(variant==3)AccessoryGlitter.preview(p,x,y,r,clock);
+        else if(variant==0)stars(p,x,y,r,clock,d);
         else if(variant==1)butterflies(p,x,y,r,clock,d);
         else glow(p,x,y,r,clock,d);
     }

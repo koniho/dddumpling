@@ -132,3 +132,12 @@ Accessory trim fades in between 6.5% and 12% of viewport width. Small views skip
 ornament, reduce mask contours and use fewer Flair glow layers; silhouettes, colors,
 attachments and orbit timing stay consistent. Large views add seams, jewels, glints
 and shading. Star Crown uses a velvet center, five gold points and inset jewels.
+
+Glitter is a fourth Flair style, appended as `glitter_flair` and unlocked by visiting
+three lands in a run. Existing achievement holders receive it through the normal
+backfill. It samples the live body vector fills and draws anchored gold/white twinkles
+before expressions and clothing (the cat portrait excludes dark face ink). Small views
+sample 12 sites and large views up to 72; no extra character render, framebuffer or blur
+is used. Tapping a glittered body selects Flair. Developer Flair/all chips include it.
+The dress-up backdrop fully hides the display-case labels after opening; picker and
+story share the same margins and the hero centers within the actual remaining space.

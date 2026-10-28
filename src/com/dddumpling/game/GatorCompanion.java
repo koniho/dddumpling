@@ -51,6 +51,8 @@ final class GatorCompanion extends Draw {
         if(!known)p=new Silhouette(p);
         float bob=(float)Math.sin(clock*2.6f),wag=(float)Math.sin(clock*4.1f);
         int edge=0xFF347D67,mint=0xFF71D5A0,light=0xFFB7F0BF;
+        AccessoryGlitter glitter=known?AccessoryGlitter.begin(p,Collect.ALLIGATOR_FRIEND,x,y,r,clock,1):null;
+        Painter surface=p;if(glitter!=null)p=glitter;
         float bx=x+r*(a==null?bob*.025f:a.body.centreX()*.45f),by=y+r*.39f;
         float sx=a==null?1:a.body.radiusX(),sy=a==null?1:a.body.radiusY();
         float tailBounce=a==null?wag*.10f:a.tail.centreY()+(.95f-a.tail.radiusY())*.2f;
@@ -112,6 +114,7 @@ final class GatorCompanion extends Draw {
             p.fillEllipse(hx+side*hw*.20f,hy+hh*.13f,hw*.033f,hh*.04f,0xFF4D9677);
             p.fillEllipse(hx+side*hw*.66f,hy+hh*.27f,hw*.13f,hh*.10f,0xA8FFA3BB);
         }
+        if(glitter!=null){glitter.finish();p=surface;}
         float faceR=hw*1.03f,faceY=hy-hh*.08f;
         Trinket.reactionFace(p,hx,faceY,faceR,clock,1,mood<0?0:mood,look*.25f);
         if(mood<=1 || mood==4 || mood==8 || mood==9) {

@@ -22,7 +22,7 @@ final class AccessoryPicking implements Painter {
         float dx=x-q[0],dy=y-q[1],u=(dx*vy-dy*vx)/det,v=(ux*dy-uy*dx)/det;
         if(slot==Accessories.FLAIR) {
             float nx=2*u-1,ny=2*v-1,d=nx*nx+ny*ny;
-            return d>=.38f && d<=1.12f;
+            return core.wardrobe.equipped(core.story,Accessories.FLAIR)==AccessoryGlitter.ITEM?d<=.70f:d>=.38f && d<=1.12f;
         }
         float pu=pad/(float)Math.hypot(ux,uy),pv=pad/(float)Math.hypot(vx,vy);
         return u>=-pu && u<=1+pu && v>=-pv && v<=1+pv;

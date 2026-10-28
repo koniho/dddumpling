@@ -41,6 +41,8 @@ final class BossCollect extends Draw {
         int body = fadeBy(known ? Collect.BODY[i] : 0xFF393054, fade);
         int cream = fadeBy(known ? Collect.ACCENT[i] : 0xFF393054, fade);
         int ink = fadeBy(0xFF382841, fade);
+        AccessoryGlitter glitter=known?AccessoryGlitter.begin(p,i,x,y,r,clock,fade):null;
+        Painter surface=p;if(glitter!=null)p=glitter;
         float faceY = y, faceR = r * 0.6f;
         if (boss == Boss.OCTOPUS) {
             boolean ghost=Skins.halloween(p) && known;
@@ -105,6 +107,7 @@ final class BossCollect extends Draw {
                 p.fillEllipse(x-r*.30f,y-r*.42f,r*.22f,r*.13f,cream);
             }
         }
+        if(glitter!=null){glitter.finish();p=surface;}
         if (known) {
             if(mood<0) face(p, x, faceY, faceR, clock, fade);
             else Trinket.reactionFace(p,x,faceY,faceR,clock,fade,mood,look);

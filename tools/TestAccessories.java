@@ -12,7 +12,22 @@ final class TestAccessories extends Check {
         check("wardrobe grant persisted",c.progress.accessories(keys,values,false));c.wardrobe.refresh(c);
     }
     static void all(Layout L) {
-        catalog();rewards();sharedOutfits();migration();merge();ui(L);developerCategories(L);flair(L);sounds();picking(L);detail();
+        catalog();rewards();sharedOutfits();migration();merge();ui(L);developerCategories(L);flair(L);sounds();picking(L);detail();glitter(L);
+    }
+    private static void glitter(Layout L) {
+        check("glitter append-only ID",Accessories.COUNT==17 && Accessories.ID[16].equals("glitter_flair") && Accessories.variant(16)==3);
+        GameCore c=ready();c.wardrobe.refresh(c);
+        // Surface sampling must leave holes and empty corners untouched.
+        FlairProbe p=new FlairProbe();AccessoryGlitter g=new AccessoryGlitter(p,0,0,100,1,1);
+        g.fillEllipse(0,0,70,60,0xFFFFDD88);int before=p.calls;g.finish();
+        check("body glitter emits on painted surface",p.calls>before);
+        FlairProbe empty=new FlairProbe();new AccessoryGlitter(empty,0,0,100,1,1).finish();
+        check("body glitter does not emit off the body",empty.calls==0);
+        check("surface polygon excludes outside",AccessoryGlitter.inside(new float[]{0,0,10,0,0,10},2,2)
+                && !AccessoryGlitter.inside(new float[]{0,0,10,0,0,10},8,8));
+        grant(c);c.wardrobe.equip(c,AccessoryGlitter.ITEM,0);
+        GameCore reload=new GameCore(c.store,214,true);
+        check("glitter outfit persists",reload.wardrobe.equipped(0,Accessories.FLAIR)==AccessoryGlitter.ITEM);
     }
     private static void detail() {
         for(int item=0;item<Accessories.COUNT;item++) {
@@ -172,8 +187,9 @@ final class TestAccessories extends Check {
     private static void rewards() {
         try {
             Mem m=new Mem();ProgressData data=new ProgressData();
-            data.increment("old",Collect.progressKey(0),1);data.maximum("highest_stage",5);m.progress=data.encode();
+            data.increment("old",Collect.progressKey(0),1);data.maximum("highest_stage",5);data.maximum("achievement_run_lands",3);m.progress=data.encode();
             GameCore c=new GameCore(m,214,true);
+            check("existing land achievement grants glitter",c.wardrobe.owned[AccessoryGlitter.ITEM]);
             check("retroactive offline rewards",c.wardrobe.owned[0] && c.wardrobe.owned[1] && !c.wardrobe.owned[2]);
             byte[] once=c.progress.snapshot();c.wardrobe.revision=-1;c.wardrobe.refresh(c);
             check("reward grant is idempotent",java.util.Arrays.equals(once,c.progress.snapshot()));

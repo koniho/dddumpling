@@ -22,7 +22,7 @@ final class Storybook extends Draw {
     static float panelBottom(Layout L) {return L.h-L.padB-L.unit*.65f;}
     static float panelTop(Layout L) {return panelBottom(L)-L.unit*12.4f;}
     static float heroRadius(Layout L) {
-        return Math.min(L.w*.24f,(panelTop(L)-WardrobeScreen.trayY(L,1))/4.3f);
+        return Math.min(L.w*.28f,(panelTop(L)-WardrobeScreen.trayY(L,1))/4.3f);
     }
     private static float flight(GameCore c) {
         float t=Math.min(1f,c.storyT/FLIGHT_TIME);
@@ -33,7 +33,7 @@ final class Storybook extends Draw {
     }
     static float heroY(GameCore c,Layout L) {
         float t=flight(c),from=Showcase.focusCy(L)+c.storyFromRow*Showcase.rowStep(L);
-        float to=(WardrobeScreen.trayY(L,1)+panelTop(L))*.5f;
+        float to=(c.wardrobe.screen.trayBottom(c,L)+panelTop(L))*.5f;
         return from+(to-from)*t-heroRadius(L)*.4f*reaction(c);
     }
     private static float radius(GameCore c,Layout L) {
@@ -89,11 +89,11 @@ final class Storybook extends Draw {
         float open = Math.min(1f, c.storyT / OPEN_TIME);
         float grow = ease(open);
 
-        float pw = Math.min(L.w * 0.92f, s * 21f) / 2f;
+        float pw = L.w * .44f;
         float ph = s * 6.2f;
         float cy = (panelTop(L)+panelBottom(L))*.5f;
 
-        p.fillRect(0, 0, L.w, L.h, Glyph.withAlpha(0xFF0D0A18, (int) (200 * open)));
+        p.fillRect(0, 0, L.w, L.h, Glyph.withAlpha(0xFF0D0A18, (int) (255 * open)));
 
         float hw = pw * grow, hh = ph * grow;
         int tint = Collect.TIER_COLOR[Collect.TIER[i]];

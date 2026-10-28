@@ -81,8 +81,10 @@ final class Trinket {
                     Draw.fadeBy(Glyph.withAlpha(Draw.INK, 210), fade), Painter.CENTER, true);
             return;
         }
-        Shape.draw(p, shape, cx, cy, r, Collect.BODY[i], Collect.ACCENT[i], fade, i * 1.7f, true);
+        AccessoryGlitter glitter=AccessoryGlitter.begin(p,i,cx,cy,r,clock,fade);
+        Shape.draw(glitter==null?p:glitter, shape, cx, cy, r, Collect.BODY[i], Collect.ACCENT[i], fade, i * 1.7f, true);
         Finish.draw(p, Collect.FINISH[i], cx, cy, r, Collect.ACCENT[i], clock, fade, i);
+        if(glitter!=null)glitter.finish();
         float faceY=cy+r*FACE_DY[shape],faceR=r*FACE_R[shape];
         if(mood<0) face(p, i % 3, cx, faceY, faceR, fade);
         else reactionFace(p,cx,faceY,faceR,clock,fade,mood,look);

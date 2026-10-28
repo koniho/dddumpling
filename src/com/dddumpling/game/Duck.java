@@ -153,6 +153,8 @@ final class Duck extends Draw {
         int body=known?Collect.BODY[who]:0xFF393056,accent=known?Collect.ACCENT[who]:0xFF55476F;
         float bob=(float)Math.sin(clock*3+kind)*r*.035f;
         y+=bob;
+        AccessoryGlitter glitter=known?AccessoryGlitter.begin(p,who,x,y,r,clock,1):null;
+        Painter surface=p;if(glitter!=null)p=glitter;
         int bill=known?(kind==3?0xFFFFB591:kind==5?0xFFFFCB78:0xFFF79867):accent;
         skin(p,kind,0,x,y,r,r,body,r*.045f,SILHOUETTE,0);
         for(int side=-1;side<=1;side+=2) {
@@ -202,6 +204,7 @@ final class Duck extends Draw {
         if(kind==5)p.arc(x,y+r*.56f,r*.115f,r*.10f,40,230,accent,r*.045f);
         if(kind==7)for(int i=0;i<3;i++)p.arc(x,y+r*.67f,r*(.12f+i*.06f),r*(.09f+i*.04f),185,170,accent,r*.037f);
         if(kind>=9)for(int i=0;i<6;i++)p.arc(x,y+r*.61f,r*(.25f-i*.033f),r*(.17f-i*.022f),180,180,RAINBOW[i],r*.035f);
+        if(glitter!=null){glitter.finish();p=surface;}
         boolean blink=Math.sin(clock*1.7f+kind)>.985f;
         for(int side=-1;side<=1;side+=2) {
             float ex=hx+side*r*.34f+look*r*.10f,ey=hy-r*.01f;

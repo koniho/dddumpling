@@ -357,6 +357,7 @@ final class RunCompanion extends Draw {
     static final class Squash implements Painter {
         public int skin() { return p.skin(); }
         public int accessory(int who,int slot) {return p.accessory(who,slot);}
+        public float accessorySize(float r) {return p.accessorySize(r*Math.max(sx,sy));}
     public DuckBodies ducks() { return p.ducks(); }
         public GatorCompanion gator() { return p.gator(); }
         final Painter p;final float cx,cy,sx,sy;

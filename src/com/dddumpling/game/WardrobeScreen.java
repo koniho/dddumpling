@@ -86,6 +86,7 @@ final class WardrobeScreen extends Draw {
         }
     }
     private float trayEnd(GameCore c) {return c.wardrobe.owned[selected] && error.isEmpty()?.76f:1f;}
+    float trayBottom(GameCore c,Layout L) {return trayY(L,trayEnd(c));}
     static float trayTop(Layout L) {return Math.max(L.topSafe,L.unit*.7f);}
     static float trayY(Layout L,float f) {return trayTop(L)+Math.min((L.h-L.padB-trayTop(L))*.27f,L.unit*12f)*f;}
     void hero(Painter p,GameCore c,float x,float y,float r) {
@@ -107,7 +108,7 @@ final class WardrobeScreen extends Draw {
         float s=unit(L),x=L.w*.5f;
         p.text("Your achievements earned new accessories!",x,y(L,.14f),type(s*.67f),INK,Painter.CENTER,false);
         for(int i=0;i<Accessories.COUNT;i++) {
-            int columns=4;float cx=L.w*(.20f+(i%columns)*.20f),cy=y(L,.25f+(i/columns)*.125f);
+            int columns=4,rows=(Accessories.COUNT+columns-1)/columns;float cx=L.w*(.20f+(i%columns)*.20f),cy=y(L,.23f+(i/columns)*(.49f/rows));
             boolean owned=c.wardrobe.owned[i];
             p.fillCircle(cx,cy,s*1.65f,owned?0xFF45425B:0xFF302D44);
             AccessoryArt.item(new OpacityPainter(p,owned?1:.22f),i,cx,cy,s*1.15f,c.clock);

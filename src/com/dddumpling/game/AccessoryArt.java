@@ -15,7 +15,7 @@ final class AccessoryArt extends Draw {
         if(flair>=0 && flair<Accessories.COUNT && Accessories.slot(flair)==Accessories.FLAIR) {
             float cy=(topY+feetY)*.5f;
             target(out,Accessories.FLAIR,feetX-r*1.65f,cy-r*1.40f,feetX+r*1.65f,cy+r*1.40f);
-            AccessoryFlair.draw(out,Accessories.variant(flair),feetX,cy,r,clock);
+            if(flair!=AccessoryGlitter.ITEM)AccessoryFlair.draw(out,Accessories.variant(flair),feetX,cy,r,clock);
         }
         for(int slot:DRAW_ORDER) {
             int item=p.accessory(who,slot);
