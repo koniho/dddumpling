@@ -30,6 +30,10 @@ final class AccessoryArt extends Draw {
             }
         }
     }
+    static float detail(Painter p,float radius) {
+        float t=Math.max(0,Math.min(1,(p.accessorySize(radius)-.065f)/.055f));
+        return t*t*(3-2*t);
+    }
     private static void target(Painter p,int slot,float l,float t,float r,float b) {
         if(p.accessoryTargets())p.accessoryTarget(slot,new float[]{l,t,r,t,r,b,l,b});
     }
@@ -37,6 +41,7 @@ final class AccessoryArt extends Draw {
         if(item<0 || item>=Accessories.COUNT)return;
         int slot=Accessories.slot(item),v=Accessories.variant(item),c=Accessories.COLOR[item];
         int shade=Glyph.mix(c,0xFF3E3459,.36f),hi=Glyph.mix(c,0xFFFFFFFF,.5f);
+        float detail=detail(p,r);Painter trim=detail>0?new OpacityPainter(p,detail):p;
         if(slot==Accessories.HAT)target(p,slot,x-r*1.3f,y-r*1.25f,x+r*1.3f,y+r*.35f);
         else if(slot==Accessories.GLASSES)target(p,slot,x-r,y-r*.46f,x+r,y+r*.46f);
         else if(slot==Accessories.BOOTS)target(p,slot,x-r*1.05f,y-r*.40f,x+r*1.05f,y+r*.44f);
@@ -44,17 +49,11 @@ final class AccessoryArt extends Draw {
         if(slot==Accessories.FLAIR) {AccessoryFlair.draw(p,v,x,y,r*.70f,clock);return;}
         if(slot==Accessories.HAT) {
             if(v==2) {
-                float[] crown={x-r,y+r*.14f,x-r*.92f,y-r*.64f,x-r*.45f,y-r*.26f,x,y-r*.90f,
-                    x+r*.45f,y-r*.26f,x+r*.92f,y-r*.64f,x+r,y+r*.14f};
-                p.fillPoly(crown,shade);
-                p.fillPoly(new float[]{x-r*.86f,y,x-r*.79f,y-r*.4f,x-r*.4f,y-r*.09f,x,y-r*.63f,
-                    x+r*.4f,y-r*.09f,x+r*.79f,y-r*.4f,x+r*.86f,y},c);
-                for(int i=-1;i<=1;i++)p.fillCircle(x+i*r*.77f,y-r*(i==0?.86f:.61f),r*.1f,hi);
-                star(p,x,y-r*.05f,r*.18f,0xFFFFF5C7);
+                AccessoryDetail.crown(p,x,y,r,clock,detail);
             } else {
                 p.fillEllipse(x,y-r*.17f,r*.77f,r*.57f,shade);
                 p.fillEllipse(x-r*.09f,y-r*.26f,r*.64f,r*.46f,c);
-                p.fillEllipse(x-r*.22f,y-r*.42f,r*.32f,r*.17f,hi);
+                if(detail>0)trim.fillEllipse(x-r*.22f,y-r*.42f,r*.32f,r*.17f,hi);
                 p.fillRect(x-r*.74f,y-r*.13f,x+r*.74f,y+r*.07f,v==0?0xFFC07765:0xFF508D79);
                 p.fillEllipse(x,y+r*.10f,r*(v==0?1.20f:1.02f),r*.19f,shade);
                 p.fillEllipse(x-r*.03f,y+r*.04f,r*(v==0?1.18f:1),r*.13f,c);
@@ -74,13 +73,15 @@ final class AccessoryArt extends Draw {
                     p.fillEllipse(cx,y-r*.025f,r*.29f,r*(v==0?.26f:.22f),c);
                     p.fillEllipse(cx,y-r*.02f,r*.23f,r*(v==0?.20f:.17f),0xC934506D);
                 }
-                p.line(cx-r*.11f,y-r*.12f,cx+r*.04f,y+r*.04f,0xA9FFFFFF,r*.055f);
+                if(detail>0)trim.line(cx-r*.11f,y-r*.12f,cx+r*.04f,y+r*.04f,0xA9FFFFFF,r*.055f);
             }
         } else if(slot==Accessories.BOOTS) {
-            footwear(p,v,x,y,r,clock,c,shade,hi);
-        } else mask(p,v,x,y,r);
+            footwear(p,v,x,y,r,clock,c,shade,hi,detail);
+        } else mask(p,v,x,y,r,detail);
+        if(detail>0 && !(slot==Accessories.HAT && v==2))AccessoryDetail.trim(trim,slot,v,x,y,r,clock);
     }
-    private static void footwear(Painter p,int v,float x,float y,float r,float clock,int c,int shade,int hi) {
+    private static void footwear(Painter p,int v,float x,float y,float r,float clock,int c,int shade,int hi,float detail) {
+        Painter trim=detail>0?new OpacityPainter(p,detail):p;
         for(int side=-1;side<=1;side+=2) {
             float cx=x+side*r*.49f,yy=y+r*.025f*(float)Math.sin(clock*4+side);
             if(v==0) {
@@ -89,17 +90,18 @@ final class AccessoryArt extends Draw {
                 p.fillEllipse(cx+side*r*.06f,yy+r*.035f,r*.39f,r*.22f,c);
                 p.fillEllipse(cx-side*r*.08f,yy-r*.09f,r*.19f,r*.10f,shade);
                 p.arc(cx-side*r*.04f,yy-r*.05f,r*.25f,r*.16f,190,165,hi,r*.065f);
-                for(int hole=0;hole<3;hole++)p.fillEllipse(cx+side*r*(.08f+hole*.08f),yy+r*(.01f+(hole%2)*.035f),r*.027f,r*.022f,shade);
-                p.arc(cx+side*r*.05f,yy+r*.06f,r*.31f,r*.09f,20,140,hi,r*.035f);
+                if(detail>0)for(int hole=0;hole<3;hole++)trim.fillEllipse(cx+side*r*(.08f+hole*.08f),yy+r*(.01f+(hole%2)*.035f),r*.027f,r*.022f,shade);
+                if(detail>0)trim.arc(cx+side*r*.05f,yy+r*.06f,r*.31f,r*.09f,20,140,hi,r*.035f);
             } else if(v==1) {
                 // Low-cut glitter shoes, with a contrasting cushioned sole and bow.
                 p.fillEllipse(cx+side*r*.06f,yy+r*.12f,r*.36f,r*.17f,shade);
                 p.fillEllipse(cx+side*r*.06f,yy+r*.055f,r*.36f,r*.20f,c);
                 p.fillEllipse(cx-side*r*.09f,yy-r*.075f,r*.15f,r*.085f,shade);
-                for(int i=0;i<5;i++) {
+                star(p,cx,yy+r*.055f,r*.06f,hi);
+                if(detail>0)for(int i=0;i<5;i++) {
                     float xx=cx+r*(-.20f+i*.10f),sy=yy+r*(.035f+(i%2)*.06f);
                     float flash=.65f+.35f*(float)Math.sin(clock*4+i*1.7f+side);
-                    star(p,xx,sy,r*(.035f+.025f*flash),hi);
+                    star(trim,xx,sy,r*(.035f+.025f*flash),hi);
                 }
                 p.fillPoly(new float[]{cx-r*.16f,yy-r*.13f,cx,yy-r*.07f,cx-r*.13f,yy+r*.01f},hi);
                 p.fillPoly(new float[]{cx+r*.16f,yy-r*.13f,cx,yy-r*.07f,cx+r*.13f,yy+r*.01f},hi);
@@ -111,7 +113,7 @@ final class AccessoryArt extends Draw {
                 p.fillPoly(shoePoints(sole,cx,yy,r,side),shade);
                 p.fillPoly(shoePoints(upper,cx,yy,r,side),c);
                 p.line(cx-side*r*.20f,yy-r*.23f,cx-side*r*.14f,yy-r*.03f,hi,r*.07f);
-                p.fillEllipse(cx+side*r*.25f,yy+r*.015f,r*.11f,r*.04f,hi);
+                if(detail>0)trim.fillEllipse(cx+side*r*.25f,yy+r*.015f,r*.11f,r*.04f,hi);
                 p.fillCircle(cx-side*r*.18f,yy-r*.17f,r*.045f,0xFFFFE8A3);
             }
         }
@@ -119,17 +121,18 @@ final class AccessoryArt extends Draw {
     private static float[] shoePoints(float[] a,float x,float y,float r,int side) {
         for(int i=0;i<a.length;i+=2){a[i]=x+a[i]*r*side;a[i+1]=y+a[i+1]*r;}return a;
     }
-    private static float[] oval(float x,float y,float rx,float ry) {
-        float[] a=new float[48];for(int i=0;i<24;i++){float t=i*Softbody.TAU/24;
+    private static float[] oval(float x,float y,float rx,float ry,int n) {
+        float[] a=new float[n*2];for(int i=0;i<n;i++){float t=i*Softbody.TAU/n;
             a[i*2]=x+rx*(float)Math.cos(t);a[i*2+1]=y+ry*(float)Math.sin(t);}return a;
     }
-    private static void mask(Painter p,int v,float x,float y,float r) {
+    private static void mask(Painter p,int v,float x,float y,float r,float detail) {
+        int n=detail>0?24:12;Painter trim=detail>0?new OpacityPainter(p,detail):p;
         if(v==0) {
-            Trinket.ninjaMask(p,x,y,r*1.10f,1);
+            Trinket.ninjaMask(p,x,y,r*1.10f,1,detail>0);
         } else if(v==1) {
-            float[] head=oval(x,y,r*.97f,r*.90f),left=oval(x-r*.35f,y-r*.01f,r*.26f,r*.30f),right=oval(x+r*.35f,y-r*.01f,r*.26f,r*.30f);
+            float[] head=oval(x,y,r*.97f,r*.90f,n),left=oval(x-r*.35f,y-r*.01f,r*.26f,r*.30f,n),right=oval(x+r*.35f,y-r*.01f,r*.26f,r*.30f,n);
             p.fillContours(new float[][]{head,left,right},0xFFFFD667);
-            p.arc(x-r*.07f,y-r*.22f,r*.72f,r*.53f,205,120,0xFFFFEDAD,r*.11f);
+            if(detail>0)trim.arc(x-r*.07f,y-r*.22f,r*.72f,r*.53f,205,120,0xFFFFEDAD,r*.11f);
             p.strokePoly(left,0xFFE7AF44,r*.045f);p.strokePoly(right,0xFFE7AF44,r*.045f);
             p.fillEllipse(x,y+r*.42f,r*.70f,r*.27f,0xFFD98A38);
             p.fillEllipse(x,y+r*.34f,r*.70f,r*.24f,0xFFFFB557);
@@ -143,7 +146,7 @@ final class AccessoryArt extends Draw {
             p.fillPoly(shape,0xFF8E3654);
             for(int side=-1;side<=1;side+=2) {
                 p.fillEllipse(x+side*r*.55f,y+r*.33f,r*.29f,r*.25f,0xFFDF686B);
-                p.arc(x+side*r*.53f,y+r*.27f,r*.21f,r*.13f,200,130,0xFFFFB1A0,r*.055f);
+                if(detail>0)trim.arc(x+side*r*.53f,y+r*.27f,r*.21f,r*.13f,200,130,0xFFFFB1A0,r*.055f);
                 p.line(x+side*r*.78f,y+r*.07f,x+side*r*.68f,y+r*.19f,0xFFFFD38D,r*.055f);
             }
             p.fillEllipse(x,y+r*.32f,r*.20f,r*.17f,0xFFF28C7C);
@@ -151,10 +154,10 @@ final class AccessoryArt extends Draw {
             for(int tooth=0;tooth<4;tooth++)p.fillRect(x+r*(-.27f+tooth*.14f),y+r*.47f,x+r*(-.16f+tooth*.14f),y+r*.57f,0xFFFFE5BD);
             p.arc(x,y+r*.61f,r*.39f,r*.14f,25,130,0xFFEB8A83,r*.055f);
         } else {
-            float[] head=oval(x,y,r*.98f,r*1.02f);
+            float[] head=oval(x,y,r*.98f,r*1.02f,n);
             float[] left=heroEye(x-r*.35f,y,r,-1),right=heroEye(x+r*.35f,y,r,1);
             p.fillContours(new float[][]{head,left,right},0xFF56518C);
-            p.arc(x,y-r*.14f,r*.84f,r*.78f,205,130,0xFF8177B4,r*.10f);
+            if(detail>0)trim.arc(x,y-r*.14f,r*.84f,r*.78f,205,130,0xFF8177B4,r*.10f);
             p.strokePoly(left,0xFF78E4DD,r*.10f);p.strokePoly(right,0xFF78E4DD,r*.10f);
             p.arc(x,y+r*.49f,r*.38f,r*.20f,25,130,0xFF78CECE,r*.075f);
             p.line(x-r*.12f,y-r*.73f,x+r*.13f,y-r*.88f,0xFFB1F6EA,r*.055f);

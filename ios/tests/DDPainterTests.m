@@ -18,6 +18,7 @@
 - (void)testCanvasStartsWithDefaultSkin {
   XCTAssertEqual([[DDIOSPainter new] skin], 0);
   XCTAssertFalse([[DDIOSPainter new] accessoryTargets]);
+  XCTAssertEqualWithAccuracy([[DDIOSPainter new] accessorySizeWithFloat:64], .1f, .0001f);
   [[DDIOSPainter new] accessoryTargetWithInt:0 withFloatArray:nil];
 }
 

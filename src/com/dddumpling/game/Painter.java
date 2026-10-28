@@ -10,6 +10,8 @@ package com.dddumpling.game;
  */
 interface Painter {
     default int accessory(int who,int slot) {return -1;}
+    /** Projected accessory radius as a fraction of viewport width (640-unit standalone previews). */
+    default float accessorySize(float radius) {return radius/640f;}
     /** Optional attachment geometry for display-case picking; ordinary drawing skips it. */
     default boolean accessoryTargets() {return false;}
     default void accessoryTarget(int slot,float[] corners) {}

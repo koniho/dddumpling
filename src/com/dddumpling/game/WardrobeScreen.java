@@ -55,8 +55,7 @@ final class WardrobeScreen extends Draw {
             p.text("X",L.w*.88f,y(L,.062f),type(s),INK,Painter.CENTER,true);
             drawReward(p,c,L);return;
         }
-        p.fillRect(L.w*.06f,trayY(L,0),L.w*.94f,trayY(L,trayEnd(c)),0xFF2A2348);
-        p.text("MIX, MATCH, MAKE IT YOURS",x,trayY(L,.08f),type(s*.69f),0xFFFFE29A,Painter.CENTER,true);
+        p.fillRect(L.w*.06f,trayY(L,.09f),L.w*.94f,trayY(L,trayEnd(c)),0xFF2A2348);
         for(int k=0;k<Accessories.SLOTS;k++) {
             float step=L.w*.80f/Accessories.SLOTS,l=L.w*.10f+k*step,rr=l+step-L.w*.01f;
             p.fillRect(l,trayY(L,.12f),rr,trayY(L,.27f),k==slot?0xFF596477:0xFF39354F);

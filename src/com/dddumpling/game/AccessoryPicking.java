@@ -5,13 +5,14 @@ final class AccessoryPicking implements Painter {
     private static final int[] FRONT={Accessories.HAT,Accessories.BOOTS,Accessories.GLASSES,Accessories.MASK,Accessories.FLAIR};
     final float[][] targets=new float[Accessories.SLOTS][];
     private GameCore core;
+    private float width=640;
     int hit(GameCore c,Layout L,float x,float y) {
         capture(c,L);
         for(int slot:FRONT)if(contains(slot,x,y,L.unit*.45f))return slot;
         return -1;
     }
     void capture(GameCore c,Layout L) {
-        java.util.Arrays.fill(targets,null);core=c;
+        java.util.Arrays.fill(targets,null);core=c;width=L.w;
         if(c.storyOpen())Storybook.hero(this,c,L);
     }
     boolean contains(int slot,float x,float y,float pad) {
@@ -27,6 +28,7 @@ final class AccessoryPicking implements Painter {
         return u>=-pu && u<=1+pu && v>=-pv && v<=1+pv;
     }
     public int accessory(int who,int slot) {return core.wardrobe.equipped(who,slot);}
+    public float accessorySize(float radius) {return radius/width;}
     public int skin() {return core.preferences.skin;}
     public DuckBodies ducks() {return core.ducks;}
     public GatorCompanion gator() {return core.gator;}

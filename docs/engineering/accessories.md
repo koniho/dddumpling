@@ -13,7 +13,7 @@ Tap an earned accessory or drag it onto the featured squishy to equip and save
 immediately. Tap an already equipped card to remove it. Dragging an equipped item
 onto the squishy keeps it on. Dropping elsewhere or cancelling a drag leaves the outfit unchanged.
 Locked cards show their achievement goal without changing the outfit. The picker
-has no separate Remove control or tap/drag instructions. No extra Dress Up screen
+has no separate Remove control, promotional heading or tap/drag instructions. No extra Dress Up screen
 or Wear It step.
 Each change plays the shared Star Path sparkle/star-outline burst, followed by a
 random nonrepeating dance; cosmetic randomness is separate from gameplay RNG.
@@ -122,3 +122,13 @@ scale, remains visible during Ninja mode, and is cosmetic only. `AccessoryFlair`
 uses a fixed number of clock-driven vector primitives, without blur surfaces,
 gameplay particles, physics state or RNG calls. Decorative orbits keep the face
 clear. New styles inherit normal retroactive achievement unlocks and unlimited use.
+
+## Size-aware artwork
+
+`Painter.accessorySize` reports projected radius divided by viewport width. Renderer
+supplies the viewport; portrait fitting includes its scale and color/opacity wrappers
+forward the value. This keeps Android pixels and iOS points on the same detail curve.
+Accessory trim fades in between 6.5% and 12% of viewport width. Small views skip fine
+ornament, reduce mask contours and use fewer Flair glow layers; silhouettes, colors,
+attachments and orbit timing stay consistent. Large views add seams, jewels, glints
+and shading. Star Crown uses a velvet center, five gold points and inset jewels.

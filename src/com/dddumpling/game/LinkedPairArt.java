@@ -97,6 +97,7 @@ final class LinkedPairArt {
     /** Rotates the complete code-drawn pair, including faces, clasp and clipping masks. */
     static final class TurnPainter implements Painter {
         public int accessory(int who,int slot) {return p.accessory(who,slot);}
+        public float accessorySize(float radius) {return p.accessorySize(radius);}
         public boolean accessoryTargets() {return p.accessoryTargets();}
         public void accessoryTarget(int slot,float[] corners) {p.accessoryTarget(slot,turn(corners));}
     public int skin() { return p.skin(); }

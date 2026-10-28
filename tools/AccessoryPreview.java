@@ -47,6 +47,10 @@ final class AccessoryPreview {
             }
             Png.write(new File(dir,"214-"+(slot==Accessories.MASK?"masks":slot==Accessories.FLAIR?"flair":"footwear")+".png"),review.resolve(),w,h);
         }
+        c.wardrobe.screen.show(c,0);c.wardrobe.screen.slot=Accessories.HAT;
+        c.wardrobe.equip(c,Accessories.item(Accessories.HAT,2),0);
+        RasterPainter crown=new RasterPainter(w,h,ss);Renderer.draw(crown,c,L);
+        Png.write(new File(dir,"214-crown-editor.png"),crown.resolve(),w,h);
         c.wardrobe.screen.show(c,0);c.wardrobe.screen.slot=Accessories.MASK;c.wardrobe.screen.selected=Accessories.item(Accessories.MASK,3);c.wardrobe.equip(c,c.wardrobe.screen.selected,0);
         RasterPainter masks=new RasterPainter(w,h,ss);Renderer.draw(masks,c,L);
         Png.write(new File(dir,"214-mask-editor.png"),masks.resolve(),w,h);

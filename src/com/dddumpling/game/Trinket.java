@@ -92,9 +92,12 @@ final class Trinket {
 
     /** Oval ninja hood with a horizontal eye opening and a tied right side. */
     static void ninjaMask(Painter p,float x,float y,float r,float fade) {
+        ninjaMask(p,x,y,r,fade,true);
+    }
+    static void ninjaMask(Painter p,float x,float y,float r,float fade,boolean detailed) {
         int cloth=Draw.fadeBy(0xFF211B35,fade),edge=Draw.fadeBy(0xFF615370,fade);
-        float[] hood=oval(x,y+r*.10f,r*.98f,r*1.05f,32);
-        float[] eyes=oval(x,y-r*.02f,r*.68f,r*.29f,24);
+        float[] hood=oval(x,y+r*.10f,r*.98f,r*1.05f,detailed?32:16);
+        float[] eyes=oval(x,y-r*.02f,r*.68f,r*.29f,detailed?24:12);
         // Even-odd fill leaves the character and both eyes visible through the opening while the
         // continuous hood covers the forehead, mouth, and both outer sides of the eye line.
         p.fillContours(new float[][]{hood,eyes},cloth);

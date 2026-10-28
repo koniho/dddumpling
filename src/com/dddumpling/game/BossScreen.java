@@ -310,6 +310,7 @@ final class BossScreen extends Draw {
         public int skin() { return p.skin(); }
         final Painter p;final float ox,oy,s;
         public int accessory(int who,int slot) {return p.accessory(who,slot);}
+        public float accessorySize(float radius) {return p.accessorySize(radius*Math.abs(s));}
         public boolean accessoryTargets() {return p.accessoryTargets();}
         public void accessoryTarget(int slot,float[] corners) {p.accessoryTarget(slot,points(corners));}
     public DuckBodies ducks(){return p.ducks();}

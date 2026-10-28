@@ -3,6 +3,7 @@ package com.dddumpling.game;
 /** Applies a smooth grayscale palette to every primitive without changing its opacity. */
 final class MonochromePainter implements Painter,ArtStamp {
     public int accessory(int who,int slot) {return p.accessory(who,slot);}
+    public float accessorySize(float radius) {return p.accessorySize(radius);}
     public boolean accessoryTargets() {return p.accessoryTargets();}
     public void accessoryTarget(int slot,float[] corners) {p.accessoryTarget(slot,corners);}
     public int skin() { return p.skin(); }

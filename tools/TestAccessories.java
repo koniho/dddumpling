@@ -12,7 +12,24 @@ final class TestAccessories extends Check {
         check("wardrobe grant persisted",c.progress.accessories(keys,values,false));c.wardrobe.refresh(c);
     }
     static void all(Layout L) {
-        catalog();rewards();sharedOutfits();migration();merge();ui(L);developerCategories(L);flair(L);sounds();picking(L);
+        catalog();rewards();sharedOutfits();migration();merge();ui(L);developerCategories(L);flair(L);sounds();picking(L);detail();
+    }
+    private static void detail() {
+        for(int item=0;item<Accessories.COUNT;item++) {
+            FlairProbe small=new FlairProbe(),large=new FlairProbe();
+            AccessoryArt.item(small,item,0,0,24,1);AccessoryArt.item(large,item,0,0,140,1);
+            check("small accessory skips close-up decoration "+item,small.calls>0 && small.calls<large.calls);
+        }
+        for(final float width:new float[]{320,640,1080}) {
+            Painter p=new FlairProbe(){public float accessorySize(float r){return r/width;}};
+            check("detail follows viewport not pixel density",AccessoryArt.detail(p,width*.06f)==0 && AccessoryArt.detail(p,width*.13f)==1);
+            float mid=AccessoryArt.detail(p,width*.09f);
+            check("detail blends between view sizes",mid>0 && mid<1);
+            Painter fitted=new BossScreen.PortraitFit(p,0,0,0,0,.25f);
+            check("portrait uses projected accessory size",AccessoryArt.detail(fitted,width*.20f)==0);
+            fitted=new BossScreen.PortraitFit(p,0,0,0,0,3);
+            check("enlarged portrait restores decoration",AccessoryArt.detail(fitted,width*.05f)==1);
+        }
     }
     private static void picking(Layout L) {
         GameCore c=ready();grant(c);c.caseOpen=true;
@@ -121,6 +138,8 @@ final class TestAccessories extends Check {
             calls++;hash=hash*31+color;
             for(float value:values)hash=hash*31+Float.floatToIntBits(value);
         }
+        public void line(float x,float y,float xx,float yy,int color,float width) {record(color,x,y,xx,yy,width);}
+        public void strokePoly(float[] xy,int color,float width) {record(color,xy);}
         public void fillCircle(float x,float y,float r,int color) {record(color,x,y,r);}
         public void fillEllipse(float x,float y,float rx,float ry,int color) {record(color,x,y,rx,ry);}
         public void fillPoly(float[] xy,int color) {record(color,xy);}

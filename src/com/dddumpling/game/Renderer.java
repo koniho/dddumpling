@@ -17,6 +17,7 @@ final class Renderer extends Draw {
         p=Skins.painter(p,c.preferences.skin);
         p=new OpacityPainter(p,1f) {
             public int accessory(int who,int slot) {return c.wardrobe.equipped(who,slot);}
+            public float accessorySize(float radius) {return radius/L.w;}
             public DuckBodies ducks() {return c.ducks;}
             public GatorCompanion gator() {return c.gator;}
         };
