@@ -10,10 +10,10 @@ final class UnderwaterCave extends Draw {
         return UnderwaterVista.CAVE+(plane==0?(lit?2:1):4+(plane-1)*2+(lit?1:0));
     }
     static float planeX(float time,int plane,Layout L) {
-        return L.w*(-.025f+(.004f+plane*.003f)*(float)Math.sin(time*(.19f+plane*.043f)+plane*2.2f));
+        return L.w*(-.025f+(.006f+plane*.0045f)*(float)Math.sin(time*(.19f+plane*.043f)+plane*2.2f));
     }
     static float planeY(float time,int plane,Layout L) {
-        return L.h*(-.025f+(.003f+plane*.002f)*(float)Math.sin(time*(.23f+plane*.031f)+plane*1.8f));
+        return L.h*(-.025f+(.0045f+plane*.003f)*(float)Math.sin(time*(.23f+plane*.031f)+plane*1.8f));
     }
     static void draw(Painter p,GameCore c,Layout L,float fade,float arrival) {
         if(p instanceof WaterPainter)p=((WaterPainter)p).anchored();

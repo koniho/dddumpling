@@ -29,10 +29,10 @@ final class SlimeBasin extends Draw {
         return L.playTop+(span-bankHeight(time,side,L))*.5f+span*.0015f*(float)Math.sin(time*.5f+side);
     }
     static float layerWidth(float time,int side,int layer,Layout L) {
-        return bankWidth(time,side,L)*(1+.014f*(float)Math.sin(time*(.31f+layer*.045f)+layer*1.9f+side*2.4f));
+        return bankWidth(time,side,L)*(1+.021f*(float)Math.sin(time*(.31f+layer*.045f)+layer*1.9f+side*2.4f));
     }
     static float layerTop(float time,int side,int layer,Layout L) {
-        return bankTop(time,side,L)+(L.deckTop-L.playTop)*.007f
+        return bankTop(time,side,L)+(L.deckTop-L.playTop)*.0105f
                 *(float)Math.sin(time*(.26f+layer*.037f)+layer*2.1f+side*1.7f);
     }
     private static void bankArt(Painter p,GameCore c,Layout L,int side,int layer,boolean lit,int alpha) {
