@@ -11,6 +11,9 @@ final class AccessoryArt extends Draw {
             float feetX,float feetY,float r,float clock,float fade,boolean ninja,float bootScale) {
         if(r<=0 || fade<=0)return;
         Painter out=fade==1?p:new OpacityPainter(p,fade);
+        int flair=p.accessory(who,Accessories.FLAIR);
+        if(flair>=0 && flair<Accessories.COUNT && Accessories.slot(flair)==Accessories.FLAIR)
+            AccessoryFlair.draw(out,Accessories.variant(flair),feetX,(topY+feetY)*.5f,r,clock);
         for(int slot:DRAW_ORDER) {
             int item=p.accessory(who,slot);
             // Gameplay hood owns the head/face; the saved outfit is never changed.
@@ -28,6 +31,7 @@ final class AccessoryArt extends Draw {
         if(item<0 || item>=Accessories.COUNT)return;
         int slot=Accessories.slot(item),v=Accessories.variant(item),c=Accessories.COLOR[item];
         int shade=Glyph.mix(c,0xFF3E3459,.36f),hi=Glyph.mix(c,0xFFFFFFFF,.5f);
+        if(slot==Accessories.FLAIR) {AccessoryFlair.draw(p,v,x,y,r*.70f,clock);return;}
         if(slot==Accessories.HAT) {
             if(v==2) {
                 float[] crown={x-r,y+r*.14f,x-r*.92f,y-r*.64f,x-r*.45f,y-r*.26f,x,y-r*.90f,
@@ -151,7 +155,7 @@ final class AccessoryArt extends Draw {
     private static float[] heroEye(float x,float y,float r,int side) {
         return shoePoints(new float[]{-.25f,-.19f,.04f,-.31f,.29f,-.36f,.27f,.13f,.07f,.30f,-.17f,.24f,-.27f,.06f},x,y,r,side);
     }
-    private static void star(Painter p,float x,float y,float r,int color) {
+    static void star(Painter p,float x,float y,float r,int color) {
         float[] pts=new float[20];
         for(int i=0;i<10;i++) {float a=-1.5708f+i*.62832f,rr=r*(i%2==0?1:.48f);
             pts[i*2]=x+(float)Math.cos(a)*rr;pts[i*2+1]=y+(float)Math.sin(a)*rr;}

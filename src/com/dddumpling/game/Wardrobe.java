@@ -3,7 +3,7 @@ package com.dddumpling.game;
 /** Earn once, wear on any squishy. Each character's slots are independent saved registers. */
 final class Wardrobe {
     static final int ITEM_BITS=10, ITEM_MASK=(1<<ITEM_BITS)-1;
-    private static final String[] SLOT_ID={"hat","glasses","boots","mask"};
+    private static final String[] SLOT_ID={"hat","glasses","boots","mask","flair"};
     final boolean[] owned=new boolean[Accessories.COUNT];
     final long[][] outfits=new long[Collect.COUNT][Accessories.SLOTS];
     long revision=-1;

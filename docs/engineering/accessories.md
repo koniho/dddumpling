@@ -9,7 +9,7 @@ Open a collected squishy's story, then **Dress Up**. Selecting a card previews i
 without changing the save. **Wear It** and **Remove** save immediately for that squishy.
 An earned style can be worn by any number of squishies at the same time. Editing
 one outfit never removes items from another. There is one item per slot, and all
-four slots combine. Reopening Dress Up shows the saved outfit, not a new preview.
+five slots combine. Reopening Dress Up shows the saved outfit, not a new preview.
 No item affects gameplay. Ninja hides conflicting head/face accessories temporarily.
 Equipped hats and boots replace the contextual explorer equipment in those slots.
 
@@ -30,9 +30,12 @@ Equipped hats and boots replace the contextual explorer equipment in those slots
 | Mask | Duck | Reach stage 20 |
 | Mask | Samurai | Collect 25 squishies |
 | Mask | Sky Hero | Survive 2 minutes |
+| Flair | Starstruck | Beat Super Slime |
+| Flair | Flutter | Visit 2 lands in one run |
+| Flair | Soft Glow | Survive 5 minutes |
 
 The collection now has three hats, three sunglasses, three footwear styles and four
-masks. Footwear uses foam clogs, glitter shoes and rounded high heels. Fly Agaric
+masks, plus three animated flair styles. Footwear uses foam clogs, glitter shoes and rounded high heels. Fly Agaric
 uses a narrower footwear attachment span to keep the shoes under its stem. The
 Ninja cosmetic reuses the gameplay hood art but grants no power; Sky Hero is an
 original teal/violet design with a comet emblem. Mask artwork draws under glasses
@@ -70,7 +73,7 @@ clears wardrobe records behind a separate merge epoch; stale cloud outfits canno
 resurrect them. Retained achievements regrant eligible items on reconciliation.
 **Clear All Progress** clears the underlying achievements too. Developer builds
 can use **Gift Accessory**, **All Accessories**, category chips (**All Hats**, **All Shades**,
-**All Boots**, **All Masks**), and **Reset Outfits** in Progress
+**All Boots**, **All Masks**, **All Flair**), and **Reset Outfits** in Progress
 without recording fake achievement progress or reporting to platform services.
 
 ## Attachment extension points
@@ -81,7 +84,7 @@ the character being drawn. Ordinary shapes reuse `Trinket`'s face offsets and
 `AccessoryAnchors`' hat/feet offsets. Ducks and boss friends supply their animated
 head positions directly. No lookup uses the companion's home location.
 
-When adding a body shape, extend `AccessoryAnchors` and inspect all four slots.
+When adding a body shape, extend `AccessoryAnchors` and inspect all slots.
 When adding a custom character renderer, call `AccessoryArt.outfit` with its live
 anchors, inside its facing/scale transform, and forward wardrobe lookups through
 any new Painter wrapper. Unknown silhouettes must not display accessories.
@@ -92,3 +95,12 @@ The small vector pieces use the shared Android/iOS drawing seam, with no blur,
 new bitmap caches, or per-frame achievement scans. Rewards reconcile only after a
 progress revision. `TestAccessories` covers rules, merge conflicts, reset and UI;
 `214-` preview frames show the editor, shared outfits, rewards, designs and body families.
+
+## Animated flair
+
+Flair is an independent fifth slot: orbiting glowing stars, fluttering butterflies,
+or a softly pulsing mint/lilac aura. It follows the current character transform and
+scale, remains visible during Ninja mode, and is cosmetic only. `AccessoryFlair`
+uses a fixed number of clock-driven vector primitives, without blur surfaces,
+gameplay particles, physics state or RNG calls. Decorative orbits keep the face
+clear. New styles inherit normal retroactive achievement unlocks and unlimited use.

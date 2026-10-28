@@ -12,7 +12,7 @@ final class TestAccessories extends Check {
         check("wardrobe grant persisted",c.progress.accessories(keys,values,false));c.wardrobe.refresh(c);
     }
     static void all(Layout L) {
-        catalog();rewards();sharedOutfits();migration();merge();ui(L);developerCategories(L);
+        catalog();rewards();sharedOutfits();migration();merge();ui(L);developerCategories(L);flair(L);
     }
     private static void developerCategories(Layout L) {
         if(!BuildFlags.DEVELOPER)return;
@@ -38,11 +38,48 @@ final class TestAccessories extends Check {
             Layout small=new Layout();small.compute(size[0],size[1],0,20,0,24);
             SettingsUi u=new SettingsUi();u.compute(small,SettingsUi.PROGRESS);
             for(int slot=0;slot<Accessories.SLOTS;slot++) {
-                float x=(u.testChipL(slot%2,2)+u.testChipR(slot%2,2))*.5f,y=u.accessoryCategoryY[slot/2]+u.testH*.5f;
+                float x=(u.testChipL(slot%2,u.accessoryColumns(slot/2))+u.testChipR(slot%2,u.accessoryColumns(slot/2)))*.5f,y=u.accessoryCategoryY[slot/2]+u.testH*.5f;
                 check("category chip routes to matching grant",u.hit(x,y)==SettingsUi.HIT_ACCESSORY_CATEGORY+slot);
             }
-            check("category chips fit panel",u.accessoryCategoryY[1]+u.testH<u.panelB);
+            check("category chips fit panel",u.accessoryCategoryY[u.accessoryCategoryY.length-1]+u.testH<u.panelB);
         }
+    }
+    private static void flair(Layout L) {
+        GameCore c=ready();grant(c);int item=Accessories.item(Accessories.FLAIR,0);
+        c.wardrobe.equip(c,9,0);c.wardrobe.equip(c,item,0);c.wardrobe.equip(c,item,1);
+        check("flair stacks with masks and is reusable",c.wardrobe.equipped(0,Accessories.MASK)==9
+                && c.wardrobe.equipped(0,Accessories.FLAIR)==item && c.wardrobe.equipped(1,Accessories.FLAIR)==item);
+        GameCore restored=new GameCore(c.store,216,true);
+        check("flair saved independently with outfit",restored.wardrobe.equipped(0,Accessories.FLAIR)==item);
+        WardrobeScreen ui=c.wardrobe.screen;ui.show(c,0);
+        int tab=ui.hit(L,L.w*.82f,WardrobeScreen.y(L,.45f));ui.choose(c,tab);
+        check("fifth wardrobe tab opens flair",tab==10+Accessories.FLAIR && ui.slot==Accessories.FLAIR);
+        for(int variant=0;variant<Accessories.count(Accessories.FLAIR);variant++) {
+            FlairProbe first=new FlairProbe(),same=new FlairProbe(),later=new FlairProbe();
+            AccessoryFlair.draw(first,variant,100,150,40,1f);
+            AccessoryFlair.draw(same,variant,100,150,40,1f);
+            AccessoryFlair.draw(later,variant,100,150,40,1.3f);
+            check("flair animates deterministically "+variant,first.hash==same.hash && first.hash!=later.hash);
+            check("flair has bounded draw cost "+variant,first.calls>0 && first.calls<80);
+        }
+        FlairProbe powered=new FlairProbe() {
+            public int accessory(int who,int slot) {return slot==Accessories.FLAIR?item:-1;}
+        };
+        AccessoryArt.outfit(powered,0,100,150,30,100,100,190,40,1,1,true);
+        check("Ninja costume keeps cosmetic flair visible",powered.calls>0);
+    }
+    private static class FlairProbe extends OpacityPainter {
+        int calls;long hash=1;
+        FlairProbe() {super(new RasterPainter(1,1,1),1);}
+        private void record(int color,float... values) {
+            calls++;hash=hash*31+color;
+            for(float value:values)hash=hash*31+Float.floatToIntBits(value);
+        }
+        public void fillCircle(float x,float y,float r,int color) {record(color,x,y,r);}
+        public void fillEllipse(float x,float y,float rx,float ry,int color) {record(color,x,y,rx,ry);}
+        public void fillPoly(float[] xy,int color) {record(color,xy);}
+        public void fillContours(float[][] xy,int color) {for(float[] contour:xy)record(color,contour);}
+        public void arc(float x,float y,float rx,float ry,float start,float sweep,int color,float width) {record(color,x,y,rx,ry,start,sweep,width);}
     }
     private static void catalog() {
         java.util.HashSet<String> ids=new java.util.HashSet<>();

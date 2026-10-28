@@ -15,7 +15,7 @@ final class SettingsUi {
     static final int HIT_ACCESSORY_GRANT=25,HIT_ACCESSORY_ALL=26,HIT_ACCESSORY_RESET=27;
     static final int HIT_ACCESSORY_CATEGORY=28;
     float accessoryY;
-    final float[] accessoryCategoryY=new float[2];
+    final float[] accessoryCategoryY=new float[(Accessories.SLOTS+1)/2];
     static final String[] TABS = {"RUN", "MINIGAMES", "POWERS", "PROGRESS"};
     /** Power shortcuts and minigame shortcuts share action IDs, not a row. */
     static final int HIT_TEST = 200;
@@ -86,7 +86,7 @@ final class SettingsUi {
             clearLabelY=panelT+s*25f;clearY=clearLabelY+s*.5f;
             collectAllY=clearY+s*3f;resetProgressY=collectAllY+s*3f;
             accessoryY=resetProgressY+s*3f;
-            for(int row=0;row<2;row++)accessoryCategoryY[row]=accessoryY+s*2.5f*(row+1);
+            for(int row=0;row<accessoryCategoryY.length;row++)accessoryCategoryY[row]=accessoryY+s*2.25f*(row+1);
         }
         if(tab==MINIGAMES) {
             testY=panelT+s*16f; testLabelY=testY-s*.6f; caveY=testY+s*3f;
@@ -114,6 +114,7 @@ final class SettingsUi {
         return panelR - (panelR - panelL) * 0.06f;
     }
 
+    int accessoryColumns(int row) {return Math.min(2,Accessories.SLOTS-row*2);}
     int hit(float x, float y) {
         if (!BuildFlags.DEVELOPER) return HIT_NONE;
         if (x<panelL || x>panelR || y<panelT || y>panelB) return HIT_OUTSIDE;
@@ -142,7 +143,7 @@ final class SettingsUi {
         } else if(tab==PROGRESS) {
             for(int category=0;category<Accessories.SLOTS;category++)
                 if(y>=accessoryCategoryY[category/2] && y<=accessoryCategoryY[category/2]+testH
-                        && inChip(x,category%2,2))return HIT_ACCESSORY_CATEGORY+category;
+                        && inChip(x,category%2,accessoryColumns(category/2)))return HIT_ACCESSORY_CATEGORY+category;
             if(y>=accessoryY && y<=accessoryY+testH)for(int i=0;i<3;i++)if(inChip(x,i,3))return HIT_ACCESSORY_GRANT+i;
             if(y>=debuffY && y<=debuffY+testH) {
                 if(inChip(x,0,2)) return HIT_ALL_LANDS;

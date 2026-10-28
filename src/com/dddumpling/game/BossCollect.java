@@ -24,7 +24,7 @@ final class BossCollect extends Draw {
             int mood,float look,boolean ninja) {
         if(boss==Boss.RAINBOW_CAT) {
             Painter cat=ninja?new OpacityPainter(p,1) {
-                public int accessory(int who,int slot) {return slot==Accessories.BOOTS?p.accessory(who,slot):-1;}
+                public int accessory(int who,int slot) {return slot==Accessories.BOOTS || slot==Accessories.FLAIR?p.accessory(who,slot):-1;}
             }:p;
             RainbowCatArt.portrait(cat,x,y,r,clock,known,fade);
             if(known && ninja)Trinket.ninjaMask(p,x+r*.5232f,y+r*.067f,r*.54f,fade);

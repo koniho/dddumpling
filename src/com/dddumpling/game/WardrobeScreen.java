@@ -59,9 +59,9 @@ final class WardrobeScreen extends Draw {
         Trinket.drawReacting(preview,who,x,cy-r*.10f*bounce,r*(1+.06f*bounce),c.clock,1,4,0);
         p.text(Collect.NAME[who],x,y(L,.39f),type(s*.95f),INK,Painter.CENTER,true);
         for(int k=0;k<Accessories.SLOTS;k++) {
-            float l=L.w*(.10f+k*.20f),rr=l+L.w*.19f;
+            float step=L.w*.80f/Accessories.SLOTS,l=L.w*.10f+k*step,rr=l+step-L.w*.01f;
             p.fillRect(l,y(L,.425f),rr,y(L,.48f),k==slot?0xFF596477:0xFF39354F);
-            p.text(Accessories.SLOT[k],(l+rr)/2,y(L,.46f),type(s*.67f),INK,Painter.CENTER,true);
+            p.text(Accessories.SLOT[k],(l+rr)/2,y(L,.46f),type(s*.60f),INK,Painter.CENTER,true);
         }
         for(int v=0;v<Accessories.count(slot);v++) {
             int item=Accessories.item(slot,v);float step=L.w*.80f/Accessories.count(slot);
@@ -72,7 +72,7 @@ final class WardrobeScreen extends Draw {
             float iy=y(L,.574f),ir=s*(Accessories.count(slot)>3?1.25f:1.55f);
             if(slot==Accessories.HAT)iy+=ir*.25f;
             AccessoryArt.item(p,item,cx,iy,ir,c.clock);
-            p.text(Accessories.NAME[item],cx,y(L,.646f),type(s*.56f),INK,Painter.CENTER,true);
+            p.text(Accessories.NAME[item],cx,y(L,.646f),Math.min(type(s*.56f),(right-left)*.90f/(Accessories.NAME[item].length()*.72f)),INK,Painter.CENTER,true);
             String status=!c.wardrobe.owned[item]?"LOCKED":c.wardrobe.equipped(who,slot)==item?"ON YOU":"OWNED";
             p.text(status,cx,y(L,.675f),type(s*.48f),Accessories.COLOR[item],Painter.CENTER,true);
         }
@@ -109,13 +109,13 @@ final class WardrobeScreen extends Draw {
         if(x<L.w*.10f || x>L.w*.90f)return 0;
         if(f>=.82f && f<=.89f)return 2;
         if(reward)return 0;
-        if(f>=.425f && f<=.48f)return 10+Math.min(3,(int)((x/L.w-.10f)/.20f));
+        if(f>=.425f && f<=.48f)return 10+Math.min(Accessories.SLOTS-1,(int)((x/L.w-.10f)/(.80f/Accessories.SLOTS)));
         if(f>=.505f && f<=.69f)return 20+Math.max(0,Math.min(Accessories.count(slot)-1,(int)((x/L.w-.10f)/(.80f/Accessories.count(slot)))));
         return 0;
     }
     void choose(GameCore c,int action) {
         if(action==1) {back();return;}
-        if(action>=10 && action<14) {
+        if(action>=10 && action<10+Accessories.SLOTS) {
             previewing=false;slot=action-10;int on=c.wardrobe.equipped(who,slot);selected=on>=0?on:Accessories.item(slot,0);pulse=0;error="";
         } else if(action>=20 && action<20+Accessories.count(slot)) {previewing=true;selected=Accessories.item(slot,action-20);pulse=0;error="";}
         else if(action==2) {

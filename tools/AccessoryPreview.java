@@ -26,15 +26,15 @@ final class AccessoryPreview {
                 Painter outfit=new OpacityPainter(p,1) {
                     public int accessory(int who,int slot) {return slot==Accessories.slot(selected)?selected:-1;}
                 };
-                float x=w*(.18f+(item%3)*.32f),y=h*(.15f+(item/3)*.17f),r=w*.09f;
+                float x=w*(.18f+(item%3)*.32f),y=h*(.12f+(item/3)*(.80f/((Accessories.COUNT+2)/3))),r=w*.08f;
                 Trinket.drawReacting(outfit,0,x,y,r,1.2f,1,0,0);
                 p.text(Accessories.NAME[item],x,y+r*1.75f,w*.025f,Accessories.COLOR[item],Painter.CENTER,true);
             }
             Png.write(new File(dir,"214-accessory-sheet-"+skin+".png"),canvas.resolve(),w,h);
         }
-        for(int slot:new int[]{Accessories.MASK,Accessories.BOOTS}) {
+        for(int slot:new int[]{Accessories.MASK,Accessories.BOOTS,Accessories.FLAIR}) {
             RasterPainter review=new RasterPainter(w,h,ss);review.clear(0xFF211D36);
-            review.text(slot==Accessories.MASK?"PICK YOUR SECRET IDENTITY":"HAPPY FEET",w*.5f,h*.045f,w*.04f,0xFFFFDF9A,Painter.CENTER,true);
+            review.text(slot==Accessories.MASK?"PICK YOUR SECRET IDENTITY":slot==Accessories.FLAIR?"A LITTLE EXTRA MAGIC":"HAPPY FEET",w*.5f,h*.045f,w*.04f,0xFFFFDF9A,Painter.CENTER,true);
             int[] friends={0,Collect.bossPrize(Boss.MUSHROOM),Collect.DUCK_FIRST};
             for(int v=0;v<Accessories.count(slot);v++) {
                 final int item=Accessories.item(slot,v);
@@ -45,11 +45,14 @@ final class AccessoryPreview {
                 for(int col=0;col<3;col++)Trinket.drawReacting(dressed,friends[col],w*(.18f+col*.32f),yy,w*.11f,1.5f,1,0,0);
                 review.text(Accessories.NAME[item],w*.5f,yy+h*.085f,w*.028f,Accessories.COLOR[item],Painter.CENTER,true);
             }
-            Png.write(new File(dir,"214-"+(slot==Accessories.MASK?"masks":"footwear")+".png"),review.resolve(),w,h);
+            Png.write(new File(dir,"214-"+(slot==Accessories.MASK?"masks":slot==Accessories.FLAIR?"flair":"footwear")+".png"),review.resolve(),w,h);
         }
         c.wardrobe.screen.show(c,0);c.wardrobe.screen.slot=Accessories.MASK;c.wardrobe.screen.selected=Accessories.item(Accessories.MASK,3);c.wardrobe.screen.previewing=true;
         RasterPainter masks=new RasterPainter(w,h,ss);Renderer.draw(masks,c,L);
         Png.write(new File(dir,"214-mask-editor.png"),masks.resolve(),w,h);
+        c.wardrobe.screen.slot=Accessories.FLAIR;c.wardrobe.screen.selected=Accessories.item(Accessories.FLAIR,0);
+        RasterPainter flairEditor=new RasterPainter(w,h,ss);Renderer.draw(flairEditor,c,L);
+        Png.write(new File(dir,"214-flair-editor.png"),flairEditor.resolve(),w,h);
         int[] cast={0,4,7,12,18,24,30,35,45,46,47,48,49,57,60,61};
         RasterPainter canvas=new RasterPainter(w,h,ss);canvas.clear(0xFF211D36);
         Painter p=new OpacityPainter(canvas,1) {
