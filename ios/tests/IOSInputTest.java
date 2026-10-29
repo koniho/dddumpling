@@ -1422,8 +1422,8 @@ public final class IOSInputTest extends Check {
         check("native story includes inline wardrobe",c.wardrobe.screen.open && c.storyOpen());
         c.wardrobe.developer(c,1);c.storyT=2;
         WardrobeScreen ui=c.wardrobe.screen;ui.trayT=1;
-        float cardY=WardrobeToybox.itemY(ui,l,3,0);
-        tap(game,WardrobeToybox.itemX(ui,l,3,0),cardY);
+        float cardY=WardrobeToybox.itemY(ui,l,Accessories.count(ui.slot),0);
+        tap(game,WardrobeToybox.itemX(ui,l,Accessories.count(ui.slot),0),cardY);
         check("native accessory tap saves immediately",c.wardrobe.equipped(0,Accessories.HAT)==0 && c.storyOpen());
         c.wardrobe.screen.danceT=3;c.storyPulse=2;
         c.wardrobe.screen.choose(c,10+Accessories.GLASSES);
@@ -1432,8 +1432,8 @@ public final class IOSInputTest extends Check {
         tap(game,(wornHat[0]+wornHat[4])*.5f,(wornHat[1]+wornHat[5])*.5f);
         check("native worn hat opens its category without removing",c.wardrobe.screen.slot==Accessories.HAT
                 && c.wardrobe.equipped(0,Accessories.HAT)==0 && c.storyOpen());
-        ui.trayT=1;cardY=WardrobeToybox.itemY(ui,l,3,1);
-        game.touch(one(0,4,WardrobeToybox.itemX(ui,l,3,1),cardY));
+        ui.trayT=1;cardY=WardrobeToybox.itemY(ui,l,Accessories.count(ui.slot),1);
+        game.touch(one(0,4,WardrobeToybox.itemX(ui,l,Accessories.count(ui.slot),1),cardY));
         game.touch(one(2,4,Storybook.heroX(c,l),Storybook.heroY(c,l)));
         game.touch(one(1,4,Storybook.heroX(c,l),Storybook.heroY(c,l)));
         check("native drag equips without dismissing story",c.wardrobe.equipped(0,Accessories.HAT)==1 && c.storyOpen());

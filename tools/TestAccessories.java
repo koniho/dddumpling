@@ -26,7 +26,7 @@ final class TestAccessories extends Check {
         check("story text tap restarts same narration without changing outfit",ear.narrations==2 && ear.narrated==0 && !ui.narrationPaused && c.storyOpen()
                 && c.wardrobe.equipped(0,Accessories.HAT)==worn);
         ui.trayT=1;
-        ui.touch(c,L,0,1,WardrobeToybox.itemX(ui,L,3,0),WardrobeToybox.itemY(ui,L,3,0));
+        ui.touch(c,L,0,1,WardrobeToybox.itemX(ui,L,Accessories.count(ui.slot),0),WardrobeToybox.itemY(ui,L,Accessories.count(ui.slot),0));
         check("starting accessory drag pauses reading",ear.hushes==2 && ui.narrationPaused);
         ui.cancelTouch();check("cancelled drag does not restart reading",ear.narrations==2);
         c.closeStory();c.openStory();check("new story starts narration again",ear.narrations==3 && !ui.narrationPaused);
@@ -222,6 +222,7 @@ final class TestAccessories extends Check {
                 check("catalog category and variant round trip",Accessories.slot(item)==slot && Accessories.variant(item)==v);
             }
         }
+        check("expanded accessory categories",Accessories.count(Accessories.HAT)==7 && Accessories.count(Accessories.GLASSES)==5 && Accessories.count(Accessories.BOOTS)==7);
         check("four mask choices",Accessories.count(Accessories.MASK)==4);
         check("redesigned masks retain existing save IDs",Accessories.ID[9].equals("petal_mask")
                 && Accessories.ID[10].equals("moon_mask") && Accessories.ID[11].equals("party_mask"));
@@ -326,12 +327,12 @@ final class TestAccessories extends Check {
     private static void toybox(Layout L) {
         GameCore c=ready();grant(c);c.caseOpen=true;c.caseIndex=0;c.openStory();c.storyT=2;
         WardrobeScreen ui=c.wardrobe.screen;ui.trayT=1;
-        float x=WardrobeToybox.itemX(ui,L,3,1),y=WardrobeToybox.itemY(ui,L,3,1);
+        float x=WardrobeToybox.itemX(ui,L,Accessories.count(ui.slot),1),y=WardrobeToybox.itemY(ui,L,Accessories.count(ui.slot),1);
         byte[] before=c.progress.snapshot();
-        ui.touch(c,L,0,7,x,y);ui.touch(c,L,2,7,x-L.w*.22f,y);
+        ui.touch(c,L,0,7,x,y);ui.touch(c,L,2,7,x+L.w*.22f,y);
         check("sideways swoosh scrolls instead of carrying clothing",ui.scrolling && !ui.dragging && ui.swoosh>0);
         ui.touch(c,L,1,8,x,y);check("other pointer cannot release ribbon",ui.scrolling);
-        ui.touch(c,L,1,7,x-L.w*.22f,y);ui.update(c,1);
+        ui.touch(c,L,1,7,x+L.w*.22f,y);ui.update(c,1);
         check("swoosh never changes outfit and springs to edge",java.util.Arrays.equals(before,c.progress.snapshot()) && ui.scroll==0 && !ui.scrolling);
         ui.touch(c,L,0,7,x,y);ui.touch(c,L,2,7,x+L.w*.3f,y);ui.touch(c,L,3,7,x,y);ui.update(c,1);
         check("cancelled swoosh settles without equipping",ui.scroll==0 && java.util.Arrays.equals(before,c.progress.snapshot()));
@@ -387,7 +388,7 @@ final class TestAccessories extends Check {
         GameCore reload=new GameCore(c.store,214,true);
         check("tap outfit persists without confirmation",reload.wardrobe.equipped(0,Accessories.MASK)==Accessories.item(Accessories.MASK,0));
         ui.choose(c,10+Accessories.HAT);
-        ui.trayT=1;float cardX=WardrobeToybox.itemX(ui,L,3,1),cardY=WardrobeToybox.itemY(ui,L,3,1),hx=Storybook.heroX(c,L),hy=Storybook.heroY(c,L);
+        ui.trayT=1;float cardX=WardrobeToybox.itemX(ui,L,Accessories.count(ui.slot),1),cardY=WardrobeToybox.itemY(ui,L,Accessories.count(ui.slot),1),hx=Storybook.heroX(c,L),hy=Storybook.heroY(c,L);
         ui.touch(c,L,0,7,cardX,cardY);ui.touch(c,L,2,7,hx,hy);
         check("drag carries accessory without saving early",ui.dragging && c.wardrobe.equipped(0,Accessories.HAT)<0);
         ui.touch(c,L,1,8,hx,hy);
@@ -396,9 +397,9 @@ final class TestAccessories extends Check {
         check("drop on squishy equips",!ui.dragging && c.wardrobe.equipped(0,Accessories.HAT)==1);
         ui.touch(c,L,0,7,cardX,cardY);ui.touch(c,L,2,7,hx,hy);ui.touch(c,L,1,7,hx,hy);
         check("dropping worn item keeps it equipped",c.wardrobe.equipped(0,Accessories.HAT)==1);
-        ui.touch(c,L,0,7,WardrobeToybox.itemX(ui,L,3,0),WardrobeToybox.itemY(ui,L,3,0));ui.touch(c,L,2,7,0,0);ui.touch(c,L,1,7,0,0);
+        ui.touch(c,L,0,7,WardrobeToybox.itemX(ui,L,Accessories.count(ui.slot),0),WardrobeToybox.itemY(ui,L,Accessories.count(ui.slot),0));ui.touch(c,L,2,7,0,0);ui.touch(c,L,1,7,0,0);
         check("drop outside preserves outfit",c.wardrobe.equipped(0,Accessories.HAT)==1 && c.storyOpen());
-        ui.touch(c,L,0,7,WardrobeToybox.itemX(ui,L,3,0),WardrobeToybox.itemY(ui,L,3,0));ui.touch(c,L,2,7,hx,hy);ui.touch(c,L,3,7,hx,hy);
+        ui.touch(c,L,0,7,WardrobeToybox.itemX(ui,L,Accessories.count(ui.slot),0),WardrobeToybox.itemY(ui,L,Accessories.count(ui.slot),0));ui.touch(c,L,2,7,hx,hy);ui.touch(c,L,3,7,hx,hy);
         check("cancelled drag preserves outfit",!ui.dragging && c.wardrobe.equipped(0,Accessories.HAT)==1);
         check("removed button has no invisible target",ui.hit(L,L.w*.5f,WardrobeScreen.trayY(L,.93f))==0);
         ui.choose(c,21);check("tap removal saves immediately",c.wardrobe.equipped(0,Accessories.HAT)<0);

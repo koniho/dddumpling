@@ -53,9 +53,20 @@ Equipped hats and boots replace the contextual explorer equipment in those slots
 | Flair | Starstruck | Beat Super Slime |
 | Flair | Flutter | Visit 2 lands in one run |
 | Flair | Soft Glow | Survive 5 minutes |
+| Flair | Glitter | Visit 3 lands in one run |
+| Eyewear | Googly Eyes | Beat Octopulse |
+| Hat | Pocket Magician | Beat Dark Divide |
+| Hat | Sideways Scout | Collect 1 squishy |
+| Hat | Cozy Tuque | Survive 4 minutes |
+| Hat | Rice Field Hat | Beat Fly Agaric |
+| Eyewear | Snow Goggles | Reach stage 30 |
+| Boots | Snow Stompers | Survive 4 minutes |
+| Boots | Canvas High-Tops | Collect 10 squishies |
+| Boots | Trail Trekkers | Visit 4 lands in one run |
+| Boots | Rainbow Runners | Visit 5 lands in one run |
 
-The collection now has three hats, three sunglasses, three footwear styles and four
-masks, plus three animated flair styles. Footwear uses foam clogs, glitter shoes and rounded high heels. Fly Agaric
+The collection has seven hats, five eyewear styles, seven footwear styles, four
+masks and four animated flair styles. Footwear uses foam clogs, glitter shoes and rounded high heels. Fly Agaric
 uses a narrower footwear attachment span to keep the shoes under its stem. The
 Ninja cosmetic reuses the gameplay hood art but grants no power; Sky Hero is an
 original teal/violet design with a comet emblem. Mask artwork draws under glasses
@@ -182,3 +193,11 @@ Ribbon thumbnails center and scale each accessory's visible artwork to fill its
 space with small edge padding. No names or status text reserve space around the
 artwork; an orbiting equipped ring and muted artwork/corner lock communicate state. Locked achievement details
 remain below the row. Thumbnail fitting does not alter worn attachment geometry.
+
+
+Shaped eyewear uses heart, beveled hexagon and star frames; Googly Eyes retains its
+original art. Snow Goggles has a single shaded visor and strap. New hats add silk,
+panel seams, knit stitches and straw weaving only in close views. Winter boots,
+canvas high-tops, hiking boots and runners keep distinct silhouettes at small sizes
+and add cuffs, stitching, laces and material highlights at large sizes. All new
+IDs are appended; existing achievements backfill these rewards automatically.

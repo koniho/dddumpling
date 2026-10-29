@@ -54,8 +54,9 @@ final class AccessoryArt extends Draw {
         if(slot==Accessories.HAT) {
             left=v==0?-1.20f:v==1?-1.02f:-1.08f;r=-left;
             top=v==0?-.75f:v==1?-1.17f:-1.25f;b=.29f;
-        } else if(slot==Accessories.GLASSES) {left=-.93f;r=.93f;top=v==2?-.43f:-.39f;b=-top;}
-        else if(slot==Accessories.BOOTS) {left=-.96f;r=.96f;top=-.30f;b=.35f;}
+            if(v>=3){left=AccessoryHats.left(v);r=AccessoryHats.right(v);top=AccessoryHats.top(v);b=AccessoryHats.bottom(v);}
+        } else if(slot==Accessories.GLASSES) {left=-.93f;r=.93f;top=v==2?-.46f:v==4?-.49f:-.39f;b=v==0?.42f:-top;if(v==4){left=-1.03f;r=1.03f;}}
+        else if(slot==Accessories.BOOTS) {left=v>=3?-1.05f:-.96f;r=-left;top=v>=3?AccessoryFootwear.top(v):-.30f;b=.35f;}
         else if(slot==Accessories.MASK) {
             if(v==0){left=-1.08f;r=1.55f;top=-1.05f;b=1.27f;}
             else if(v==1){left=-.98f;r=.98f;top=-.91f;b=.91f;}
@@ -74,12 +75,13 @@ final class AccessoryArt extends Draw {
         int slot=Accessories.slot(item),v=Accessories.variant(item),c=Accessories.COLOR[item];
         int shade=Glyph.mix(c,0xFF3E3459,.36f),hi=Glyph.mix(c,0xFFFFFFFF,.5f);
         float detail=detail(p,r);Painter trim=detail>0?new OpacityPainter(p,detail):p;
-        if(slot==Accessories.HAT)target(p,slot,x-r*1.3f,y-r*1.25f,x+r*1.3f,y+r*.35f);
+        if(slot==Accessories.HAT)target(p,slot,x+r*(v>=3?AccessoryHats.left(v):-1.3f),y+r*(v>=3?AccessoryHats.top(v):-1.25f),x+r*(v>=3?AccessoryHats.right(v):1.3f),y+r*.35f);
         else if(slot==Accessories.GLASSES)target(p,slot,x-r,y-r*.46f,x+r,y+r*.46f);
-        else if(slot==Accessories.BOOTS)target(p,slot,x-r*(footSpan+.56f),y-r*.40f,x+r*(footSpan+.56f),y+r*.44f);
+        else if(slot==Accessories.BOOTS)target(p,slot,x-r*(footSpan+.56f),y+r*(v>=3?AccessoryFootwear.top(v):-.40f),x+r*(footSpan+.56f),y+r*.44f);
         else if(slot==Accessories.MASK)target(p,slot,x-r*1.25f,y-r*1.15f,x+r*1.25f,y+r*1.15f);
         if(slot==Accessories.FLAIR) {AccessoryFlair.draw(p,v,x,y,r*.70f,clock);return;}
         if(slot==Accessories.HAT) {
+            if(v>=3){AccessoryHats.draw(p,v,x,y,r,clock,detail);return;}
             if(v==2) {
                 AccessoryDetail.crown(p,x,y,r,clock,detail);
             } else {
@@ -97,17 +99,7 @@ final class AccessoryArt extends Draw {
             }
         } else if(slot==Accessories.GLASSES) {
             if(v==3){googly(p,x,y,r,clock,detail);return;}
-            p.line(x-r*.88f,y-r*.03f,x+r*.88f,y-r*.03f,shade,r*.09f);
-            for(int side=-1;side<=1;side+=2) {
-                float cx=x+side*r*.35f;
-                if(v==2) {star(p,cx,y,r*.42f,c);star(p,cx,y,r*.30f,0xD54C477D);}
-                else {
-                    p.fillEllipse(cx,y,r*.33f,r*(v==0?.29f:.25f),shade);
-                    p.fillEllipse(cx,y-r*.025f,r*.29f,r*(v==0?.26f:.22f),c);
-                    p.fillEllipse(cx,y-r*.02f,r*.23f,r*(v==0?.20f:.17f),0xC934506D);
-                }
-                if(detail>0)trim.line(cx-r*.11f,y-r*.12f,cx+r*.04f,y+r*.04f,0xA9FFFFFF,r*.055f);
-            }
+            AccessoryEyewear.draw(p,v,x,y,r,clock,detail,c);return;
         } else if(slot==Accessories.BOOTS) {
             for(int side=-1;side<=1;side+=2)shoe(p,v,x+side*r*footSpan,y+r*.025f*(float)Math.sin(clock*4+side),r,side,clock,c,shade,hi,detail);
         } else mask(p,v,x,y,r,detail);
@@ -140,6 +132,7 @@ final class AccessoryArt extends Draw {
         shoe(p,Accessories.variant(item),x,y,r,side,clock,c,Glyph.mix(c,0xFF3E3459,.36f),Glyph.mix(c,0xFFFFFFFF,.5f),detail(p,r));
     }
     private static void shoe(Painter p,int v,float cx,float yy,float r,int side,float clock,int c,int shade,int hi,float detail) {
+        if(v>=3){AccessoryFootwear.draw(p,v,cx,yy,r,side,clock,detail);return;}
         Painter trim=detail>0?new OpacityPainter(p,detail):p;
             if(v==0) {
                 // Chunky foam clog: wide rounded toe, ventilation holes and a heel strap.

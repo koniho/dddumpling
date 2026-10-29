@@ -115,6 +115,9 @@ src/com/dddumpling/game/Wardrobe.java
 src/com/dddumpling/game/WardrobeScreen.java
 src/com/dddumpling/game/WardrobeToybox.java
 src/com/dddumpling/game/AccessoryArt.java
+src/com/dddumpling/game/AccessoryEyewear.java
+src/com/dddumpling/game/AccessoryHats.java
+src/com/dddumpling/game/AccessoryFootwear.java
 src/com/dddumpling/game/AccessoryGlitter.java
 src/com/dddumpling/game/AccessoryDetail.java
 src/com/dddumpling/game/AccessoryFlair.java

@@ -41,9 +41,9 @@ final class AccessoryPreview {
                 Painter dressed=new OpacityPainter(review,1) {
                     public int accessory(int who,int category) {return category==slot?item:-1;}
                 };
-                float yy=h*(.20f+v*.215f);
-                for(int col=0;col<3;col++)Trinket.drawReacting(dressed,friends[col],w*(.18f+col*.32f),yy,w*.11f,1.5f,1,0,0);
-                review.text(Accessories.NAME[item],w*.5f,yy+h*.085f,w*.028f,Accessories.COLOR[item],Painter.CENTER,true);
+                float row=.86f/Accessories.count(slot),yy=h*(.12f+v*row);
+                for(int col=0;col<3;col++)Trinket.drawReacting(dressed,friends[col],w*(.18f+col*.32f),yy,Math.min(w*.11f,h*row*.32f),1.5f,1,0,0);
+                review.text(Accessories.NAME[item],w*.5f,yy+h*row*.39f,w*.028f,Accessories.COLOR[item],Painter.CENTER,true);
             }
             Png.write(new File(dir,"214-"+(slot==Accessories.MASK?"masks":slot==Accessories.FLAIR?"flair":"footwear")+".png"),review.resolve(),w,h);
         }
@@ -82,7 +82,7 @@ final class AccessoryPreview {
         RasterPainter entry=new RasterPainter(w,h,ss);Renderer.draw(entry,c,L);
         Png.write(new File(dir,"214-toybox-arrival.png"),entry.resolve(),w,h);
         toy.trayT=1;toy.scroll=toy.scrollTarget=0;
-        float tx=WardrobeToybox.itemX(toy,L,4,1),ty=WardrobeToybox.itemY(toy,L,4,1);
+        float tx=WardrobeToybox.itemX(toy,L,Accessories.count(toy.slot),1),ty=WardrobeToybox.itemY(toy,L,Accessories.count(toy.slot),1);
         toy.touch(c,L,0,9,tx,ty);toy.touch(c,L,2,9,tx-L.w*.16f,ty);
         RasterPainter swipe=new RasterPainter(w,h,ss);Renderer.draw(swipe,c,L);
         Png.write(new File(dir,"214-toybox-swoosh.png"),swipe.resolve(),w,h);
