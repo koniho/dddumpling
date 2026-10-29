@@ -1198,7 +1198,7 @@ public final class IOSInputTest extends Check {
         cave();
         highScores();
         updatePrompt(); releaseAttention(); releaseNotes(); releaseFeedback(); packets(); titleAndLifecycle(); starsAndLand(); starFeedback(); starCompletionStorm(); bossOwnership(); ninjaHistory();
-        steamerAndPanic(); forgivingRescue(); caseAndSettings(); storyDumplingInput(); outfitShake(); firstTitleEntry(); modeSelector(); survival();
+        steamerAndPanic(); forgivingRescue(); caseAndSettings(); storyDumplingInput(); outfitDragOff(); outfitShake(); firstTitleEntry(); modeSelector(); survival();
         debugScenes(); linkedChord();
         System.out.println("iOS input: " + pass + " passed, " + fail + " failed");
         if (fail != 0) throw new AssertionError("iOS input regressions");
@@ -1448,6 +1448,19 @@ public final class IOSInputTest extends Check {
         tap(game,l.w*.02f,l.h*.4f);
         check("native dismissal closes inline wardrobe",!c.wardrobe.screen.open && !c.storyOpen() && !c.starting());
 
+    }
+
+    private static void outfitDragOff() {
+        IOSGame game=game();GameCore c=game.core();Layout l=game.geometry();
+        c.collected=1;c.wardrobe.developer(c,1);c.wardrobe.equip(c,Accessories.item(Accessories.HAT,0),0);
+        c.caseOpen=true;c.caseIndex=0;c.openStory();c.storyT=2;c.storyPulse=2;
+        WardrobeScreen ui=c.wardrobe.screen;ui.picking.capture(c,l);
+        float[] hat=ui.picking.targets[Accessories.HAT];float x=(hat[0]+hat[4])*.5f,y=(hat[1]+hat[5])*.5f;
+        tap(game,x,y);check("native worn tap selects category",ui.slot==Accessories.HAT && c.wardrobe.equipped(0,Accessories.HAT)>=0);
+        game.touch(one(0,42,x,y));game.touch(one(2,42,l.w*.02f,l.h*.94f));
+        check("native worn drag does not dismiss story",ui.dragging && c.storyOpen());
+        game.touch(one(1,42,l.w*.02f,l.h*.94f));
+        check("native worn drop removes without closing story",c.wardrobe.equipped(0,Accessories.HAT)<0 && c.storyOpen() && !ui.dragging);
     }
 
     private static void outfitShake() {

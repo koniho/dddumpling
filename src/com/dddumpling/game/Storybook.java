@@ -71,6 +71,7 @@ final class Storybook extends Draw {
         }
     }
     static void hero(Painter p,GameCore c,Layout L) {
+        p=c.wardrobe.screen.heroPainter(p);
         float x=heroX(c,L),y=heroY(c,L),r=radius(c,L),pulse=reaction(c);
         glowRings(p,c.story,x,y,r,c.storyPulse);
         if(c.wardrobe.screen.danceT<WardrobeScreen.FLASH+WardrobeScreen.DANCE) {

@@ -12,7 +12,7 @@ final class TestAccessories extends Check {
         check("wardrobe grant persisted",c.progress.accessories(keys,values,false));c.wardrobe.refresh(c);
     }
     static void all(Layout L) {
-        catalog();shake();startup();rewards();sharedOutfits();migration();merge();ui(L);developerCategories(L);flair(L);sounds();picking(L);detail();glitter(L);googly();narration(L);toybox(L);
+        catalog();shake();startup();rewards();sharedOutfits();migration();merge();ui(L);developerCategories(L);flair(L);sounds();picking(L);dragOff(L);detail();glitter(L);googly();narration(L);toybox(L);
     }
     private static void openForShake(GameCore c) {
         c.caseOpen=true;c.caseIndex=0;c.openStory();c.storyT=2;c.wardrobe.screen.update(c,1);
@@ -153,6 +153,41 @@ final class TestAccessories extends Check {
         check("shades win overlapping face target",ui.slot==Accessories.GLASSES);
         Storybook.tap(c,L,(mask[0]+mask[4])*.5f,mask[1]+(mask[5]-mask[1])*.87f);
         check("lower mask remains selectable under shades",ui.slot==Accessories.MASK);
+    }
+    private static float[] wornPoint(GameCore c,Layout L,int category) {
+        c.wardrobe.screen.picking.capture(c,L);
+        float[] q=c.wardrobe.screen.picking.targets[category];
+        float u=category==Accessories.FLAIR?.95f:.5f,v=category==Accessories.MASK?.84f:.5f;
+        return new float[]{q[0]+(q[2]-q[0])*u+(q[6]-q[0])*v,q[1]+(q[3]-q[1])*u+(q[7]-q[1])*v};
+    }
+    private static void dragOff(Layout L) {
+        GameCore c=ready();grant(c);c.caseOpen=true;
+        for(int who:AccessoryPlacementPreview.types()) {
+            c.collected=Collect.add(c.collected,who);c.closeStory();c.caseIndex=who;c.openStory();c.storyT=2;c.storyPulse=2;
+            WardrobeScreen ui=c.wardrobe.screen;
+            for(int category=0;category<Accessories.SLOTS;category++) {
+                int item=Accessories.item(category,0);c.wardrobe.equip(c,item,who);ui.danceT=3;
+                float[] point=wornPoint(c,L,category);float x=point[0],y=point[1];
+                check("worn accessory captures pointer",ui.touch(c,L,0,7,x,y));
+                ui.touch(c,L,1,7,x,y);
+                check("worn tap still selects category without removal",ui.slot==category && c.wardrobe.equipped(who,category)==item);
+                byte[] before=c.progress.snapshot();
+                ui.touch(c,L,0,7,x,y);ui.touch(c,L,2,7,L.w*.02f,L.h*.94f);
+                check("drag lifts only the worn rendering",ui.dragging && ui.heroPainter(ui.picking).accessory(who,category)<0
+                        && java.util.Arrays.equals(before,c.progress.snapshot()));
+                ui.touch(c,L,1,8,0,0);check("other finger cannot remove outfit",ui.dragging && c.wardrobe.equipped(who,category)==item);
+                ui.touch(c,L,1,7,x,y);
+                check("dropping back restores accessory",!ui.dragging && c.wardrobe.equipped(who,category)==item && java.util.Arrays.equals(before,c.progress.snapshot()));
+                ui.touch(c,L,0,7,x,y);ui.touch(c,L,2,7,L.w*.02f,L.h*.94f);ui.touch(c,L,3,7,0,0);
+                check("cancelled worn drag keeps outfit",!ui.dragging && c.wardrobe.equipped(who,category)==item);
+                ui.touch(c,L,0,7,x,y);ui.touch(c,L,2,7,L.w*.02f,L.h*.94f);ui.touch(c,L,5,8,0,0);ui.touch(c,L,1,7,0,0);
+                check("second touch cancels worn removal",!ui.dragging && c.wardrobe.equipped(who,category)==item);
+                ui.touch(c,L,0,7,x,y);ui.touch(c,L,2,7,L.w*.02f,L.h*.94f);ui.touch(c,L,1,7,L.w*.02f,L.h*.94f);
+                check("drop off squishy saves removal and celebrates",c.wardrobe.equipped(who,category)<0 && ui.danceT==0 && c.storyOpen() && c.wardrobe.owned[item]);
+                GameCore reload=new GameCore(c.store,214,true);
+                check("drag removal survives reopening app",reload.wardrobe.equipped(who,category)<0);
+            }
+        }
     }
     private static void sounds() {
         GameCore c=ready();grant(c);Ear ear=new Ear();c.sound=ear;

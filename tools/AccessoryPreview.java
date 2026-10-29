@@ -91,6 +91,14 @@ final class AccessoryPreview {
         RasterPainter shuffle=new RasterPainter(w,h,ss);Renderer.draw(shuffle,c,L);
         Png.write(new File(dir,"214-toybox-shuffle.png"),shuffle.resolve(),w,h);
         toy.cancelTouch();
+        toy.danceT=3;toy.scrambleT=2;toy.picking.capture(c,L);
+        float[] hat=toy.picking.targets[Accessories.HAT];
+        float hatX=(hat[0]+hat[4])*.5f,hatY=(hat[1]+hat[5])*.5f;
+        toy.touch(c,L,0,7,hatX,hatY);toy.touch(c,L,2,7,L.w*.87f,Storybook.heroY(c,L)+L.w*.20f);
+        if(!toy.dragging)throw new AssertionError("worn accessory drag did not start");
+        RasterPainter lifted=new RasterPainter(w,h,ss);Renderer.draw(lifted,c,L);
+        Png.write(new File(dir,"214-worn-drag.png"),lifted.resolve(),w,h);
+        toy.cancelTouch();
         for(int who:new int[]{Collect.DUCK_FIRST,Collect.bossPrize(Boss.MUSHROOM),Collect.ALLIGATOR_FRIEND,Collect.RAINBOW_CAT_FRIEND}) {
             c.closeStory();c.collected=Collect.add(c.collected,who);c.caseIndex=who;c.openStory();c.storyT=2;c.wardrobe.screen.trayT=1;c.storyPulse=2;
             for(int category=0;category<Accessories.SLOTS;category++)c.wardrobe.equip(c,Accessories.item(category,0),who);

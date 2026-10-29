@@ -218,3 +218,8 @@ bounded vector layers need no blur, framebuffer or gameplay RNG on either platfo
 Shake-scramble wraps the squishy in a 1.2-second layered whirlwind with orbiting
 sparkles. Four shared timed haptic beats finish with a stronger pulse; both hosts
 consume the feedback once, and closing the wardrobe clears it.
+
+Dragging a worn accessory off the hero removes it on release. The live attachment
+hit regions start the gesture; the accessory lifts visually without editing the
+save until dropped. A drop back on the hero or original attachment, cancellation,
+or a second finger preserves the outfit. Tapping still selects its category.
