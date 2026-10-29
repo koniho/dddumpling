@@ -204,7 +204,7 @@ final class Duck extends Draw {
         if(kind==5)p.arc(x,y+r*.56f,r*.115f,r*.10f,40,230,accent,r*.045f);
         if(kind==7)for(int i=0;i<3;i++)p.arc(x,y+r*.67f,r*(.12f+i*.06f),r*(.09f+i*.04f),185,170,accent,r*.037f);
         if(kind>=9)for(int i=0;i<6;i++)p.arc(x,y+r*.61f,r*(.25f-i*.033f),r*(.17f-i*.022f),180,180,RAINBOW[i],r*.035f);
-        if(glitter!=null){glitter.finish();p=surface;}
+        if(glitter!=null)p=surface;
         boolean blink=Math.sin(clock*1.7f+kind)>.985f;
         for(int side=-1;side<=1;side+=2) {
             float ex=hx+side*r*.34f+look*r*.10f,ey=hy-r*.01f;
@@ -221,5 +221,7 @@ final class Duck extends Draw {
             p.fillEllipse(hx+side*r*.058f,hy+r*.18f,r*.019f,r*.026f,EDGE);
         AccessoryArt.outfit(p,who,hx,hy,r*.90f,hy-r*.61f,x,y+r*.87f,r,clock,1,ninja,.80f);
         if(ninja)Trinket.ninjaMask(p,hx,hy,r*.73f,1);
+        if(glitter!=null)glitter.finish();
+        AccessoryArt.flair(p,who,x,hy-r*.61f,y+r*.87f,r,clock,1);
     }
 }

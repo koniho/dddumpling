@@ -114,7 +114,7 @@ final class GatorCompanion extends Draw {
             p.fillEllipse(hx+side*hw*.20f,hy+hh*.13f,hw*.033f,hh*.04f,0xFF4D9677);
             p.fillEllipse(hx+side*hw*.66f,hy+hh*.27f,hw*.13f,hh*.10f,0xA8FFA3BB);
         }
-        if(glitter!=null){glitter.finish();p=surface;}
+        if(glitter!=null)p=surface;
         float faceR=hw*1.03f,faceY=hy-hh*.08f;
         Trinket.reactionFace(p,hx,faceY,faceR,clock,1,mood<0?0:mood,look*.25f);
         if(mood<=1 || mood==4 || mood==8 || mood==9) {
@@ -139,6 +139,8 @@ final class GatorCompanion extends Draw {
             p.fillEllipse(tx-r*.04f,ty-r*.07f,r*.06f,r*.07f,0xB9D4FFD3);
             for(int toe=-1;toe<=1;toe++)p.fillCircle(tx+toe*r*.065f,ty+r*.06f,r*.018f,0xFFECF8CB);
         }
+        if(glitter!=null)glitter.finish();
+        if(known)AccessoryArt.flair(p,Collect.ALLIGATOR_FRIEND,bx,hy-hh*.82f,y+r*.79f,r,clock,1);
         if(!known)painter.text("?",x,y+r*.25f,type(r*.55f),fadeBy(INK_DIM,fade),Painter.CENTER,true);
     }
     /** Flatten the real contour; translucent highlights must not reveal interior features. */

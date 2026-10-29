@@ -177,11 +177,22 @@ final class TestAccessories extends Check {
             check("flair animates deterministically "+variant,first.hash==same.hash && first.hash!=later.hash);
             check("flair has bounded draw cost "+variant,first.calls>0 && first.calls<80);
         }
-        FlairProbe powered=new FlairProbe() {
-            public int accessory(int who,int slot) {return slot==Accessories.FLAIR?item:-1;}
-        };
-        AccessoryArt.outfit(powered,0,100,150,30,100,100,190,40,1,1,true);
-        check("Ninja costume keeps cosmetic flair visible",powered.calls>0);
+        for(int variant=0;variant<3;variant++)for(int skin=0;skin<Skins.COUNT;skin++)for(boolean ninja:new boolean[]{false,true}) {
+            final int flair=Accessories.item(Accessories.FLAIR,variant);
+            FlairProbe expected=new FlairProbe(){public float accessorySize(float r){return 1;}};
+            AccessoryFlair.draw(expected,variant,0,0,100,1.2f);
+            for(int who:AccessoryPlacementPreview.types()) {
+                final int[] start={-1};
+                FlairProbe front=new FlairProbe() {
+                    public float accessorySize(float r){return 1;}
+                    public boolean accessoryTargets(){return true;}
+                    public void accessoryTarget(int slot,float[] corners){if(slot==Accessories.FLAIR)start[0]=calls;}
+                    public int accessory(int id,int slot){return slot==Accessories.FLAIR?flair:Accessories.item(slot,0);}
+                };
+                Trinket.drawReacting(Skins.painter(front,skin),who,200,200,100,1.2f,1,0,0,ninja);
+                check("flair is final pass over outfit, body and ninja hood",start[0]>=0 && front.calls-start[0]==expected.calls);
+            }
+        }
     }
     private static class FlairProbe extends OpacityPainter {
         int calls;long hash=1;

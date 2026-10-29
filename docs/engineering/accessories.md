@@ -134,7 +134,9 @@ progress revision. `TestAccessories` covers rules, merge conflicts, reset and UI
 Flair is an independent fifth slot: orbiting glowing stars, fluttering butterflies,
 or a softly pulsing mint/lilac aura. It follows the current character transform and
 scale, remains visible during Ninja mode, and is cosmetic only. `AccessoryFlair`
-uses a fixed number of clock-driven vector primitives, without blur surfaces,
+is the final character pass, above clothing, paws, and gameplay masks. Body-glitter
+sparkles also finish after those layers. It uses a fixed number of clock-driven
+vector primitives, without blur surfaces,
 gameplay particles, physics state or RNG calls. Decorative orbits keep the face
 clear. New styles inherit normal retroactive achievement unlocks and unlimited use.
 

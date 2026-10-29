@@ -11,12 +11,6 @@ final class AccessoryArt extends Draw {
             float feetX,float feetY,float r,float clock,float fade,boolean ninja,float bootScale) {
         if(r<=0 || fade<=0)return;
         Painter out=fade==1?p:new OpacityPainter(p,fade);
-        int flair=p.accessory(who,Accessories.FLAIR);
-        if(flair>=0 && flair<Accessories.COUNT && Accessories.slot(flair)==Accessories.FLAIR) {
-            float cy=(topY+feetY)*.5f;
-            target(out,Accessories.FLAIR,feetX-r*1.65f,cy-r*1.40f,feetX+r*1.65f,cy+r*1.40f);
-            if(flair!=AccessoryGlitter.ITEM)AccessoryFlair.draw(out,Accessories.variant(flair),feetX,cy,r,clock);
-        }
         for(int slot:DRAW_ORDER) {
             int item=p.accessory(who,slot);
             // Gameplay hood owns the head/face; the saved outfit is never changed.
@@ -33,6 +27,17 @@ final class AccessoryArt extends Draw {
                 float height=slot==Accessories.MASK?AccessoryAnchors.maskHeight(who,variant):1f;
                 item(height==1?out:new MaskFit(out,faceY,height),item,x,faceY,faceR*fit,clock);
             }
+        }
+    }
+    /** Final character pass: clothing, paws and gameplay masks must already be drawn. */
+    static void flair(Painter p,int who,float feetX,float topY,float feetY,float r,float clock,float fade) {
+        if(r<=0 || fade<=0)return;
+        Painter out=fade==1?p:new OpacityPainter(p,fade);
+        int flair=p.accessory(who,Accessories.FLAIR);
+        if(flair>=0 && flair<Accessories.COUNT && Accessories.slot(flair)==Accessories.FLAIR) {
+            float cy=(topY+feetY)*.5f;
+            target(out,Accessories.FLAIR,feetX-r*1.65f,cy-r*1.40f,feetX+r*1.65f,cy+r*1.40f);
+            if(flair!=AccessoryGlitter.ITEM)AccessoryFlair.draw(out,Accessories.variant(flair),feetX,cy,r,clock);
         }
     }
     static float detail(Painter p,float radius) {

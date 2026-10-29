@@ -457,9 +457,11 @@ final class RainbowCatArt extends Draw {
         portrait(p,x,y,r,t,known,fade,1);
     }
     static void portrait(Painter p,float x,float y,float r,float t,boolean known,float fade,int facing) {
+        portrait(p,x,y,r,t,known,fade,facing,false);
+    }
+    static void portrait(Painter p,float x,float y,float r,float t,boolean known,float fade,int facing,boolean ninja) {
         AccessoryGlitter glitter=known?AccessoryGlitter.begin(p,Collect.RAINBOW_CAT_FRIEND,x,y,r,t,fade):null;
         cat(new OpacityPainter(glitter==null?p:glitter,fade),x-facing*r*.12f,y,r*.67f,t,facing,null,null,false,known?1:0);
-        if(glitter!=null)glitter.finish();
         if(known) {
             AccessoryArt.outfit(p,Collect.RAINBOW_CAT_FRIEND,x+facing*r*.5232f,y+r*.077f,
                     r*.58f,y-r*.44f,x,y+r*.65f,r*.84f,t,fade,false);
@@ -469,6 +471,9 @@ final class RainbowCatArt extends Draw {
                 for(int foot=0;foot<4;foot++)AccessoryArt.foot(feet,boots,footX(bx,br,foot),footY(y,br,t,foot,false),br*.52f,t,foot<2?-1:1);
                 AccessoryArt.target(feet,Accessories.BOOTS,footX(bx,br,0)-br*.55f,y+br*.55f,footX(bx,br,3)+br*.55f,y+br*1.22f);
             }
+            if(ninja)Trinket.ninjaMask(p,x+facing*r*.5232f,y+r*.067f,r*.54f,fade);
+            if(glitter!=null)glitter.finish();
+            AccessoryArt.flair(p,Collect.RAINBOW_CAT_FRIEND,x,y-r*.44f,y+r*.65f,r*.84f,t,fade);
         }
     }
     static void cat(Painter p,float x,float y,float r,float t,float facing,Softbody body,Softbody skull,boolean caught,float known) {
