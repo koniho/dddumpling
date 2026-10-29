@@ -48,7 +48,7 @@ final class WardrobeToybox extends Draw {
         return 0;
     }
     static void draw(Painter p,GameCore c,Layout L,WardrobeScreen ui) {
-        int count=Accessories.count(ui.slot);float h=WardrobeScreen.trayHeight(L),top=WardrobeScreen.trayTop(L);
+        int count=ui.count(ui.slot);float h=WardrobeScreen.trayHeight(L),top=WardrobeScreen.trayTop(L);
         int accent=Accessories.COLOR[Accessories.item(ui.slot,0)];
         contentsTray(new OpacityPainter(p,1-ui.exitProgress(0,.22f)),c,L,ui,accent);
         float[] ribbon=new float[26];
@@ -57,16 +57,16 @@ final class WardrobeToybox extends Draw {
         p.polyline(ribbon,Glyph.withAlpha(accent,65),L.unit*.045f);
         p.save();p.clipRect(L.w*.035f,top-L.unit*.2f,L.w*.965f,top+h*.81f);
         if(!ui.exiting && ui.lastSlot>=0 && ui.lastSlot!=ui.slot && ui.trayT<.28f) {
-            float leave=ui.trayT/.28f;int oldCount=Accessories.count(ui.lastSlot);
+            float leave=ui.trayT/.28f;int oldCount=ui.count(ui.lastSlot);
             for(int i=Math.max(0,(int)ui.lastScroll-1);i<Math.min(oldCount,(int)ui.lastScroll+5);i++) {
                 float x=settledX(L,oldCount,i,ui.lastScroll)+L.w*leave*.75f,y=settledY(L,x)+h*leave*.08f,r=itemR(L,oldCount)*(1-leave*.40f);
-                AccessoryArt.thumbnail(new OpacityPainter(p,(1-leave)*.45f),Accessories.item(ui.lastSlot,i),x-r,y-r,x+r,y+r,c.clock);
+                AccessoryArt.thumbnail(new OpacityPainter(p,(1-leave)*.45f),ui.item(ui.lastSlot,i),x-r,y-r,x+r,y+r,c.clock);
             }
         }
         for(int i=Math.max(0,(int)Math.floor(ui.scroll)-1);i<Math.min(count,(int)Math.floor(ui.scroll)+5);i++) {
-            int item=Accessories.item(ui.slot,i);float t=arrival(ui,i),x=itemX(ui,L,count,i),y=itemY(ui,L,count,i),r=itemR(L,count);
+            int item=ui.item(ui.slot,i);float t=arrival(ui,i),x=itemX(ui,L,count,i),y=itemY(ui,L,count,i),r=itemR(L,count);
             float scale=.20f+.80f*travel(t)+.10f*(float)Math.sin(t*Math.PI*2)*(1-t);
-            boolean owned=c.wardrobe.owned[item],wearing=c.wardrobe.equipped(ui.who,ui.slot)==item;
+            boolean wearing=c.wardrobe.equipped(ui.who,ui.slot)==item;
             float edge=Math.min(1,Math.max(0,(Math.min(x,L.w-x)-L.w*.015f)/(L.w*.09f)));
             float a=edge*Math.min(1,t*4);
             p.fillEllipse(x,y+r*.72f,r*.78f,r*.12f,Glyph.withAlpha(0xFF000000,(int)(48*a)));
@@ -76,10 +76,9 @@ final class WardrobeToybox extends Draw {
                 AccessoryArt.star(p,x+r*.74f,y-r*.63f,r*.12f,Glyph.withAlpha(0xFFFFE9A3,(int)(255*a)));
             }
             float angle=(1-t)*(-.55f+i*.23f)+.025f*(float)Math.sin(c.clock*2+i);
-            Painter q=new LinkedPairArt.TurnPainter(new OpacityPainter(p,a*(owned?1:.30f)),x,y,angle);
+            Painter q=new LinkedPairArt.TurnPainter(new OpacityPainter(p,a),x,y,angle);
             float rr=r*scale*(1+.018f*(float)Math.sin(c.clock*2.4f+i));
             AccessoryArt.thumbnail(q,item,-rr,-rr,rr,rr,c.clock);
-            if(!owned)lock(p,x+r*.62f,y+r*.55f,r*.19f,a);
             if(t>.65f && t<1) {
                 float pop=(t-.65f)/.35f;
                 p.strokeCircle(x,y,r*(.65f+pop*.5f),Glyph.withAlpha(Accessories.COLOR[item],(int)(120*(1-pop)*a)),L.unit*.075f);
@@ -106,7 +105,7 @@ final class WardrobeToybox extends Draw {
             float x=categoryX(L,k),y=categoryY(L),r=categoryR(L);
             float bounce=k==ui.slot?(float)Math.sin(Math.min(1,ui.pulse/.45f)*Math.PI)*.20f:0;
             float yy=y-r*(.035f*(float)Math.sin(c.clock*2+k)+bounce);
-            int item=c.wardrobe.equipped(ui.who,k);if(item<0)item=Accessories.item(k,0);
+            int item=c.wardrobe.equipped(ui.who,k);if(item<0)item=ui.item(k,0);
             int color=Accessories.COLOR[Accessories.item(k,0)];
             p.fillEllipse(x,y+r*.88f,r*.96f,r*.16f,Glyph.withAlpha(color,k==ui.slot?65:25));
             if(k==ui.slot){p.fillCircle(x,yy,r*1.23f,Glyph.withAlpha(color,18));p.arc(x,yy,r*1.24f,r*1.20f,c.clock*27,255,Glyph.withAlpha(color,155),L.unit*.055f);}
@@ -115,6 +114,9 @@ final class WardrobeToybox extends Draw {
             open*=1-ui.exitProgress(.19f,.16f);
             Painter q=new LinkedPairArt.TurnPainter(p,x,yy,.035f*(float)Math.sin(c.clock*1.7f+k));
             container(q,c,k,item,r,color,open,ui.trayT);
+            float countY=y+r*1.32f;
+            p.fillRect(x-r*.58f,countY-L.unit*.46f,x+r*.58f,countY+L.unit*.08f,0xEE27243D);
+            p.text(ui.count(k)+"/"+Accessories.count(k),x,countY,type(L.unit*.39f),Glyph.mix(color,0xFFFFF2D7,.48f),Painter.CENTER,true);
             if(!ui.exiting && k==ui.slot && ui.trayT<.65f)for(int spark=0;spark<3;spark++) {
                 float age=ui.trayT/.65f,a=spark*2.1f+.4f;
                 AccessoryArt.star(q,(float)Math.cos(a)*r*(.8f+age*.45f),-r*(.45f+age*.65f),
@@ -140,7 +142,7 @@ final class WardrobeToybox extends Draw {
             float y=rimY-(rimY-neckY)*rise+wave;
             edge[i*2]=shape[i*2]=x;edge[i*2+1]=shape[i*2+1]=y;
             int j=81-i;shape[j*2]=x;
-            shape[j*2+1]=settledY(L,x)+itemR(L,Accessories.count(ui.slot))*.76f;
+            shape[j*2+1]=settledY(L,x)+itemR(L,ui.count(ui.slot))*.76f;
         }
         p.fillPoly(shape,Glyph.withAlpha(color,(int)(19*appear)));
         p.polyline(edge,Glyph.withAlpha(color,(int)(20*appear)),L.unit*.38f);
@@ -181,10 +183,7 @@ final class WardrobeToybox extends Draw {
         p.fillEllipse(0,top,r*.96f,r*.27f,shade);
         p.fillEllipse(0,top-r*.02f,r*.81f,r*.17f,inside);
         float toyY=-r*(.28f+open*.20f),toyR=r*(.74f+open*.06f);
-        if(kind==Accessories.FLAIR) {
-            AccessoryArt.star(p,-r*.24f,toyY,r*.41f,0xFFFFE49D);
-            AccessoryArt.star(p,r*.32f,toyY-r*.12f,r*.27f,0xFFDBB8FF);
-        } else AccessoryArt.thumbnail(p,item,-toyR,toyY-toyR,toyR,toyY+toyR,clock);
+        if(item>=0)AccessoryArt.thumbnail(p,item,-toyR,toyY-toyR,toyR,toyY+toyR,clock);
         if(kind==Accessories.HAT) {
             p.fillPoly(new float[]{-r*.96f,top,r*.96f,top,r*.88f,r*.70f,r*.50f,r*.88f,-r*.50f,r*.88f,-r*.88f,r*.70f},base);
             p.fillEllipse(0,r*.65f,r*.88f,r*.25f,base);
@@ -229,15 +228,15 @@ final class WardrobeToybox extends Draw {
         p.fillRect(left,top,right,bottom,0xFF423957);
         p.fillRect(left,cy,right,bottom,0xFF343049);
         p.save();p.clipRect(left,top,right,bottom);
-        int count=Accessories.count(kind);
-        float position=Accessories.variant(item)+Math.max(0,age-.55f)*.46f;
+        WardrobeScreen ui=c.wardrobe.screen;int count=ui.count(kind);
+        float position=ui.index(kind,item)+(count>1?Math.max(0,age-.55f)*.46f:0);
         int first=(int)Math.floor(position);float fraction=position-first;
-        for(int offset=-1;offset<=1;offset++) {
-            int variant=((first+offset)%count+count)%count,peek=Accessories.item(kind,variant);
+        for(int offset=count>1?-1:0;count>0 && offset<=(count>1?1:0);offset++) {
+            int variant=((first+offset)%count+count)%count,peek=ui.item(kind,variant);
             float dx=(offset-fraction)*r*.92f,x=(left+right)*.5f+dx;
             float visibility=Math.max(0,1-Math.abs(dx)/(r*1.12f));
             float bob=(float)Math.sin(c.clock*2.7f+variant*1.8f)*r*.025f;
-            Painter toy=new LinkedPairArt.TurnPainter(new OpacityPainter(p,visibility*(c.wardrobe.owned[peek]?1:.30f)),x,cy+bob,
+            Painter toy=new LinkedPairArt.TurnPainter(new OpacityPainter(p,visibility),x,cy+bob,
                     (float)Math.sin(c.clock*1.9f+variant)*.055f);
             float size=r*(kind==Accessories.GLASSES?.34f:.42f);
             AccessoryArt.thumbnail(toy,peek,-size,-half*.91f,size,half*.91f,c.clock);
@@ -254,9 +253,5 @@ final class WardrobeToybox extends Draw {
         float[] points={x-dir*r*.4f,y-r,x+dir*r*.4f,y,x-dir*r*.4f,y+r};
         p.polyline(points,Glyph.withAlpha(color,(int)(18+25*pulse)),r*.65f);
         p.polyline(points,Glyph.withAlpha(Glyph.mix(color,0xFFFFF1D5,.24f),(int)(180+75*pulse)),r*.25f);
-    }
-    private static void lock(Painter p,float x,float y,float r,float fade) {
-        int ink=Glyph.withAlpha(0xFFD4C8EA,(int)(fade*235));
-        p.arc(x,y-r*.25f,r*.55f,r*.64f,180,180,ink,r*.20f);p.fillRect(x-r*.75f,y-r*.16f,x+r*.75f,y+r*.65f,ink);
     }
 }

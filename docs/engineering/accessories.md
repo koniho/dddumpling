@@ -234,3 +234,8 @@ User dismissal keeps the wardrobe modal for a 0.72-second return sequence: toys
 retract, boxes leave upward, story leaves downward, and the night scene fades as
 the squishy returns to the live display-case pose. Repeated input is swallowed.
 Forced state changes still use immediate `closeStory()` cleanup.
+
+The ribbon, drag targets and animated box windows use earned-only category indexes
+that map back to stable accessory IDs. Each container shows earned/total; empty
+containers remain selectable without exposing locked item artwork. Retapping the
+open category acknowledges with haptics while preserving its scroll and animation.

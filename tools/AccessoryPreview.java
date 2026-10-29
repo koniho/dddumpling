@@ -4,6 +4,14 @@ import java.io.File;
 /** Portrait review sheets use exactly the live wardrobe and character renderers. */
 final class AccessoryPreview {
     static void frames(File dir,Layout L,int w,int h,int ss) throws Exception {
+        GameCore partial=TestAccessories.ready();
+        partial.progress.accessories(new String[]{Accessories.key("owned",0),Accessories.key("owned",2),Accessories.key("owned",18),Accessories.key("owned",12)},new long[]{1,1,1,1},false);
+        partial.wardrobe.refresh(partial);partial.caseOpen=true;partial.caseFade=1;partial.caseIndex=0;partial.openStory();partial.storyT=2;partial.clock=1.2f;
+        for(int category:new int[]{Accessories.HAT,Accessories.BOOTS,Accessories.MASK}) {
+            partial.wardrobe.screen.choose(partial,10+category);partial.wardrobe.screen.trayT=1;partial.wardrobe.screen.pulse=2;
+            RasterPainter earned=new RasterPainter(w,h,ss);Renderer.draw(earned,partial,L);
+            Png.write(new File(dir,"214-earned-only-"+category+".png"),earned.resolve(),w,h);
+        }
         GameCore c=TestAccessories.ready();TestAccessories.grant(c);c.clock=1.2f;
         c.settingsOpen=true;c.settingsPage=1;c.settingsTab=SettingsUi.PROGRESS;
         RasterPainter settings=new RasterPainter(w,h,ss);settings.clear(Draw.BG);

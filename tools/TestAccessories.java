@@ -12,10 +12,34 @@ final class TestAccessories extends Check {
         check("wardrobe grant persisted",c.progress.accessories(keys,values,false));c.wardrobe.refresh(c);
     }
     static void all(Layout L) {
-        catalog();exit(L);shake();feedback(L);startup();rewards();sharedOutfits();migration();merge();ui(L);developerCategories(L);flair(L);sounds();picking(L);dragOff(L);detail();glitter(L);googly();narration(L);toybox(L);
+        catalog();earnedPicker(L);exit(L);shake();feedback(L);startup();rewards();sharedOutfits();migration();merge();ui(L);developerCategories(L);flair(L);sounds();picking(L);dragOff(L);detail();glitter(L);googly();narration(L);toybox(L);
     }
     private static void openForShake(GameCore c) {
         c.caseOpen=true;c.caseIndex=0;c.openStory();c.storyT=2;c.wardrobe.screen.update(c,1);
+    }
+    private static void earnedPicker(Layout L) {
+        GameCore c=ready();openForShake(c);WardrobeScreen ui=c.wardrobe.screen;
+        check("empty category has no hidden locked targets",ui.count(Accessories.HAT)==0 && ui.item(Accessories.HAT,0)==-1 && ui.selected==-1);
+        ui.trayT=1;float x=L.w*.5f,y=WardrobeToybox.settledY(L,x);
+        check("empty row cannot be tapped",ui.hit(L,x,y)==0);
+        ui.touch(c,L,0,7,x,y);ui.touch(c,L,2,7,x,y+L.unit*4);ui.touch(c,L,1,7,x,y+L.unit*4);
+        check("empty row cannot drag a locked accessory",!ui.dragging && c.wardrobe.equipped(0,0)<0);
+        int[] earned={2,18,20,21,12};String[] keys=new String[earned.length];long[] values=new long[earned.length];
+        for(int i=0;i<earned.length;i++){keys[i]=Accessories.key("owned",earned[i]);values[i]=1;}
+        c.progress.accessories(keys,values,false);c.wardrobe.refresh(c);ui.show(c,0);ui.trayT=1;
+        check("earned count excludes gaps in catalog",ui.count(Accessories.HAT)==4 && ui.count(Accessories.BOOTS)==0 && ui.count(Accessories.MASK)==1);
+        check("earned indexes map to actual item IDs",ui.item(Accessories.HAT,0)==2 && ui.item(Accessories.HAT,1)==18 && ui.item(Accessories.HAT,3)==21);
+        ui.choose(c,21);check("filtered second card equips correct saved item",c.wardrobe.equipped(0,Accessories.HAT)==18);
+        ui.scroll=ui.scrollTarget=1;ui.trayT=1.7f;ui.pulse=.8f;ui.lastSlot=Accessories.MASK;
+        byte[] saved=c.progress.snapshot();ui.choose(c,10+Accessories.HAT);
+        check("open box tap preserves scroll and animation",ui.scroll==1 && ui.scrollTarget==1 && ui.trayT==1.7f && ui.pulse==.8f && ui.lastSlot==Accessories.MASK && java.util.Arrays.equals(saved,c.progress.snapshot()));
+        ui.scroll=ui.scrollTarget=0;ui.trayT=1;
+        float cx=WardrobeToybox.itemX(ui,L,ui.count(ui.slot),0),cy=WardrobeToybox.itemY(ui,L,ui.count(ui.slot),0);
+        ui.touch(c,L,0,7,cx,cy);ui.touch(c,L,2,7,Storybook.heroX(c,L),Storybook.heroY(c,L));ui.touch(c,L,1,7,Storybook.heroX(c,L),Storybook.heroY(c,L));
+        check("filtered drag equips the visible earned item",c.wardrobe.equipped(0,Accessories.HAT)==2);
+        ui.choose(c,10+Accessories.BOOTS);check("empty category has no selected locked placeholder",ui.selected==-1 && ui.scroll==0);
+        ui.choose(c,10+Accessories.MASK);ui.choose(c,20);check("single earned mask uses its real ID",c.wardrobe.equipped(0,Accessories.MASK)==12);
+        GameCore reload=new GameCore(c.store,214,true);check("filtered outfit persists by stable item ID",reload.wardrobe.equipped(0,Accessories.HAT)==2 && reload.wardrobe.equipped(0,Accessories.MASK)==12);
     }
     private static void exit(Layout L) {
         GameCore c=ready();grant(c);openForShake(c);WardrobeScreen ui=c.wardrobe.screen;
@@ -82,7 +106,7 @@ final class TestAccessories extends Check {
         check("category reveal does not generate scroll ticks",ui.takeFeedback()==0);
         ui.choose(c,20);ui.close();check("closing clears queued feedback",ui.takeFeedback()==0);
         GameCore locked=ready();openForShake(locked);locked.wardrobe.screen.choose(locked,20);
-        check("locked accessory selection still acknowledges tap",locked.wardrobe.screen.takeFeedback()==1 && locked.wardrobe.equipped(0,0)<0);
+        check("empty category has no accessory selection feedback",locked.wardrobe.screen.takeFeedback()==0 && locked.wardrobe.equipped(0,0)<0);
     }
     private static void startup() {
         Mem save=new Mem();GameCore c=new GameCore(save,214,true);grant(c);
@@ -521,7 +545,7 @@ final class TestAccessories extends Check {
         check("removed button has no invisible target",ui.hit(L,L.w*.5f,WardrobeScreen.trayY(L,.93f))==0);
         ui.choose(c,21);check("tap removal saves immediately",c.wardrobe.equipped(0,Accessories.HAT)<0);
         c.wardrobe.owned[0]=false;ui.choose(c,20);
-        check("locked accessory cannot equip",c.wardrobe.equipped(0,Accessories.HAT)<0 && ui.selected==0);
+        check("hidden locked item is skipped by picker",c.wardrobe.equipped(0,Accessories.HAT)==1 && ui.selected==1);
         check("update notice waits for editor",!UpdatePrompt.suitable(c));
         int state=c.state;c.screenKey(0);advance(c,L,WardrobeScreen.EXIT_TIME+.05f);
         check("game key dismisses inline wardrobe without starting",c.state==state && !c.starting() && !ui.open && !c.storyOpen() && c.caseOpen);
