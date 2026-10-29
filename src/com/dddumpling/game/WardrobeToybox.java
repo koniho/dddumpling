@@ -18,7 +18,7 @@ final class WardrobeToybox extends Draw {
     }
     static float arrival(WardrobeScreen ui,int index) {
         float delay=Math.max(0,Math.min(3,index-(int)ui.scroll))*.055f;
-        return Math.max(0,Math.min(1,(ui.trayT-delay)/.48f));
+        return Math.max(0,Math.min(1,(ui.trayT-delay)/.48f))*(1-ui.exitProgress(delay*.35f,.22f));
     }
     static float travel(float t) {return 1-(1-t)*(1-t)*(1-t);}
     static float itemX(WardrobeScreen ui,Layout L,int count,int index) {
@@ -50,13 +50,13 @@ final class WardrobeToybox extends Draw {
     static void draw(Painter p,GameCore c,Layout L,WardrobeScreen ui) {
         int count=Accessories.count(ui.slot);float h=WardrobeScreen.trayHeight(L),top=WardrobeScreen.trayTop(L);
         int accent=Accessories.COLOR[Accessories.item(ui.slot,0)];
-        contentsTray(p,c,L,ui,accent);
+        contentsTray(new OpacityPainter(p,1-ui.exitProgress(0,.22f)),c,L,ui,accent);
         float[] ribbon=new float[26];
         for(int i=0;i<13;i++){float x=L.w*(.06f+i*.88f/12);ribbon[i*2]=x;ribbon[i*2+1]=settledY(L,x)+itemR(L,count)*.76f;}
         p.polyline(ribbon,Glyph.withAlpha(accent,24),L.unit*.45f);
         p.polyline(ribbon,Glyph.withAlpha(accent,65),L.unit*.045f);
         p.save();p.clipRect(L.w*.035f,top-L.unit*.2f,L.w*.965f,top+h*.81f);
-        if(ui.lastSlot>=0 && ui.lastSlot!=ui.slot && ui.trayT<.28f) {
+        if(!ui.exiting && ui.lastSlot>=0 && ui.lastSlot!=ui.slot && ui.trayT<.28f) {
             float leave=ui.trayT/.28f;int oldCount=Accessories.count(ui.lastSlot);
             for(int i=Math.max(0,(int)ui.lastScroll-1);i<Math.min(oldCount,(int)ui.lastScroll+5);i++) {
                 float x=settledX(L,oldCount,i,ui.lastScroll)+L.w*leave*.75f,y=settledY(L,x)+h*leave*.08f,r=itemR(L,oldCount)*(1-leave*.40f);
@@ -93,7 +93,7 @@ final class WardrobeToybox extends Draw {
             }
         }
         p.restore();
-        if(count>visible(count)) {
+        if(!ui.exiting && count>visible(count)) {
             float y=top+h*.78f,r=L.unit*.10f,track=L.w*.18f;
             p.line(L.w*.5f-track,y,L.w*.5f+track,y,0x554E4469,r);
             float fraction=Math.max(0,Math.min(1,ui.scroll/maxScroll(count)));
@@ -112,9 +112,10 @@ final class WardrobeToybox extends Draw {
             if(k==ui.slot){p.fillCircle(x,yy,r*1.23f,Glyph.withAlpha(color,18));p.arc(x,yy,r*1.24f,r*1.20f,c.clock*27,255,Glyph.withAlpha(color,155),L.unit*.055f);}
             float open=k==ui.slot?travel(Math.min(1,ui.trayT/.32f)):0;
             if(k==ui.lastSlot && k!=ui.slot)open=1-travel(Math.min(1,ui.trayT/.24f));
+            open*=1-ui.exitProgress(.19f,.16f);
             Painter q=new LinkedPairArt.TurnPainter(p,x,yy,.035f*(float)Math.sin(c.clock*1.7f+k));
             container(q,c,k,item,r,color,open,ui.trayT);
-            if(k==ui.slot && ui.trayT<.65f)for(int spark=0;spark<3;spark++) {
+            if(!ui.exiting && k==ui.slot && ui.trayT<.65f)for(int spark=0;spark<3;spark++) {
                 float age=ui.trayT/.65f,a=spark*2.1f+.4f;
                 AccessoryArt.star(q,(float)Math.cos(a)*r*(.8f+age*.45f),-r*(.45f+age*.65f),
                         r*.12f*(1-age),Glyph.withAlpha(0xFFFFE9B0,(int)(210*(1-age))));

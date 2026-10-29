@@ -881,11 +881,11 @@ final class GameCore {
     }
 
     void closeStory() {
+        boolean reading = storyOpen() && !wardrobe.screen.exiting;
         wardrobe.screen.close();
         // Only hushes a reading that was actually under way. This is called on the way into and
         // out of half a dozen states where no story is open, and a backend should not have to
         // work out which of those it is.
-        boolean reading = storyOpen();
         story = -1;
         storyT = 0f;
         storyFromColumn=storyFromRow=storyFromScale=storyPulse=0f;
@@ -2294,7 +2294,7 @@ final class GameCore {
         // A story on screen swallows the first press. Without this an inner key would start a
         // run from behind the panel, which is the one thing a modal must not allow.
         if (storyOpen()) {
-            closeStory();
+            wardrobe.screen.back(this);
             return;
         }
         // So does the case. It is somebody reading their collection, and a run starting out from
@@ -2986,7 +2986,7 @@ final class GameCore {
                 homeLanded++;
             }
         }
-        if (storyOpen()) { storyT += dt; storyPulse += dt; }
+        if (storyOpen() && !wardrobe.screen.exiting) { storyT += dt; storyPulse += dt; }
         // The title screen dissolving, and the squishy's send-off over the top of it. Play begins
         // the frame the last of them finishes, not on the press.
         // UI timing follows elapsed time even when slow frames cap gameplay physics.

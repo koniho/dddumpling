@@ -229,3 +229,8 @@ User-driven scrolling ticks as item boundaries pass (including settling), with
 hysteresis to suppress finger jitter; programmatic reveals stay silent. Clouds
 drift across the sky and wrap fully offscreen, while two star depths drift more
 slowly with gentle vertical motion. All motion uses the shared game clock.
+
+User dismissal keeps the wardrobe modal for a 0.72-second return sequence: toys
+retract, boxes leave upward, story leaves downward, and the night scene fades as
+the squishy returns to the live display-case pose. Repeated input is swallowed.
+Forced state changes still use immediate `closeStory()` cleanup.

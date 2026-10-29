@@ -156,11 +156,11 @@ final class TestLore extends Check {
 
         // A key press dismisses rather than acting. Getting this wrong starts a run from
         // behind the panel, which is the one thing a modal must not allow.
-        c.tapKey(2, L);
+        c.tapKey(2, L);advance(c,L,WardrobeScreen.EXIT_TIME+.05f);
         check("an inner key dismisses instead of starting",
                 !c.storyOpen() && c.state == GameCore.TITLE);
         c.openStory();
-        c.tapKey(0, L);
+        c.tapKey(0, L);advance(c,L,WardrobeScreen.EXIT_TIME+.05f);
         check("any key dismisses instead of stepping the shelf",
                 !c.storyOpen() && c.caseIndex == 0);
         check("the clock resets on close", c.storyT == 0f);
@@ -229,7 +229,7 @@ final class TestLore extends Check {
         check("repeat taps renew the same bounded glow",c.storyPulse==0f && ear.narrations==1);
         check("rings use the collectible body and accent colors",Storybook.glowColor(1,0)==Collect.BODY[1]
                 && Storybook.glowColor(1,4)==Collect.ACCENT[1]);
-        Storybook.tap(c,L,L.w*.5f,L.h*.7f);
+        Storybook.tap(c,L,L.w*.5f,L.h*.7f);advance(c,L,WardrobeScreen.EXIT_TIME+.05f);
         check("other story taps dismiss and clear animation state",!c.storyOpen() && ear.hushes==1
                 && c.storyPulse==0 && c.storyFromScale==0);
         int locked=chosen==1?2:1;CaseUi.tap(c,locked);

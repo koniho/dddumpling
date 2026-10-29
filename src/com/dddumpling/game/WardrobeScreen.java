@@ -2,7 +2,9 @@ package com.dddumpling.game;
 
 /** Inline display-case wardrobe; earned styles equip immediately and save per squishy. */
 final class WardrobeScreen extends Draw {
-    boolean open, reward, narrationPaused;
+    boolean open, reward, narrationPaused, exiting;
+    float exitT;
+    static final float EXIT_TIME=.72f;
     int who, slot, selected;
     final AccessoryPicking picking=new AccessoryPicking();
     float pulse=2;
@@ -27,12 +29,27 @@ final class WardrobeScreen extends Draw {
         selected=Math.max(0,c.wardrobe.equipped(who,slot));
         lastSlot=-1;trayT=0;arrivalSounds=0;scroll=scrollTarget=0;shakeCooldown=.7f;swoosh=0;
         revealSelected();scroll=scrollTarget;
-        open=true;reward=false;narrationPaused=false;error="";pulse=0;danceT=3;scrambleT=2;feedback=0;cancelTouch();
+        open=true;reward=false;narrationPaused=false;exiting=false;exitT=0;error="";pulse=0;danceT=3;scrambleT=2;feedback=0;cancelTouch();
     }
-    void close() {open=reward=narrationPaused=false;lastSlot=-1;trayT=1;swoosh=0;error="";danceT=3;scrambleT=2;feedback=0;cancelTouch();}
-    void back(GameCore c) {if(reward)close();else c.closeStory();}
+    void close() {open=reward=narrationPaused=exiting=false;exitT=0;lastSlot=-1;trayT=1;swoosh=0;error="";danceT=3;scrambleT=2;feedback=0;cancelTouch();}
+    void back(GameCore c) {
+        if(reward){close();return;}
+        if(exiting)return;
+        if(!open || !c.storyOpen() || !c.caseOpen){c.closeStory();return;}
+        exiting=true;exitT=0;cancelTouch();feedback=0;scrambleT=2;swoosh=0;
+        pauseNarration(c);
+    }
+    float exitProgress(float delay,float duration) {
+        if(!exiting)return 0;
+        float t=Math.max(0,Math.min(1,(exitT-delay)/duration));return t*t*(3-2*t);
+    }
     boolean update(GameCore c,float dt) {
         if(open && c.state!=GameCore.TITLE)close();
+        if(exiting) {
+            exitT+=dt;
+            if(exitT>=EXIT_TIME)c.closeStory();
+            return false;
+        }
         if(open) {
             float before=scrambleT;scrambleT+=dt;
             if(!c.paused && !c.settingsOpen && !c.cloudUi.open && !c.updatePrompt.open && !c.releaseNotes.open) {
@@ -78,6 +95,7 @@ final class WardrobeScreen extends Draw {
             p.text("X",L.w*.89f,y(L,.035f),type(s),INK,Painter.CENTER,true);
             drawReward(p,c,L);return;
         }
+        p.save();p.clipRect(0,0,L.w,L.h);p.translate(0,-(trayBottom(c,L)+L.unit*3)*exitProgress(.28f,.28f));
         WardrobeToybox.draw(p,c,L,this);
         boolean owned=c.wardrobe.owned[selected];
         if(!error.isEmpty() || !owned)
@@ -91,6 +109,7 @@ final class WardrobeScreen extends Draw {
             }
             AccessoryArt.item(p,dragItem,dragX,dragY-(wornSlot<0?s:0),r*.64f,c.clock);
         }
+        p.restore();
     }
     float trayBottom(GameCore c,Layout L) {return WardrobeToybox.bottom(L,!c.wardrobe.owned[selected] || !error.isEmpty());}
     static float trayTop(Layout L) {return top(L);}
@@ -108,6 +127,7 @@ final class WardrobeScreen extends Draw {
     void hero(Painter p,GameCore c,float x,float y,float r) {
         whirlwind(p,x,y,r,false);
         float t=danceT-FLASH,env=t>=0&&t<DANCE?(float)Math.sin(Math.PI*t/DANCE):0;
+        env*=1-exitProgress(.24f,.48f);
         float beat=t*(dance==1?17:12),sx=(float)Math.sin(beat),hop=Math.abs((float)Math.sin(beat*.5f));
         float dx=env*r*sx*(dance==2?.55f:.28f),dy=-env*r*hop*(dance==1?.65f:.30f);
         float scale=1+env*(float)Math.cos(beat)*.12f;
@@ -116,7 +136,7 @@ final class WardrobeScreen extends Draw {
         Painter dancer=env>0?new LinkedPairArt.TurnPainter(p,x+dx,y+dy,angle):p;
         Trinket.drawReacting(dancer,who,env>0?0:x,env>0?0:y,r*scale,c.clock,1,env>0?4:-1,env*sx*.42f);
         whirlwind(p,x,y,r,true);
-        if(danceT<.72f)FastEnemies.starBurst(p,x,y,r*.48f,Accessories.COLOR[selected],dance*.75f,danceT/.72f);
+        if(!exiting && danceT<.72f)FastEnemies.starBurst(p,x,y,r*.48f,Accessories.COLOR[selected],dance*.75f,danceT/.72f);
     }
     private void whirlwind(Painter p,float x,float y,float r,boolean front) {
         if(scrambleT>=SCRAMBLE)return;
@@ -228,7 +248,7 @@ final class WardrobeScreen extends Draw {
     }
     static boolean canShuffle(GameCore c) {for(boolean earned:c.wardrobe.owned)if(earned)return true;return false;}
     boolean acceptsShake(GameCore c) {
-        return open && !reward && c.storyOpen() && c.story==who && c.state==GameCore.TITLE
+        return open && !reward && !exiting && c.storyOpen() && c.story==who && c.state==GameCore.TITLE
                 && c.storyT>=Storybook.FLIGHT_TIME && !gesture && shakeCooldown<=0
                 && !c.paused && !c.settingsOpen && !c.cloudUi.open && !c.updatePrompt.open
                 && !c.releaseNotes.open && !c.preferences.externalBusy && canShuffle(c);
@@ -256,6 +276,7 @@ final class WardrobeScreen extends Draw {
         return false;
     }
     void choose(GameCore c,int action) {
+        if(exiting)return;
         if(action==1) {back(c);return;}
         if(reward) {
             if(action==2) {
@@ -280,6 +301,7 @@ final class WardrobeScreen extends Draw {
     }
     void cancelTouch() {gesture=dragging=scrolling=ribbonGesture=false;pointer=-1;pressed=0;dragItem=-1;wornSlot=-1;scrollHaptics=false;}
     boolean touch(GameCore c,Layout L,int action,int id,float x,float yy) {
+        if(exiting)return true;
         if(!open && !gesture)return false;
         if(action==0) {
             if(gesture)return true;

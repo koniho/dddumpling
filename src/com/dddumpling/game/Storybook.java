@@ -29,16 +29,30 @@ final class Storybook extends Draw {
         return t*t*(3f-2f*t);
     }
     static float heroX(GameCore c,Layout L) {
-        return L.w*.5f+c.storyFromColumn*Showcase.step(L)*(1f-flight(c));
+        float x=L.w*.5f+c.storyFromColumn*Showcase.step(L)*(1f-flight(c));
+        float exit=c.wardrobe.screen.exitProgress(.24f,.48f);
+        return exit>0?x+(home(c,L)[0]-x)*exit:x;
     }
     static float heroY(GameCore c,Layout L) {
         float t=flight(c),from=Showcase.focusCy(L)+c.storyFromRow*Showcase.rowStep(L);
         float to=(c.wardrobe.screen.trayBottom(c,L)+panelTop(L))*.5f;
-        return from+(to-from)*t-heroRadius(L)*.4f*reaction(c);
+        float y=from+(to-from)*t-heroRadius(L)*.4f*reaction(c);
+        float exit=c.wardrobe.screen.exitProgress(.24f,.48f);
+        return exit>0?y+(home(c,L)[1]-y)*exit:y;
     }
     private static float radius(GameCore c,Layout L) {
         float t=flight(c);
-        return Showcase.focusR(L)*c.storyFromScale*(1f-t)+heroRadius(L)*t;
+        float r=Showcase.focusR(L)*c.storyFromScale*(1f-t)+heroRadius(L)*t;
+        float exit=c.wardrobe.screen.exitProgress(.24f,.48f);
+        return exit>0?r+(home(c,L)[2]-r)*exit:r;
+    }
+    // Match the focused display-case pose, including its idle bob and breathing.
+    private static float[] home(GameCore c,Layout L) {
+        float r=Showcase.focusR(L)*.86f,phase=c.clock*(1.7f+hash(c.story+71)*1.2f)+c.story*2.37f;
+        float welcome=(float)Math.sin(Math.min(1,c.caseHighlightAge/.65f)*Math.PI);
+        return new float[]{L.w*.5f+c.caseSlide*Showcase.step(L)+(float)Math.sin(phase*.73f)*r*.035f,
+                Showcase.focusCy(L)+c.caseSlideY*Showcase.rowStep(L)+(float)Math.sin(phase)*r*.10f-welcome*r*.14f,
+                r*.82f*(1+(float)Math.sin(phase*1.13f)*.035f)*(1.16f+welcome*.16f)};
     }
     private static float reaction(GameCore c) {
         return c.storyPulse<.6f?(float)Math.sin(Math.PI*c.storyPulse/.6f):0f;
@@ -48,14 +62,14 @@ final class Storybook extends Draw {
         return c.storyOpen() && dx*dx+dy*dy<=r*r;
     }
     static void tap(GameCore c,Layout L,float x,float y) {
-        if(!c.storyOpen())return;
+        if(!c.storyOpen() || c.wardrobe.screen.exiting)return;
         if(x>=L.w*.06f && x<=L.w*.94f && y>=panelTop(L)+L.unit*4.5f && y<=panelBottom(L)) {
             c.wardrobe.screen.replayNarration(c);return;
         }
         int category=c.wardrobe.screen.picking.hit(c,L,x,y);
         if(category>=0) {c.wardrobe.screen.choose(c,10+category);return;}
         if(heroHit(c,L,x,y)) {c.storyPulse=0f;c.ducks.react(c.story,.7f);if(c.story==Collect.ALLIGATOR_FRIEND)c.gator.react(.7f);}
-        else c.closeStory();
+        else c.wardrobe.screen.back(c);
     }
     static int glowColor(int who,int ring) {
         return Glyph.mix(Collect.BODY[who],Collect.ACCENT[who],ring/4f);
@@ -72,8 +86,8 @@ final class Storybook extends Draw {
     }
     static void hero(Painter p,GameCore c,Layout L) {
         p=c.wardrobe.screen.heroPainter(p);
-        float x=heroX(c,L),y=heroY(c,L),r=radius(c,L),pulse=reaction(c);
-        glowRings(p,c.story,x,y,r,c.storyPulse);
+        float x=heroX(c,L),y=heroY(c,L),r=radius(c,L),pulse=reaction(c)*(1-c.wardrobe.screen.exitProgress(.24f,.48f));
+        glowRings(new OpacityPainter(p,1-c.wardrobe.screen.exitProgress(0,.25f)),c.story,x,y,r,c.storyPulse);
         if(c.wardrobe.screen.danceT<WardrobeScreen.FLASH+WardrobeScreen.DANCE) {
             c.wardrobe.screen.hero(p,c,x,y,r);return;
         }
@@ -97,7 +111,8 @@ final class Storybook extends Draw {
         float ph = s * 6.2f;
         float cy = (panelTop(L)+panelBottom(L))*.5f;
 
-        WardrobeBackdrop.draw(p,c,L,open);
+        WardrobeBackdrop.draw(p,c,L,open*(1-c.wardrobe.screen.exitProgress(.24f,.48f)));
+        p.save();p.clipRect(0,0,L.w,L.h);p.translate(0,(L.h-panelTop(L)+s*2)*c.wardrobe.screen.exitProgress(.16f,.38f));
 
         float hw = pw * grow, hh = ph * grow;
         int tint = Collect.TIER_COLOR[Collect.TIER[i]];
@@ -106,7 +121,7 @@ final class Storybook extends Draw {
                 cx - hw, cy + hh}, Glyph.withAlpha(tint, 200), s * 0.06f);
         // Nothing legible until the panel is most of the way open; text scaled down with it
         // just looks like a rendering fault.
-        if (open < 0.75f) { hero(p,c,L);return; }
+        if (open < 0.75f) { p.restore();hero(p,c,L);return; }
 
         // The stage sits in the top third, on its own slightly darker band so the scene reads
         // as a scene rather than as decoration behind the text.
@@ -131,7 +146,7 @@ final class Storybook extends Draw {
                     Painter.CENTER, false);
         }
 
-        hero(p,c,L);
+        p.restore();hero(p,c,L);
     }
 
     /** Ease-out-back, so the panel overshoots a little and settles. */

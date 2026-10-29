@@ -12,10 +12,26 @@ final class TestAccessories extends Check {
         check("wardrobe grant persisted",c.progress.accessories(keys,values,false));c.wardrobe.refresh(c);
     }
     static void all(Layout L) {
-        catalog();shake();feedback(L);startup();rewards();sharedOutfits();migration();merge();ui(L);developerCategories(L);flair(L);sounds();picking(L);dragOff(L);detail();glitter(L);googly();narration(L);toybox(L);
+        catalog();exit(L);shake();feedback(L);startup();rewards();sharedOutfits();migration();merge();ui(L);developerCategories(L);flair(L);sounds();picking(L);dragOff(L);detail();glitter(L);googly();narration(L);toybox(L);
     }
     private static void openForShake(GameCore c) {
         c.caseOpen=true;c.caseIndex=0;c.openStory();c.storyT=2;c.wardrobe.screen.update(c,1);
+    }
+    private static void exit(Layout L) {
+        GameCore c=ready();grant(c);openForShake(c);WardrobeScreen ui=c.wardrobe.screen;
+        c.wardrobe.equip(c,0,0);byte[] outfit=c.progress.snapshot();float t=c.storyT;
+        ui.back(c);check("wardrobe dismissal starts a modal exit",ui.exiting && c.storyOpen() && ui.open && c.caseOpen);
+        ui.update(c,.10f);float age=ui.exitT;
+        ui.back(c);c.screenKey(0);ui.choose(c,21);
+        check("repeated exit input cannot restart or change outfit",ui.exitT==age && !c.starting() && java.util.Arrays.equals(outfit,c.progress.snapshot()));
+        check("exit swallows touches and shake",ui.touch(c,L,0,7,0,0) && !ui.shake(c));
+        check("accessories retreat before boxes",WardrobeToybox.arrival(ui,0)<1 && ui.exitProgress(.28f,.28f)==0);
+        advance(c,L,.12f);check("story opening freezes during exit",c.storyT==t);
+        advance(c,L,.25f);check("exit is still modal while scene fades",c.storyOpen() && ui.exitProgress(.24f,.48f)>0 && !c.starting());
+        advance(c,L,.4f);check("exit returns to case and clears transient state",!c.storyOpen() && !ui.open && !ui.exiting && ui.exitT==0 && c.caseOpen);
+        check("exit preserves saved outfit",java.util.Arrays.equals(outfit,c.progress.snapshot()));
+        c.openStory();ui.back(c);c.startGame();
+        check("forced state transition clears unfinished wardrobe exit",!ui.exiting && !c.storyOpen() && !ui.open);
     }
     private static void shake() {
         OutfitShake detector=new OutfitShake();
@@ -507,10 +523,10 @@ final class TestAccessories extends Check {
         c.wardrobe.owned[0]=false;ui.choose(c,20);
         check("locked accessory cannot equip",c.wardrobe.equipped(0,Accessories.HAT)<0 && ui.selected==0);
         check("update notice waits for editor",!UpdatePrompt.suitable(c));
-        int state=c.state;c.screenKey(0);
+        int state=c.state;c.screenKey(0);advance(c,L,WardrobeScreen.EXIT_TIME+.05f);
         check("game key dismisses inline wardrobe without starting",c.state==state && !c.starting() && !ui.open && !c.storyOpen() && c.caseOpen);
         c.openStory();
-        Pause.back(c);check("back closes story and inline wardrobe together",!ui.open && !c.storyOpen());
+        Pause.back(c);advance(c,L,WardrobeScreen.EXIT_TIME+.05f);check("back closes story and inline wardrobe together",!ui.open && !c.storyOpen());
         c.state=GameCore.PLAY;ui.update(c,.1f);check("reward waits until title",!ui.open);
         c.state=GameCore.TITLE;c.onboarding.titleGuide=true;ui.update(c,.1f);
         check("reward never interrupts tutorial",!ui.open);

@@ -31,6 +31,14 @@ final class AccessoryPreview {
                 Png.write(new File(dir,"214-box-window-"+category+"-"+sample+".png"),window.resolve(),w,h);
             }
         }
+        c.wardrobe.screen.show(c,0);c.wardrobe.screen.trayT=1;c.wardrobe.screen.choose(c,10+Accessories.HAT);c.wardrobe.screen.trayT=1;
+        c.wardrobe.screen.back(c);
+        for(int sample=0;sample<4;sample++) {
+            c.wardrobe.screen.exitT=new float[]{.10f,.30f,.49f,.70f}[sample];
+            RasterPainter leaving=new RasterPainter(w,h,ss);Renderer.draw(leaving,c,L);
+            Png.write(new File(dir,"214-wardrobe-exit-"+sample+".png"),leaving.resolve(),w,h);
+        }
+        c.closeStory();c.openStory();c.storyT=2;
         for(int skin=0;skin<Skins.COUNT;skin++) {
             RasterPainter canvas=new RasterPainter(w,h,ss);canvas.clear(0xFF211D36);
             final Painter p=Skins.painter(canvas,skin);

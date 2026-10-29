@@ -7,7 +7,7 @@ final class TestBack extends Check {
         check("title has no gameplay pause control",!Pause.entryVisible(c,L));
         check("title delegates back to Android", !Pause.handlesBack(c) && !Pause.back(c));
         c.openCase(); c.caseIndex = 0; c.openStory();
-        Pause.back(c);
+        Pause.back(c);advance(c,L,WardrobeScreen.EXIT_TIME+.05f);
         check("story back leaves display case open", !c.storyOpen() && c.caseOpen);
         Pause.back(c);
         check("case back returns to title", !c.caseOpen && c.state == GameCore.TITLE);

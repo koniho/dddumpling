@@ -1413,6 +1413,9 @@ public final class IOSInputTest extends Check {
         tap(game,Storybook.heroX(c,l),Storybook.heroY(c,l));
         check("native featured-dumpling tap reacts without dismissing",c.story==chosen && c.storyPulse==0f && c.storyT==age);
         tap(game,l.w*.02f,l.h*.40f);
+        check("native popup starts modal return",c.storyOpen() && c.wardrobe.screen.exiting);
+        tap(game,l.w*.02f,l.h*.40f);game.back();
+        for(int frame=0;frame<50;frame++)game.update(DT);
         check("native popup tap still dismisses without starting a run",!c.storyOpen() && c.caseOpen && !c.starting());
         c.caseIndex=0;c.caseSlide=c.caseSlideY=0;
         game.touch(one(0,2,x,y));game.touch(one(2,2,x-l.unit*2,y));game.touch(one(1,2,x-l.unit*2,y));
@@ -1446,6 +1449,7 @@ public final class IOSInputTest extends Check {
         tap(game,WardrobeToybox.itemX(ui,l,4,3),WardrobeToybox.itemY(ui,l,4,3));
         check("native tap after swoosh equips revealed style",c.wardrobe.equipped(0,Accessories.MASK)==Accessories.item(Accessories.MASK,3));
         tap(game,l.w*.02f,l.h*.4f);
+        for(int frame=0;frame<50;frame++)game.update(DT);
         check("native dismissal closes inline wardrobe",!c.wardrobe.screen.open && !c.storyOpen() && !c.starting());
 
     }

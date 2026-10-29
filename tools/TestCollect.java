@@ -790,7 +790,7 @@ final class TestCollect extends Check {
         e.caseIndex = 0;
         e.openStory();
         check("a story is open", e.storyOpen());
-        e.tapKey(2, L);
+        e.tapKey(2, L);advance(e,L,WardrobeScreen.EXIT_TIME+.05f);
         check("the first press dismisses the story instead of starting",
                 !e.storyOpen() && !e.starting());
         e.tapKey(2, L);
