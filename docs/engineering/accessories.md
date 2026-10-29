@@ -1,5 +1,7 @@
 # Achievement accessories
 
+For new styles, follow the [adding accessories checklist](adding-accessories.md).
+
 Issue #214 adds cosmetic progression: discover an appealing item, play toward its
 achievement, earn it, then customize a favorite companion in the display case.
 The current art is a first pass for iterative review. Scene portraits and gallery
