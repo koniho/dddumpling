@@ -160,3 +160,8 @@ Gold Glitter also has a diagonal golden sheen that crosses the body, then rests 
 repeating. Three nested bands clip against existing vector fills/contours, preserving
 holes and following the same body transforms. Small views use only a subtle gold pulse;
 no clipping work, new particles or blur surfaces are needed there.
+
+Picker cards center and scale each accessory's visible artwork to fill the tile with
+small edge padding. No names or status text reserve space inside cards; the equipped
+border and muted artwork/corner lock communicate state. Locked achievement details
+remain below the row. Thumbnail fitting does not alter worn attachment geometry.

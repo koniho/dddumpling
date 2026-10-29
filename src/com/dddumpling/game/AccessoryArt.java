@@ -37,6 +37,27 @@ final class AccessoryArt extends Draw {
     private static void target(Painter p,int slot,float l,float t,float r,float b) {
         if(p.accessoryTargets())p.accessoryTarget(slot,new float[]{l,t,r,t,r,b,l,b});
     }
+    /** Fit the visible artwork, rather than its attachment origin, inside a picker tile. */
+    static void thumbnail(Painter p,int item,float l,float t,float right,float bottom,float clock) {
+        int slot=Accessories.slot(item),v=Accessories.variant(item);
+        float left=-1,top=-1,r=1,b=1;
+        if(slot==Accessories.HAT) {
+            left=v==0?-1.20f:v==1?-1.02f:-1.08f;r=-left;
+            top=v==0?-.75f:v==1?-1.17f:-1.25f;b=.29f;
+        } else if(slot==Accessories.GLASSES) {left=-.93f;r=.93f;top=v==2?-.43f:-.39f;b=-top;}
+        else if(slot==Accessories.BOOTS) {left=-.96f;r=.96f;top=-.30f;b=.35f;}
+        else if(slot==Accessories.MASK) {
+            if(v==0){left=-1.08f;r=1.55f;top=-1.05f;b=1.27f;}
+            else if(v==1){left=-.98f;r=.98f;top=-.91f;b=.91f;}
+            else if(v==2){left=-.92f;r=.92f;top=0;b=.85f;}
+            else {left=-.99f;r=.99f;top=-1.03f;b=1.03f;}
+        } else {
+            r=v==0?1.26f:v==1?1.20f:v==2?1.03f:.60f;
+            b=v==0?1.12f:v==1?1.0f:v==2?.91f:.55f;left=-r;top=-b;
+        }
+        float radius=Math.min((right-l)/(r-left),(bottom-t)/(b-top))*.89f;
+        item(p,item,(l+right)*.5f-(left+r)*.5f*radius,(t+bottom)*.5f-(top+b)*.5f*radius,radius,clock);
+    }
     static void item(Painter p,int item,float x,float y,float r,float clock) {
         if(item<0 || item>=Accessories.COUNT)return;
         int slot=Accessories.slot(item),v=Accessories.variant(item),c=Accessories.COLOR[item];

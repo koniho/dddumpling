@@ -71,12 +71,13 @@ final class WardrobeScreen extends Draw {
             boolean wearing=c.wardrobe.equipped(who,slot)==item;
             p.fillRect(left,trayY(L,.30f),right,trayY(L,.72f),wearing?0xFF494762:0xFF322F49);
             if(wearing)p.strokePoly(new float[]{left,trayY(L,.30f),right,trayY(L,.30f),right,trayY(L,.72f),left,trayY(L,.72f)},Accessories.COLOR[item],s*.085f);
-            float iy=trayY(L,.46f),ir=s*(Accessories.count(slot)>3?1.05f:1.25f);
-            if(slot==Accessories.HAT)iy+=ir*.25f;
-            AccessoryArt.item(new OpacityPainter(p,c.wardrobe.owned[item]?1:.38f),item,cx,iy,ir,c.clock);
-            if(wearing)p.text(Accessories.NAME[item],cx,trayY(L,.62f),Math.min(type(s*.56f),(right-left)*.90f/(Accessories.NAME[item].length()*.72f)),INK,Painter.CENTER,true);
-            String status=!c.wardrobe.owned[item]?"LOCKED":wearing?"ON YOU":"";
-            p.text(status,cx,trayY(L,.69f),type(s*.46f),Accessories.COLOR[item],Painter.CENTER,true);
+            boolean owned=c.wardrobe.owned[item];
+            AccessoryArt.thumbnail(new OpacityPainter(p,owned?1:.38f),item,left,trayY(L,.30f),right,trayY(L,.72f),c.clock);
+            if(!owned) {
+                float lockX=right-s*.34f,lockY=trayY(L,.30f)+s*.36f,size=s*.42f;
+                p.arc(lockX,lockY-size*.13f,size*.32f,size*.38f,180,180,INK_DIM,size*.12f);
+                p.fillRect(lockX-size*.44f,lockY,lockX+size*.44f,lockY+size*.48f,INK_DIM);
+            }
         }
         boolean owned=c.wardrobe.owned[selected];
         if(!error.isEmpty() || !owned)
