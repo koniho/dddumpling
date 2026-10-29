@@ -1198,7 +1198,7 @@ public final class IOSInputTest extends Check {
         cave();
         highScores();
         updatePrompt(); releaseAttention(); releaseNotes(); releaseFeedback(); packets(); titleAndLifecycle(); starsAndLand(); starFeedback(); starCompletionStorm(); bossOwnership(); ninjaHistory();
-        steamerAndPanic(); forgivingRescue(); caseAndSettings(); storyDumplingInput(); outfitDragOff(); outfitShake(); firstTitleEntry(); modeSelector(); survival();
+        steamerAndPanic(); forgivingRescue(); caseAndSettings(); storyDumplingInput(); outfitDragOff(); outfitFeedback(); outfitShake(); firstTitleEntry(); modeSelector(); survival();
         debugScenes(); linkedChord();
         System.out.println("iOS input: " + pass + " passed, " + fail + " failed");
         if (fail != 0) throw new AssertionError("iOS input regressions");
@@ -1461,6 +1461,17 @@ public final class IOSInputTest extends Check {
         check("native worn drag does not dismiss story",ui.dragging && c.storyOpen());
         game.touch(one(1,42,l.w*.02f,l.h*.94f));
         check("native worn drop removes without closing story",c.wardrobe.equipped(0,Accessories.HAT)<0 && c.storyOpen() && !ui.dragging);
+    }
+
+    private static void outfitFeedback() {
+        IOSGame game=game();GameCore c=game.core();Host host=new Host();game.setHost(host);Layout l=game.geometry();
+        c.collected=1;c.wardrobe.developer(c,1);c.caseOpen=true;c.caseIndex=0;c.openStory();c.storyT=2;
+        WardrobeScreen ui=c.wardrobe.screen;ui.update(c,1);
+        tap(game,WardrobeToybox.categoryX(l,Accessories.HAT),WardrobeToybox.categoryY(l));game.update(DT);
+        check("native accessory category haptic",host.ticks==1);
+        ui.trayT=1;tap(game,WardrobeToybox.itemX(ui,l,Accessories.count(ui.slot),1),WardrobeToybox.itemY(ui,l,Accessories.count(ui.slot),1));game.update(DT);
+        check("native accessory selection haptic",host.ticks==2);
+        game.update(DT);check("wardrobe feedback is not replayed",host.ticks==2);
     }
 
     private static void outfitShake() {

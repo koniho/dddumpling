@@ -16,6 +16,11 @@ final class AccessoryPreview {
             if(i==2) {c.wardrobe.screen.reward=true;}
             RasterPainter canvas=new RasterPainter(w,h,ss);Renderer.draw(canvas,c,L);
             Png.write(new File(dir,"214-wardrobe-"+i+".png"),canvas.resolve(),w,h);
+            if(i==0) {
+                float clock=c.clock;c.clock+=8;
+                RasterPainter drift=new RasterPainter(w,h,ss);Renderer.draw(drift,c,L);
+                Png.write(new File(dir,"214-night-drift.png"),drift.resolve(),w,h);c.clock=clock;
+            }
         }
         for(int skin=0;skin<Skins.COUNT;skin++) {
             RasterPainter canvas=new RasterPainter(w,h,ss);canvas.clear(0xFF211D36);

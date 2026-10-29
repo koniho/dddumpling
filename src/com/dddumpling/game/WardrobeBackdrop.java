@@ -13,14 +13,15 @@ final class WardrobeBackdrop {
                     Glyph.mix(0xFF1B1730,0xFF303850,Math.min(1,u/.67f)));
         }
         for(int i=0;i<24;i++) {
-            float sx=w*((i*.618034f+.09f)%1),sy=h*(.025f+((i*.381966f)%1)*.49f);
+            float sx=w*((i*.618034f+.11f+t*(i%2==0?.0028f:.0015f))%1.04f-.02f);
+            float sy=h*(.025f+((i*.381966f)%1)*.49f+.006f*(float)Math.sin(t*.38f+i*1.7f));
             float twinkle=.5f+.5f*(float)Math.sin(t*.7f+i*2.4f),r=w*(i%5==0?.0022f:.0013f);
             p.fillCircle(sx,sy,r*2.5f,Glyph.withAlpha(0xFFABC6EE,(int)(8+twinkle*10)));
             p.fillCircle(sx,sy,r,Glyph.withAlpha(0xFFD4E2FF,(int)(48+twinkle*55)));
         }
-        cloud(p,w*(.12f+.045f*(float)Math.sin(t*.045f)),h*.365f,w*.25f,w*.073f);
-        cloud(p,w*(.89f+.035f*(float)Math.sin(t*.037f+2)),h*.425f,w*.29f,w*.083f);
-        cloud(p,w*(.60f+.055f*(float)Math.sin(t*.029f+4)),h*.07f,w*.23f,w*.055f);
+        cloud(p,w*((.47f+t*.013f)%1.70f-.35f),h*(.365f+.005f*(float)Math.sin(t*.31f)),w*.25f,w*.073f);
+        cloud(p,w*((1.24f+t*.010f)%1.70f-.35f),h*(.425f+.006f*(float)Math.sin(t*.26f+2)),w*.29f,w*.083f);
+        cloud(p,w*((.95f+t*.007f)%1.70f-.35f),h*(.07f+.004f*(float)Math.sin(t*.23f+4)),w*.23f,w*.055f);
         hill(p,w,h,ground-h*.055f,h*.060f,.12f,0xFF354B59);
         hill(p,w,h,ground-h*.025f,h*.055f,.87f,0xFF2C414C);
         hill(p,w,h,ground,h*.080f,.46f,0xFF233B43);

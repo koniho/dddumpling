@@ -223,3 +223,9 @@ Dragging a worn accessory off the hero removes it on release. The live attachmen
 hit regions start the gesture; the accessory lifts visually without editing the
 save until dropped. A drop back on the hero or original attachment, cancellation,
 or a second finger preserves the outfit. Tapping still selects its category.
+
+Selections and category changes share the wardrobe haptic queue with scramble.
+User-driven scrolling ticks as item boundaries pass (including settling), with
+hysteresis to suppress finger jitter; programmatic reveals stay silent. Clouds
+drift across the sky and wrap fully offscreen, while two star depths drift more
+slowly with gentle vertical motion. All motion uses the shared game clock.

@@ -12,7 +12,7 @@ final class TestAccessories extends Check {
         check("wardrobe grant persisted",c.progress.accessories(keys,values,false));c.wardrobe.refresh(c);
     }
     static void all(Layout L) {
-        catalog();shake();startup();rewards();sharedOutfits();migration();merge();ui(L);developerCategories(L);flair(L);sounds();picking(L);dragOff(L);detail();glitter(L);googly();narration(L);toybox(L);
+        catalog();shake();feedback(L);startup();rewards();sharedOutfits();migration();merge();ui(L);developerCategories(L);flair(L);sounds();picking(L);dragOff(L);detail();glitter(L);googly();narration(L);toybox(L);
     }
     private static void openForShake(GameCore c) {
         c.caseOpen=true;c.caseIndex=0;c.openStory();c.storyT=2;c.wardrobe.screen.update(c,1);
@@ -34,13 +34,39 @@ final class TestAccessories extends Check {
         before=c.progress.snapshot();
         check("shake cooldown prevents duplicate random outfits",!ui.shake(c) && java.util.Arrays.equals(before,c.progress.snapshot()));
         check("shake starts whirlwind",ui.scrambleT==0);
-        ui.update(c,.19f);check("scramble haptic beat consumed once",ui.takeScrambleFeedback()==1 && ui.takeScrambleFeedback()==0);
-        ui.update(c,.88f);check("scramble ends with stronger haptic",ui.takeScrambleFeedback()==2);
-        ui.update(c,2);check("scramble feedback stops",ui.takeScrambleFeedback()==0 && ui.scrambleT>WardrobeScreen.SCRAMBLE);
+        ui.update(c,.19f);check("scramble haptic beat consumed once",ui.takeFeedback()==1 && ui.takeFeedback()==0);
+        ui.update(c,.88f);check("scramble ends with stronger haptic",ui.takeFeedback()==2);
+        ui.update(c,2);check("scramble feedback stops",ui.takeFeedback()==0 && ui.scrambleT>WardrobeScreen.SCRAMBLE);
         c.paused=true;check("paused wardrobe ignores shake",!ui.shake(c));c.paused=false;
         c.settingsOpen=true;check("settings ignores shake",!ui.shake(c));c.settingsOpen=false;
         c.cloudUi.open=true;check("cloud dialog ignores shake",!ui.shake(c));c.cloudUi.open=false;
-        ui.close();check("closed wardrobe ignores shake",!ui.shake(c) && ui.takeScrambleFeedback()==0 && ui.scrambleT>WardrobeScreen.SCRAMBLE);
+        ui.close();check("closed wardrobe ignores shake",!ui.shake(c) && ui.takeFeedback()==0 && ui.scrambleT>WardrobeScreen.SCRAMBLE);
+    }
+    private static void feedback(Layout L) {
+        GameCore c=ready();grant(c);openForShake(c);WardrobeScreen ui=c.wardrobe.screen;
+        check("wardrobe entry is haptically quiet",ui.takeFeedback()==0);
+        for(int category=0;category<Accessories.SLOTS;category++) {
+            ui.choose(c,10+category);check("category selection ticks once",ui.takeFeedback()==1 && ui.takeFeedback()==0);
+            ui.choose(c,20);check("accessory equip ticks once",ui.takeFeedback()==1 && ui.takeFeedback()==0);
+            ui.choose(c,20);check("accessory removal ticks once",ui.takeFeedback()==1 && ui.takeFeedback()==0);
+        }
+        ui.choose(c,10+Accessories.HAT);ui.takeFeedback();ui.trayT=1;ui.scroll=ui.scrollTarget=0;
+        int count=Accessories.count(ui.slot);float x=WardrobeToybox.itemX(ui,L,count,1),y=WardrobeToybox.itemY(ui,L,count,1),step=WardrobeToybox.spacing(L,count);
+        ui.touch(c,L,0,7,x,y);
+        ui.touch(c,L,2,7,x-step*.25f,y);check("small scroll does not buzz",ui.takeFeedback()==0);
+        ui.touch(c,L,2,7,x-step*.7f,y);check("scroll past an accessory ticks",ui.takeFeedback()==1);
+        ui.touch(c,L,2,7,x-step*.55f,y);ui.touch(c,L,2,7,x-step*.65f,y);
+        check("boundary jitter does not repeat ticks",ui.takeFeedback()==0);
+        ui.touch(c,L,2,7,x-step*1.7f,y);check("next accessory adds another tick",ui.takeFeedback()==1);
+        ui.touch(c,L,3,7,x,y);ui.update(c,.1f);check("cancel stops scrolling haptics",ui.takeFeedback()==0);
+        ui.scroll=ui.scrollTarget=0;ui.touch(c,L,0,7,x,y);ui.touch(c,L,2,7,x-step*.5f,y);ui.takeFeedback();
+        ui.touch(c,L,1,7,x-step*.5f,y);ui.update(c,.1f);
+        check("released swoosh continues ticking past accessories",ui.takeFeedback()==1);
+        ui.choose(c,10+Accessories.GLASSES);ui.takeFeedback();ui.update(c,2);
+        check("category reveal does not generate scroll ticks",ui.takeFeedback()==0);
+        ui.choose(c,20);ui.close();check("closing clears queued feedback",ui.takeFeedback()==0);
+        GameCore locked=ready();openForShake(locked);locked.wardrobe.screen.choose(locked,20);
+        check("locked accessory selection still acknowledges tap",locked.wardrobe.screen.takeFeedback()==1 && locked.wardrobe.equipped(0,0)<0);
     }
     private static void startup() {
         Mem save=new Mem();GameCore c=new GameCore(save,214,true);grant(c);

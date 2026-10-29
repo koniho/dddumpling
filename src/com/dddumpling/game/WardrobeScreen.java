@@ -14,7 +14,8 @@ final class WardrobeScreen extends Draw {
     int dance,lastSlot=-1,arrivalSounds;
     float trayT=1,scroll,scrollTarget,lastScroll,scrollStart,scrollSpeed,scrollSampleAge,shakeCooldown;
     float swoosh,swooshAge,swipeDirection=1,scrambleT=2;
-    private int scrambleFeedback;
+    private int feedback,scrollDetent;
+    private boolean scrollHaptics;
     static final float SCRAMBLE=1.2f;
     boolean scrolling,ribbonGesture;
     private final java.util.Random outfitRandom=new java.util.Random(21431);
@@ -26,9 +27,9 @@ final class WardrobeScreen extends Draw {
         selected=Math.max(0,c.wardrobe.equipped(who,slot));
         lastSlot=-1;trayT=0;arrivalSounds=0;scroll=scrollTarget=0;shakeCooldown=.7f;swoosh=0;
         revealSelected();scroll=scrollTarget;
-        open=true;reward=false;narrationPaused=false;error="";pulse=0;danceT=3;scrambleT=2;scrambleFeedback=0;cancelTouch();
+        open=true;reward=false;narrationPaused=false;error="";pulse=0;danceT=3;scrambleT=2;feedback=0;cancelTouch();
     }
-    void close() {open=reward=narrationPaused=false;lastSlot=-1;trayT=1;swoosh=0;error="";danceT=3;scrambleT=2;scrambleFeedback=0;cancelTouch();}
+    void close() {open=reward=narrationPaused=false;lastSlot=-1;trayT=1;swoosh=0;error="";danceT=3;scrambleT=2;feedback=0;cancelTouch();}
     void back(GameCore c) {if(reward)close();else c.closeStory();}
     boolean update(GameCore c,float dt) {
         if(open && c.state!=GameCore.TITLE)close();
@@ -37,14 +38,14 @@ final class WardrobeScreen extends Draw {
             if(!c.paused && !c.settingsOpen && !c.cloudUi.open && !c.updatePrompt.open && !c.releaseNotes.open) {
                 for(int beat=0;beat<4;beat++) {
                     float at=.18f+beat*.29f;
-                    if(before<at && scrambleT>=at)scrambleFeedback=Math.max(scrambleFeedback,beat==3?2:1);
+                    if(before<at && scrambleT>=at)feedback=Math.max(feedback,beat==3?2:1);
                 }
             }
             scrollSampleAge+=dt;
             pulse+=dt;danceT+=dt;trayT+=dt;shakeCooldown=Math.max(0,shakeCooldown-dt);swooshAge+=dt;swoosh=Math.max(0,swoosh-dt*2.4f);
-            if(!ribbonGesture)scroll+=(scrollTarget-scroll)*(1-(float)Math.exp(-15*dt));
+            if(!ribbonGesture)setScroll(scroll+(scrollTarget-scroll)*(1-(float)Math.exp(-15*dt)));
             else scrollSpeed*=(float)Math.exp(-5*dt);
-            if(Math.abs(scroll-scrollTarget)<.001f && !ribbonGesture)scroll=scrollTarget;
+            if(Math.abs(scroll-scrollTarget)<.001f && !ribbonGesture) {scroll=scrollTarget;scrollHaptics=false;}
             if(!reward && !gesture && c.sound!=null)for(int i=0;i<Math.min(4,Accessories.count(slot));i++) {
                 if(trayT>=.48f+i*.055f && (arrivalSounds&(1<<i))==0) {arrivalSounds|=1<<i;c.sound.uiBloop();}
             }
@@ -52,7 +53,7 @@ final class WardrobeScreen extends Draw {
         }
         return open && reward;
     }
-    int takeScrambleFeedback() {int value=scrambleFeedback;scrambleFeedback=0;return value;}
+    int takeFeedback() {int value=feedback;feedback=0;return value;}
     static float safeTop(Layout L) {return Math.max(L.padT,L.h*.07f);}
     static float safeBottom(Layout L) {return Math.max(L.padB,L.h*.025f);}
     static float outerMargin(Layout L) {return Math.max(L.unit*1.5f,(L.h-safeTop(L)-safeBottom(L))*.035f);}
@@ -201,9 +202,17 @@ final class WardrobeScreen extends Draw {
     }
     private void celebrate(GameCore c,boolean removing) {celebrate(c,removing,slot);}
     private void celebrate(GameCore c,boolean removing,int soundSlot) {
-        dance=(dance+1+celebrations.nextInt(3))%4;danceT=0;pulse=0;
+        dance=(dance+1+celebrations.nextInt(3))%4;danceT=0;pulse=0;feedback=Math.max(feedback,1);
         c.ducks.react(who,.8f);if(who==Collect.ALLIGATOR_FRIEND)c.gator.react(.8f);
         if(c.sound!=null)c.sound.accessoryChange(soundSlot,removing);
+    }
+    private void setScroll(float next) {
+        scroll=next;
+        float bounded=Math.max(0,Math.min(WardrobeToybox.maxScroll(Accessories.count(slot)),next));
+        // Hysteresis avoids buzzing when a finger rests on an item boundary.
+        if(scrollHaptics && Math.abs(bounded-scrollDetent)>.60f) {
+            scrollDetent=Math.round(bounded);feedback=Math.max(feedback,1);
+        }
     }
     static float boundedScroll(float raw,int count) {
         float max=WardrobeToybox.maxScroll(count);
@@ -213,6 +222,7 @@ final class WardrobeScreen extends Draw {
         return Math.max(0,Math.min(WardrobeToybox.maxScroll(count),Math.round(scroll+speed*.12f)));
     }
     private void revealSelected() {
+        scrollHaptics=false;
         int v=Accessories.variant(selected),n=Accessories.count(slot);
         scrollTarget=Math.max(0,Math.min(WardrobeToybox.maxScroll(n),v-(WardrobeToybox.visible(n)-1)/2));
     }
@@ -241,7 +251,7 @@ final class WardrobeScreen extends Draw {
         }
         if(c.wardrobe.equipOutfit(c,who,outfit)) {
             int on=c.wardrobe.equipped(who,slot);selected=on<0?Accessories.item(slot,0):on;
-            revealSelected();celebrate(c,false,Accessories.FLAIR);scrambleT=0;scrambleFeedback=0;return true;
+            revealSelected();celebrate(c,false,Accessories.FLAIR);scrambleT=0;feedback=0;return true;
         } else error="Could not save. Try again.";
         return false;
     }
@@ -255,7 +265,9 @@ final class WardrobeScreen extends Draw {
             }
             return;
         }
-        if(action>=10 && action<10+Accessories.SLOTS || action>=20 && action<20+Accessories.count(slot))pauseNarration(c);
+        if(action>=10 && action<10+Accessories.SLOTS || action>=20 && action<20+Accessories.count(slot)) {
+            pauseNarration(c);feedback=Math.max(feedback,1);
+        }
         if(action>=10 && action<10+Accessories.SLOTS) {
             lastSlot=slot;lastScroll=scroll;slot=action-10;int on=c.wardrobe.equipped(who,slot);selected=on>=0?on:Accessories.item(slot,0);error="";
             revealSelected();scroll=scrollTarget;trayT=0;arrivalSounds=0;pulse=0;
@@ -266,7 +278,7 @@ final class WardrobeScreen extends Draw {
         }
         if(action!=0 && c.sound!=null)c.sound.uiBloop();
     }
-    void cancelTouch() {gesture=dragging=scrolling=ribbonGesture=false;pointer=-1;pressed=0;dragItem=-1;wornSlot=-1;}
+    void cancelTouch() {gesture=dragging=scrolling=ribbonGesture=false;pointer=-1;pressed=0;dragItem=-1;wornSlot=-1;scrollHaptics=false;}
     boolean touch(GameCore c,Layout L,int action,int id,float x,float yy) {
         if(!open && !gesture)return false;
         if(action==0) {
@@ -280,6 +292,7 @@ final class WardrobeScreen extends Draw {
             }
             gesture=true;pointer=id;pressed=hit(L,x,yy);downX=dragX=x;downY=dragY=yy;
             ribbonGesture=!reward && WardrobeToybox.inRibbon(L,x,yy);scrollStart=scroll;scrollSpeed=0;scrollSampleAge=0;
+            scrollDetent=Math.round(Math.max(0,Math.min(WardrobeToybox.maxScroll(Accessories.count(slot)),scroll)));
             if(!reward && pressed>=20 && pressed<20+Accessories.count(slot)) {
                 pauseNarration(c);
                 int item=Accessories.item(slot,pressed-20);if(c.wardrobe.owned[item])dragItem=item;
@@ -292,11 +305,11 @@ final class WardrobeScreen extends Draw {
                 return true;
             }
             if(ribbonGesture && !dragging && !scrolling && Math.abs(dx)>L.unit*.35f && Math.abs(dx)>Math.abs(dy)*1.12f) {
-                scrolling=true;pressed=0;dragItem=-1;pauseNarration(c);
+                scrolling=true;scrollHaptics=true;pressed=0;dragItem=-1;pauseNarration(c);
             }
             if(scrolling) {
                 float next=boundedScroll(scrollStart-dx/WardrobeToybox.spacing(L,Accessories.count(slot)),Accessories.count(slot));
-                scrollSpeed=Math.max(-16,Math.min(16,(next-scroll)/Math.max(1f/120,scrollSampleAge)));scrollSampleAge=0;scroll=next;swoosh=1;swooshAge=0;swipeDirection=dx<0?-1:1;
+                scrollSpeed=Math.max(-16,Math.min(16,(next-scroll)/Math.max(1f/120,scrollSampleAge)));scrollSampleAge=0;setScroll(next);swoosh=1;swooshAge=0;swipeDirection=dx<0?-1:1;
             } else {
                 if(dragItem>=0 && Math.abs(dy)>L.unit*.35f && Math.abs(dy)>=Math.abs(dx)*.85f)dragging=true;
                 if(!dragging && hit(L,x,yy)!=pressed)pressed=0;
@@ -315,7 +328,7 @@ final class WardrobeScreen extends Draw {
                 return true;
             }
             if(scrolling) {
-                scrollTarget=scrollDestination(scroll,scrollSpeed,Accessories.count(slot));cancelTouch();
+                scrollTarget=scrollDestination(scroll,scrollSpeed,Accessories.count(slot));cancelTouch();scrollHaptics=true;
                 if(c.sound!=null)c.sound.uiBloop();return true;
             }
             int choice=pressed==hit(L,x,yy)?pressed:0,item=dragItem;boolean drop=dragging;
@@ -327,7 +340,7 @@ final class WardrobeScreen extends Draw {
                 } else choose(c,choice);
             }
         } else if(action==3){scrollTarget=scrollDestination(scroll,0,Accessories.count(slot));cancelTouch();}
-        else if(action==5) {scrollTarget=scrollDestination(scroll,0,Accessories.count(slot));pressed=0;dragItem=-1;wornSlot=-1;dragging=scrolling=ribbonGesture=false;}
+        else if(action==5) {scrollTarget=scrollDestination(scroll,0,Accessories.count(slot));pressed=0;dragItem=-1;wornSlot=-1;dragging=scrolling=ribbonGesture=scrollHaptics=false;}
         return true;
     }
 }
