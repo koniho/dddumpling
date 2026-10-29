@@ -90,8 +90,8 @@ interaction pauses narration; tapping the story starts narration again.
 
 Use catalog counts in preview and input-test coordinates. The ribbon draws and
 hit-tests only nearby choices; preserve that behavior as collections grow.
-Review the unlock celebration grid too: unlike the ribbon, it currently draws
-the whole catalog, so larger collections may need a separate layout change.
+Unlocks must remain silent at startup and on return to the title. The old reward
+grid remains in preview tooling; it is not an automatic player-facing notice.
 
 Adding a **new category** is broader than adding a style. Audit `Accessories.SLOTS`,
 `Wardrobe.SLOT_ID`, save/reset handling, outfit draw order, picking priority,

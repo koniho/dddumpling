@@ -12,7 +12,19 @@ final class TestAccessories extends Check {
         check("wardrobe grant persisted",c.progress.accessories(keys,values,false));c.wardrobe.refresh(c);
     }
     static void all(Layout L) {
-        catalog();rewards();sharedOutfits();migration();merge();ui(L);developerCategories(L);flair(L);sounds();picking(L);detail();glitter(L);googly();narration(L);toybox(L);
+        catalog();startup();rewards();sharedOutfits();migration();merge();ui(L);developerCategories(L);flair(L);sounds();picking(L);detail();glitter(L);googly();narration(L);toybox(L);
+    }
+    private static void startup() {
+        Mem save=new Mem();GameCore c=new GameCore(save,214,true);grant(c);
+        check("startup fixture has unseen accessories and an eligible title",c.wardrobe.pending(c)>=0 && UpdatePrompt.suitable(c));
+        check("unseen accessories never interrupt title",!c.wardrobe.screen.update(c,.4f)
+                && !c.wardrobe.screen.open && !c.wardrobe.screen.reward);
+        GameCore reload=new GameCore(save,215,true);
+        check("restart preserves rewards without opening popup",reload.wardrobe.owned[0]
+                && !reload.wardrobe.screen.update(reload,.4f) && !reload.wardrobe.screen.open);
+        reload.collected=Collect.add(reload.collected,0);reload.caseOpen=true;reload.caseIndex=0;reload.openStory();
+        check("earned styles remain available in display case",reload.wardrobe.screen.open
+                && !reload.wardrobe.screen.reward && reload.wardrobe.equip(reload,0,0));
     }
     private static void narration(Layout L) {
         GameCore c=ready();grant(c);Ear ear=new Ear();c.sound=ear;c.caseOpen=true;c.caseIndex=0;c.openStory();c.storyT=2;

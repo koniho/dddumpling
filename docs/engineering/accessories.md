@@ -84,8 +84,9 @@ map additional accessory styles to them.
 
 `ProgressData` carries `accessory_owned_ID`, `accessory_seen_ID` and independent
 `accessory_outfit_PRIZE_SLOT` maxima. Rewards backfill from local achievement
-progress, including cloud-restored progress, without sign-in. One title-screen
-celebration batches unlocks after tutorials and run rewards.
+progress, including cloud-restored progress, without sign-in. Unlocks are silent: starting the game or returning to the title
+does not open an accessory popup. Earned styles are available in the display-case
+wardrobe.
 
 Each squishy/slot record encodes a logical edit clock in the high bits and the
 append-only accessory index plus one in the low 10 bits. Zero low bits means an

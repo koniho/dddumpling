@@ -30,14 +30,6 @@ final class WardrobeScreen extends Draw {
     void back(GameCore c) {if(reward)close();else c.closeStory();}
     boolean update(GameCore c,float dt) {
         if(open && c.state!=GameCore.TITLE)close();
-        if(!open && c.wardrobe.pending(c)>=0 && !c.updatePrompt.open && !c.updatePrompt.pending && !c.cloudUi.open && !c.preferences.externalBusy && !c.bossRetry.pending
-                && UpdatePrompt.suitable(c)) {
-            open=reward=true;pulse=0;
-            if(c.sound!=null)c.sound.uiBloop();
-            // One batch, even when many older achievements are backfilled together.
-            c.wardrobe.acknowledge(c);
-            Pause.release(c);
-        }
         if(open) {
             scrollSampleAge+=dt;
             pulse+=dt;danceT+=dt;trayT+=dt;diceT+=dt;swooshAge+=dt;swoosh=Math.max(0,swoosh-dt*2.4f);
