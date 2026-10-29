@@ -85,7 +85,7 @@ final class TestAccessories extends Check {
     }
     private static void picking(Layout L) {
         GameCore c=ready();grant(c);c.caseOpen=true;
-        int[] friends={0,7,Collect.DUCK_FIRST,Collect.bossPrize(Boss.MUSHROOM),Collect.ALLIGATOR_FRIEND,Collect.RAINBOW_CAT_FRIEND,Collect.bossPrize(Boss.OCTOPUS)};
+        int[] friends=AccessoryPlacementPreview.types();
         for(int skin=0;skin<Skins.COUNT;skin++)for(int who:friends) {
             c.collected=Collect.add(c.collected,who);c.closeStory();c.caseIndex=who;c.openStory();c.storyT=2;c.storyPulse=2;c.preferences.skin=skin;
             WardrobeScreen ui=c.wardrobe.screen;

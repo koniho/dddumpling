@@ -460,8 +460,16 @@ final class RainbowCatArt extends Draw {
         AccessoryGlitter glitter=known?AccessoryGlitter.begin(p,Collect.RAINBOW_CAT_FRIEND,x,y,r,t,fade):null;
         cat(new OpacityPainter(glitter==null?p:glitter,fade),x-facing*r*.12f,y,r*.67f,t,facing,null,null,false,known?1:0);
         if(glitter!=null)glitter.finish();
-        if(known)AccessoryArt.outfit(p,Collect.RAINBOW_CAT_FRIEND,x+facing*r*.5232f,y+r*.067f,
-                r*.58f,y-r*.44f,x,y+r*.65f,r*.84f,t,fade,false);
+        if(known) {
+            AccessoryArt.outfit(p,Collect.RAINBOW_CAT_FRIEND,x+facing*r*.5232f,y+r*.077f,
+                    r*.58f,y-r*.44f,x,y+r*.65f,r*.84f,t,fade,false);
+            int boots=p.accessory(Collect.RAINBOW_CAT_FRIEND,Accessories.BOOTS);
+            if(boots>=0) {
+                Painter feet=new OpacityPainter(p,fade);float bx=x-facing*r*.12f,br=r*.67f;
+                for(int foot=0;foot<4;foot++)AccessoryArt.foot(feet,boots,footX(bx,br,foot),footY(y,br,t,foot,false),br*.52f,t,foot<2?-1:1);
+                AccessoryArt.target(feet,Accessories.BOOTS,footX(bx,br,0)-br*.55f,y+br*.55f,footX(bx,br,3)+br*.55f,y+br*1.22f);
+            }
+        }
     }
     static void cat(Painter p,float x,float y,float r,float t,float facing,Softbody body,Softbody skull,boolean caught,float known) {
         cat(p,x,y,r,t,facing,body,skull,caught,known,0,0);
@@ -481,6 +489,8 @@ final class RainbowCatArt extends Draw {
     private static void cat(Painter p,float x,float y,float r,float t,float facing,Softbody body,Softbody skull,boolean caught,float known,float scared,float angry,float cry,float wind,float reach) {
         cat(p,x,y,r,t,facing,body,skull,caught,known,scared,angry,cry,wind,reach,0);
     }
+    private static float footX(float x,float r,int foot){return x+r*(-.85f+foot*.51f);}
+    private static float footY(float y,float r,float t,int foot,boolean caught){return y+r*(.9f+.09f*(foot%2==0?1:-1)*(float)Math.sin(t*(caught?15:7)));}
     private static void cat(Painter p,float x,float y,float r,float t,float facing,Softbody body,Softbody skull,boolean caught,float known,float scared,float angry,float cry,float wind,float reach,float laugh) {
         boolean vampire=Skins.halloween(p);
         int crust=known>0?(vampire?0xFF805294:0xFFFFD49A):0xFF49425F;
@@ -495,7 +505,7 @@ final class RainbowCatArt extends Draw {
         float[] tail={x-facing*r*.85f,y+r*.4f,x-facing*r*1.5f,y+r*.25f,x-facing*r*1.65f,y-r*(.10f+step*.16f)};
         p.polyline(tail,INK,r*.30f);p.polyline(tail,fur,r*.24f);
         for(int foot=0;foot<4;foot++) {
-            float fx=x+r*(-.85f+foot*.51f),fy=y+r*(.9f+.09f*(foot%2==0?step:-step)-.30f*wind+.58f*reach);
+            float fx=footX(x,r,foot),fy=footY(y,r,t,foot,caught)+r*(-.30f*wind+.58f*reach);
             fx+=facing*r*.18f*reach;
             p.line(x+r*(-.85f+foot*.51f),y+r*.60f,fx,fy,INK,r*.35f);
             p.line(x+r*(-.85f+foot*.51f),y+r*.60f,fx,fy,fur,r*.27f);

@@ -104,7 +104,16 @@ the character being drawn. Ordinary shapes reuse `Trinket`'s face offsets and
 `AccessoryAnchors`' hat/feet offsets. Ducks and boss friends supply their animated
 head positions directly. No lookup uses the companion's home location.
 
-When adding a body shape, extend `AccessoryAnchors` and inspect all slots.
+When adding a body shape, extend `AccessoryAnchors` and inspect all slots. Mask
+height fits each face without moving its eye line; the same transform applies to
+its tap target. Narrow cone/stem feet use smaller footwear. Ducks use a wider
+stance, and Rainbow Cat dresses all four paws at their animated positions.
+
+After compiling the headless tools, regenerate the portrait attachment audit with
+`java -cp build/harness com.dddumpling.game.AccessoryPlacementPreview out/accessory-fit`.
+It renders every style on a representative of each body renderer, all collectible
+outfits, Halloween boss variants, and several motion samples. Representatives are
+derived from the live catalog so new body types and bosses are included automatically.
 When adding a custom character renderer, call `AccessoryArt.outfit` with its live
 anchors, inside its facing/scale transform, and forward wardrobe lookups through
 any new Painter wrapper. Forward optional `accessoryTargets`/`accessoryTarget`

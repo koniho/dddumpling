@@ -21,12 +21,17 @@ final class AccessoryArt extends Draw {
             int item=p.accessory(who,slot);
             // Gameplay hood owns the head/face; the saved outfit is never changed.
             if(item<0 || item>=Accessories.COUNT || ninja && slot!=Accessories.BOOTS)continue;
-            if(slot==Accessories.HAT)item(out,item,x,topY,r*.67f,clock);
-            else if(slot==Accessories.BOOTS)item(out,item,feetX,feetY,r*.68f*bootScale,clock);
+            if(slot==Accessories.HAT)item(out,item,x,topY,who==Collect.ALLIGATOR_FRIEND?faceR*.81f:r*.67f,clock);
+            else if(slot==Accessories.BOOTS) {
+                // The cat's four independently stepping paws are dressed by its portrait renderer.
+                if(who!=Collect.RAINBOW_CAT_FRIEND)item(out,item,feetX,feetY,r*.68f*bootScale,clock,
+                        who>=Collect.DUCK_FIRST && who<Collect.DUCK_FIRST+Collect.DUCK_COUNT?.88f:.49f);
+            }
             else {
-                float fit=slot==Accessories.MASK && Accessories.variant(item)==0
-                        && who>=Collect.DUCK_FIRST && who<Collect.DUCK_FIRST+Collect.DUCK_COUNT?.74f:1f;
-                item(out,item,x,faceY,faceR*fit,clock);
+                int variant=Accessories.variant(item);
+                float fit=slot==Accessories.MASK?AccessoryAnchors.maskWidth(who,variant):1f;
+                float height=slot==Accessories.MASK?AccessoryAnchors.maskHeight(who,variant):1f;
+                item(height==1?out:new MaskFit(out,faceY,height),item,x,faceY,faceR*fit,clock);
             }
         }
     }
@@ -34,7 +39,7 @@ final class AccessoryArt extends Draw {
         float t=Math.max(0,Math.min(1,(p.accessorySize(radius)-.065f)/.055f));
         return t*t*(3-2*t);
     }
-    private static void target(Painter p,int slot,float l,float t,float r,float b) {
+    static void target(Painter p,int slot,float l,float t,float r,float b) {
         if(p.accessoryTargets())p.accessoryTarget(slot,new float[]{l,t,r,t,r,b,l,b});
     }
     /** Fit the visible artwork, rather than its attachment origin, inside a picker tile. */
@@ -58,14 +63,15 @@ final class AccessoryArt extends Draw {
         float radius=Math.min((right-l)/(r-left),(bottom-t)/(b-top))*.89f;
         item(p,item,(l+right)*.5f-(left+r)*.5f*radius,(t+bottom)*.5f-(top+b)*.5f*radius,radius,clock);
     }
-    static void item(Painter p,int item,float x,float y,float r,float clock) {
+    static void item(Painter p,int item,float x,float y,float r,float clock) {item(p,item,x,y,r,clock,.49f);}
+    private static void item(Painter p,int item,float x,float y,float r,float clock,float footSpan) {
         if(item<0 || item>=Accessories.COUNT)return;
         int slot=Accessories.slot(item),v=Accessories.variant(item),c=Accessories.COLOR[item];
         int shade=Glyph.mix(c,0xFF3E3459,.36f),hi=Glyph.mix(c,0xFFFFFFFF,.5f);
         float detail=detail(p,r);Painter trim=detail>0?new OpacityPainter(p,detail):p;
         if(slot==Accessories.HAT)target(p,slot,x-r*1.3f,y-r*1.25f,x+r*1.3f,y+r*.35f);
         else if(slot==Accessories.GLASSES)target(p,slot,x-r,y-r*.46f,x+r,y+r*.46f);
-        else if(slot==Accessories.BOOTS)target(p,slot,x-r*1.05f,y-r*.40f,x+r*1.05f,y+r*.44f);
+        else if(slot==Accessories.BOOTS)target(p,slot,x-r*(footSpan+.56f),y-r*.40f,x+r*(footSpan+.56f),y+r*.44f);
         else if(slot==Accessories.MASK)target(p,slot,x-r*1.25f,y-r*1.15f,x+r*1.25f,y+r*1.15f);
         if(slot==Accessories.FLAIR) {AccessoryFlair.draw(p,v,x,y,r*.70f,clock);return;}
         if(slot==Accessories.HAT) {
@@ -98,9 +104,9 @@ final class AccessoryArt extends Draw {
                 if(detail>0)trim.line(cx-r*.11f,y-r*.12f,cx+r*.04f,y+r*.04f,0xA9FFFFFF,r*.055f);
             }
         } else if(slot==Accessories.BOOTS) {
-            footwear(p,v,x,y,r,clock,c,shade,hi,detail);
+            for(int side=-1;side<=1;side+=2)shoe(p,v,x+side*r*footSpan,y+r*.025f*(float)Math.sin(clock*4+side),r,side,clock,c,shade,hi,detail);
         } else mask(p,v,x,y,r,detail);
-        if(detail>0 && !(slot==Accessories.HAT && v==2))AccessoryDetail.trim(trim,slot,v,x,y,r,clock);
+        if(detail>0 && slot!=Accessories.BOOTS && !(slot==Accessories.HAT && v==2))AccessoryDetail.trim(trim,slot,v,x,y,r,clock);
     }
     /** Loose pupils wobble independently inside soft white domes; no physics allocation. */
     private static void googly(Painter p,float x,float y,float r,float clock,float detail) {
@@ -124,10 +130,12 @@ final class AccessoryArt extends Draw {
             }
         }
     }
-    private static void footwear(Painter p,int v,float x,float y,float r,float clock,int c,int shade,int hi,float detail) {
+    static void foot(Painter p,int item,float x,float y,float r,float clock,int side) {
+        int c=Accessories.COLOR[item];
+        shoe(p,Accessories.variant(item),x,y,r,side,clock,c,Glyph.mix(c,0xFF3E3459,.36f),Glyph.mix(c,0xFFFFFFFF,.5f),detail(p,r));
+    }
+    private static void shoe(Painter p,int v,float cx,float yy,float r,int side,float clock,int c,int shade,int hi,float detail) {
         Painter trim=detail>0?new OpacityPainter(p,detail):p;
-        for(int side=-1;side<=1;side+=2) {
-            float cx=x+side*r*.49f,yy=y+r*.025f*(float)Math.sin(clock*4+side);
             if(v==0) {
                 // Chunky foam clog: wide rounded toe, ventilation holes and a heel strap.
                 p.fillEllipse(cx+side*r*.06f,yy+r*.10f,r*.39f,r*.22f,shade);
@@ -160,7 +168,23 @@ final class AccessoryArt extends Draw {
                 if(detail>0)trim.fillEllipse(cx+side*r*.25f,yy+r*.015f,r*.11f,r*.04f,hi);
                 p.fillCircle(cx-side*r*.18f,yy-r*.17f,r*.045f,0xFFFFE8A3);
             }
-        }
+        if(detail>0)AccessoryDetail.footTrim(trim,v,cx,yy,r,side);
+    }
+    private static final class MaskFit extends OpacityPainter {
+        final float cy,sy;
+        MaskFit(Painter p,float y,float sy){super(p,1);cy=y;this.sy=sy;}
+        float y(float y){return cy+(y-cy)*sy;}
+        float[] points(float[] a){float[] b=a.clone();for(int i=1;i<b.length;i+=2)b[i]=y(b[i]);return b;}
+        public void accessoryTarget(int slot,float[] a){p.accessoryTarget(slot,points(a));}
+        public void fillPoly(float[] a,int c){p.fillPoly(points(a),c);}
+        public void fillContours(float[][] a,int c){float[][] b=new float[a.length][];for(int i=0;i<a.length;i++)b[i]=points(a[i]);p.fillContours(b,c);}
+        public void strokePoly(float[] a,int c,float w){p.strokePoly(points(a),c,w*sy);}
+        public void polyline(float[] a,int c,float w){p.polyline(points(a),c,w*sy);}
+        public void fillCircle(float x,float y,float r,int c){p.fillEllipse(x,y(y),r,r*sy,c);}
+        public void fillEllipse(float x,float y,float rx,float ry,int c){p.fillEllipse(x,y(y),rx,ry*sy,c);}
+        public void arc(float x,float y,float rx,float ry,float a,float sweep,int c,float w){p.arc(x,y(y),rx,ry*sy,a,sweep,c,w*sy);}
+        public void fillRect(float l,float t,float r,float b,int c){p.fillRect(l,y(t),r,y(b),c);}
+        public void line(float x,float y,float xx,float yy,int c,float w){p.line(x,y(y),xx,y(yy),c,w*sy);}
     }
     private static float[] shoePoints(float[] a,float x,float y,float r,int side) {
         for(int i=0;i<a.length;i+=2){a[i]=x+a[i]*r*side;a[i+1]=y+a[i+1]*r;}return a;

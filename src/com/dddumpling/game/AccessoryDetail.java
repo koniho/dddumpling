@@ -57,9 +57,7 @@ final class AccessoryDetail {
         } else if(slot==Accessories.BOOTS) {
             for(int s=-1;s<=1;s+=2) {
                 float cx=x+s*r*.49f,yy=y+r*.025f*(float)Math.sin(clock*4+s);
-                if(v==0){p.fillCircle(cx-s*r*.18f,yy-r*.035f,r*.045f,0xFFFFE6AD);p.fillCircle(cx-s*r*.18f,yy-r*.035f,r*.021f,0xFF9DBED4);}
-                else if(v==1)p.arc(cx+s*r*.06f,yy+r*.08f,r*.30f,r*.13f,5,160,0x9FFFFFFF,r*.025f);
-                else gem(p,cx-s*r*.18f,yy-r*.17f,r*.04f,0xFFA05A9B,0xFFFFC5EB);
+                footTrim(p,v,cx,yy,r,s);
             }
         } else if(slot==Accessories.MASK) {
             if(v==0){p.arc(x,y+r*.05f,r*.93f,r*.95f,218,105,0xFF42394F,r*.05f);
@@ -71,4 +69,10 @@ final class AccessoryDetail {
             else for(int s=-1;s<=1;s+=2)p.arc(x+s*r*.37f,y+r*.12f,r*.39f,r*.70f,30,80,0xFF7169A6,r*.03f);
         }
     }
+    static void footTrim(Painter p,int v,float cx,float yy,float r,int s) {
+        if(v==0){p.fillCircle(cx-s*r*.18f,yy-r*.035f,r*.045f,0xFFFFE6AD);p.fillCircle(cx-s*r*.18f,yy-r*.035f,r*.021f,0xFF9DBED4);}
+        else if(v==1)p.arc(cx+s*r*.06f,yy+r*.08f,r*.30f,r*.13f,5,160,0x9FFFFFFF,r*.025f);
+        else gem(p,cx-s*r*.18f,yy-r*.17f,r*.04f,0xFFA05A9B,0xFFFFC5EB);
+    }
+
 }

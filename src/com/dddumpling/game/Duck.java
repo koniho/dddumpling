@@ -219,7 +219,7 @@ final class Duck extends Draw {
         skin(p,kind,3,hx,hy+r*.25f,r*.30f,r*.17f,bill,r*.032f,BILL,0);
         for(int side=-1;side<=1;side+=2)
             p.fillEllipse(hx+side*r*.058f,hy+r*.18f,r*.019f,r*.026f,EDGE);
-        AccessoryArt.outfit(p,who,hx,hy,r*.90f,hy-r*.61f,x,y+r*.73f,r,clock,1,ninja);
+        AccessoryArt.outfit(p,who,hx,hy,r*.90f,hy-r*.61f,x,y+r*.87f,r,clock,1,ninja,.80f);
         if(ninja)Trinket.ninjaMask(p,hx,hy,r*.73f,1);
     }
 }
