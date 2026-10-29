@@ -22,6 +22,15 @@ final class AccessoryPreview {
                 Png.write(new File(dir,"214-night-drift.png"),drift.resolve(),w,h);c.clock=clock;
             }
         }
+        c.wardrobe.screen.show(c,0);
+        for(int category=0;category<Accessories.SLOTS;category++) {
+            c.wardrobe.screen.choose(c,10+category);
+            for(int sample=0;sample<2;sample++) {
+                c.wardrobe.screen.trayT=sample==0?.9f:3.1f;c.wardrobe.screen.pulse=2;
+                RasterPainter window=new RasterPainter(w,h,ss);Renderer.draw(window,c,L);
+                Png.write(new File(dir,"214-box-window-"+category+"-"+sample+".png"),window.resolve(),w,h);
+            }
+        }
         for(int skin=0;skin<Skins.COUNT;skin++) {
             RasterPainter canvas=new RasterPainter(w,h,ss);canvas.clear(0xFF211D36);
             final Painter p=Skins.painter(canvas,skin);

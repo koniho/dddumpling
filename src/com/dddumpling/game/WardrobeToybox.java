@@ -112,7 +112,7 @@ final class WardrobeToybox extends Draw {
             float open=k==ui.slot?travel(Math.min(1,ui.trayT/.32f)):0;
             if(k==ui.lastSlot && k!=ui.slot)open=1-travel(Math.min(1,ui.trayT/.24f));
             Painter q=new LinkedPairArt.TurnPainter(p,x,yy,.035f*(float)Math.sin(c.clock*1.7f+k));
-            container(q,k,item,r,color,open,c.clock);
+            container(q,c,k,item,r,color,open,ui.trayT);
             if(k==ui.slot && ui.trayT<.65f)for(int spark=0;spark<3;spark++) {
                 float age=ui.trayT/.65f,a=spark*2.1f+.4f;
                 AccessoryArt.star(q,(float)Math.cos(a)*r*(.8f+age*.45f),-r*(.45f+age*.65f),
@@ -121,7 +121,8 @@ final class WardrobeToybox extends Draw {
         }
     }
     /** Open toy containers keep the category recognizable through its peeking accessory. */
-    private static void container(Painter p,int kind,int item,float r,int tint,float open,float clock) {
+    private static void container(Painter p,GameCore c,int kind,int item,float r,int tint,float open,float age) {
+        float clock=c.clock;
         int base=Glyph.mix(tint,0xFF7C699E,.28f),light=Glyph.mix(base,0xFFFFF2D4,.44f);
         int shade=Glyph.mix(base,0xFF302A51,.45f),inside=Glyph.mix(base,0xFF211A38,.67f);
         float top=r*.06f,lift=r*(.30f+open*.38f);
@@ -175,11 +176,41 @@ final class WardrobeToybox extends Draw {
                 p.fillEllipse(r*.37f,r*.37f,r*.16f,r*.07f,inside);
             }
         }
-        if(kind!=Accessories.FLAIR) {
+        if(kind!=Accessories.FLAIR && open<1) {
             float yy=r*(kind==Accessories.GLASSES?.36f:.48f);
-            p.fillEllipse(-r*.05f,yy,r*.18f,r*.15f,shade);
-            AccessoryArt.star(p,-r*.05f,yy-r*.01f,r*.12f,0xFFFFE3A3);
+            Painter badge=new OpacityPainter(p,1-open);
+            badge.fillEllipse(-r*.05f,yy,r*.18f,r*.15f,shade);
+            AccessoryArt.star(badge,-r*.05f,yy-r*.01f,r*.12f,0xFFFFE3A3);
         }
+        if(open>0)contents(p,c,kind,item,r,light,open,age);
+    }
+    private static void contents(Painter canvas,GameCore c,int kind,int item,float r,int trim,float open,float age) {
+        Painter p=new OpacityPainter(canvas,open);
+        float cy=r*(kind==Accessories.GLASSES?.34f:.46f),half=r*(kind==Accessories.GLASSES?.19f:.28f)*open;
+        float left=-r*.68f,right=r*.58f,top=cy-half,bottom=cy+half;
+        // A recessed glass window opens in the front wall. Only three tiny toys draw.
+        p.fillRect(left-r*.055f,top-r*.055f,right+r*.055f,bottom+r*.055f,0xFF29233E);
+        p.fillRect(left,top,right,bottom,0xFF423957);
+        p.fillRect(left,cy,right,bottom,0xFF343049);
+        p.save();p.clipRect(left,top,right,bottom);
+        int count=Accessories.count(kind);
+        float position=Accessories.variant(item)+Math.max(0,age-.55f)*.46f;
+        int first=(int)Math.floor(position);float fraction=position-first;
+        for(int offset=-1;offset<=1;offset++) {
+            int variant=((first+offset)%count+count)%count,peek=Accessories.item(kind,variant);
+            float dx=(offset-fraction)*r*.92f,x=(left+right)*.5f+dx;
+            float visibility=Math.max(0,1-Math.abs(dx)/(r*1.12f));
+            float bob=(float)Math.sin(c.clock*2.7f+variant*1.8f)*r*.025f;
+            Painter toy=new LinkedPairArt.TurnPainter(new OpacityPainter(p,visibility*(c.wardrobe.owned[peek]?1:.30f)),x,cy+bob,
+                    (float)Math.sin(c.clock*1.9f+variant)*.055f);
+            float size=r*(kind==Accessories.GLASSES?.34f:.42f);
+            AccessoryArt.thumbnail(toy,peek,-size,-half*.91f,size,half*.91f,c.clock);
+        }
+        float glint=((c.clock*.22f+kind*.21f)%1.5f-.25f)*r*1.7f;
+        p.line(left+glint,top,left+glint-r*.24f,bottom,0x28DFECFF,r*.10f);
+        p.restore();
+        p.polyline(new float[]{left,bottom,left,top,right,top},Glyph.withAlpha(trim,215),r*.045f);
+        p.polyline(new float[]{right,top,right,bottom,left,bottom},0xFF6C648C,r*.045f);
     }
     private static void chevron(Painter p,float x,float y,float r,int dir,int color) {
         p.polyline(new float[]{x-dir*r*.4f,y-r,x+dir*r*.4f,y,x-dir*r*.4f,y+r},Glyph.withAlpha(color,160),r*.20f);
