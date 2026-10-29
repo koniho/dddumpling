@@ -98,8 +98,8 @@ final class WardrobeToybox extends Draw {
             p.line(L.w*.5f-track,y,L.w*.5f+track,y,0x554E4469,r);
             float fraction=Math.max(0,Math.min(1,ui.scroll/maxScroll(count)));
             p.fillCircle(L.w*.5f-track+track*2*fraction,y,r*1.8f,accent);
-            if(ui.scroll>.05f)chevron(p,L.w*.055f,top+h*.50f,L.unit*.32f,-1,accent);
-            if(ui.scroll<maxScroll(count)-.05f)chevron(p,L.w*.945f,top+h*.50f,L.unit*.32f,1,accent);
+            if(ui.scroll>.05f)chevron(p,L.w*.055f,top+h*.50f,L.unit*.42f,-1,accent,c.clock);
+            if(ui.scroll<maxScroll(count)-.05f)chevron(p,L.w*.945f,top+h*.50f,L.unit*.42f,1,accent,c.clock);
         }
         // Category objects stay in the foreground while their contents tumble out.
         for(int k=0;k<Accessories.SLOTS;k++) {
@@ -247,8 +247,12 @@ final class WardrobeToybox extends Draw {
         p.polyline(new float[]{left,bottom,left,top,right,top},Glyph.withAlpha(trim,215),r*.045f);
         p.polyline(new float[]{right,top,right,bottom,left,bottom},0xFF6C648C,r*.045f);
     }
-    private static void chevron(Painter p,float x,float y,float r,int dir,int color) {
-        p.polyline(new float[]{x-dir*r*.4f,y-r,x+dir*r*.4f,y,x-dir*r*.4f,y+r},Glyph.withAlpha(color,160),r*.20f);
+    private static void chevron(Painter p,float x,float y,float r,int dir,int color,float clock) {
+        float pulse=.5f-.5f*(float)Math.cos(clock*4.2f);
+        x+=dir*r*.50f*pulse;r*=1+.12f*pulse;
+        float[] points={x-dir*r*.4f,y-r,x+dir*r*.4f,y,x-dir*r*.4f,y+r};
+        p.polyline(points,Glyph.withAlpha(color,(int)(18+25*pulse)),r*.65f);
+        p.polyline(points,Glyph.withAlpha(Glyph.mix(color,0xFFFFF1D5,.24f),(int)(180+75*pulse)),r*.25f);
     }
     private static void lock(Painter p,float x,float y,float r,float fade) {
         int ink=Glyph.withAlpha(0xFFD4C8EA,(int)(fade*235));
