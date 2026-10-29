@@ -12,7 +12,7 @@ final class TestAccessories extends Check {
         check("wardrobe grant persisted",c.progress.accessories(keys,values,false));c.wardrobe.refresh(c);
     }
     static void all(Layout L) {
-        catalog();rewards();sharedOutfits();migration();merge();ui(L);developerCategories(L);flair(L);sounds();picking(L);detail();glitter(L);googly();narration(L);
+        catalog();rewards();sharedOutfits();migration();merge();ui(L);developerCategories(L);flair(L);sounds();picking(L);detail();glitter(L);googly();narration(L);toybox(L);
     }
     private static void narration(Layout L) {
         GameCore c=ready();grant(c);Ear ear=new Ear();c.sound=ear;c.caseOpen=true;c.caseIndex=0;c.openStory();c.storyT=2;
@@ -25,7 +25,8 @@ final class TestAccessories extends Check {
         Storybook.tap(c,L,L.w*.5f,Storybook.panelBottom(L)-L.unit*2);
         check("story text tap restarts same narration without changing outfit",ear.narrations==2 && ear.narrated==0 && !ui.narrationPaused && c.storyOpen()
                 && c.wardrobe.equipped(0,Accessories.HAT)==worn);
-        ui.touch(c,L,0,1,L.w*.23f,WardrobeScreen.trayY(L,.5f));
+        ui.trayT=1;
+        ui.touch(c,L,0,1,WardrobeToybox.itemX(ui,L,3,0),WardrobeToybox.itemY(ui,L,3,0));
         check("starting accessory drag pauses reading",ear.hushes==2 && ui.narrationPaused);
         ui.cancelTouch();check("cancelled drag does not restart reading",ear.narrations==2);
         c.closeStory();c.openStory();check("new story starts narration again",ear.narrations==3 && !ui.narrationPaused);
@@ -166,8 +167,8 @@ final class TestAccessories extends Check {
         GameCore restored=new GameCore(c.store,216,true);
         check("flair saved independently with outfit",restored.wardrobe.equipped(0,Accessories.FLAIR)==item);
         WardrobeScreen ui=c.wardrobe.screen;ui.show(c,0);
-        int tab=ui.hit(L,L.w*.82f,WardrobeScreen.trayY(L,.20f));ui.choose(c,tab);
-        check("fifth wardrobe tab opens flair",tab==10+Accessories.FLAIR && ui.slot==Accessories.FLAIR);
+        int tab=ui.hit(L,WardrobeToybox.categoryX(L,Accessories.FLAIR),WardrobeToybox.categoryY(L));ui.choose(c,tab);
+        check("flair toy opens its category",tab==10+Accessories.FLAIR && ui.slot==Accessories.FLAIR);
         for(int variant=0;variant<Accessories.count(Accessories.FLAIR);variant++) {
             FlairProbe first=new FlairProbe(),same=new FlairProbe(),later=new FlairProbe();
             AccessoryFlair.draw(first,variant,100,150,40,1f);
@@ -311,13 +312,61 @@ final class TestAccessories extends Check {
                 && fresh.maximum(Accessories.key("owned",0))==0 && fresh.maximum(Wardrobe.outfitKey(1,0))==0);
         } catch(Exception e) {throw new AssertionError(e);}
     }
+    private static void toybox(Layout L) {
+        GameCore c=ready();grant(c);c.caseOpen=true;c.caseIndex=0;c.openStory();c.storyT=2;
+        WardrobeScreen ui=c.wardrobe.screen;ui.trayT=1;
+        float x=WardrobeToybox.itemX(ui,L,3,1),y=WardrobeToybox.itemY(ui,L,3,1);
+        byte[] before=c.progress.snapshot();
+        ui.touch(c,L,0,7,x,y);ui.touch(c,L,2,7,x-L.w*.22f,y);
+        check("sideways swoosh scrolls instead of carrying clothing",ui.scrolling && !ui.dragging && ui.swoosh>0);
+        ui.touch(c,L,1,8,x,y);check("other pointer cannot release ribbon",ui.scrolling);
+        ui.touch(c,L,1,7,x-L.w*.22f,y);ui.update(c,1);
+        check("swoosh never changes outfit and springs to edge",java.util.Arrays.equals(before,c.progress.snapshot()) && ui.scroll==0 && !ui.scrolling);
+        ui.touch(c,L,0,7,x,y);ui.touch(c,L,2,7,x+L.w*.3f,y);ui.touch(c,L,3,7,x,y);ui.update(c,1);
+        check("cancelled swoosh settles without equipping",ui.scroll==0 && java.util.Arrays.equals(before,c.progress.snapshot()));
+        ui.choose(c,10+Accessories.MASK);ui.trayT=1;
+        x=WardrobeToybox.itemX(ui,L,4,1);y=WardrobeToybox.itemY(ui,L,4,1);
+        ui.touch(c,L,0,7,x,y);ui.update(c,.15f);ui.touch(c,L,2,7,x-L.w*.29f,y);ui.touch(c,L,1,7,x-L.w*.29f,y);ui.update(c,1);
+        check("swoosh reveals fourth mask without equipping",ui.scroll==1 && c.wardrobe.equipped(0,Accessories.MASK)<0
+                && ui.hit(L,WardrobeToybox.itemX(ui,L,4,3),WardrobeToybox.itemY(ui,L,4,3))==23);
+        for(int count:new int[]{1,3,4,12,50,500}) {
+            float end=WardrobeToybox.maxScroll(count);ui.scroll=end;ui.trayT=1;
+            x=WardrobeToybox.itemX(ui,L,count,count-1);y=WardrobeToybox.itemY(ui,L,count,count-1);
+            check("last accessory reachable in growing collection "+count,WardrobeToybox.hit(ui,L,count,x,y)==20+count-1 && x<L.w*.94f);
+            check("swoosh is bounded with elastic edges "+count,WardrobeScreen.boundedScroll(-100,count)>=-.42f && WardrobeScreen.boundedScroll(end+100,count)<=end+.42f);
+            check("fling lands within collection "+count,WardrobeScreen.scrollDestination(end,100,count)==end && WardrobeScreen.scrollDestination(0,-100,count)==0);
+        }
+        ui.scroll=ui.scrollTarget=0;
+        c.wardrobe.equip(c,0,1);ui.choose(c,WardrobeToybox.SHUFFLE);
+        GameCore reload=new GameCore(c.store,214,true);
+        for(int slot=0;slot<Accessories.SLOTS;slot++) {
+            int item=c.wardrobe.equipped(0,slot);
+            check("shuffle equips and saves earned matching style",item>=0 && c.wardrobe.owned[item] && Accessories.slot(item)==slot && reload.wardrobe.equipped(0,slot)==item);
+        }
+        GameCore untouched=ready(),shuffled=ready();grant(untouched);grant(shuffled);
+        shuffled.wardrobe.screen.show(shuffled,0);shuffled.wardrobe.screen.choose(shuffled,WardrobeToybox.SHUFFLE);
+        check("shuffle preserves gameplay randomness",untouched.rnd.nextLong()==shuffled.rnd.nextLong());
+        check("shuffle leaves other squishy alone",c.wardrobe.equipped(1,0)==0 && c.wardrobe.equipped(1,1)<0);
+        GameCore locked=ready();locked.wardrobe.screen.show(locked,0);locked.wardrobe.screen.choose(locked,WardrobeToybox.SHUFFLE);
+        for(int slot=0;slot<Accessories.SLOTS;slot++)check("shuffle cannot grant locked items",locked.wardrobe.equipped(0,slot)<0);
+        int[] outfit={0,3,6,9,13};before=locked.progress.snapshot();
+        check("whole outfit rejects unearned styles",!locked.wardrobe.equipOutfit(locked,0,outfit) && java.util.Arrays.equals(before,locked.progress.snapshot()));
+        Mem backing=new Mem();boolean[] failWrite={false};
+        GameCore.Store store=(GameCore.Store)java.lang.reflect.Proxy.newProxyInstance(GameCore.Store.class.getClassLoader(),new Class<?>[]{GameCore.Store.class},(proxy,method,args)->{
+            if(failWrite[0] && method.getName().equals("saveProgress"))throw new IllegalStateException("disk full");
+            return method.invoke(backing,args);
+        });
+        GameCore broken=new GameCore(store,214,true);broken.collected=3;grant(broken);
+        before=broken.progress.snapshot();failWrite[0]=true;
+        check("failed shuffle write leaves entire outfit untouched",!broken.wardrobe.equipOutfit(broken,0,outfit) && java.util.Arrays.equals(before,broken.progress.snapshot()));
+    }
     private static void ui(Layout L) {
         GameCore c=ready();grant(c);WardrobeScreen ui=c.wardrobe.screen;
         c.caseOpen=true;c.caseIndex=0;c.openStory();c.storyT=2;
         check("story opens wardrobe inline",ui.open && c.storyOpen() && !ui.reward);
         ui.choose(c,10+Accessories.MASK);
-        float fourthX=L.w*.80f;
-        int hit=ui.hit(L,fourthX,WardrobeScreen.trayY(L,.50f));ui.choose(c,hit);
+        ui.scroll=ui.scrollTarget=1;ui.trayT=1;float fourthX=WardrobeToybox.itemX(ui,L,4,3);
+        int hit=ui.hit(L,fourthX,WardrobeToybox.itemY(ui,L,4,3));ui.choose(c,hit);
         int lastMask=Accessories.item(Accessories.MASK,3);
         check("card immediately equips fourth mask",hit==23 && c.wardrobe.equipped(0,Accessories.MASK)==lastMask);
         check("equip starts flash before dance",ui.danceT==0);
@@ -327,7 +376,7 @@ final class TestAccessories extends Check {
         GameCore reload=new GameCore(c.store,214,true);
         check("tap outfit persists without confirmation",reload.wardrobe.equipped(0,Accessories.MASK)==Accessories.item(Accessories.MASK,0));
         ui.choose(c,10+Accessories.HAT);
-        float cardX=L.w*.50f,cardY=WardrobeScreen.trayY(L,.50f),hx=Storybook.heroX(c,L),hy=Storybook.heroY(c,L);
+        ui.trayT=1;float cardX=WardrobeToybox.itemX(ui,L,3,1),cardY=WardrobeToybox.itemY(ui,L,3,1),hx=Storybook.heroX(c,L),hy=Storybook.heroY(c,L);
         ui.touch(c,L,0,7,cardX,cardY);ui.touch(c,L,2,7,hx,hy);
         check("drag carries accessory without saving early",ui.dragging && c.wardrobe.equipped(0,Accessories.HAT)<0);
         ui.touch(c,L,1,8,hx,hy);
@@ -336,9 +385,9 @@ final class TestAccessories extends Check {
         check("drop on squishy equips",!ui.dragging && c.wardrobe.equipped(0,Accessories.HAT)==1);
         ui.touch(c,L,0,7,cardX,cardY);ui.touch(c,L,2,7,hx,hy);ui.touch(c,L,1,7,hx,hy);
         check("dropping worn item keeps it equipped",c.wardrobe.equipped(0,Accessories.HAT)==1);
-        ui.touch(c,L,0,7,L.w*.23f,cardY);ui.touch(c,L,2,7,0,0);ui.touch(c,L,1,7,0,0);
+        ui.touch(c,L,0,7,WardrobeToybox.itemX(ui,L,3,0),WardrobeToybox.itemY(ui,L,3,0));ui.touch(c,L,2,7,0,0);ui.touch(c,L,1,7,0,0);
         check("drop outside preserves outfit",c.wardrobe.equipped(0,Accessories.HAT)==1 && c.storyOpen());
-        ui.touch(c,L,0,7,L.w*.23f,cardY);ui.touch(c,L,2,7,hx,hy);ui.touch(c,L,3,7,hx,hy);
+        ui.touch(c,L,0,7,WardrobeToybox.itemX(ui,L,3,0),WardrobeToybox.itemY(ui,L,3,0));ui.touch(c,L,2,7,hx,hy);ui.touch(c,L,3,7,hx,hy);
         check("cancelled drag preserves outfit",!ui.dragging && c.wardrobe.equipped(0,Accessories.HAT)==1);
         check("removed button has no invisible target",ui.hit(L,L.w*.5f,WardrobeScreen.trayY(L,.93f))==0);
         ui.choose(c,21);check("tap removal saves immediately",c.wardrobe.equipped(0,Accessories.HAT)<0);

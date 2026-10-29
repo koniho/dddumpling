@@ -1421,8 +1421,9 @@ public final class IOSInputTest extends Check {
         c.caseOpen=true;c.caseIndex=0;c.collected=Collect.add(c.collected,0);c.openStory();
         check("native story includes inline wardrobe",c.wardrobe.screen.open && c.storyOpen());
         c.wardrobe.developer(c,1);c.storyT=2;
-        float cardY=WardrobeScreen.trayY(l,.5f);
-        tap(game,l.w*.23f,cardY);
+        WardrobeScreen ui=c.wardrobe.screen;ui.trayT=1;
+        float cardY=WardrobeToybox.itemY(ui,l,3,0);
+        tap(game,WardrobeToybox.itemX(ui,l,3,0),cardY);
         check("native accessory tap saves immediately",c.wardrobe.equipped(0,Accessories.HAT)==0 && c.storyOpen());
         c.wardrobe.screen.danceT=3;c.storyPulse=2;
         c.wardrobe.screen.choose(c,10+Accessories.GLASSES);
@@ -1431,10 +1432,20 @@ public final class IOSInputTest extends Check {
         tap(game,(wornHat[0]+wornHat[4])*.5f,(wornHat[1]+wornHat[5])*.5f);
         check("native worn hat opens its category without removing",c.wardrobe.screen.slot==Accessories.HAT
                 && c.wardrobe.equipped(0,Accessories.HAT)==0 && c.storyOpen());
-        game.touch(one(0,4,l.w*.50f,cardY));
+        ui.trayT=1;cardY=WardrobeToybox.itemY(ui,l,3,1);
+        game.touch(one(0,4,WardrobeToybox.itemX(ui,l,3,1),cardY));
         game.touch(one(2,4,Storybook.heroX(c,l),Storybook.heroY(c,l)));
         game.touch(one(1,4,Storybook.heroX(c,l),Storybook.heroY(c,l)));
         check("native drag equips without dismissing story",c.wardrobe.equipped(0,Accessories.HAT)==1 && c.storyOpen());
+        ui.choose(c,10+Accessories.MASK);ui.trayT=1;
+        float ribbonX=WardrobeToybox.itemX(ui,l,4,1),ribbonY=WardrobeToybox.itemY(ui,l,4,1);
+        game.touch(one(0,5,ribbonX,ribbonY));game.update(.1f);
+        game.touch(one(2,5,ribbonX-l.w*.3f,ribbonY));
+        game.touch(one(1,5,ribbonX-l.w*.3f,ribbonY));
+        for(int i=0;i<60;i++)game.update(DT);
+        check("native horizontal swoosh reveals next style without equipping",ui.scroll==1 && !ui.dragging && c.wardrobe.equipped(0,Accessories.MASK)<0 && c.storyOpen());
+        tap(game,WardrobeToybox.itemX(ui,l,4,3),WardrobeToybox.itemY(ui,l,4,3));
+        check("native tap after swoosh equips revealed style",c.wardrobe.equipped(0,Accessories.MASK)==Accessories.item(Accessories.MASK,3));
         tap(game,l.w*.02f,l.h*.4f);
         check("native dismissal closes inline wardrobe",!c.wardrobe.screen.open && !c.storyOpen() && !c.starting());
 

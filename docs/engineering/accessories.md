@@ -9,12 +9,18 @@ Open a collected squishy to see the accessory picker at the top, a large feature
 squishy in the center, and its story at the bottom. Tap a worn accessory directly
 on the squishy to select that category; this does not remove it. Picking uses the
 renderer’s attachment geometry and follows the dance transforms across body families.
-Tap an earned accessory or drag it onto the featured squishy to equip and save
-immediately. Tap an already equipped card to remove it. Dragging an equipped item
+The picker is a toy box: floating category objects open a curved ribbon of styles.
+Press and drag sideways to swoosh through the ribbon, with a bounded fling, soft
+edge resistance and a position indicator for longer collections. Only nearby
+choices render and participate in hit testing, independent of catalog size.
+Tap an earned accessory or drag it downward onto the featured squishy to equip and
+save immediately. A sideways gesture never equips. Tap an already equipped item to remove it. Dragging an equipped item
 onto the squishy keeps it on. Dropping elsewhere or cancelling a drag leaves the outfit unchanged.
-Locked cards show their achievement goal without changing the outfit. The picker
+Locked items show their achievement goal without changing the outfit. The picker
 has no separate Remove control, promotional heading or tap/drag instructions. No extra Dress Up screen
 or Wear It step.
+The animated dice chooses earned styles only and saves the whole outfit atomically;
+it never changes another squishy. Category changes tumble the new choices into place.
 Each change plays the shared Star Path sparkle/star-outline burst, followed by a
 random nonrepeating dance; cosmetic randomness is separate from gameplay RNG.
 Each category has distinct synthesized don/doff foley: fabric swishes, glasses clicks,
@@ -147,7 +153,7 @@ Octopulse. Existing wins backfill it automatically. Independent clock-driven pup
 stay inside white domes; large views add rounded rim shading/reflections and small
 views skip that trim. It uses existing eyewear attachments, equip sound and save logic.
 
-Selecting/browsing an accessory or beginning a card drag hushes story narration;
+Selecting/browsing an accessory or beginning an item drag hushes story narration;
 subsequent outfit edits stay quiet. Tap the story text to replay from the beginning.
 Closing and opening a story resets this state. Cosmetic sound effects remain active.
 
@@ -161,7 +167,7 @@ repeating. Three nested bands clip against existing vector fills/contours, prese
 holes and following the same body transforms. Small views use only a subtle gold pulse;
 no clipping work, new particles or blur surfaces are needed there.
 
-Picker cards center and scale each accessory's visible artwork to fill the tile with
-small edge padding. No names or status text reserve space inside cards; the equipped
-border and muted artwork/corner lock communicate state. Locked achievement details
+Ribbon thumbnails center and scale each accessory's visible artwork to fill its
+space with small edge padding. No names or status text reserve space around the
+artwork; an orbiting equipped ring and muted artwork/corner lock communicate state. Locked achievement details
 remain below the row. Thumbnail fitting does not alter worn attachment geometry.

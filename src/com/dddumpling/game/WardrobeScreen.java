@@ -11,16 +11,22 @@ final class WardrobeScreen extends Draw {
     private int pointer=-1,pressed,dragItem=-1;
     boolean dragging;
     float dragX,dragY,downX,downY,danceT=3;
-    int dance;
+    int dance,lastSlot=-1,arrivalSounds;
+    float trayT=1,scroll,scrollTarget,lastScroll,scrollStart,scrollSpeed,scrollSampleAge,diceT=2;
+    float swoosh,swooshAge,swipeDirection=1;
+    boolean scrolling,ribbonGesture;
+    private final java.util.Random outfitRandom=new java.util.Random(21431);
     private final java.util.Random celebrations=new java.util.Random(214);
     static final float FLASH=.40f, DANCE=1.65f;
     void show(GameCore c,int target) {
         if(c.state!=GameCore.TITLE || !Collect.has(c.collected,target))return;
         c.wardrobe.refresh(c);who=target;slot=0;
         selected=Math.max(0,c.wardrobe.equipped(who,slot));
+        lastSlot=-1;trayT=0;arrivalSounds=0;scroll=scrollTarget=0;diceT=2;swoosh=0;
+        revealSelected();scroll=scrollTarget;
         open=true;reward=false;narrationPaused=false;error="";pulse=0;danceT=3;cancelTouch();
     }
-    void close() {open=reward=narrationPaused=false;error="";danceT=3;cancelTouch();}
+    void close() {open=reward=narrationPaused=false;lastSlot=-1;trayT=1;swoosh=0;error="";danceT=3;cancelTouch();}
     void back(GameCore c) {if(reward)close();else c.closeStory();}
     boolean update(GameCore c,float dt) {
         if(open && c.state!=GameCore.TITLE)close();
@@ -32,7 +38,17 @@ final class WardrobeScreen extends Draw {
             c.wardrobe.acknowledge(c);
             Pause.release(c);
         }
-        if(open) {pulse+=dt;danceT+=dt;if(reward){c.ducks.update(c,dt);c.gator.update(c,dt);}}
+        if(open) {
+            scrollSampleAge+=dt;
+            pulse+=dt;danceT+=dt;trayT+=dt;diceT+=dt;swooshAge+=dt;swoosh=Math.max(0,swoosh-dt*2.4f);
+            if(!ribbonGesture)scroll+=(scrollTarget-scroll)*(1-(float)Math.exp(-15*dt));
+            else scrollSpeed*=(float)Math.exp(-5*dt);
+            if(Math.abs(scroll-scrollTarget)<.001f && !ribbonGesture)scroll=scrollTarget;
+            if(!reward && !gesture && c.sound!=null)for(int i=0;i<Math.min(4,Accessories.count(slot));i++) {
+                if(trayT>=.48f+i*.055f && (arrivalSounds&(1<<i))==0) {arrivalSounds|=1<<i;c.sound.uiBloop();}
+            }
+            if(reward){c.ducks.update(c,dt);c.gator.update(c,dt);}
+        }
         return open && reward;
     }
     static float safeTop(Layout L) {return Math.max(L.padT,L.h*.07f);}
@@ -59,30 +75,11 @@ final class WardrobeScreen extends Draw {
             p.text("X",L.w*.89f,y(L,.035f),type(s),INK,Painter.CENTER,true);
             drawReward(p,c,L);return;
         }
-        p.fillRect(L.w*.06f,trayY(L,.09f),L.w*.94f,trayY(L,trayEnd(c)),0xFF2A2348);
-        for(int k=0;k<Accessories.SLOTS;k++) {
-            float step=L.w*.80f/Accessories.SLOTS,l=L.w*.10f+k*step,rr=l+step-L.w*.01f;
-            p.fillRect(l,trayY(L,.12f),rr,trayY(L,.27f),k==slot?0xFF596477:0xFF39354F);
-            p.text(Accessories.SLOT[k],(l+rr)/2,trayY(L,.22f),type(s*.60f),INK,Painter.CENTER,true);
-        }
-        for(int v=0;v<Accessories.count(slot);v++) {
-            int item=Accessories.item(slot,v);float step=L.w*.80f/Accessories.count(slot);
-            float cx=L.w*.10f+step*(v+.5f),left=cx-step*.46f,right=cx+step*.46f;
-            boolean wearing=c.wardrobe.equipped(who,slot)==item;
-            p.fillRect(left,trayY(L,.30f),right,trayY(L,.72f),wearing?0xFF494762:0xFF322F49);
-            if(wearing)p.strokePoly(new float[]{left,trayY(L,.30f),right,trayY(L,.30f),right,trayY(L,.72f),left,trayY(L,.72f)},Accessories.COLOR[item],s*.085f);
-            boolean owned=c.wardrobe.owned[item];
-            AccessoryArt.thumbnail(new OpacityPainter(p,owned?1:.38f),item,left,trayY(L,.30f),right,trayY(L,.72f),c.clock);
-            if(!owned) {
-                float lockX=right-s*.34f,lockY=trayY(L,.30f)+s*.36f,size=s*.42f;
-                p.arc(lockX,lockY-size*.13f,size*.32f,size*.38f,180,180,INK_DIM,size*.12f);
-                p.fillRect(lockX-size*.44f,lockY,lockX+size*.44f,lockY+size*.48f,INK_DIM);
-            }
-        }
+        WardrobeToybox.draw(p,c,L,this);
         boolean owned=c.wardrobe.owned[selected];
         if(!error.isEmpty() || !owned)
-            p.text(error.isEmpty()?Accessories.GOAL[selected]:error,x,trayY(L,.81f),type(s*.61f),INK,Painter.CENTER,false);
-        if(!owned)p.text(progress(c,selected),x,trayY(L,.95f),type(s*.55f),INK_DIM,Painter.CENTER,false);
+            p.text(error.isEmpty()?Accessories.GOAL[selected]:error,x,trayTop(L)+trayHeight(L)*.88f,type(s*.55f),INK,Painter.CENTER,false);
+        if(!owned)p.text(progress(c,selected),x,trayTop(L)+trayHeight(L)*.98f,type(s*.50f),INK_DIM,Painter.CENTER,false);
         if(dragging) {
             float hx=Storybook.heroX(c,L),hy=Storybook.heroY(c,L),r=Storybook.heroRadius(L);
             Storybook.glowRings(p,who,hx,hy,r,(c.clock*.6f)%Storybook.GLOW_TIME);
@@ -90,8 +87,7 @@ final class WardrobeScreen extends Draw {
             AccessoryArt.item(p,dragItem,dragX,dragY-s,Storybook.heroRadius(L)*.64f,c.clock);
         }
     }
-    private float trayEnd(GameCore c) {return c.wardrobe.owned[selected] && error.isEmpty()?.76f:1f;}
-    float trayBottom(GameCore c,Layout L) {return trayY(L,trayEnd(c));}
+    float trayBottom(GameCore c,Layout L) {return WardrobeToybox.bottom(L,!c.wardrobe.owned[selected] || !error.isEmpty());}
     static float trayTop(Layout L) {return top(L);}
     static float trayHeight(Layout L) {return Math.min(height(L)*.25f,L.unit*12f);}
     static float trayY(Layout L,float f) {return trayTop(L)+trayHeight(L)*(f-.09f);}
@@ -136,12 +132,9 @@ final class WardrobeScreen extends Draw {
             if(x>L.w*.82f && f<.10f || f>.90f)return 1;
             return x>=L.w*.10f && x<=L.w*.90f && f>=.82f && f<=.89f?2:0;
         }
-        if(x<L.w*.10f || x>L.w*.90f)return 0;
-        float f=(yy-trayTop(L))/trayHeight(L)+.09f;
-        if(f>=.12f && f<=.27f)return 10+Math.min(Accessories.SLOTS-1,(int)((x/L.w-.10f)/(.80f/Accessories.SLOTS)));
-        if(f>=.30f && f<=.72f)return 20+Math.max(0,Math.min(Accessories.count(slot)-1,(int)((x/L.w-.10f)/(.80f/Accessories.count(slot)))));
-        return 0;
+        return WardrobeToybox.hit(this,L,Accessories.count(slot),x,yy);
     }
+
     void pauseNarration(GameCore c) {
         if(narrationPaused || !c.storyOpen())return;
         narrationPaused=true;if(c.sound!=null)c.sound.hush();
@@ -161,10 +154,40 @@ final class WardrobeScreen extends Draw {
         if(c.wardrobe.remove(c,who,slot)) {error="";celebrate(c,true);}
         else error="Could not save. Try again.";
     }
-    private void celebrate(GameCore c,boolean removing) {
+    private void celebrate(GameCore c,boolean removing) {celebrate(c,removing,slot);}
+    private void celebrate(GameCore c,boolean removing,int soundSlot) {
         dance=(dance+1+celebrations.nextInt(3))%4;danceT=0;pulse=0;
         c.ducks.react(who,.8f);if(who==Collect.ALLIGATOR_FRIEND)c.gator.react(.8f);
-        if(c.sound!=null)c.sound.accessoryChange(slot,removing);
+        if(c.sound!=null)c.sound.accessoryChange(soundSlot,removing);
+    }
+    static float boundedScroll(float raw,int count) {
+        float max=WardrobeToybox.maxScroll(count);
+        return raw<0?Math.max(-.42f,raw*.22f):raw>max?max+Math.min(.42f,(raw-max)*.22f):raw;
+    }
+    static float scrollDestination(float scroll,float speed,int count) {
+        return Math.max(0,Math.min(WardrobeToybox.maxScroll(count),Math.round(scroll+speed*.12f)));
+    }
+    private void revealSelected() {
+        int v=Accessories.variant(selected),n=Accessories.count(slot);
+        scrollTarget=Math.max(0,Math.min(WardrobeToybox.maxScroll(n),v-(WardrobeToybox.visible(n)-1)/2));
+    }
+    static boolean canShuffle(GameCore c) {for(boolean earned:c.wardrobe.owned)if(earned)return true;return false;}
+    private void shuffle(GameCore c) {
+        pauseNarration(c);diceT=0;error="";c.wardrobe.refresh(c);
+        if(!canShuffle(c)){if(c.sound!=null)c.sound.uiBloop();return;}
+        int[] outfit=new int[Accessories.SLOTS];
+        for(int category=0;category<outfit.length;category++) {
+            int old=c.wardrobe.equipped(who,category),n=0;outfit[category]=old;
+            for(int i=0;i<Accessories.COUNT;i++)if(Accessories.slot(i)==category && c.wardrobe.owned[i] && i!=old)n++;
+            if(n>0) {
+                int pick=outfitRandom.nextInt(n);
+                for(int i=0;i<Accessories.COUNT;i++)if(Accessories.slot(i)==category && c.wardrobe.owned[i] && i!=old && pick--==0){outfit[category]=i;break;}
+            }
+        }
+        if(c.wardrobe.equipOutfit(c,who,outfit)) {
+            int on=c.wardrobe.equipped(who,slot);selected=on<0?Accessories.item(slot,0):on;
+            revealSelected();celebrate(c,false,Accessories.FLAIR);
+        } else error="Could not save. Try again.";
     }
     void choose(GameCore c,int action) {
         if(action==1) {back(c);return;}
@@ -176,9 +199,11 @@ final class WardrobeScreen extends Draw {
             }
             return;
         }
+        if(action==WardrobeToybox.SHUFFLE){shuffle(c);return;}
         if(action>=10 && action<10+Accessories.SLOTS || action>=20 && action<20+Accessories.count(slot))pauseNarration(c);
         if(action>=10 && action<10+Accessories.SLOTS) {
-            slot=action-10;int on=c.wardrobe.equipped(who,slot);selected=on>=0?on:Accessories.item(slot,0);error="";
+            lastSlot=slot;lastScroll=scroll;slot=action-10;int on=c.wardrobe.equipped(who,slot);selected=on>=0?on:Accessories.item(slot,0);error="";
+            revealSelected();scroll=scrollTarget;trayT=0;arrivalSounds=0;pulse=0;
         } else if(action>=20 && action<20+Accessories.count(slot)) {
             int item=Accessories.item(slot,action-20);selected=item;
             if(c.wardrobe.equipped(who,slot)==item)remove(c);else equip(c,item);
@@ -186,22 +211,35 @@ final class WardrobeScreen extends Draw {
         }
         if(action!=0 && c.sound!=null)c.sound.uiBloop();
     }
-    void cancelTouch() {gesture=dragging=false;pointer=-1;pressed=0;dragItem=-1;}
+    void cancelTouch() {gesture=dragging=scrolling=ribbonGesture=false;pointer=-1;pressed=0;dragItem=-1;}
     boolean touch(GameCore c,Layout L,int action,int id,float x,float yy) {
         if(!open && !gesture)return false;
         if(action==0) {
-            if(!reward && (yy<trayTop(L) || yy>trayY(L,trayEnd(c)) || x<L.w*.06f || x>L.w*.94f))return false;
+            if(!reward && (yy<trayTop(L) || yy>trayBottom(c,L) || x<L.w*.06f || x>L.w*.94f))return false;
             gesture=true;pointer=id;pressed=hit(L,x,yy);downX=dragX=x;downY=dragY=yy;
+            ribbonGesture=!reward && WardrobeToybox.inRibbon(L,x,yy);scrollStart=scroll;scrollSpeed=0;scrollSampleAge=0;
             if(!reward && pressed>=20 && pressed<20+Accessories.count(slot)) {
                 pauseNarration(c);
                 int item=Accessories.item(slot,pressed-20);if(c.wardrobe.owned[item])dragItem=item;
             }
         } else if(!gesture)return reward;
         else if(action==2 && id==pointer) {
-            dragX=x;dragY=yy;
-            if(dragItem>=0 && Math.hypot(x-downX,yy-downY)>L.unit*.35f)dragging=true;
-            if(!dragging && hit(L,x,yy)!=pressed)pressed=0;
+            float dx=x-downX,dy=yy-downY;dragX=x;dragY=yy;
+            if(ribbonGesture && !dragging && !scrolling && Math.abs(dx)>L.unit*.35f && Math.abs(dx)>Math.abs(dy)*1.12f) {
+                scrolling=true;pressed=0;dragItem=-1;pauseNarration(c);
+            }
+            if(scrolling) {
+                float next=boundedScroll(scrollStart-dx/WardrobeToybox.spacing(L,Accessories.count(slot)),Accessories.count(slot));
+                scrollSpeed=Math.max(-16,Math.min(16,(next-scroll)/Math.max(1f/120,scrollSampleAge)));scrollSampleAge=0;scroll=next;swoosh=1;swooshAge=0;swipeDirection=dx<0?-1:1;
+            } else {
+                if(dragItem>=0 && Math.abs(dy)>L.unit*.35f && Math.abs(dy)>=Math.abs(dx)*.85f)dragging=true;
+                if(!dragging && hit(L,x,yy)!=pressed)pressed=0;
+            }
         } else if(action==1 && id==pointer) {
+            if(scrolling) {
+                scrollTarget=scrollDestination(scroll,scrollSpeed,Accessories.count(slot));cancelTouch();
+                if(c.sound!=null)c.sound.uiBloop();return true;
+            }
             int choice=pressed==hit(L,x,yy)?pressed:0,item=dragItem;boolean drop=dragging;
             cancelTouch();
             if(open) {
@@ -210,8 +248,8 @@ final class WardrobeScreen extends Draw {
                     if(dx*dx+dy*dy<=r*r)equip(c,item);
                 } else choose(c,choice);
             }
-        } else if(action==3)cancelTouch();
-        else if(action==5) {pressed=0;dragItem=-1;dragging=false;}
+        } else if(action==3){scrollTarget=scrollDestination(scroll,0,Accessories.count(slot));cancelTouch();}
+        else if(action==5) {scrollTarget=scrollDestination(scroll,0,Accessories.count(slot));pressed=0;dragItem=-1;dragging=scrolling=ribbonGesture=false;}
         return true;
     }
 }

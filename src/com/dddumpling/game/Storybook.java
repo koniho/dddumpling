@@ -22,7 +22,7 @@ final class Storybook extends Draw {
     static float panelBottom(Layout L) {return WardrobeScreen.bottom(L);}
     static float panelTop(Layout L) {return panelBottom(L)-L.unit*12.4f;}
     static float heroRadius(Layout L) {
-        return Math.min(L.w*.28f,(panelTop(L)-WardrobeScreen.trayY(L,1))/4.3f);
+        return Math.min(L.w*.28f,(panelTop(L)-WardrobeToybox.bottom(L,true))/4.3f);
     }
     private static float flight(GameCore c) {
         float t=Math.min(1f,c.storyT/FLIGHT_TIME);

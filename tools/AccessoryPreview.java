@@ -9,9 +9,9 @@ final class AccessoryPreview {
         RasterPainter settings=new RasterPainter(w,h,ss);settings.clear(Draw.BG);
         PlayerSettings.draw(settings,c,L);
         Png.write(new File(dir,"214-developer-accessories.png"),settings.resolve(),w,h);
-        c.settingsOpen=false;c.caseOpen=true;c.caseFade=1;c.caseIndex=0;c.openStory();c.storyT=2;
+        c.settingsOpen=false;c.caseOpen=true;c.caseFade=1;c.caseIndex=0;c.openStory();c.storyT=2;c.wardrobe.screen.trayT=1;
         for(int i=0;i<3;i++) {
-            c.wardrobe.screen.show(c,0);c.wardrobe.screen.selected=i==0?0:3;
+            c.wardrobe.screen.show(c,0);c.wardrobe.screen.trayT=1;c.wardrobe.screen.selected=i==0?0:3;
             if(i==1) {c.wardrobe.equip(c,3,1);c.wardrobe.equip(c,3,0);c.wardrobe.screen.slot=Accessories.GLASSES;}
             if(i==2) {c.wardrobe.screen.reward=true;}
             RasterPainter canvas=new RasterPainter(w,h,ss);Renderer.draw(canvas,c,L);
@@ -47,19 +47,20 @@ final class AccessoryPreview {
             }
             Png.write(new File(dir,"214-"+(slot==Accessories.MASK?"masks":slot==Accessories.FLAIR?"flair":"footwear")+".png"),review.resolve(),w,h);
         }
+        c.wardrobe.screen.show(c,0);c.wardrobe.screen.trayT=1;
         c.wardrobe.equip(c,Accessories.item(Accessories.GLASSES,3),0);
-        c.wardrobe.screen.slot=Accessories.GLASSES;c.wardrobe.screen.selected=Accessories.item(Accessories.GLASSES,3);
+        c.wardrobe.screen.slot=Accessories.GLASSES;c.wardrobe.screen.selected=Accessories.item(Accessories.GLASSES,3);c.wardrobe.screen.scroll=c.wardrobe.screen.scrollTarget=1;
         RasterPainter googly=new RasterPainter(w,h,ss);Renderer.draw(googly,c,L);
         Png.write(new File(dir,"214-googly-editor.png"),googly.resolve(),w,h);
         c.wardrobe.equip(c,AccessoryGlitter.ITEM,0);
         c.wardrobe.screen.slot=Accessories.FLAIR;c.wardrobe.screen.selected=AccessoryGlitter.ITEM;
         RasterPainter glitter=new RasterPainter(w,h,ss);Renderer.draw(glitter,c,L);
         Png.write(new File(dir,"214-glitter-editor.png"),glitter.resolve(),w,h);
-        c.wardrobe.screen.show(c,0);c.wardrobe.screen.slot=Accessories.HAT;
+        c.wardrobe.screen.show(c,0);c.wardrobe.screen.trayT=1;c.wardrobe.screen.slot=Accessories.HAT;
         c.wardrobe.equip(c,Accessories.item(Accessories.HAT,2),0);
         RasterPainter crown=new RasterPainter(w,h,ss);Renderer.draw(crown,c,L);
         Png.write(new File(dir,"214-crown-editor.png"),crown.resolve(),w,h);
-        c.wardrobe.screen.show(c,0);c.wardrobe.screen.slot=Accessories.MASK;c.wardrobe.screen.selected=Accessories.item(Accessories.MASK,3);c.wardrobe.equip(c,c.wardrobe.screen.selected,0);
+        c.wardrobe.screen.show(c,0);c.wardrobe.screen.trayT=1;c.wardrobe.screen.slot=Accessories.MASK;c.wardrobe.screen.selected=Accessories.item(Accessories.MASK,3);c.wardrobe.equip(c,c.wardrobe.screen.selected,0);
         RasterPainter masks=new RasterPainter(w,h,ss);Renderer.draw(masks,c,L);
         Png.write(new File(dir,"214-mask-editor.png"),masks.resolve(),w,h);
         c.wardrobe.screen.slot=Accessories.FLAIR;c.wardrobe.screen.selected=Accessories.item(Accessories.FLAIR,0);
@@ -71,14 +72,27 @@ final class AccessoryPreview {
         c.wardrobe.screen.danceT=.8f;
         RasterPainter dance=new RasterPainter(w,h,ss);Renderer.draw(dance,c,L);
         Png.write(new File(dir,"214-inline-dance.png"),dance.resolve(),w,h);
-        c.wardrobe.screen.touch(c,L,0,7,L.w*.5f,WardrobeScreen.trayY(L,.5f));
+        c.wardrobe.screen.touch(c,L,0,7,WardrobeToybox.itemX(c.wardrobe.screen,L,4,1),WardrobeToybox.itemY(c.wardrobe.screen,L,4,1));
         c.wardrobe.screen.touch(c,L,2,7,L.w*.65f,L.h*.4f);
         if(!c.wardrobe.screen.dragging)throw new AssertionError("preview drag did not start");
         RasterPainter drag=new RasterPainter(w,h,ss);Renderer.draw(drag,c,L);
         Png.write(new File(dir,"214-inline-drag.png"),drag.resolve(),w,h);
         c.wardrobe.screen.cancelTouch();
+        WardrobeScreen toy=c.wardrobe.screen;toy.choose(c,10+Accessories.GLASSES);toy.trayT=.30f;
+        RasterPainter entry=new RasterPainter(w,h,ss);Renderer.draw(entry,c,L);
+        Png.write(new File(dir,"214-toybox-arrival.png"),entry.resolve(),w,h);
+        toy.trayT=1;toy.scroll=toy.scrollTarget=0;
+        float tx=WardrobeToybox.itemX(toy,L,4,1),ty=WardrobeToybox.itemY(toy,L,4,1);
+        toy.touch(c,L,0,9,tx,ty);toy.touch(c,L,2,9,tx-L.w*.16f,ty);
+        RasterPainter swipe=new RasterPainter(w,h,ss);Renderer.draw(swipe,c,L);
+        Png.write(new File(dir,"214-toybox-swoosh.png"),swipe.resolve(),w,h);
+        toy.touch(c,L,1,9,tx-L.w*.16f,ty);toy.update(c,1);
+        toy.choose(c,WardrobeToybox.SHUFFLE);toy.diceT=.2f;toy.danceT=.65f;
+        RasterPainter shuffle=new RasterPainter(w,h,ss);Renderer.draw(shuffle,c,L);
+        Png.write(new File(dir,"214-toybox-shuffle.png"),shuffle.resolve(),w,h);
+        toy.cancelTouch();
         for(int who:new int[]{Collect.DUCK_FIRST,Collect.bossPrize(Boss.MUSHROOM),Collect.ALLIGATOR_FRIEND,Collect.RAINBOW_CAT_FRIEND}) {
-            c.closeStory();c.collected=Collect.add(c.collected,who);c.caseIndex=who;c.openStory();c.storyT=2;c.storyPulse=2;
+            c.closeStory();c.collected=Collect.add(c.collected,who);c.caseIndex=who;c.openStory();c.storyT=2;c.wardrobe.screen.trayT=1;c.storyPulse=2;
             for(int category=0;category<Accessories.SLOTS;category++)c.wardrobe.equip(c,Accessories.item(category,0),who);
             RasterPainter family=new RasterPainter(w,h,ss);Renderer.draw(family,c,L);
             Png.write(new File(dir,"214-picker-family-"+who+".png"),family.resolve(),w,h);

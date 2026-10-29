@@ -59,6 +59,22 @@ final class Wardrobe {
     boolean remove(GameCore c,int who,int slot) {
         refresh(c);return saveSlot(c,who,slot,-1);
     }
+    /** Save a shuffled look as one transaction, so a failed write cannot leave half an outfit. */
+    boolean equipOutfit(GameCore c,int who,int[] items) {
+        refresh(c);
+        if(who<0 || who>=Collect.COUNT || !Collect.has(c.collected,who) || items==null || items.length!=Accessories.SLOTS)return false;
+        java.util.ArrayList<String> keys=new java.util.ArrayList<>();java.util.ArrayList<Long> values=new java.util.ArrayList<>();
+        for(int slot=0;slot<items.length;slot++) {
+            int item=items[slot];
+            if(item < -1 || item>=Accessories.COUNT || item>=0 && (!owned[item] || Accessories.slot(item)!=slot))return false;
+            if(equipped(who,slot)==item)continue;
+            long clock=outfits[who][slot]>>>ITEM_BITS;if(clock>=(Long.MAX_VALUE>>>ITEM_BITS)-1)return false;
+            keys.add(outfitKey(who,slot));values.add(((clock+1)<<ITEM_BITS)|(item+1L));
+        }
+        if(keys.isEmpty())return true;
+        long[] records=new long[values.size()];for(int i=0;i<records.length;i++)records[i]=values.get(i);
+        boolean ok=c.progress.accessories(keys.toArray(new String[0]),records,false);refresh(c);return ok;
+    }
     private boolean saveSlot(GameCore c,int who,int slot,int item) {
         if(who<0 || who>=Collect.COUNT || !Collect.has(c.collected,who) || slot<0 || slot>=Accessories.SLOTS)return false;
         long clock=outfits[who][slot]>>>ITEM_BITS;

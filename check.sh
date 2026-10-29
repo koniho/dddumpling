@@ -113,6 +113,7 @@ src/com/dddumpling/game/Achievements.java
 src/com/dddumpling/game/Accessories.java
 src/com/dddumpling/game/Wardrobe.java
 src/com/dddumpling/game/WardrobeScreen.java
+src/com/dddumpling/game/WardrobeToybox.java
 src/com/dddumpling/game/AccessoryArt.java
 src/com/dddumpling/game/AccessoryGlitter.java
 src/com/dddumpling/game/AccessoryDetail.java
