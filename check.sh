@@ -248,6 +248,8 @@ src/com/dddumpling/game/Lore.java
 src/com/dddumpling/game/Narration.java
 src/com/dddumpling/game/Showcase.java
 src/com/dddumpling/game/Storybook.java
+src/com/dddumpling/game/WardrobeBackdrop.java
+src/com/dddumpling/game/OutfitShake.java
 src/com/dddumpling/game/Hud.java
 src/com/dddumpling/game/TitleBubbleFont.java
 src/com/dddumpling/game/Screens.java

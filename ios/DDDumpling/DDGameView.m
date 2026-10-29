@@ -151,6 +151,15 @@
     [self.game cancelKeyboard];
     [super pressesCancelled:presses withEvent:event];
 }
+- (void)motionEnded:(UIEventSubtype)motion withEvent:(UIEvent *)event {
+    if (motion == UIEventSubtypeMotionShake && self.active && !self.storeAlertVisible
+            && !self.gameCenterVisible && !self.window.rootViewController.presentedViewController
+            && [self.game shakeOutfit]) {
+        [self setNeedsDisplay];
+        return;
+    }
+    [super motionEnded:motion withEvent:event];
+}
 - (void)didMoveToWindow {
     [super didMoveToWindow];
     if (self.window) [self becomeFirstResponder];

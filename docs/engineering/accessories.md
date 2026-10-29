@@ -21,8 +21,13 @@ onto the squishy keeps it on. Dropping elsewhere or cancelling a drag leaves the
 Locked items show their achievement goal without changing the outfit. The picker
 has no separate Remove control, promotional heading or tap/drag instructions. No extra Dress Up screen
 or Wear It step.
-The animated dice chooses earned styles only and saves the whole outfit atomically;
-it never changes another squishy. Category changes tumble the new choices into place.
+Shaking the phone while the outfit screen is open chooses earned styles only and saves the whole outfit atomically;
+it never changes another squishy. Category changes tumble the new choices into place. A 1.6-second cooldown prevents
+one shake from repeatedly changing outfits. Motion is ignored during touch gestures,
+opening, dialogs and backgrounding. Android subscribes to accelerometer samples only
+when the editor can accept a shake; two separated peaks reject tilt and single bumps.
+iOS forwards UIKit motion-shake events through the same shared wardrobe gate.
+The dice button is removed and the five category objects span the row.
 Each change plays the shared Star Path sparkle/star-outline burst, followed by a
 random nonrepeating dance; cosmetic randomness is separate from gameplay RNG.
 Each category has distinct synthesized don/doff foley: fabric swishes, glasses clicks,
@@ -204,3 +209,8 @@ panel seams, knit stitches and straw weaving only in close views. Winter boots,
 canvas high-tops, hiking boots and runners keep distinct silhouettes at small sizes
 and add cuffs, stitching, laces and material highlights at large sizes. All new
 IDs are appended; existing achievements backfill these rewards automatically.
+
+
+The outfit backdrop uses a pastel sky, layered gentle hills, soft cloud contours
+and a grounded hero shadow. Cloud drift and small grass sways use the game clock;
+bounded vector layers need no blur, framebuffer or gameplay RNG on either platform.

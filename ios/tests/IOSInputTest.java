@@ -448,9 +448,8 @@ public final class IOSInputTest extends Check {
         for(int i=0;i<30;i++)game.update(.05f);
         check("native result title returns with Survival selected",c.state==GameCore.TITLE && !c.starting() && !c.survival.active
                 && c.modes.selected==ModeSelector.SURVIVAL);
-        check("native reward waits until Survival summary is dismissed",c.wardrobe.screen.open && c.wardrobe.screen.reward);
-        tap(game,l.w*.5f,WardrobeScreen.y(l,.94f));
-        check("native reward dismissal does not start a run",!c.wardrobe.screen.open && !c.starting());
+        check("native Survival rewards unlock without interrupting the title",
+                c.wardrobe.pending(c)>=0 && !c.wardrobe.screen.open && !c.starting());
         tap(game,l.w*.5f,HighScoreScreen.titleY(l));
         for(int i=0;i<15;i++)game.update(.05f);
         check("native Survival score entry opens its own saved history",c.highScoreScreen.open
@@ -1199,7 +1198,7 @@ public final class IOSInputTest extends Check {
         cave();
         highScores();
         updatePrompt(); releaseAttention(); releaseNotes(); releaseFeedback(); packets(); titleAndLifecycle(); starsAndLand(); starFeedback(); starCompletionStorm(); bossOwnership(); ninjaHistory();
-        steamerAndPanic(); forgivingRescue(); caseAndSettings(); storyDumplingInput(); firstTitleEntry(); modeSelector(); survival();
+        steamerAndPanic(); forgivingRescue(); caseAndSettings(); storyDumplingInput(); outfitShake(); firstTitleEntry(); modeSelector(); survival();
         debugScenes(); linkedChord();
         System.out.println("iOS input: " + pass + " passed, " + fail + " failed");
         if (fail != 0) throw new AssertionError("iOS input regressions");
@@ -1449,6 +1448,19 @@ public final class IOSInputTest extends Check {
         tap(game,l.w*.02f,l.h*.4f);
         check("native dismissal closes inline wardrobe",!c.wardrobe.screen.open && !c.storyOpen() && !c.starting());
 
+    }
+
+    private static void outfitShake() {
+        IOSGame game=game();GameCore c=game.core();Host host=new Host();game.setHost(host);
+        c.collected=1;c.wardrobe.developer(c,1);
+        check("native shake outside editor ignored",!game.shakeOutfit());
+        c.caseOpen=true;c.caseIndex=0;c.openStory();c.storyT=2;c.wardrobe.screen.update(c,1);
+        check("native shake equips and gives feedback",game.shakeOutfit() && host.ticks==1 && c.wardrobe.equipped(0,0)>=0);
+        check("native repeated shake blocked",!game.shakeOutfit() && host.ticks==1);
+        c.wardrobe.screen.update(c,2);game.background(true);byte[] before=c.progress.snapshot();
+        check("background motion cannot change outfits",!game.shakeOutfit() && java.util.Arrays.equals(before,c.progress.snapshot()));
+        game.background(false);c.paused=false;c.closeStory();
+        check("shake after leaving editor ignored",!game.shakeOutfit());
     }
 
     private static void collectionGuidanceInput() {

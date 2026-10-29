@@ -3,6 +3,10 @@ package com.dddumpling.game;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.hardware.input.InputManager;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.os.Build;
 import android.os.SystemClock;
 import android.view.HapticFeedbackConstants;
@@ -13,9 +17,33 @@ import android.view.View;
 import android.view.WindowInsets;
 
 /** Input, insets and the frame loop. All drawing is delegated to {@link Renderer}. */
-public class GameView extends View implements InputManager.InputDeviceListener {
+public class GameView extends View implements InputManager.InputDeviceListener, SensorEventListener {
 
     private final GameCore core;
+    private final OutfitShake outfitShake=new OutfitShake();
+    private SensorManager motion;
+    private Sensor accelerometer;
+    private boolean motionListening;
+    private void stopOutfitMotion() {
+        if(motionListening){motion.unregisterListener(this);motionListening=false;}
+        outfitShake.reset();
+    }
+    private void syncOutfitMotion() {
+        boolean wanted=!background && isAttachedToWindow() && hasWindowFocus()
+                && gatorReplay==null && core.wardrobe.screen.acceptsShake(core);
+        if(!wanted){stopOutfitMotion();return;}
+        if(!motionListening && accelerometer!=null)
+            motionListening=motion.registerListener(this,accelerometer,SensorManager.SENSOR_DELAY_GAME);
+    }
+    @Override public void onAccuracyChanged(Sensor sensor,int accuracy) {}
+    @Override public void onSensorChanged(SensorEvent event) {
+        if(background || !hasWindowFocus() || gatorReplay!=null || !core.wardrobe.screen.acceptsShake(core)){
+            stopOutfitMotion();return;
+        }
+        float g=SensorManager.GRAVITY_EARTH;
+        if(outfitShake.sample(event.values[0]/g,event.values[1]/g,event.values[2]/g,event.timestamp/1000000L)
+                && core.wardrobe.screen.shake(core)) {tick();invalidate();stopOutfitMotion();}
+    }
     private final Layout layout = new Layout();
     private final CanvasPainter painter;
     private final SettingsInput settingsInput = new SettingsInput();
@@ -78,6 +106,7 @@ public class GameView extends View implements InputManager.InputDeviceListener {
     }
     void background(boolean hidden) {
         background = hidden; last = 0;
+        if(hidden)stopOutfitMotion();
         if (hidden) { cancelPointers(); if(!core.settingsOpen) Pause.open(core); }
         refreshNavigation(); invalidate();
     }
@@ -85,6 +114,8 @@ public class GameView extends View implements InputManager.InputDeviceListener {
 
     GameView(Context ctx, GameCore.Store store, GameCore.Sound sound) {
         super(ctx);
+        motion=(SensorManager)ctx.getSystemService(Context.SENSOR_SERVICE);
+        accelerometer=motion==null?null:motion.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         painter = new CanvasPainter(loadFace(ctx));
         core = new GameCore(store, SystemClock.elapsedRealtimeNanos(),
                 !BuildFlags.DEVELOPER || BuildFlags.PLAY_GAMES);
@@ -144,13 +175,14 @@ public class GameView extends View implements InputManager.InputDeviceListener {
                 .registerInputDeviceListener(this, null);
     }
     @Override protected void onDetachedFromWindow() {
+        stopOutfitMotion();
         ((InputManager)getContext().getSystemService(Context.INPUT_SERVICE)).unregisterInputDeviceListener(this);
         keyboard.clear();
         super.onDetachedFromWindow();
     }
     @Override public void onWindowFocusChanged(boolean focused) {
         super.onWindowFocusChanged(focused);
-        if (!focused) keyboard.clear();
+        if (!focused) {keyboard.clear();stopOutfitMotion();}
     }
     @Override public void onInputDeviceAdded(int id) { keyboard.clear(); }
     @Override public void onInputDeviceChanged(int id) { keyboard.clear(); }
@@ -942,6 +974,7 @@ public class GameView extends View implements InputManager.InputDeviceListener {
                 if (core.bossDeathHaptic == 2) bossDeathHaptic();
                 else tick();
             }
+            syncOutfitMotion();
             painter.bind(c);
             Renderer.draw(painter, core, layout);
             core.cloudUi.draw(painter,core,layout);

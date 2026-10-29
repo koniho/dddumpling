@@ -2,14 +2,12 @@ package com.dddumpling.game;
 
 /** The same curved ribbon geometry drives rendering, taps and swipes. Only visible toys draw. */
 final class WardrobeToybox extends Draw {
-    static final int SHUFFLE=3;
     static int visible(int count) {return Math.min(3,count);}
     static float maxScroll(int count) {return Math.max(0,count-visible(count));}
     static float spacing(Layout L,int count) {return L.w*(count<=3?.29f:.25f);}
     static float categoryR(Layout L) {return Math.min(L.w*.054f,WardrobeScreen.trayHeight(L)*.095f);}
-    static float categoryX(Layout L,int slot) {return L.w*(.14f+slot*.155f);}
+    static float categoryX(Layout L,int slot) {return L.w*(.14f+slot*.18f);}
     static float categoryY(Layout L) {return WardrobeScreen.trayTop(L)+categoryR(L)*1.45f;}
-    static float diceX(Layout L) {return L.w*.90f;}
     static float itemR(Layout L,int count) {return Math.min(L.w*(count<=3?.125f:.115f),WardrobeScreen.trayHeight(L)*.225f);}
     static float settledX(Layout L,int count,int index,float scroll) {
         return L.w*.5f+(index-scroll-(visible(count)-1)*.5f)*spacing(L,count);
@@ -41,7 +39,6 @@ final class WardrobeToybox extends Draw {
     static int hit(WardrobeScreen ui,Layout L,int count,float x,float y) {
         float r=categoryR(L)*1.24f,dy=y-categoryY(L);
         for(int k=0;k<Accessories.SLOTS;k++)if(Math.hypot(x-categoryX(L,k),dy)<=r)return 10+k;
-        if(Math.hypot(x-diceX(L),dy)<=r)return SHUFFLE;
         if(!inRibbon(L,x,y))return 0;
         for(int i=Math.max(0,(int)Math.floor(ui.scroll)-1);i<Math.min(count,(int)Math.floor(ui.scroll)+5);i++) {
             if(arrival(ui,i)<.40f)continue;
@@ -116,7 +113,6 @@ final class WardrobeToybox extends Draw {
             if(k==Accessories.FLAIR){AccessoryArt.star(q,0,0,r*.82f,color);AccessoryArt.star(q,-r*.12f,-r*.1f,r*.35f,0xFFFFF5CB);}
             else AccessoryArt.thumbnail(q,item,-r,-r,r,r,c.clock);
         }
-        dice(WardrobeScreen.canShuffle(c)?p:new OpacityPainter(p,.35f),c,L,ui);
     }
     private static void chevron(Painter p,float x,float y,float r,int dir,int color) {
         p.polyline(new float[]{x-dir*r*.4f,y-r,x+dir*r*.4f,y,x-dir*r*.4f,y+r},Glyph.withAlpha(color,160),r*.20f);
@@ -124,15 +120,5 @@ final class WardrobeToybox extends Draw {
     private static void lock(Painter p,float x,float y,float r,float fade) {
         int ink=Glyph.withAlpha(0xFFD4C8EA,(int)(fade*235));
         p.arc(x,y-r*.25f,r*.55f,r*.64f,180,180,ink,r*.20f);p.fillRect(x-r*.75f,y-r*.16f,x+r*.75f,y+r*.65f,ink);
-    }
-    private static void dice(Painter p,GameCore c,Layout L,WardrobeScreen ui) {
-        float r=categoryR(L)*.73f,x=diceX(L),y=categoryY(L),t=Math.min(1,ui.diceT/.65f);
-        float hop=(float)Math.sin(t*Math.PI),spin=(1-t)*(1-t)*Softbody.TAU;
-        Painter q=new LinkedPairArt.TurnPainter(p,x,y-r*hop*.45f,spin+.07f*(float)Math.sin(c.clock*1.6f));
-        float[] box={-r*.72f,-r,r*.72f,-r,r,-r*.72f,r,r*.72f,r*.72f,r,-r*.72f,r,-r,r*.72f,-r,-r*.72f};
-        q.fillPoly(box,0xFFD5BCFF);q.fillRect(-r*.77f,-r*.76f,r*.77f,r*.76f,0xFFFFEAB4);
-        for(int i=-1;i<=1;i++)q.fillCircle(i*r*.44f,i*r*.44f,r*.14f,0xFF76629D);
-        q.fillCircle(-r*.44f,r*.44f,r*.14f,0xFF76629D);q.fillCircle(r*.44f,-r*.44f,r*.14f,0xFF76629D);
-        if(t<1)p.strokeCircle(x,y,r*(1.15f+t),Glyph.withAlpha(0xFFFFD977,(int)(120*(1-t))),L.unit*.06f);
     }
 }

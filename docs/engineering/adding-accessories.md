@@ -95,7 +95,7 @@ grid remains in preview tooling; it is not an automatic player-facing notice.
 
 Adding a **new category** is broader than adding a style. Audit `Accessories.SLOTS`,
 `Wardrobe.SLOT_ID`, save/reset handling, outfit draw order, picking priority,
-toy-box category spacing/dice placement, developer chips, sounds and tests.
+toy-box category spacing, shake-to-shuffle eligibility, developer chips, sounds and tests.
 The category row has tuned positions, and action IDs have reserved ranges;
 increasing the slot count alone is insufficient.
 

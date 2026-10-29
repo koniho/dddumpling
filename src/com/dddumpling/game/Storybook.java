@@ -96,7 +96,7 @@ final class Storybook extends Draw {
         float ph = s * 6.2f;
         float cy = (panelTop(L)+panelBottom(L))*.5f;
 
-        p.fillRect(0, 0, L.w, L.h, Glyph.withAlpha(0xFF0D0A18, (int) (255 * open)));
+        WardrobeBackdrop.draw(p,c,L,open);
 
         float hw = pw * grow, hh = ph * grow;
         int tint = Collect.TIER_COLOR[Collect.TIER[i]];

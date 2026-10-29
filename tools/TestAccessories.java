@@ -12,7 +12,31 @@ final class TestAccessories extends Check {
         check("wardrobe grant persisted",c.progress.accessories(keys,values,false));c.wardrobe.refresh(c);
     }
     static void all(Layout L) {
-        catalog();startup();rewards();sharedOutfits();migration();merge();ui(L);developerCategories(L);flair(L);sounds();picking(L);detail();glitter(L);googly();narration(L);toybox(L);
+        catalog();shake();startup();rewards();sharedOutfits();migration();merge();ui(L);developerCategories(L);flair(L);sounds();picking(L);detail();glitter(L);googly();narration(L);toybox(L);
+    }
+    private static void openForShake(GameCore c) {
+        c.caseOpen=true;c.caseIndex=0;c.openStory();c.storyT=2;c.wardrobe.screen.update(c,1);
+    }
+    private static void shake() {
+        OutfitShake detector=new OutfitShake();
+        check("tilting phone never shuffles",!detector.sample(0,1,0,0) && !detector.sample(1,0,0,100) && !detector.sample(0,0,1,200));
+        check("one impact and sustained acceleration are ignored",!detector.sample(2,0,0,300) && !detector.sample(2,0,0,450));
+        detector.sample(0,1,0,470);
+        check("two separated shake peaks trigger once",detector.sample(-2,0,0,550) && !detector.sample(-2,0,0,600));
+        detector.reset();detector.sample(2,0,0,1000);detector.sample(0,1,0,1100);
+        check("old peak expires",!detector.sample(-2,0,0,1900));
+        detector.reset();detector.sample(2,0,0,2000);detector.reset();
+        check("lifecycle reset drops partial gesture",!detector.sample(-2,0,0,2200));
+        GameCore c=ready();grant(c);WardrobeScreen ui=c.wardrobe.screen;
+        check("shake outside wardrobe ignored",!ui.shake(c));
+        openForShake(c);byte[] before=c.progress.snapshot();
+        check("shake changes wardrobe",ui.shake(c) && !java.util.Arrays.equals(before,c.progress.snapshot()));
+        before=c.progress.snapshot();
+        check("shake cooldown prevents duplicate random outfits",!ui.shake(c) && java.util.Arrays.equals(before,c.progress.snapshot()));
+        ui.update(c,2);c.paused=true;check("paused wardrobe ignores shake",!ui.shake(c));c.paused=false;
+        c.settingsOpen=true;check("settings ignores shake",!ui.shake(c));c.settingsOpen=false;
+        c.cloudUi.open=true;check("cloud dialog ignores shake",!ui.shake(c));c.cloudUi.open=false;
+        ui.close();check("closed wardrobe ignores shake",!ui.shake(c));
     }
     private static void startup() {
         Mem save=new Mem();GameCore c=new GameCore(save,214,true);grant(c);
@@ -361,17 +385,17 @@ final class TestAccessories extends Check {
             check("fling lands within collection "+count,WardrobeScreen.scrollDestination(end,100,count)==end && WardrobeScreen.scrollDestination(0,-100,count)==0);
         }
         ui.scroll=ui.scrollTarget=0;
-        c.wardrobe.equip(c,0,1);ui.choose(c,WardrobeToybox.SHUFFLE);
+        c.wardrobe.equip(c,0,1);ui.shake(c);
         GameCore reload=new GameCore(c.store,214,true);
         for(int slot=0;slot<Accessories.SLOTS;slot++) {
             int item=c.wardrobe.equipped(0,slot);
             check("shuffle equips and saves earned matching style",item>=0 && c.wardrobe.owned[item] && Accessories.slot(item)==slot && reload.wardrobe.equipped(0,slot)==item);
         }
         GameCore untouched=ready(),shuffled=ready();grant(untouched);grant(shuffled);
-        shuffled.wardrobe.screen.show(shuffled,0);shuffled.wardrobe.screen.choose(shuffled,WardrobeToybox.SHUFFLE);
+        openForShake(shuffled);shuffled.wardrobe.screen.shake(shuffled);
         check("shuffle preserves gameplay randomness",untouched.rnd.nextLong()==shuffled.rnd.nextLong());
         check("shuffle leaves other squishy alone",c.wardrobe.equipped(1,0)==0 && c.wardrobe.equipped(1,1)<0);
-        GameCore locked=ready();locked.wardrobe.screen.show(locked,0);locked.wardrobe.screen.choose(locked,WardrobeToybox.SHUFFLE);
+        GameCore locked=ready();openForShake(locked);locked.wardrobe.screen.shake(locked);
         for(int slot=0;slot<Accessories.SLOTS;slot++)check("shuffle cannot grant locked items",locked.wardrobe.equipped(0,slot)<0);
         int[] outfit={0,3,6,9,13};before=locked.progress.snapshot();
         check("whole outfit rejects unearned styles",!locked.wardrobe.equipOutfit(locked,0,outfit) && java.util.Arrays.equals(before,locked.progress.snapshot()));

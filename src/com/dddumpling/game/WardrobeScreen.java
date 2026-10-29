@@ -12,7 +12,7 @@ final class WardrobeScreen extends Draw {
     boolean dragging;
     float dragX,dragY,downX,downY,danceT=3;
     int dance,lastSlot=-1,arrivalSounds;
-    float trayT=1,scroll,scrollTarget,lastScroll,scrollStart,scrollSpeed,scrollSampleAge,diceT=2;
+    float trayT=1,scroll,scrollTarget,lastScroll,scrollStart,scrollSpeed,scrollSampleAge,shakeCooldown;
     float swoosh,swooshAge,swipeDirection=1;
     boolean scrolling,ribbonGesture;
     private final java.util.Random outfitRandom=new java.util.Random(21431);
@@ -22,7 +22,7 @@ final class WardrobeScreen extends Draw {
         if(c.state!=GameCore.TITLE || !Collect.has(c.collected,target))return;
         c.wardrobe.refresh(c);who=target;slot=0;
         selected=Math.max(0,c.wardrobe.equipped(who,slot));
-        lastSlot=-1;trayT=0;arrivalSounds=0;scroll=scrollTarget=0;diceT=2;swoosh=0;
+        lastSlot=-1;trayT=0;arrivalSounds=0;scroll=scrollTarget=0;shakeCooldown=.7f;swoosh=0;
         revealSelected();scroll=scrollTarget;
         open=true;reward=false;narrationPaused=false;error="";pulse=0;danceT=3;cancelTouch();
     }
@@ -32,7 +32,7 @@ final class WardrobeScreen extends Draw {
         if(open && c.state!=GameCore.TITLE)close();
         if(open) {
             scrollSampleAge+=dt;
-            pulse+=dt;danceT+=dt;trayT+=dt;diceT+=dt;swooshAge+=dt;swoosh=Math.max(0,swoosh-dt*2.4f);
+            pulse+=dt;danceT+=dt;trayT+=dt;shakeCooldown=Math.max(0,shakeCooldown-dt);swooshAge+=dt;swoosh=Math.max(0,swoosh-dt*2.4f);
             if(!ribbonGesture)scroll+=(scrollTarget-scroll)*(1-(float)Math.exp(-15*dt));
             else scrollSpeed*=(float)Math.exp(-5*dt);
             if(Math.abs(scroll-scrollTarget)<.001f && !ribbonGesture)scroll=scrollTarget;
@@ -164,9 +164,19 @@ final class WardrobeScreen extends Draw {
         scrollTarget=Math.max(0,Math.min(WardrobeToybox.maxScroll(n),v-(WardrobeToybox.visible(n)-1)/2));
     }
     static boolean canShuffle(GameCore c) {for(boolean earned:c.wardrobe.owned)if(earned)return true;return false;}
-    private void shuffle(GameCore c) {
-        pauseNarration(c);diceT=0;error="";c.wardrobe.refresh(c);
-        if(!canShuffle(c)){if(c.sound!=null)c.sound.uiBloop();return;}
+    boolean acceptsShake(GameCore c) {
+        return open && !reward && c.storyOpen() && c.story==who && c.state==GameCore.TITLE
+                && c.storyT>=Storybook.FLIGHT_TIME && !gesture && shakeCooldown<=0
+                && !c.paused && !c.settingsOpen && !c.cloudUi.open && !c.updatePrompt.open
+                && !c.releaseNotes.open && !c.preferences.externalBusy && canShuffle(c);
+    }
+    boolean shake(GameCore c) {
+        if(!acceptsShake(c))return false;
+        shakeCooldown=1.6f;
+        return shuffle(c);
+    }
+    private boolean shuffle(GameCore c) {
+        pauseNarration(c);error="";c.wardrobe.refresh(c);
         int[] outfit=new int[Accessories.SLOTS];
         for(int category=0;category<outfit.length;category++) {
             int old=c.wardrobe.equipped(who,category),n=0;outfit[category]=old;
@@ -178,8 +188,9 @@ final class WardrobeScreen extends Draw {
         }
         if(c.wardrobe.equipOutfit(c,who,outfit)) {
             int on=c.wardrobe.equipped(who,slot);selected=on<0?Accessories.item(slot,0):on;
-            revealSelected();celebrate(c,false,Accessories.FLAIR);
+            revealSelected();celebrate(c,false,Accessories.FLAIR);return true;
         } else error="Could not save. Try again.";
+        return false;
     }
     void choose(GameCore c,int action) {
         if(action==1) {back(c);return;}
@@ -191,7 +202,6 @@ final class WardrobeScreen extends Draw {
             }
             return;
         }
-        if(action==WardrobeToybox.SHUFFLE){shuffle(c);return;}
         if(action>=10 && action<10+Accessories.SLOTS || action>=20 && action<20+Accessories.count(slot))pauseNarration(c);
         if(action>=10 && action<10+Accessories.SLOTS) {
             lastSlot=slot;lastScroll=scroll;slot=action-10;int on=c.wardrobe.equipped(who,slot);selected=on>=0?on:Accessories.item(slot,0);error="";

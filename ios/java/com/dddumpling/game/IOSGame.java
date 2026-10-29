@@ -107,6 +107,10 @@ public final class IOSGame {
     }
     public boolean keyUp(int letter) { return keyboard.up(letter); }
     public void cancelKeyboard() { keyboard.clear(); }
+    public boolean shakeOutfit() {
+        if(background || !core.wardrobe.screen.shake(core))return false;
+        tick();return true;
+    }
     public boolean touch(IOSTouch ev,float inputAge) {
         if (background) return true;
         if(core.cloudUi.open) {
