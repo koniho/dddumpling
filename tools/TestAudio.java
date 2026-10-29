@@ -430,6 +430,23 @@ final class TestAudio extends Check {
     }
 
     static void audio(Layout L) {
+        group("Combat sound ownership");
+        short[] bloop = Sfx.bubble();
+        check("charge bloop is bounded to two seconds", bloop.length == Sfx.RATE * 2);
+        check("charge bloop has soft endpoints", bloop[0] == 0 && Math.abs(bloop[bloop.length-1]) < 30);
+        for (int exit = 0; exit < 6; exit++) {
+            GameCore c = TestBoss.enterBoss(L, Boss.SLIME, 912L);
+            Ear ear = new Ear(); c.sound = ear;
+            ear.bossCharge(1); ear.rocket(1);
+            if (exit == 0) { c.lives = 1; c.takeHit(L.w*.5f, L); }
+            else if (exit == 1) c.toTitle();
+            else if (exit == 2) BossPlay.endBoss(c, L);
+            else if (exit == 3) Pause.open(c);
+            else if (exit == 4) c.openSettings();
+            else c.startGame();
+            check("combat sounds stop immediately on exit " + exit,
+                    ear.bossCharge == 0 && ear.rocketThrust == 0);
+        }
         versusTitleFade(L);
         versusMusic(L);
         group("Cat chromatic descent and whole-tone flurry");

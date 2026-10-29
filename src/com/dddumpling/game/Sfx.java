@@ -704,28 +704,20 @@ final class Sfx {
 
     private static final float TAU = 6.2831853f;
 
-    /** Seamless wet bubble bed; playback rate and volume supply the charging build. */
+    /** One rising bloop; finite even if its owner misses cancellation. */
     static synchronized short[] bubble() {
         if (bubbleCache == null) bubbleCache = renderBubble();
         return bubbleCache;
     }
 
     private static short[] renderBubble() {
-        int n = (int) (RATE * 0.98f);
+        int n = RATE * 2;
         float[] v = new float[n];
-        float[] start = {0.03f, 0.28f, 0.54f, 0.76f};
         for (int i = 0; i < n; i++) {
             float t = (float) i / RATE;
-            float s = 0f;
-            for (int k = 0; k < start.length; k++) {
-                float q = t - start[k];
-                if (q < 0f || q > 0.18f) continue;
-                float u = q / 0.18f;
-                float phase = TAU * (92f * q + 48f * q * q);
-                float wet = (float) Math.sin(phase) + 0.34f * (float) Math.sin(phase * 2.03f);
-                s += wet * (float) Math.sin(Math.PI * u) * (1f - u * 0.35f);
-            }
-            v[i] = s * 0.62f;
+            float phase = TAU * (260f * t + 105f * t * t);
+            float envelope = Math.min(1f, t / .08f) * Math.min(1f, (2f - t) / .10f);
+            v[i] = envelope * ((float) Math.sin(phase) + .14f * (float) Math.sin(2f * phase));
         }
         return render(v);
     }

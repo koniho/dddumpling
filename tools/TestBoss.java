@@ -1699,7 +1699,7 @@ final class TestBoss extends Check {
         check("an unanswered prompt launches a three-bolt volley",
                 c.boss.boltCount() == Boss.BOLTS);
         check("the shown character leads the volley", c.boss.bglyph[0] == shown);
-        check("the bubbling builds toward launch", ear.maxBossCharge > 0.75f);
+        check("prompt charging builds the finite rising bloop", ear.maxBossCharge > .75f);
         check("and stops when the volley fires", ear.bossCharge == 0f);
         check("the launch plays one heavier recorded squish", ear.slimeSquishes == 2
                 && ear.lastSlimeSquish>=3 && ear.bossLaughs==0);

@@ -140,7 +140,23 @@ public class TestAudioLifecycle {
   AudioTrack.failInit=1;a.bossCharge(1);a.bossCharge(1);
   check("bubble retries failed initialization",field("bubbleActive").getBoolean(a) && AudioTrack.live==2);
   a.pauseMusic();for(AudioTrack t:AudioTrack.all)check("loops pause",!t.playing);
-  a.resumeMusic();a.bossCharge(1);check("loops resume",field("bubbleActive").getBoolean(a));a.release();
+  a.resumeMusic();a.bossCharge(1);check("loops resume",field("bubbleActive").getBoolean(a));
+  AudioTrack bubble=(AudioTrack)field("bubbleTrack").get(a);
+  int chargePlays=bubble.plays;
+  a.bossCharge(1);a.bossCharge(1);
+  check("continued charge does not replay its finite sample",bubble.plays==chargePlays);
+  a.bossCharge(.08f);
+  check("new prompt rewinds one charge voice",bubble.plays==chargePlays+1 && bubble.head==0);
+  a.bossCharge(0);
+  check("charge cancellation releases the loop immediately",bubble.released && !bubble.playing
+   && field("bubbleTrack").get(a)==null && !field("bubbleActive").getBoolean(a)
+   && field("bubbleVolume").getFloat(a)==0);
+  a.bossCharge(0);a.resumeMusic();
+  check("cancelled charge cannot restart on resume",field("bubbleTrack").get(a)==null);
+  a.rocket(1);a.bossCharge(.5f);a.pauseMusic();a.resumeMusic();
+  check("background activation cannot revive combat sounds",field("bubbleTrack").get(a)==null
+   && !field("rocketActive").getBoolean(a));
+  a.release();
   a=fresh();a.pauseMusic();effect(a,0);check("UI effects still play while music is paused",effectTrack(a,0).playing);a.release();
   a=fresh();a.volumes(.4f,.3f);a.selectMusic(0);ready(a);
   android.speech.tts.TextToSpeech speech=new android.speech.tts.TextToSpeech();

@@ -20,12 +20,12 @@ final class BossPlay {
      * ordinary path, so a boss stage ends by exactly the route every other stage ends by.
      */
     static void endBoss(GameCore c, Layout L) {
+        c.stopCombatSounds();
         boolean won = c.boss.beaten;
         if(won)c.reviewPrompt.milestone(c);
         if(c.boss.kind==Boss.OCTOPUS)c.waterRipples.caveCurrent.reset();
         if (c.sound != null) {
             c.sound.bossMusic(false);
-            if(c.boss.kind==Boss.RAINBOW_CAT)c.sound.rocket(0);
         }
         if(c.timeAttack.active) {c.timeAttack.bossEnded(c,won);return;}
         // Everything still on the field goes with it. A boss dying to a field of three words and

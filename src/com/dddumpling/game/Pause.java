@@ -51,7 +51,7 @@ final class Pause extends Draw {
         c.stars.left = c.stars.right = false;
         c.steamer.lidDrag = 0;
         c.caseDragging = c.titleTouchDown = c.landPickerDragging = false;
-        if (c.sound != null) { c.sound.bossCharge(0); c.sound.rocket(0); }
+        c.stopCombatSounds();
     }
     static void open(GameCore c) {
         if (c.state != GameCore.PLAY && c.state != GameCore.BONUS) return;

@@ -2010,6 +2010,7 @@ final class GameCore {
     void startGame() {
         slimeBubbles.reset();slimeBanks.reset();crystalField.reset();waterRipples.reset();
         if(!modes.playable(this))return;
+        stopCombatSounds();
         reviewPrompt.play(this);
         bossRetry.finish(this);bossRetry.clear();
         titleKeyHint = 0f;
@@ -2141,6 +2142,7 @@ final class GameCore {
     }
 
     void toTitle() {
+        stopCombatSounds();
         slimeBubbles.reset();slimeBanks.reset();crystalField.reset();waterRipples.reset();
         bossRetry.finish(this);bossRetry.clear();
         pairSpawnSlots = 0;
@@ -3259,12 +3261,9 @@ final class GameCore {
             int gatorAttackCues=boss.kind==Boss.ALLIGATOR?boss.alligator.takeAttackCues():0;
             int gatorGrowls=boss.kind==Boss.ALLIGATOR?boss.alligator.takeGrowls():0;
             if (sound != null) {
-                float brew = boss.kind == Boss.SLIME && !boss.hasGlob()
+                sound.bossCharge(boss.kind == Boss.SLIME && !boss.hasGlob()
                         && boss.boltCount() == 0 && boss.open()
-                        ? 0.08f + boss.promptProgress() * 0.92f
-                        : boss.kind == Boss.MUSHROOM && boss.mushroomCharge > 0f
-                        ? 1f - boss.mushroomCharge / Boss.MUSHROOM_CHARGE_TIME : 0f;
-                sound.bossCharge(brew);
+                        ? .08f + boss.promptProgress() * .92f : 0f);
                 if (boss.launched) {
                     if(boss.kind==Boss.SLIME)BossPlay.slimeSquish(this,3,3);
                     else if(boss.kind==Boss.RAINBOW_CAT)boss.cat.shortMeow(this);
@@ -3760,6 +3759,7 @@ final class GameCore {
      * early returns, or clear it where the early return is taken. There is no third way.
      */
     private void die() {
+        stopCombatSounds();
         reviewPrompt.pending=false;
         pairSpawnSlots = 0;
         diagnostic("game-over");
@@ -3804,6 +3804,10 @@ final class GameCore {
         if (bossVictory != null) boss = new Boss();
         else boss.leave();
         power = null;
+    }
+
+    void stopCombatSounds() {
+        if (sound != null) { sound.bossCharge(0f); sound.rocket(0f); }
     }
 
     void finishDefeat() {

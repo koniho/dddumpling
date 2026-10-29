@@ -63,6 +63,7 @@ static const jint DDStyleSwing = DDMusic_SWING_STYLE;
 @property(nonatomic) BOOL playingBoss;
 @property(nonatomic) BOOL playingFrenzy;
 @property(nonatomic) float bubbleVolume;
+@property(nonatomic) float bubbleCharge;
 @property(nonatomic) float musicVolume;
 @property(nonatomic) float effectsVolume;
 @property(nonatomic) float rocketGain;
@@ -185,6 +186,8 @@ static const jint DDStyleSwing = DDMusic_SWING_STYLE;
 
 - (void)pausePlayers {
   [_music pause]; [_rocketNode pause]; [_rocketEngine pause]; [_bubble pause];
+  [self rocketWithFloat:0];
+  [self bossChargeWithFloat:0];
   self.effectGeneration += 1;
   dispatch_async(_effectsQueue, ^{
     [self.effectMixer pause];
@@ -347,7 +350,7 @@ static const jint DDStyleSwing = DDMusic_SWING_STYLE;
 
 - (void)ensureBubble {
   if (_bubble) return;
-  @try { _bubble = [self playerForPCM:[DDSfx bubble] loop:YES]; } @catch (NSException *exception) { }
+  @try { _bubble = [self playerForPCM:[DDSfx bubble] loop:NO]; } @catch (NSException *exception) { }
 }
 
 // GameCore.Sound -----------------------------------------------------------
@@ -445,16 +448,22 @@ static const jint DDStyleSwing = DDMusic_SWING_STYLE;
 - (void)bossChargeWithFloat:(jfloat)charge {
   if (charge <= 0) {
     _bubbleVolume = 0;
+    _bubbleCharge = 0;
     _bubble.volume = 0;
     [_bubble stop];
     _bubbleOn = NO;
     return;
   }
   [self ensureBubble];
+  BOOL start = !_bubbleOn || charge < _bubbleCharge;
+  if (start) { [_bubble stop]; _bubble.currentTime = 0; _bubbleOn = NO; }
+  _bubbleCharge = charge;
   float target = MAX(0.f, MIN(1.f, charge)) * .10f;
   _bubbleVolume += (target - _bubbleVolume) * .18f;
-  _bubble.volume = _bubbleVolume * _effectsVolume; _bubble.rate = 1; _bubbleOn = YES;
-  if (_active && !_interrupted && _playbackAllowed && !_bubble.isPlaying) [_bubble play];
+  _bubble.volume = _bubbleVolume * _effectsVolume; _bubble.rate = 1;
+  if (_active && !_interrupted && _playbackAllowed && !_bubbleOn && _bubble) {
+    [_bubble play]; _bubbleOn = YES;
+  }
 }
 
 - (void)volumesWithFloat:(jfloat)music withFloat:(jfloat)effects {

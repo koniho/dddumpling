@@ -410,6 +410,24 @@
   XCTAssertEqualWithAccuracy([[audio valueForKey:@"bubbleVolume"] floatValue], 0, .0001f);
 }
 
+- (void)testFiniteChargeOnlyRestartsForANewPrompt {
+  DDIOSAudio *audio = [DDIOSAudio new];
+  DDCountingPlayer *bubble = [DDCountingPlayer new];
+  [audio setValue:bubble forKey:@"bubble"];
+  [audio setValue:@YES forKey:@"active"];
+  [audio setValue:@YES forKey:@"playbackAllowed"];
+  [audio bossChargeWithFloat:.1f];
+  [audio bossChargeWithFloat:.8f];
+  [audio bossChargeWithFloat:1];
+  XCTAssertEqual(bubble.playCount, 1);
+  [audio bossChargeWithFloat:.08f];
+  XCTAssertEqual(bubble.playCount, 2);
+  [audio pausePlayers];
+  [audio resumePlayersIfNeeded];
+  XCTAssertEqual(bubble.playCount, 2);
+  XCTAssertFalse([[audio valueForKey:@"bubbleOn"] boolValue]);
+}
+
 - (void)testRocketUsesAStartedFloatVarispeedEngine {
   DDIOSAudio *audio = [DDIOSAudio new];
   [audio setActive:YES];

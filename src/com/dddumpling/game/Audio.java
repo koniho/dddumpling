@@ -36,7 +36,7 @@ final class Audio implements GameCore.Sound {
     private AudioTrack bubbleTrack;
     private boolean rocketActive;
     private boolean bubbleActive;
-    private float bubbleVolume;
+    private float bubbleVolume, bubbleCharge;
     private boolean bgmStarted;
     private boolean frenzyPlaying;
     private boolean bossPlaying;
@@ -178,14 +178,9 @@ final class Audio implements GameCore.Sound {
         try { if (bgmTrack != null) bgmTrack.pause(); } catch (Throwable failure) {
             stopMusic(); audioFailure(failure);
         }
-        try { if (rocketTrack != null) rocketTrack.pause(); } catch (Throwable failure) {
-            releaseTrack(rocketTrack); rocketTrack = null; rocketActive = false;
-            mixRocket(false); audioFailure(failure);
-        }
-        try { if (bubbleTrack != null) bubbleTrack.pause(); } catch (Throwable failure) {
-            releaseTrack(bubbleTrack); bubbleTrack = null; audioFailure(failure);
-        }
-        bubbleActive = false;
+        // Gameplay must request these again; activation alone must not revive stale combat.
+        rocket(0f);
+        bossCharge(0f);
     }
 
     synchronized void resumeMusic() {
@@ -461,17 +456,29 @@ final class Audio implements GameCore.Sound {
     @Override public synchronized void bossCharge(float charge) {
         if (released) return;
         try {
-            if (bubbleTrack == null && charge <= 0f) return;
+            if (charge <= 0f) {
+                bubbleVolume = 0f;
+                bubbleCharge = 0f;
+                releaseTrack(bubbleTrack);
+                bubbleTrack = null;
+                bubbleActive = false;
+                return;
+            }
             if (bubbleTrack == null) {
                 short[] pcm = Sfx.bubble();
-                bubbleTrack = createTrack(pcm, true, false);
+                bubbleTrack = createTrack(pcm, false, false);
+            } else if (charge < bubbleCharge) {
+                // Answering a prompt starts a fresh charge, not another overlapping voice.
+                bubbleTrack.pause();
+                bubbleTrack.setPlaybackHeadPosition(0);
+                bubbleActive = false;
             }
+            bubbleCharge = charge;
             float p = Math.max(0f, Math.min(1f, charge));
             float target = p * 0.10f;
             bubbleVolume += (target - bubbleVolume) * 0.18f;
             bubbleTrack.setVolume(bubbleVolume * effectsVolume);
-            // Fixed-rate playback avoids resampler zipper noise. Once created, the zero-ended loop
-            // keeps running silently between charges so no waveform is ever paused mid-cycle.
+            // Fixed-rate playback avoids resampler zipper noise.
             if (!bubbleActive && !musicPaused) {
                 bubbleTrack.setPlaybackRate(Sfx.RATE);
                 bubbleTrack.play();
