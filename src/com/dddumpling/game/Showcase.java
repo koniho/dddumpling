@@ -133,7 +133,7 @@ final class Showcase extends Draw {
 
     /** Scale of the closed case's badge: a small copy of the same box. */
     static float iconR(Layout L) {
-        return focusR(L) * 0.62f;
+        return focusR(L) * 0.84f;
     }
 
     static float iconHalfW(Layout L) {
