@@ -106,12 +106,79 @@ final class WardrobeToybox extends Draw {
             float bounce=k==ui.slot?(float)Math.sin(Math.min(1,ui.pulse/.45f)*Math.PI)*.20f:0;
             float yy=y-r*(.035f*(float)Math.sin(c.clock*2+k)+bounce);
             int item=c.wardrobe.equipped(ui.who,k);if(item<0)item=Accessories.item(k,0);
-            int color=Accessories.COLOR[item];
-            p.fillEllipse(x,y+r*.78f,r*.72f,r*.12f,Glyph.withAlpha(color,k==ui.slot?90:30));
-            if(k==ui.slot){p.fillCircle(x,yy,r*1.16f,Glyph.withAlpha(color,22));p.arc(x,yy,r*1.12f,r*1.12f,c.clock*27,255,Glyph.withAlpha(color,155),L.unit*.055f);}
-            Painter q=new LinkedPairArt.TurnPainter(p,x,yy,.055f*(float)Math.sin(c.clock*1.7f+k));
-            if(k==Accessories.FLAIR){AccessoryArt.star(q,0,0,r*.82f,color);AccessoryArt.star(q,-r*.12f,-r*.1f,r*.35f,0xFFFFF5CB);}
-            else AccessoryArt.thumbnail(q,item,-r,-r,r,r,c.clock);
+            int color=Accessories.COLOR[Accessories.item(k,0)];
+            p.fillEllipse(x,y+r*.88f,r*.96f,r*.16f,Glyph.withAlpha(color,k==ui.slot?65:25));
+            if(k==ui.slot){p.fillCircle(x,yy,r*1.23f,Glyph.withAlpha(color,18));p.arc(x,yy,r*1.24f,r*1.20f,c.clock*27,255,Glyph.withAlpha(color,155),L.unit*.055f);}
+            float open=k==ui.slot?travel(Math.min(1,ui.trayT/.32f)):0;
+            if(k==ui.lastSlot && k!=ui.slot)open=1-travel(Math.min(1,ui.trayT/.24f));
+            Painter q=new LinkedPairArt.TurnPainter(p,x,yy,.035f*(float)Math.sin(c.clock*1.7f+k));
+            container(q,k,item,r,color,open,c.clock);
+            if(k==ui.slot && ui.trayT<.65f)for(int spark=0;spark<3;spark++) {
+                float age=ui.trayT/.65f,a=spark*2.1f+.4f;
+                AccessoryArt.star(q,(float)Math.cos(a)*r*(.8f+age*.45f),-r*(.45f+age*.65f),
+                        r*.12f*(1-age),Glyph.withAlpha(0xFFFFE9B0,(int)(210*(1-age))));
+            }
+        }
+    }
+    /** Open toy containers keep the category recognizable through its peeking accessory. */
+    private static void container(Painter p,int kind,int item,float r,int tint,float open,float clock) {
+        int base=Glyph.mix(tint,0xFF7C699E,.28f),light=Glyph.mix(base,0xFFFFF2D4,.44f);
+        int shade=Glyph.mix(base,0xFF302A51,.45f),inside=Glyph.mix(base,0xFF211A38,.67f);
+        float top=r*.06f,lift=r*(.30f+open*.38f);
+        // Lid is behind both the peeking toy and the front wall.
+        Painter lid=new LinkedPairArt.TurnPainter(p,-r*.08f,-lift,-.10f-open*.32f);
+        if(kind==Accessories.FLAIR) {
+            lid.fillEllipse(0,0,r*.57f,r*.17f,shade);
+            lid.fillEllipse(0,-r*.07f,r*.57f,r*.17f,light);
+            AccessoryArt.star(lid,0,-r*.26f,r*.22f,0xFFFFE5A2);
+        } else if(kind==Accessories.HAT) {
+            lid.fillEllipse(0,0,r*1.02f,r*.29f,shade);
+            lid.fillEllipse(0,-r*.08f,r*1.02f,r*.29f,light);
+            lid.arc(0,-r*.12f,r*.80f,r*.16f,190,135,Glyph.withAlpha(0xFFFFF5DF,150),r*.06f);
+        } else {
+            float width=kind==Accessories.GLASSES?1.04f:1f;
+            lid.fillPoly(new float[]{-r*width,0,-r*.88f,-r*.24f,r*.84f,-r*.24f,r*width,0,r*.88f,r*.12f,-r*.88f,r*.12f},light);
+            lid.line(-r*.86f,r*.08f,r*.86f,r*.08f,shade,r*.09f);
+            if(kind==Accessories.MASK)lid.arc(0,-r*.22f,r*.30f,r*.18f,180,180,light,r*.12f);
+        }
+        p.fillEllipse(0,top,r*.96f,r*.27f,shade);
+        p.fillEllipse(0,top-r*.02f,r*.81f,r*.17f,inside);
+        float toyY=-r*(.28f+open*.20f),toyR=r*(.74f+open*.06f);
+        if(kind==Accessories.FLAIR) {
+            AccessoryArt.star(p,-r*.24f,toyY,r*.41f,0xFFFFE49D);
+            AccessoryArt.star(p,r*.32f,toyY-r*.12f,r*.27f,0xFFDBB8FF);
+        } else AccessoryArt.thumbnail(p,item,-toyR,toyY-toyR,toyR,toyY+toyR,clock);
+        if(kind==Accessories.HAT) {
+            p.fillPoly(new float[]{-r*.96f,top,r*.96f,top,r*.88f,r*.70f,r*.50f,r*.88f,-r*.50f,r*.88f,-r*.88f,r*.70f},base);
+            p.fillEllipse(0,r*.65f,r*.88f,r*.25f,base);
+            p.polyline(new float[]{-r*.78f,r*.22f,-r*.74f,r*.61f,-r*.53f,r*.70f},light,r*.11f);
+            p.line(r*.59f,r*.22f,r*.54f,r*.71f,shade,r*.13f);
+            p.arc(0,top,r*.96f,r*.25f,0,180,light,r*.12f);
+        } else if(kind==Accessories.FLAIR) {
+            // Faceted glass jar; the stars can still be seen through its blue front.
+            p.fillPoly(new float[]{-r*.58f,-r*.06f,-r*.62f,r*.16f,-r*.81f,r*.36f,-r*.73f,r*.79f,
+                    0,r*.91f,r*.73f,r*.79f,r*.81f,r*.36f,r*.62f,r*.16f,r*.58f,-r*.06f},0xBA788DB9);
+            p.polyline(new float[]{-r*.46f,r*.12f,-r*.64f,r*.39f,-r*.57f,r*.66f},0xB4D6F9FF,r*.13f);
+            p.polyline(new float[]{r*.60f,r*.28f,r*.67f,r*.44f,r*.60f,r*.71f},0x85705C9B,r*.12f);
+            p.fillEllipse(0,-r*.01f,r*.61f,r*.15f,0xB5BECFE8);
+            AccessoryArt.star(p,r*.17f,r*.48f,r*.23f,0xFFFFE6AB);
+        } else {
+            float height=kind==Accessories.GLASSES?.57f:.82f;
+            p.fillPoly(new float[]{-r*.98f,top,r*.98f,top,r*.86f,r*height,-r*.84f,r*height},base);
+            p.fillPoly(new float[]{r*.67f,top,r*.98f,top,r*.86f,r*height,r*.60f,r*height},shade);
+            p.line(-r*.79f,r*.20f,-r*.72f,r*(height-.12f),light,r*.13f);
+            p.line(-r*.90f,top+r*.04f,r*.88f,top+r*.04f,light,r*.12f);
+            if(kind==Accessories.MASK) {
+                p.line(-r*.51f,r*.13f,-r*.46f,r*.75f,light,r*.09f);
+                p.line(r*.46f,r*.13f,r*.42f,r*.75f,light,r*.09f);
+            } else if(kind==Accessories.BOOTS) {
+                p.fillEllipse(r*.37f,r*.37f,r*.16f,r*.07f,inside);
+            }
+        }
+        if(kind!=Accessories.FLAIR) {
+            float yy=r*(kind==Accessories.GLASSES?.36f:.48f);
+            p.fillEllipse(-r*.05f,yy,r*.18f,r*.15f,shade);
+            AccessoryArt.star(p,-r*.05f,yy-r*.01f,r*.12f,0xFFFFE3A3);
         }
     }
     private static void chevron(Painter p,float x,float y,float r,int dir,int color) {
