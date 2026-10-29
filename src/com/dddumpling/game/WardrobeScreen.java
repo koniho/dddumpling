@@ -13,7 +13,9 @@ final class WardrobeScreen extends Draw {
     float dragX,dragY,downX,downY,danceT=3;
     int dance,lastSlot=-1,arrivalSounds;
     float trayT=1,scroll,scrollTarget,lastScroll,scrollStart,scrollSpeed,scrollSampleAge,shakeCooldown;
-    float swoosh,swooshAge,swipeDirection=1;
+    float swoosh,swooshAge,swipeDirection=1,scrambleT=2;
+    private int scrambleFeedback;
+    static final float SCRAMBLE=1.2f;
     boolean scrolling,ribbonGesture;
     private final java.util.Random outfitRandom=new java.util.Random(21431);
     private final java.util.Random celebrations=new java.util.Random(214);
@@ -24,13 +26,20 @@ final class WardrobeScreen extends Draw {
         selected=Math.max(0,c.wardrobe.equipped(who,slot));
         lastSlot=-1;trayT=0;arrivalSounds=0;scroll=scrollTarget=0;shakeCooldown=.7f;swoosh=0;
         revealSelected();scroll=scrollTarget;
-        open=true;reward=false;narrationPaused=false;error="";pulse=0;danceT=3;cancelTouch();
+        open=true;reward=false;narrationPaused=false;error="";pulse=0;danceT=3;scrambleT=2;scrambleFeedback=0;cancelTouch();
     }
-    void close() {open=reward=narrationPaused=false;lastSlot=-1;trayT=1;swoosh=0;error="";danceT=3;cancelTouch();}
+    void close() {open=reward=narrationPaused=false;lastSlot=-1;trayT=1;swoosh=0;error="";danceT=3;scrambleT=2;scrambleFeedback=0;cancelTouch();}
     void back(GameCore c) {if(reward)close();else c.closeStory();}
     boolean update(GameCore c,float dt) {
         if(open && c.state!=GameCore.TITLE)close();
         if(open) {
+            float before=scrambleT;scrambleT+=dt;
+            if(!c.paused && !c.settingsOpen && !c.cloudUi.open && !c.updatePrompt.open && !c.releaseNotes.open) {
+                for(int beat=0;beat<4;beat++) {
+                    float at=.18f+beat*.29f;
+                    if(before<at && scrambleT>=at)scrambleFeedback=Math.max(scrambleFeedback,beat==3?2:1);
+                }
+            }
             scrollSampleAge+=dt;
             pulse+=dt;danceT+=dt;trayT+=dt;shakeCooldown=Math.max(0,shakeCooldown-dt);swooshAge+=dt;swoosh=Math.max(0,swoosh-dt*2.4f);
             if(!ribbonGesture)scroll+=(scrollTarget-scroll)*(1-(float)Math.exp(-15*dt));
@@ -43,6 +52,7 @@ final class WardrobeScreen extends Draw {
         }
         return open && reward;
     }
+    int takeScrambleFeedback() {int value=scrambleFeedback;scrambleFeedback=0;return value;}
     static float safeTop(Layout L) {return Math.max(L.padT,L.h*.07f);}
     static float safeBottom(Layout L) {return Math.max(L.padB,L.h*.025f);}
     static float outerMargin(Layout L) {return Math.max(L.unit*1.5f,(L.h-safeTop(L)-safeBottom(L))*.035f);}
@@ -84,6 +94,7 @@ final class WardrobeScreen extends Draw {
     static float trayHeight(Layout L) {return Math.min(height(L)*.25f,L.unit*12f);}
     static float trayY(Layout L,float f) {return trayTop(L)+trayHeight(L)*(f-.09f);}
     void hero(Painter p,GameCore c,float x,float y,float r) {
+        whirlwind(p,x,y,r,false);
         float t=danceT-FLASH,env=t>=0&&t<DANCE?(float)Math.sin(Math.PI*t/DANCE):0;
         float beat=t*(dance==1?17:12),sx=(float)Math.sin(beat),hop=Math.abs((float)Math.sin(beat*.5f));
         float dx=env*r*sx*(dance==2?.55f:.28f),dy=-env*r*hop*(dance==1?.65f:.30f);
@@ -92,7 +103,38 @@ final class WardrobeScreen extends Draw {
         if(dance==2 && env>0)angle=Softbody.TAU*(t/DANCE);
         Painter dancer=env>0?new LinkedPairArt.TurnPainter(p,x+dx,y+dy,angle):p;
         Trinket.drawReacting(dancer,who,env>0?0:x,env>0?0:y,r*scale,c.clock,1,env>0?4:-1,env*sx*.42f);
+        whirlwind(p,x,y,r,true);
         if(danceT<.72f)FastEnemies.starBurst(p,x,y,r*.48f,Accessories.COLOR[selected],dance*.75f,danceT/.72f);
+    }
+    private void whirlwind(Painter p,float x,float y,float r,boolean front) {
+        if(scrambleT>=SCRAMBLE)return;
+        float u=scrambleT/SCRAMBLE,env=(float)Math.sin(Math.PI*u);
+        // Six short paths, split at the silhouette so the ribbons wrap around the body.
+        for(int ribbon=0;ribbon<3;ribbon++) {
+            float[] path=new float[38];
+            for(int i=0;i<19;i++) {
+                float a=(front?0:(float)Math.PI)+i*(float)Math.PI/18;
+                float wave=(float)Math.sin(a*2-scrambleT*15+ribbon*2.1f);
+                float radius=r*(1.10f+ribbon*.17f+u*.30f+wave*.06f);
+                path[i*2]=x+(float)Math.cos(a)*radius;
+                path[i*2+1]=y+r*(.68f-ribbon*.68f)+(float)Math.sin(a)*r*.28f+wave*r*.12f;
+            }
+            int color=ribbon==0?0xFF9DEFE0:ribbon==1?0xFFC7B5FF:0xFFFFDF91;
+            p.polyline(path,Glyph.withAlpha(color,(int)(32*env)),r*.14f);
+            p.polyline(path,Glyph.withAlpha(color,(int)(185*env)),r*.042f);
+            p.polyline(path,Glyph.withAlpha(0xFFF3F5FF,(int)(125*env)),r*.012f);
+        }
+        for(int i=0;i<16;i++) {
+            float a=i*2.39996f+scrambleT*(i%2==0?11:8),depth=(float)Math.sin(a);
+            if((depth>=0)!=front)continue;
+            float radius=r*(1.12f+u*.55f+(i%3)*.12f),sx=x+(float)Math.cos(a)*radius;
+            float sy=y+r*(.85f-(i%5)*.42f)+depth*r*.25f-u*r*.35f;
+            float size=r*(.018f+(i%3)*.008f)*env;
+            p.fillCircle(sx,sy,size*2.5f,Glyph.withAlpha(0xFFD7C2FF,(int)(40*env)));
+            p.fillPoly(new float[]{sx,sy-size*2,sx+size*.55f,sy-size*.55f,sx+size*2,sy,
+                    sx+size*.55f,sy+size*.55f,sx,sy+size*2,sx-size*.55f,sy+size*.55f,
+                    sx-size*2,sy,sx-size*.55f,sy-size*.55f},Glyph.withAlpha(0xFFFFEAB5,(int)(230*env)));
+        }
     }
     private String progress(GameCore c,int item) {
         int a=Accessories.achievement(item);
@@ -188,7 +230,7 @@ final class WardrobeScreen extends Draw {
         }
         if(c.wardrobe.equipOutfit(c,who,outfit)) {
             int on=c.wardrobe.equipped(who,slot);selected=on<0?Accessories.item(slot,0):on;
-            revealSelected();celebrate(c,false,Accessories.FLAIR);return true;
+            revealSelected();celebrate(c,false,Accessories.FLAIR);scrambleT=0;scrambleFeedback=0;return true;
         } else error="Could not save. Try again.";
         return false;
     }

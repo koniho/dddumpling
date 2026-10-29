@@ -962,6 +962,8 @@ public class GameView extends View implements InputManager.InputDeviceListener, 
                 int caveFeedback=Math.max(core.cart.scene.takeFeedback(),Math.max(core.cave.effects.takeFeedback(),core.mining.scene.takeFeedback()));
                 if(caveFeedback>0 && !core.paused && !core.settingsOpen)
                     performHapticFeedback(caveFeedback>1?HapticFeedbackConstants.LONG_PRESS:HapticFeedbackConstants.KEYBOARD_TAP);
+                int scramble=core.wardrobe.screen.takeScrambleFeedback();
+                if(scramble>0)performHapticFeedback(scramble==2?HapticFeedbackConstants.LONG_PRESS:HapticFeedbackConstants.KEYBOARD_TAP);
                 for (int i = 0, n = core.releaseNotes.takeFeedback(); i < n; i++) tick();
                 for (int i = 0; i < core.starPickups; i++) tick();
                 if(core.starBlastHaptic>0)

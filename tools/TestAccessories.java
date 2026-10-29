@@ -33,10 +33,14 @@ final class TestAccessories extends Check {
         check("shake changes wardrobe",ui.shake(c) && !java.util.Arrays.equals(before,c.progress.snapshot()));
         before=c.progress.snapshot();
         check("shake cooldown prevents duplicate random outfits",!ui.shake(c) && java.util.Arrays.equals(before,c.progress.snapshot()));
-        ui.update(c,2);c.paused=true;check("paused wardrobe ignores shake",!ui.shake(c));c.paused=false;
+        check("shake starts whirlwind",ui.scrambleT==0);
+        ui.update(c,.19f);check("scramble haptic beat consumed once",ui.takeScrambleFeedback()==1 && ui.takeScrambleFeedback()==0);
+        ui.update(c,.88f);check("scramble ends with stronger haptic",ui.takeScrambleFeedback()==2);
+        ui.update(c,2);check("scramble feedback stops",ui.takeScrambleFeedback()==0 && ui.scrambleT>WardrobeScreen.SCRAMBLE);
+        c.paused=true;check("paused wardrobe ignores shake",!ui.shake(c));c.paused=false;
         c.settingsOpen=true;check("settings ignores shake",!ui.shake(c));c.settingsOpen=false;
         c.cloudUi.open=true;check("cloud dialog ignores shake",!ui.shake(c));c.cloudUi.open=false;
-        ui.close();check("closed wardrobe ignores shake",!ui.shake(c));
+        ui.close();check("closed wardrobe ignores shake",!ui.shake(c) && ui.takeScrambleFeedback()==0 && ui.scrambleT>WardrobeScreen.SCRAMBLE);
     }
     private static void startup() {
         Mem save=new Mem();GameCore c=new GameCore(save,214,true);grant(c);

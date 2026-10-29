@@ -805,6 +805,9 @@ public final class IOSGame {
         }
         int caveFeedback=Math.max(core.cart.scene.takeFeedback(),Math.max(core.cave.effects.takeFeedback(),core.mining.scene.takeFeedback()));
         if(caveFeedback>0 && !core.paused && !core.settingsOpen)tick();
+        int scramble=core.wardrobe.screen.takeScrambleFeedback();
+        if(scramble==2 && host!=null)host.impact();
+        else if(scramble>0)tick();
         for (int i = 0, n = core.releaseNotes.takeFeedback(); i < n; i++) tick();
         for (int i = 0; i < core.starPickups; i++) tick();
         if(core.starBlastHaptic==2 && host!=null) host.impact();

@@ -211,6 +211,10 @@ and add cuffs, stitching, laces and material highlights at large sizes. All new
 IDs are appended; existing achievements backfill these rewards automatically.
 
 
-The outfit backdrop uses a pastel sky, layered gentle hills, soft cloud contours
-and a grounded hero shadow. Cloud drift and small grass sways use the game clock;
+The outfit backdrop uses an indigo night sky, muted teal hills, faint soft clouds,
+twinkling stars and a grounded hero shadow. Cloud drift and grass sways use the game clock;
 bounded vector layers need no blur, framebuffer or gameplay RNG on either platform.
+
+Shake-scramble wraps the squishy in a 1.2-second layered whirlwind with orbiting
+sparkles. Four shared timed haptic beats finish with a stronger pulse; both hosts
+consume the feedback once, and closing the wardrobe clears it.

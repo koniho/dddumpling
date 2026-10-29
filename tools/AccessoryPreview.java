@@ -87,7 +87,7 @@ final class AccessoryPreview {
         RasterPainter swipe=new RasterPainter(w,h,ss);Renderer.draw(swipe,c,L);
         Png.write(new File(dir,"214-toybox-swoosh.png"),swipe.resolve(),w,h);
         toy.touch(c,L,1,9,tx-L.w*.16f,ty);toy.update(c,1);
-        toy.shake(c);toy.danceT=.65f;
+        toy.shake(c);toy.update(c,.48f);toy.danceT=.65f;
         RasterPainter shuffle=new RasterPainter(w,h,ss);Renderer.draw(shuffle,c,L);
         Png.write(new File(dir,"214-toybox-shuffle.png"),shuffle.resolve(),w,h);
         toy.cancelTouch();
