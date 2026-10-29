@@ -50,6 +50,7 @@ final class WardrobeToybox extends Draw {
     static void draw(Painter p,GameCore c,Layout L,WardrobeScreen ui) {
         int count=Accessories.count(ui.slot);float h=WardrobeScreen.trayHeight(L),top=WardrobeScreen.trayTop(L);
         int accent=Accessories.COLOR[Accessories.item(ui.slot,0)];
+        contentsTray(p,c,L,ui,accent);
         float[] ribbon=new float[26];
         for(int i=0;i<13;i++){float x=L.w*(.06f+i*.88f/12);ribbon[i*2]=x;ribbon[i*2+1]=settledY(L,x)+itemR(L,count)*.76f;}
         p.polyline(ribbon,Glyph.withAlpha(accent,24),L.unit*.45f);
@@ -118,6 +119,40 @@ final class WardrobeToybox extends Draw {
                 AccessoryArt.star(q,(float)Math.cos(a)*r*(.8f+age*.45f),-r*(.45f+age*.65f),
                         r*.12f*(1-age),Glyph.withAlpha(0xFFFFE9B0,(int)(210*(1-age))));
             }
+        }
+    }
+    /** A persistent tray joins the category container to the row it owns. */
+    private static void contentsTray(Painter p,GameCore c,Layout L,WardrobeScreen ui,int color) {
+        float h=WardrobeScreen.trayHeight(L),top=WardrobeScreen.trayTop(L);
+        float turn=travel(Math.min(1,ui.trayT/.34f)),anchor=categoryX(L,ui.slot);
+        if(ui.lastSlot>=0 && ui.lastSlot!=ui.slot) {
+            anchor=categoryX(L,ui.lastSlot)+(anchor-categoryX(L,ui.lastSlot))*turn;
+            color=Glyph.mix(Accessories.COLOR[Accessories.item(ui.lastSlot,0)],color,turn);
+        }
+        float appear=ui.lastSlot<0?travel(Math.min(1,ui.trayT/.40f)):1;
+        float rimY=top+h*.32f,neckY=categoryY(L)+categoryR(L)*.72f;
+        float[] edge=new float[82],shape=new float[164];
+        for(int i=0;i<=40;i++) {
+            float x=L.w*(.045f+i*.91f/40),distance=(x-anchor)/(L.w*.065f);
+            float rise=(float)Math.exp(-distance*distance*1.7f);
+            float wave=(float)Math.sin(i*.22f+c.clock*.8f)*L.unit*.045f*(1-rise);
+            float y=rimY-(rimY-neckY)*rise+wave;
+            edge[i*2]=shape[i*2]=x;edge[i*2+1]=shape[i*2+1]=y;
+            int j=81-i;shape[j*2]=x;
+            shape[j*2+1]=settledY(L,x)+itemR(L,Accessories.count(ui.slot))*.76f;
+        }
+        p.fillPoly(shape,Glyph.withAlpha(color,(int)(19*appear)));
+        p.polyline(edge,Glyph.withAlpha(color,(int)(20*appear)),L.unit*.38f);
+        p.polyline(edge,Glyph.withAlpha(color,(int)(155*appear)),L.unit*.075f);
+        // Edge and container share an accent; tiny travelling glints keep the connection alive.
+        for(int side=-1;side<=1;side+=2) {
+            float phase=(c.clock*.22f)%1;
+            float x=anchor+(L.w*(side<0?.045f:.955f)-anchor)*phase;
+            float distance=(x-anchor)/(L.w*.065f),rise=(float)Math.exp(-distance*distance*1.7f);
+            float y=rimY-(rimY-neckY)*rise;
+            float fade=(float)Math.sin(Math.PI*phase)*appear;
+            p.fillCircle(x,y,L.unit*.12f,Glyph.withAlpha(color,(int)(40*fade)));
+            p.fillCircle(x,y,L.unit*.045f,Glyph.withAlpha(0xFFFFEBC5,(int)(175*fade)));
         }
     }
     /** Open toy containers keep the category recognizable through its peeking accessory. */
