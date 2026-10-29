@@ -43,6 +43,9 @@ final class TestAccessories extends Check {
     private static void glitter(Layout L) {
         check("glitter append-only ID",Accessories.ID[16].equals("glitter_flair") && Accessories.variant(16)==3);
         GameCore c=ready();c.wardrobe.refresh(c);
+        int rose=AccessoryGlitter.gold(0x99FF7D99),mint=AccessoryGlitter.gold(0xFF8FD9A0);
+        check("glitter adds gold without changing opacity",rose>>>24==0x99 && ((rose>>16)&255)>(rose&255) && ((mint>>8)&255)>(mint&255));
+        check("glitter preserves dark facial ink",AccessoryGlitter.gold(0xFF302B45)==0xFF302B45);
         // Surface sampling must leave holes and empty corners untouched.
         FlairProbe p=new FlairProbe();AccessoryGlitter g=new AccessoryGlitter(p,0,0,100,1,1);
         g.fillEllipse(0,0,70,60,0xFFFFDD88);int before=p.calls;g.finish();
@@ -347,6 +350,9 @@ final class TestAccessories extends Check {
             SettingsUi settings=new SettingsUi();settings.compute(small,SettingsUi.PROGRESS);
             check("developer accessory chips stay in panel",settings.accessoryY+settings.testH<settings.panelB);
             check("editor buttons fit portrait",WardrobeScreen.y(small,.89f)<small.h-small.padB);
+            float topGap=WardrobeScreen.trayY(small,.09f)-WardrobeScreen.safeTop(small);
+            float bottomGap=small.h-WardrobeScreen.safeBottom(small)-Storybook.panelBottom(small);
+            check("dress-up keeps equal generous outer margins",topGap>=small.unit*1.49f && Math.abs(topGap-bottomGap)<.01f);
             check("picker at top and story anchored at bottom",WardrobeScreen.trayTop(small)>=small.topSafe && WardrobeScreen.trayY(small,1)<Storybook.panelTop(small) && Storybook.panelBottom(small)<small.h-small.padB);
         }
     }

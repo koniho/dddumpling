@@ -35,8 +35,12 @@ final class WardrobeScreen extends Draw {
         if(open) {pulse+=dt;danceT+=dt;if(reward){c.ducks.update(c,dt);c.gator.update(c,dt);}}
         return open && reward;
     }
-    static float top(Layout L) {return Math.max(L.topSafe,L.h*.055f);}
-    static float height(Layout L) {return L.h-L.padB-top(L)-L.h*.045f;}
+    static float safeTop(Layout L) {return Math.max(L.padT,L.h*.07f);}
+    static float safeBottom(Layout L) {return Math.max(L.padB,L.h*.025f);}
+    static float outerMargin(Layout L) {return Math.max(L.unit*1.5f,(L.h-safeTop(L)-safeBottom(L))*.035f);}
+    static float top(Layout L) {return safeTop(L)+outerMargin(L);}
+    static float bottom(Layout L) {return L.h-safeBottom(L)-outerMargin(L);}
+    static float height(Layout L) {return bottom(L)-top(L);}
     static float y(Layout L,float f) {return top(L)+height(L)*f;}
     static float unit(Layout L) {return Math.min(L.w/23f,height(L)/38f);}
     static void button(Painter p,Layout L,float f,String label,int color) {
@@ -51,8 +55,8 @@ final class WardrobeScreen extends Draw {
         if(reward) {
             p.fillRect(0,0,L.w,L.h,0xEC100F22);
             p.fillRect(L.w*.06f,top(L),L.w*.94f,y(L,1),0xFF27243E);
-            p.text("NEW LOOKS TO LOVE",x,y(L,.065f),type(s*1.20f),0xFFFFE29A,Painter.CENTER,true);
-            p.text("X",L.w*.88f,y(L,.062f),type(s),INK,Painter.CENTER,true);
+            p.text("NEW LOOKS TO LOVE",x,y(L,.065f),type(s*.95f),0xFFFFE29A,Painter.CENTER,true);
+            p.text("X",L.w*.89f,y(L,.035f),type(s),INK,Painter.CENTER,true);
             drawReward(p,c,L);return;
         }
         p.fillRect(L.w*.06f,trayY(L,.09f),L.w*.94f,trayY(L,trayEnd(c)),0xFF2A2348);
@@ -87,8 +91,9 @@ final class WardrobeScreen extends Draw {
     }
     private float trayEnd(GameCore c) {return c.wardrobe.owned[selected] && error.isEmpty()?.76f:1f;}
     float trayBottom(GameCore c,Layout L) {return trayY(L,trayEnd(c));}
-    static float trayTop(Layout L) {return Math.max(L.topSafe,L.unit*.7f);}
-    static float trayY(Layout L,float f) {return trayTop(L)+Math.min((L.h-L.padB-trayTop(L))*.27f,L.unit*12f)*f;}
+    static float trayTop(Layout L) {return top(L);}
+    static float trayHeight(Layout L) {return Math.min(height(L)*.25f,L.unit*12f);}
+    static float trayY(Layout L,float f) {return trayTop(L)+trayHeight(L)*(f-.09f);}
     void hero(Painter p,GameCore c,float x,float y,float r) {
         float t=danceT-FLASH,env=t>=0&&t<DANCE?(float)Math.sin(Math.PI*t/DANCE):0;
         float beat=t*(dance==1?17:12),sx=(float)Math.sin(beat),hop=Math.abs((float)Math.sin(beat*.5f));
@@ -106,15 +111,21 @@ final class WardrobeScreen extends Draw {
     }
     private void drawReward(Painter p,GameCore c,Layout L) {
         float s=unit(L),x=L.w*.5f;
-        p.text("Your achievements earned new accessories!",x,y(L,.14f),type(s*.67f),INK,Painter.CENTER,false);
+        p.text("EARNED THROUGH PLAY",x,y(L,.14f),type(s*.56f),INK,Painter.CENTER,false);
         for(int i=0;i<Accessories.COUNT;i++) {
             int columns=4,rows=(Accessories.COUNT+columns-1)/columns;float cx=L.w*(.20f+(i%columns)*.20f),cy=y(L,.23f+(i/columns)*(.49f/rows));
-            boolean owned=c.wardrobe.owned[i];
-            p.fillCircle(cx,cy,s*1.65f,owned?0xFF45425B:0xFF302D44);
-            AccessoryArt.item(new OpacityPainter(p,owned?1:.22f),i,cx,cy,s*1.15f,c.clock);
-            if(owned)p.text(Accessories.NAME[i],cx,cy+s*2.15f,type(s*.52f),Accessories.COLOR[i],Painter.CENTER,true);
+            boolean owned=c.wardrobe.owned[i];float iconR=Math.min(s*1.65f,height(L)*(.49f/rows)*.28f);
+            p.fillCircle(cx,cy,iconR,owned?0xFF45425B:0xFF302D44);
+            AccessoryArt.item(new OpacityPainter(p,owned?1:.22f),i,cx,cy,iconR*.70f,c.clock);
+            if(owned) {
+                String name=Accessories.NAME[i];int split=name.indexOf(' ');
+                String first=split<0?name:name.substring(0,split),last=split<0?"":name.substring(split+1);
+                float label=Math.min(type(s*.46f),L.w*.17f/(Math.max(first.length(),last.length())*.80f));
+                p.text(first,cx,cy+iconR+s*.62f,label,Accessories.COLOR[i],Painter.CENTER,true);
+                if(!last.isEmpty())p.text(last,cx,cy+iconR+s*1.22f,label,Accessories.COLOR[i],Painter.CENTER,true);
+            }
         }
-        p.text("Pick a squishy in your display case to dress up.",x,y(L,.79f),type(s*.64f),INK,Painter.CENTER,false);
+        p.text("CHOOSE A SQUISHY TO DRESS UP",x,y(L,.79f),type(s*.52f),INK,Painter.CENTER,false);
         button(p,L,.855f,"TRY THEM ON",0xFFFFDC93);
         p.text("LATER",x,y(L,.94f),type(s*.70f),INK_DIM,Painter.CENTER,true);
     }
@@ -125,7 +136,7 @@ final class WardrobeScreen extends Draw {
             return x>=L.w*.10f && x<=L.w*.90f && f>=.82f && f<=.89f?2:0;
         }
         if(x<L.w*.10f || x>L.w*.90f)return 0;
-        float f=(yy-trayTop(L))/(trayY(L,1)-trayTop(L));
+        float f=(yy-trayTop(L))/trayHeight(L)+.09f;
         if(f>=.12f && f<=.27f)return 10+Math.min(Accessories.SLOTS-1,(int)((x/L.w-.10f)/(.80f/Accessories.SLOTS)));
         if(f>=.30f && f<=.72f)return 20+Math.max(0,Math.min(Accessories.count(slot)-1,(int)((x/L.w-.10f)/(.80f/Accessories.count(slot)))));
         return 0;

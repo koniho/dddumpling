@@ -19,7 +19,7 @@ final class Storybook extends Draw {
     private static final float OPEN_TIME = 0.28f;
     static final float FLIGHT_TIME=.55f, GLOW_TIME=1.15f;
 
-    static float panelBottom(Layout L) {return L.h-L.padB-L.unit*.65f;}
+    static float panelBottom(Layout L) {return WardrobeScreen.bottom(L);}
     static float panelTop(Layout L) {return panelBottom(L)-L.unit*12.4f;}
     static float heroRadius(Layout L) {
         return Math.min(L.w*.28f,(panelTop(L)-WardrobeScreen.trayY(L,1))/4.3f);

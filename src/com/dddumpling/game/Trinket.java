@@ -83,7 +83,7 @@ final class Trinket {
         }
         AccessoryGlitter glitter=AccessoryGlitter.begin(p,i,cx,cy,r,clock,fade);
         Shape.draw(glitter==null?p:glitter, shape, cx, cy, r, Collect.BODY[i], Collect.ACCENT[i], fade, i * 1.7f, true);
-        Finish.draw(p, Collect.FINISH[i], cx, cy, r, Collect.ACCENT[i], clock, fade, i);
+        Finish.draw(glitter==null?p:glitter, Collect.FINISH[i], cx, cy, r, Collect.ACCENT[i], clock, fade, i);
         if(glitter!=null)glitter.finish();
         float faceY=cy+r*FACE_DY[shape],faceR=r*FACE_R[shape];
         if(mood<0) face(p, i % 3, cx, faceY, faceR, fade);

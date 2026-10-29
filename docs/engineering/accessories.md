@@ -137,7 +137,7 @@ Glitter is a fourth Flair style, appended as `glitter_flair` and unlocked by vis
 three lands in a run. Existing achievement holders receive it through the normal
 backfill. It samples the live body vector fills and draws anchored gold/white twinkles
 before expressions and clothing (the cat portrait excludes dark face ink). Small views
-sample 12 sites and large views up to 72; no extra character render, framebuffer or blur
+sample 32 sites and large views up to 200; no extra character render, framebuffer or blur
 is used. Tapping a glittered body selects Flair. Developer Flair/all chips include it.
 The dress-up backdrop fully hides the display-case labels after opening; picker and
 story share the same margins and the hero centers within the actual remaining space.
@@ -150,3 +150,8 @@ views skip that trim. It uses existing eyewear attachments, equip sound and save
 Selecting/browsing an accessory or beginning a card drag hushes story narration;
 subsequent outfit edits stay quiet. Tap the story text to replay from the beginning.
 Closing and opening a story resets this state. Cosmetic sound effects remain active.
+
+Dress-up and reward panels share an outer frame with equal margins beyond conservative
+status/navigation safe areas (or larger native insets). Reward names wrap within their
+columns. Gold Glitter tints body fills/highlights while retaining shading and dark facial
+ink; denser gold flecks use bounded samples and only a few bright cross-shaped glints.
