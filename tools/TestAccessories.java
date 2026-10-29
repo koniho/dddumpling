@@ -46,6 +46,13 @@ final class TestAccessories extends Check {
         int rose=AccessoryGlitter.gold(0x99FF7D99),mint=AccessoryGlitter.gold(0xFF8FD9A0);
         check("glitter adds gold without changing opacity",rose>>>24==0x99 && ((rose>>16)&255)>(rose&255) && ((mint>>8)&255)>(mint&255));
         check("glitter preserves dark facial ink",AccessoryGlitter.gold(0xFF302B45)==0xFF302B45);
+        float[] cut=AccessoryGlitter.clip(new float[]{-10,-10,10,-10,10,10,-10,10},0,true);
+        boolean clipped=cut.length>=6;for(int i=0;i<cut.length;i+=2)clipped &= cut[i]+cut[i+1]*.42f>=-.001f;
+        check("golden sweep stays inside its diagonal half plane",clipped);
+        FlairProbe still=new FlairProbe(),sweep=new FlairProbe(),same=new FlairProbe();
+        AccessoryGlitter g0=new AccessoryGlitter(still,0,0,100,3.5f,1),g1=new AccessoryGlitter(sweep,0,0,100,1.4f,1),g2=new AccessoryGlitter(same,0,0,100,1.4f,1);
+        g0.fillEllipse(0,0,80,70,0xFFFFDD88);g1.fillEllipse(0,0,80,70,0xFFFFDD88);g2.fillEllipse(0,0,80,70,0xFFFFDD88);
+        check("golden sweep is bounded and deterministic",sweep.calls>still.calls && sweep.calls<=still.calls+3 && sweep.hash==same.hash);
         // Surface sampling must leave holes and empty corners untouched.
         FlairProbe p=new FlairProbe();AccessoryGlitter g=new AccessoryGlitter(p,0,0,100,1,1);
         g.fillEllipse(0,0,70,60,0xFFFFDD88);int before=p.calls;g.finish();

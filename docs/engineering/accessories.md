@@ -155,3 +155,8 @@ Dress-up and reward panels share an outer frame with equal margins beyond conser
 status/navigation safe areas (or larger native insets). Reward names wrap within their
 columns. Gold Glitter tints body fills/highlights while retaining shading and dark facial
 ink; denser gold flecks use bounded samples and only a few bright cross-shaped glints.
+
+Gold Glitter also has a diagonal golden sheen that crosses the body, then rests before
+repeating. Three nested bands clip against existing vector fills/contours, preserving
+holes and following the same body transforms. Small views use only a subtle gold pulse;
+no clipping work, new particles or blur surfaces are needed there.
