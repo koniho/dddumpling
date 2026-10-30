@@ -33,6 +33,47 @@ final class ReleaseChange extends Draw {
         HalloweenKeys.draw(p,Kawaii.CAT,x,y+r*(.32f-.10f*hop),r*.55f,
                 Skins.HALLOWEEN_COLORS[2],1+.07f*bob,.5f,0,time);
     }
+    private static void wardrobe(Painter p,float x,float y,float r,float time) {
+        final int outfit=(int)(time/4.8f)%3;
+        final float phase=time%4.8f,landing=1.25f;
+        final int hat=Accessories.item(Accessories.HAT,outfit);
+        float bx=x-r*.70f,by=y+r*.40f,bodyR=r*.46f;
+        float u=Math.max(0,Math.min(1,(phase-.35f)/.90f));u=u*u*(3-2*u);
+        float dance=Math.max(0,phase-landing),energy=Math.max(0,1-dance/1.6f);
+        float wiggle=(float)Math.sin(dance*13)*energy;
+        float cx=x+r*.35f+r*.08f*wiggle,cy=y+r*.26f-r*.16f*Math.abs(wiggle);
+        Painter box=new LinkedPairArt.TurnPainter(p,bx,by,-.06f*(float)Math.sin(time*3));
+        WardrobeToybox.container(box,Accessories.HAT,phase<.35f?hat:-1,r*.32f,Accessories.COLOR[hat],1f,time);
+        Painter dressed=new OpacityPainter(p,1f) {
+            public int accessory(int who,int slot) {
+                if(slot==Accessories.HAT)return phase>=landing?hat:-1;
+                if(slot==Accessories.GLASSES || slot==Accessories.BOOTS)return Accessories.item(slot,outfit);
+                return -1;
+            }
+        };
+        Painter dancer=new LinkedPairArt.TurnPainter(dressed,cx,cy,wiggle*.18f);
+        Trinket.drawReacting(dancer,0,0,0,bodyR*(1+.06f*wiggle),time,1f,phase>=landing?1:0,0);
+        if(phase>=.35f && phase<landing) {
+            float targetY=cy+bodyR*AccessoryAnchors.TOP[Collect.SHAPE[0]];
+            for(int i=11;i>=0;i--) {
+                float t=u-i*.025f;if(t<0)continue;
+                float tx=bx+(cx-bx)*t,ty=by-r*.15f+(targetY-by+r*.15f)*t-r*.70f*4*t*(1-t);
+                float sparkle=r*.042f*(1-i/13f);
+                p.fillCircle(tx,ty,sparkle*2.5f,0x24FFE6A3);
+                AccessoryArt.star(p,tx,ty,sparkle,Glyph.withAlpha(GOLD,220-i*14));
+            }
+            float hx=bx+(cx-bx)*u,hy=by-r*.15f+(targetY-by+r*.15f)*u-r*.70f*4*u*(1-u);
+            AccessoryArt.item(p,hat,hx,hy,r*(.22f+u*(.46f*.67f-.22f)),time);
+        }
+        if(phase>=landing && dance<1.6f) {
+            float burst=Math.min(1,dance/.55f);
+            for(int i=0;i<10;i++) {
+                float a=i*.6283185f,rr=r*(.30f+burst*.60f);
+                float sx=cx+(float)Math.cos(a)*rr,sy=cy+(float)Math.sin(a)*rr;
+                AccessoryArt.star(p,sx,sy,r*.065f*energy,Glyph.withAlpha(i%2==0?GOLD:0xFFBFA5FF,(int)(220*energy)));
+            }
+        }
+    }
     static void icon(Painter p,int id,float x,float y,float r,float time) {
         icon(p,id,x,y,r,time,-1f);
     }
@@ -41,25 +82,7 @@ final class ReleaseChange extends Draw {
             ReleaseHomes.icon(p,id==ARENA_HOMES,x,y,r,time);return;
         }
         if(id==WARDROBE) {
-            float bounce=celebration<0?0:Math.max(0,1-celebration/1.4f)*(float)Math.sin(celebration*15);
-            final int outfit=(int)(time/4)%3;
-            Painter dressed=new OpacityPainter(p,1f) {
-                public int accessory(int who,int slot) {
-                    if(slot==Accessories.HAT)return Accessories.item(slot,outfit);
-                    if(slot==Accessories.GLASSES)return Accessories.item(slot,outfit);
-                    if(slot==Accessories.BOOTS)return Accessories.item(slot,outfit);
-                    if(slot==Accessories.FLAIR)return Accessories.item(slot,0);
-                    return -1;
-                }
-            };
-            float cy=y+r*.25f-Math.abs(bounce)*r*.25f;
-            Trinket.draw(dressed,0,x+r*.08f*bounce,cy,r*.61f,time,true,1f);
-            for(int i=0;i<8;i++) {
-                float a=i*.785398f+time*.35f,rr=r*(.83f+.10f*(float)Math.sin(time*2+i));
-                float size=r*(.045f+.02f*(1+(float)Math.sin(time*4+i)));
-                p.fillPoly(star(x+(float)Math.cos(a)*rr,y+(float)Math.sin(a)*rr,
-                        size,size*.3f,4,a),Glyph.withAlpha(i%2==0?GOLD:0xFFBDABFF,170));
-            }
+            wardrobe(p,x,y,r,time);
         } else if(id==ACHIEVEMENTS) {
             float jump=0f;
             if(celebration>=0f && celebration<2.8f) {

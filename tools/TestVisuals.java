@@ -37,10 +37,26 @@ final class TestVisuals extends Check {
 
     private static void releaseBook(Layout L) {
         TestUpdatePrompt.run(L);TestReviewPrompt.run(L);
-        releaseHistory();releaseEntryBounds();releaseHomes(L);releaseMascots(L);
+        releaseHistory();releaseEntryBounds();releaseHomes(L);releaseMascots(L);releaseWardrobe(L);
         releaseOutside(L);
         releaseFeedback(L);
         try(ReleaseExamples examples=new ReleaseExamples()) { releaseNavigation(L);releaseDetailOutside(L);releaseBookExamples(L); }
+    }
+    private static void releaseWardrobe(Layout L) {
+        int item=ReleaseContent.ITEMS[0][0],saved=ReleaseContent.ICONS[item];
+        boolean reset=ReleaseContent.AUTO_RESET[item];
+        try {
+            ReleaseContent.ICONS[item]=ReleaseChange.WARDROBE;ReleaseContent.AUTO_RESET[item]=false;
+            GameCore c=new GameCore(new Mem(),214);ReleaseNotes n=c.releaseNotes;
+            n.show(c,L);n.update(ReleaseTransition.DURATION,L);n.select(0,0,L);n.update(ReleaseNotes.PAGE_TIME,L);
+            long revision=c.progress.revision;
+            n.touch(c,L,L.w*.5f,(n.demoTop(L)+n.demoBottom(L))*.5f);
+            check("wardrobe demo tap replays the flight",n.celebration==0);
+            n.update(2.2f,L);
+            check("wardrobe dance survives reset delay",n.celebration>2 && !n.listing && n.feature==0);
+            n.update(3f,L);
+            check("wardrobe demo does not equip real accessories",c.progress.revision==revision);
+        } finally {ReleaseContent.ICONS[item]=saved;ReleaseContent.AUTO_RESET[item]=reset;}
     }
     private static void releaseHomes(Layout L) {
         int item=ReleaseContent.ITEMS[0][0],saved=ReleaseContent.ICONS[item];

@@ -160,7 +160,11 @@ final class WardrobeToybox extends Draw {
     }
     /** Open toy containers keep the category recognizable through its peeking accessory. */
     private static void container(Painter p,GameCore c,int kind,int item,float r,int tint,float open,float age) {
-        float clock=c.clock;
+        container(p,kind,item,r,tint,open,c.clock);
+        if(open>0)contents(p,c,kind,item,r,Glyph.mix(Glyph.mix(tint,0xFF7C699E,.28f),0xFFFFF2D4,.44f),open,age);
+    }
+    /** Shared box shell for wardrobe and release demonstrations. */
+    static void container(Painter p,int kind,int item,float r,int tint,float open,float clock) {
         int base=Glyph.mix(tint,0xFF7C699E,.28f),light=Glyph.mix(base,0xFFFFF2D4,.44f);
         int shade=Glyph.mix(base,0xFF302A51,.45f),inside=Glyph.mix(base,0xFF211A38,.67f);
         float top=r*.06f,lift=r*(.30f+open*.38f);
@@ -217,7 +221,6 @@ final class WardrobeToybox extends Draw {
             badge.fillEllipse(-r*.05f,yy,r*.18f,r*.15f,shade);
             AccessoryArt.star(badge,-r*.05f,yy-r*.01f,r*.12f,0xFFFFE3A3);
         }
-        if(open>0)contents(p,c,kind,item,r,light,open,age);
     }
     private static void contents(Painter canvas,GameCore c,int kind,int item,float r,int trim,float open,float age) {
         Painter p=new OpacityPainter(canvas,open);

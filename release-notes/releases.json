@@ -1,6 +1,33 @@
 {
   "releases": [
     {
+      "version": "0.1.37",
+      "changes": [
+        {
+          "icon": "wardrobe",
+          "title": "Dress up your squishy",
+          "autoReset": false,
+          "where": "In your display case",
+          "why": "Tap a squishy in your display case to dress up! Earn accessories through achievements. Tap or drag to equip, or shake for a surprise outfit. Looks save automatically."
+        },
+        {
+          "icon": "misc",
+          "title": "Little improvements",
+          "autoReset": false,
+          "improvements": [
+            {
+              "where": "In boss arenas",
+              "why": "Slime banks and cave walls sway. Super Slime makes ripples and has clearer attack sounds."
+            },
+            {
+              "where": "After happy milestones",
+              "why": "An occasional invitation lets you share a store review."
+            }
+          ]
+        }
+      ]
+    },
+    {
       "version": "0.1.36",
       "changes": [
         {
