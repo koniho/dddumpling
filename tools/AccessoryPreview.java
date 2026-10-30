@@ -4,6 +4,15 @@ import java.io.File;
 /** Portrait review sheets use exactly the live wardrobe and character renderers. */
 final class AccessoryPreview {
     static void frames(File dir,Layout L,int w,int h,int ss) throws Exception {
+        GameCore cat=TestAccessories.ready();TestAccessories.grant(cat);cat.clock=1.2f;
+        cat.collected=Collect.add(cat.collected,Collect.RAINBOW_CAT_FRIEND);
+        cat.caseOpen=true;cat.caseFade=1;cat.caseIndex=Collect.RAINBOW_CAT_FRIEND;cat.openStory();cat.storyT=2;cat.storyPulse=2;
+        for(int hat:new int[]{18,19,0,2,20}) {
+            cat.wardrobe.equip(cat,hat,Collect.RAINBOW_CAT_FRIEND);
+            cat.wardrobe.screen.show(cat,Collect.RAINBOW_CAT_FRIEND);cat.wardrobe.screen.trayT=1;cat.wardrobe.screen.danceT=3;
+            RasterPainter fit=new RasterPainter(w,h,ss);Renderer.draw(fit,cat,L);
+            Png.write(new File(dir,"214-rainbow-hat-"+hat+".png"),fit.resolve(),w,h);
+        }
         GameCore flight=TestAccessories.ready();TestAccessories.grant(flight);flight.caseOpen=true;flight.caseFade=1;flight.caseIndex=0;flight.openStory();flight.storyT=2;flight.storyPulse=2;flight.clock=1.2f;
         WardrobeScreen flightUi=flight.wardrobe.screen;flightUi.trayT=1;flight.wardrobe.equip(flight,0,0);TestAccessories.tapCard(flight,L,1);
         for(int sample=0;sample<2;sample++) {

@@ -463,8 +463,9 @@ final class RainbowCatArt extends Draw {
         AccessoryGlitter glitter=known?AccessoryGlitter.begin(p,Collect.RAINBOW_CAT_FRIEND,x,y,r,t,fade):null;
         cat(new OpacityPainter(glitter==null?p:glitter,fade),x-facing*r*.12f,y,r*.67f,t,facing,null,null,false,known?1:0);
         if(known) {
+            // Seat the brim on the forehead, below the taller ear tips.
             AccessoryArt.outfit(p,Collect.RAINBOW_CAT_FRIEND,x+facing*r*.5232f,y+r*.077f,
-                    r*.58f,y-r*.44f,x,y+r*.65f,r*.84f,t,fade,false);
+                    r*.58f,y-r*.25f,x,y+r*.65f,r*.84f,t,fade,false);
             int boots=p.accessory(Collect.RAINBOW_CAT_FRIEND,Accessories.BOOTS);
             if(boots>=0) {
                 Painter feet=new OpacityPainter(p,fade);float bx=x-facing*r*.12f,br=r*.67f;
