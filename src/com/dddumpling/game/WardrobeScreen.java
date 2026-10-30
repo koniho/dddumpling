@@ -20,6 +20,9 @@ final class WardrobeScreen extends Draw {
         int index=0;for(int i=0;i<Accessories.COUNT;i++)if(Accessories.slot(i)==category && wardrobe!=null && wardrobe.owned[i]) {if(i==item)return index;index++;}
         return 0;
     }
+    final WardrobeFlight flight=new WardrobeFlight();
+    private boolean deferCelebration,pendingCelebration,pendingRemoving;
+    private int pendingSlot;
     final AccessoryPicking picking=new AccessoryPicking();
     float pulse=2;
     String error="";
@@ -42,15 +45,15 @@ final class WardrobeScreen extends Draw {
         c.wardrobe.refresh(c);wardrobe=c.wardrobe;who=target;slot=0;
         selected=c.wardrobe.equipped(who,slot);if(selected<0)selected=item(slot,0);
         lastSlot=-1;trayT=0;arrivalSounds=0;scroll=scrollTarget=0;shakeCooldown=.7f;swoosh=0;
-        revealSelected();scroll=scrollTarget;
+        revealSelected();scroll=scrollTarget;flight.clear();pendingCelebration=false;
         open=true;reward=false;narrationPaused=false;exiting=false;exitT=0;error="";pulse=0;danceT=3;scrambleT=2;feedback=0;cancelTouch();
     }
-    void close() {open=reward=narrationPaused=exiting=false;exitT=0;lastSlot=-1;trayT=1;swoosh=0;error="";danceT=3;scrambleT=2;feedback=0;cancelTouch();}
+    void close() {flight.clear();pendingCelebration=false;open=reward=narrationPaused=exiting=false;exitT=0;lastSlot=-1;trayT=1;swoosh=0;error="";danceT=3;scrambleT=2;feedback=0;cancelTouch();}
     void back(GameCore c) {
         if(reward){close();return;}
         if(exiting)return;
         if(!open || !c.storyOpen() || !c.caseOpen){c.closeStory();return;}
-        exiting=true;exitT=0;cancelTouch();feedback=0;scrambleT=2;swoosh=0;
+        exiting=true;exitT=0;flight.clear();pendingCelebration=false;cancelTouch();feedback=0;scrambleT=2;swoosh=0;
         pauseNarration(c);
     }
     float exitProgress(float delay,float duration) {
@@ -65,6 +68,7 @@ final class WardrobeScreen extends Draw {
             return false;
         }
         if(open) {
+            if(flight.update(dt))land(c);
             float before=scrambleT;scrambleT+=dt;
             if(!c.paused && !c.settingsOpen && !c.cloudUi.open && !c.updatePrompt.open && !c.releaseNotes.open) {
                 for(int beat=0;beat<4;beat++) {
@@ -120,6 +124,7 @@ final class WardrobeScreen extends Draw {
             }
             AccessoryArt.item(p,dragItem,dragX,dragY-(wornSlot<0?s:0),r*.64f,c.clock);
         }
+        flight.draw(p,L,c.clock);
         p.restore();
     }
     float trayBottom(GameCore c,Layout L) {return WardrobeToybox.bottom(L,!error.isEmpty());}
@@ -127,8 +132,9 @@ final class WardrobeScreen extends Draw {
     static float trayHeight(Layout L) {return Math.min(height(L)*.25f,L.unit*12f);}
     static float trayY(Layout L,float f) {return trayTop(L)+trayHeight(L)*(f-.09f);}
     Painter heroPainter(Painter p) {
-        if(!dragging || wornSlot<0)return p;
-        final int hidden=wornSlot,target=who;
+        int flying=flight.hidesIncoming()?flight.category:-1;
+        if((!dragging || wornSlot<0) && flying<0)return p;
+        final int hidden=dragging && wornSlot>=0?wornSlot:flying,target=who;
         return new OpacityPainter(p,1) {
             public int accessory(int character,int category) {
                 return character==target && category==hidden?-1:super.accessory(character,category);
@@ -229,6 +235,7 @@ final class WardrobeScreen extends Draw {
     }
     private void celebrate(GameCore c,boolean removing) {celebrate(c,removing,slot);}
     private void celebrate(GameCore c,boolean removing,int soundSlot) {
+        if(deferCelebration){pendingCelebration=true;pendingRemoving=removing;pendingSlot=soundSlot;return;}
         dance=(dance+1+celebrations.nextInt(3))%4;danceT=0;pulse=0;feedback=Math.max(feedback,1);
         c.ducks.react(who,.8f);if(who==Collect.ALLIGATOR_FRIEND)c.gator.react(.8f);
         if(c.sound!=null)c.sound.accessoryChange(soundSlot,removing);
@@ -255,7 +262,7 @@ final class WardrobeScreen extends Draw {
     }
     static boolean canShuffle(GameCore c) {for(boolean earned:c.wardrobe.owned)if(earned)return true;return false;}
     boolean acceptsShake(GameCore c) {
-        return open && !reward && !exiting && c.storyOpen() && c.story==who && c.state==GameCore.TITLE
+        return open && !reward && !exiting && !flight.active() && c.storyOpen() && c.story==who && c.state==GameCore.TITLE
                 && c.storyT>=Storybook.FLIGHT_TIME && !gesture && shakeCooldown<=0
                 && !c.paused && !c.settingsOpen && !c.cloudUi.open && !c.updatePrompt.open
                 && !c.releaseNotes.open && !c.preferences.externalBusy && canShuffle(c);
@@ -307,11 +314,35 @@ final class WardrobeScreen extends Draw {
         }
         if(action!=0 && c.sound!=null)c.sound.uiBloop();
     }
+    private void land(GameCore c) {
+        if(pendingCelebration){pendingCelebration=false;celebrate(c,pendingRemoving,pendingSlot);}
+    }
+    private void finishFlight(GameCore c) {flight.clear();land(c);}
+    private void flyChoice(GameCore c,Layout L,int action,boolean dragged,float x,float y) {
+        if(action<20 || action>=20+count(slot)){choose(c,action);return;}
+        finishFlight(c);
+        int category=slot,oldItem=c.wardrobe.equipped(who,category),newItem=item(category,action-20);
+        picking.capture(c,L);
+        float[] old=WardrobeFlight.bounds(picking.targets[category],Storybook.heroX(c,L),Storybook.heroY(c,L),Storybook.heroRadius(L)*.6f);
+        float size=dragged?Storybook.heroRadius(L)*.64f:WardrobeToybox.itemR(L,count(slot));
+        float[] from={x,y,size,size};
+        deferCelebration=true;
+        try {if(dragged)equip(c,newItem);else choose(c,action);}finally{deferCelebration=false;}
+        int equipped=c.wardrobe.equipped(who,category);
+        if(equipped==oldItem){pendingCelebration=false;return;}
+        danceT=3;
+        picking.capture(c,L);
+        float[] to=WardrobeFlight.bounds(picking.targets[category],Storybook.heroX(c,L),Storybook.heroY(c,L),Storybook.heroRadius(L)*.6f);
+        float boxSize=WardrobeToybox.categoryR(L)*.68f;
+        float[] box={WardrobeToybox.categoryX(L,category),WardrobeToybox.categoryY(L),boxSize,boxSize};
+        flight.start(category,equipped,oldItem,from,to,old,box,dragged);
+    }
     void cancelTouch() {gesture=dragging=scrolling=ribbonGesture=false;pointer=-1;pressed=0;dragItem=-1;wornSlot=-1;scrollHaptics=false;}
     boolean touch(GameCore c,Layout L,int action,int id,float x,float yy) {
         if(exiting)return true;
         if(!open && !gesture)return false;
         if(action==0) {
+            if(flight.active())finishFlight(c);
             if(gesture)return true;
             if(!reward && (yy<trayTop(L) || yy>trayBottom(c,L) || x<L.w*.06f || x>L.w*.94f)) {
                 if(!c.storyOpen() || c.storyT<Storybook.FLIGHT_TIME)return false;
@@ -366,7 +397,10 @@ final class WardrobeScreen extends Draw {
             if(open) {
                 if(drop) {
                     float dx=x-Storybook.heroX(c,L),dy=yy-Storybook.heroY(c,L),r=Storybook.heroRadius(L)*1.8f;
-                    if(dx*dx+dy*dy<=r*r)equip(c,item);
+                    if(dx*dx+dy*dy<=r*r)flyChoice(c,L,20+index(slot,item),true,x,yy-unit(L));
+                } else if(choice>=20 && choice<20+count(slot)) {
+                    int card=choice-20;
+                    flyChoice(c,L,choice,false,WardrobeToybox.itemX(this,L,count(slot),card),WardrobeToybox.itemY(this,L,count(slot),card));
                 } else choose(c,choice);
             }
         } else if(action==3){scrollTarget=scrollDestination(scroll,0,count(slot));cancelTouch();}

@@ -4,6 +4,19 @@ import java.io.File;
 /** Portrait review sheets use exactly the live wardrobe and character renderers. */
 final class AccessoryPreview {
     static void frames(File dir,Layout L,int w,int h,int ss) throws Exception {
+        GameCore flight=TestAccessories.ready();TestAccessories.grant(flight);flight.caseOpen=true;flight.caseFade=1;flight.caseIndex=0;flight.openStory();flight.storyT=2;flight.storyPulse=2;flight.clock=1.2f;
+        WardrobeScreen flightUi=flight.wardrobe.screen;flightUi.trayT=1;flight.wardrobe.equip(flight,0,0);TestAccessories.tapCard(flight,L,1);
+        for(int sample=0;sample<2;sample++) {
+            flightUi.update(flight,sample==0?.16f:.18f);
+            RasterPainter moving=new RasterPainter(w,h,ss);Renderer.draw(moving,flight,L);
+            Png.write(new File(dir,"214-accessory-flight-"+sample+".png"),moving.resolve(),w,h);
+        }
+        flightUi.update(flight,.6f);flightUi.danceT=3;flightUi.choose(flight,10+Accessories.BOOTS);flightUi.trayT=1;flight.wardrobe.equip(flight,Accessories.item(Accessories.BOOTS,0),0);
+        float dragX=WardrobeToybox.itemX(flightUi,L,flightUi.count(flightUi.slot),1),dragY=WardrobeToybox.itemY(flightUi,L,flightUi.count(flightUi.slot),1);
+        flightUi.touch(flight,L,0,7,dragX,dragY);flightUi.touch(flight,L,2,7,Storybook.heroX(flight,L),Storybook.heroY(flight,L));flightUi.touch(flight,L,1,7,Storybook.heroX(flight,L),Storybook.heroY(flight,L));
+        flightUi.update(flight,.11f);
+        RasterPainter settling=new RasterPainter(w,h,ss);Renderer.draw(settling,flight,L);
+        Png.write(new File(dir,"214-accessory-flight-drag.png"),settling.resolve(),w,h);
         GameCore partial=TestAccessories.ready();
         partial.progress.accessories(new String[]{Accessories.key("owned",0),Accessories.key("owned",2),Accessories.key("owned",18),Accessories.key("owned",12)},new long[]{1,1,1,1},false);
         partial.wardrobe.refresh(partial);partial.caseOpen=true;partial.caseFade=1;partial.caseIndex=0;partial.openStory();partial.storyT=2;partial.clock=1.2f;

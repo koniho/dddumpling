@@ -12,10 +12,36 @@ final class TestAccessories extends Check {
         check("wardrobe grant persisted",c.progress.accessories(keys,values,false));c.wardrobe.refresh(c);
     }
     static void all(Layout L) {
-        catalog();earnedPicker(L);exit(L);shake();feedback(L);startup();rewards();sharedOutfits();migration();merge();ui(L);developerCategories(L);flair(L);sounds();picking(L);dragOff(L);detail();glitter(L);googly();narration(L);toybox(L);
+        catalog();flights(L);earnedPicker(L);exit(L);shake();feedback(L);startup();rewards();sharedOutfits();migration();merge();ui(L);developerCategories(L);flair(L);sounds();picking(L);dragOff(L);detail();glitter(L);googly();narration(L);toybox(L);
     }
     private static void openForShake(GameCore c) {
         c.caseOpen=true;c.caseIndex=0;c.openStory();c.storyT=2;c.wardrobe.screen.update(c,1);
+    }
+    static void tapCard(GameCore c,Layout L,int card) {
+        WardrobeScreen ui=c.wardrobe.screen;
+        float x=WardrobeToybox.itemX(ui,L,ui.count(ui.slot),card),y=WardrobeToybox.itemY(ui,L,ui.count(ui.slot),card);
+        ui.touch(c,L,0,7,x,y);ui.touch(c,L,1,7,x,y);
+    }
+    private static void flights(Layout L) {
+        GameCore c=ready();grant(c);openForShake(c);WardrobeScreen ui=c.wardrobe.screen;Ear ear=new Ear();c.sound=ear;ui.trayT=1;
+        tapCard(c,L,0);
+        check("tap saves immediately but flies new accessory before dancing",c.wardrobe.equipped(0,0)==0 && ui.flight.incoming==0 && ui.flight.outgoing==-1 && ui.flight.hidesIncoming() && ui.danceT==3 && ear.accessoryChanges==0);
+        ui.update(c,.5f);check("accessory landing reveals outfit and celebrates once",!ui.flight.active() && ui.danceT<1 && ear.accessoryChanges==1);
+        tapCard(c,L,1);byte[] saved=c.progress.snapshot();
+        check("replacement sends old accessory to box",ui.flight.incoming==1 && ui.flight.outgoing==0 && c.wardrobe.equipped(0,0)==1);
+        ui.update(c,.5f);ui.update(c,.2f);
+        check("flight completion cannot rewrite outfit or repeat cue",java.util.Arrays.equals(saved,c.progress.snapshot()) && ear.accessoryChanges==2);
+        ui.danceT=3;ui.trayT=1;
+        float x=WardrobeToybox.itemX(ui,L,ui.count(ui.slot),2),y=WardrobeToybox.itemY(ui,L,ui.count(ui.slot),2),hx=Storybook.heroX(c,L),hy=Storybook.heroY(c,L);
+        ui.touch(c,L,0,7,x,y);ui.touch(c,L,2,7,hx,hy);ui.touch(c,L,1,7,hx,hy);
+        check("drag replacement saves and returns old accessory",c.wardrobe.equipped(0,0)==2 && ui.flight.incoming==2 && ui.flight.outgoing==1 && ui.flight.inTime<.25f);
+        ui.update(c,.20f);check("drag lands while outgoing accessory continues home",!ui.flight.hidesIncoming() && ui.flight.active() && ear.accessoryChanges==3);
+        ui.update(c,.3f);check("return flight finishes independently",!ui.flight.active() && ear.accessoryChanges==3);
+        ui.trayT=1;tapCard(c,L,2);check("tapping worn item animates removal to box",c.wardrobe.equipped(0,0)<0 && ui.flight.incoming==-1 && ui.flight.outgoing==2);
+        ui.update(c,.5f);tapCard(c,L,0);tapCard(c,L,1);ui.update(c,.6f);
+        check("rapid taps leave only latest outfit equipped",c.wardrobe.equipped(0,0)==1 && !ui.flight.active());
+        tapCard(c,L,0);ui.back(c);check("exit clears flights without losing saved outfit",!ui.flight.active() && c.wardrobe.equipped(0,0)==0);
+        c.closeStory();c.openStory();ui.trayT=1;tapCard(c,L,1);c.startGame();check("game start clears flight state",!ui.flight.active() && !ui.open);
     }
     private static void earnedPicker(Layout L) {
         GameCore c=ready();openForShake(c);WardrobeScreen ui=c.wardrobe.screen;

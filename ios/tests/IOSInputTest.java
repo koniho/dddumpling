@@ -1427,6 +1427,9 @@ public final class IOSInputTest extends Check {
         float cardY=WardrobeToybox.itemY(ui,l,Accessories.count(ui.slot),0);
         tap(game,WardrobeToybox.itemX(ui,l,Accessories.count(ui.slot),0),cardY);
         check("native accessory tap saves immediately",c.wardrobe.equipped(0,Accessories.HAT)==0 && c.storyOpen());
+        check("native tap starts accessory arrival",ui.flight.hidesIncoming());
+        for(int frame=0;frame<35;frame++)game.update(DT);
+        check("native accessory arrival reveals saved outfit",!ui.flight.active() && c.wardrobe.equipped(0,Accessories.HAT)==0);
         c.wardrobe.screen.danceT=3;c.storyPulse=2;
         c.wardrobe.screen.choose(c,10+Accessories.GLASSES);
         c.wardrobe.screen.picking.capture(c,l);

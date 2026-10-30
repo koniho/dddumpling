@@ -239,3 +239,9 @@ The ribbon, drag targets and animated box windows use earned-only category index
 that map back to stable accessory IDs. Each container shows earned/total; empty
 containers remain selectable without exposing locked item artwork. Retapping the
 open category acknowledges with haptics while preserving its scroll and animation.
+
+Tap changes save immediately, then animate the incoming accessory from its card
+to the live attachment bounds while the replaced accessory flies back to its box.
+Drag-to-equip settles from the release point and also returns the previous item.
+Arrival triggers the existing dress-up sound, flash and dance; exit and forced
+state changes clear flights without changing the saved outfit.
