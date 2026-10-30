@@ -88,6 +88,8 @@ static void DDDrawCachedImage(CGContextRef ctx,CGRect rect,CGImageRef color,CGIm
 
 // The frame wrapper supplies the selected skin; the native canvas starts with Default.
 - (jint)skin { return 0; }
+// Native protocol implementations do not inherit Java interface default methods.
+- (jint)accessoryWithInt:(jint)who withInt:(jint)slot { return -1; }
 - (jfloat)accessorySizeWithFloat:(jfloat)radius { return radius / 640.f; }
 - (jboolean)accessoryTargets { return NO; }
 - (void)accessoryTargetWithInt:(jint)slot withFloatArray:(IOSFloatArray *)corners {}

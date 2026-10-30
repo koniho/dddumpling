@@ -15,6 +15,12 @@
 @end
 
 @implementation DDPainterTests
+- (void)testBareCanvasHasNoEquippedAccessories {
+  DDIOSPainter *painter=[DDIOSPainter new];
+  for (jint slot=0;slot<5;slot++)
+    XCTAssertEqual([painter accessoryWithInt:0 withInt:slot], -1);
+}
+
 - (void)testCanvasStartsWithDefaultSkin {
   XCTAssertEqual([[DDIOSPainter new] skin], 0);
   XCTAssertFalse([[DDIOSPainter new] accessoryTargets]);
