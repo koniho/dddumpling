@@ -11,8 +11,9 @@ final class ReleaseHomes extends Draw {
     private static final class Icons {
         static final ReleaseHomes LAND=new ReleaseHomes(false),ARENA=new ReleaseHomes(true);
     }
-    static void icon(Painter p,boolean arena,float x,float y,float r,float time) {
-        (arena?Icons.ARENA:Icons.LAND).draw(p,x-r*1.12f,y-r,r*2.24f,r*2,time,false);
+    // A settled snapshot in the list; opened cards keep their animated tours.
+    static void icon(Painter p,boolean arena,float x,float y,float r) {
+        (arena?Icons.ARENA:Icons.LAND).draw(p,x-r*1.12f,y-r,r*2.24f,r*2,1.8f,false);
     }
     private static final class Room {
         final GameCore c;
