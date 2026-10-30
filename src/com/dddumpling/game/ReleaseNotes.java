@@ -339,7 +339,7 @@ final class ReleaseNotes extends Draw {
         }
         if(demo==null) {
             if(!ReleaseMascots.active(change()))age=0f;
-            if(change()==ReleaseChange.ACHIEVEMENTS) { celebration=0f;feedback(); }
+            if(change()==ReleaseChange.ACHIEVEMENTS || change()==ReleaseChange.WARDROBE) { celebration=0f;feedback(); }
             else if(ReleaseMascots.active(change())) { celebrateMascot();feedback(); }
             activated();return true;
         }

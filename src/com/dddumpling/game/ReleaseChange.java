@@ -5,7 +5,7 @@ final class ReleaseChange extends Draw {
     static final int TRAVEL=0, STARS=1, BUGS=2, SHUFFLE=3, DISGUISE=4, SLIME=5,
             PAIR=6, FLEX=7, TEAM=8, NEWS=9, FLURRY=10, MISC=11, SETTINGS=12, SWIPE=13, SCORES=14, OCTOPULSE=15,
             COMPANION=16, TUTORIAL=17, TOWN=18, SURVIVAL=19, TIME_ATTACK=20, SWAMP=21, RUSH=22, FOG=23, HALLOWEEN=24, RAINBOW=25, BOSS_RETRY=26,
-            ACHIEVEMENTS=27, PROFESSOR=28, LAND_HOMES=29, ARENA_HOMES=30;
+            ACHIEVEMENTS=27, PROFESSOR=28, LAND_HOMES=29, ARENA_HOMES=30, WARDROBE=31;
     private static final class FogIcon {
         static final GameCore.Enemy WORD=new GameCore.Enemy();
         static {WORD.word=new int[]{0,1,2};WORD.enterT=1f;WORD.swampKind=SwampEnemies.FOG;}
@@ -40,7 +40,27 @@ final class ReleaseChange extends Draw {
         if(homes(id)) {
             ReleaseHomes.icon(p,id==ARENA_HOMES,x,y,r,time);return;
         }
-        if(id==ACHIEVEMENTS) {
+        if(id==WARDROBE) {
+            float bounce=celebration<0?0:Math.max(0,1-celebration/1.4f)*(float)Math.sin(celebration*15);
+            final int outfit=(int)(time/4)%3;
+            Painter dressed=new OpacityPainter(p,1f) {
+                public int accessory(int who,int slot) {
+                    if(slot==Accessories.HAT)return Accessories.item(slot,outfit);
+                    if(slot==Accessories.GLASSES)return Accessories.item(slot,outfit);
+                    if(slot==Accessories.BOOTS)return Accessories.item(slot,outfit);
+                    if(slot==Accessories.FLAIR)return Accessories.item(slot,0);
+                    return -1;
+                }
+            };
+            float cy=y+r*.25f-Math.abs(bounce)*r*.25f;
+            Trinket.draw(dressed,0,x+r*.08f*bounce,cy,r*.61f,time,true,1f);
+            for(int i=0;i<8;i++) {
+                float a=i*.785398f+time*.35f,rr=r*(.83f+.10f*(float)Math.sin(time*2+i));
+                float size=r*(.045f+.02f*(1+(float)Math.sin(time*4+i)));
+                p.fillPoly(star(x+(float)Math.cos(a)*rr,y+(float)Math.sin(a)*rr,
+                        size,size*.3f,4,a),Glyph.withAlpha(i%2==0?GOLD:0xFFBDABFF,170));
+            }
+        } else if(id==ACHIEVEMENTS) {
             float jump=0f;
             if(celebration>=0f && celebration<2.8f) {
                 float t=celebration;

@@ -13,7 +13,7 @@ from urllib.parse import quote
 ROOT = Path(__file__).resolve().parent.parent
 SOURCE = Path('release-notes/releases.json')
 OUTPUT = Path('src/com/dddumpling/game/ReleaseContent.java')
-ICONS = ('travel', 'stars', 'bugs', 'shuffle', 'disguise', 'slime', 'pair', 'flex', 'team', 'news', 'flurry', 'misc', 'settings', 'swipe', 'scores', 'octopulse', 'companion', 'tutorial', 'town', 'survival', 'time_attack', 'swamp', 'rush', 'fog', 'halloween', 'rainbow', 'boss_retry', 'achievements', 'professor', 'land_homes', 'arena_homes')
+ICONS = ('travel', 'stars', 'bugs', 'shuffle', 'disguise', 'slime', 'pair', 'flex', 'team', 'news', 'flurry', 'misc', 'settings', 'swipe', 'scores', 'octopulse', 'companion', 'tutorial', 'town', 'survival', 'time_attack', 'swamp', 'rush', 'fog', 'halloween', 'rainbow', 'boss_retry', 'achievements', 'professor', 'land_homes', 'arena_homes', 'wardrobe')
 ART = {'travel': 8, 'shuffle': 9, 'pair': 9, 'land_homes': 8, 'arena_homes': 8}
 
 
