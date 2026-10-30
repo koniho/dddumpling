@@ -444,8 +444,12 @@ final class ReleaseNotes extends Draw {
         }
 
         if(ReleaseChange.ITEMS[page].length>1) {
-            float y=navigationY(L);
-            p.text((feature+1)+" / "+ReleaseChange.ITEMS[page].length,cx,y+s*.2f,type(s*.48f),INK_DIM,Painter.CENTER,false);
+            int count=ReleaseChange.ITEMS[page].length;
+            float y=navigationY(L),gap=Math.min(s*.65f,L.w*.55f/count);
+            for(int i=0;i<count;i++) {
+                float x=cx+(i-(count-1)*.5f)*gap;
+                p.fillCircle(x,y,Math.min(s*(i==feature?.16f:.11f),gap*.3f),i==feature?GOLD:INK_DIM);
+            }
         }
     }
     private void drawList(Painter p,GameCore c,Layout L) {

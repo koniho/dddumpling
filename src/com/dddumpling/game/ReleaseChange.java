@@ -101,7 +101,7 @@ final class ReleaseChange extends Draw {
     }
     static void icon(Painter p,int id,float x,float y,float r,float time,float celebration) {
         if(homes(id)) {
-            ReleaseHomes.icon(p,id==ARENA_HOMES,x,y,r,time);return;
+            ReleaseHomes.icon(p,id==ARENA_HOMES,x,y,r);return;
         }
         if(id==SWAMP_SCENERY) {
             ReleaseHomes.swampIcon(p,x,y,r,time,celebration);
