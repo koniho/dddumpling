@@ -692,6 +692,25 @@ Run), **Powers** (frenzies and debuffs), **Minigames** (Star Path, Steamer, Cart
 (lands, release book, collection). Stage changes, End Run and playtests are disabled outside active
 play, including interludes; settings never starts a run implicitly.
 
+**Adaptive Adventure difficulty** applies three saved assistance tiers beneath the existing stage
+ramp. Extra help caps enemies at three total presses and two distinct symbols, with 75% enemy
+movement speed. Light help caps at five presses and three symbols, with 90% movement speed.
+Normal uses the current ramp unchanged. Land-specific caps still apply. Spawn intervals,
+concurrent-enemy caps, stage quotas, power-up refill rules and enemy introductions are unchanged.
+
+New four-key players start with extra help; existing six-key saves retain Normal. Three strong
+ordinary stages remove one tier of assistance. A strong stage has at least eight correct inputs,
+at least 90% accuracy, no damage and no rescue swipe. Damage, rescue use, or accuracy below 75%
+with at least eight attempts adds one tier of help at stage clear. Other weak stages break the
+streak. Bosses and minigames do not earn promotion; boss damage breaks the streak. The streak
+starts fresh each run. Changes take effect between stages, never midway through an enemy.
+Six keys join only upon reaching Normal through sustained strong play and after earning Super
+Slime's collectible. An early defeat in either of the first two stages played with six keys
+returns the next run to four keys with extra help, relative to the selected starting land or
+where six keys joined. Other defeats add one tier of help for the next run. Existing join and
+farewell animations announce roster changes. Kids Mode, Survival and Boss Time Attack retain
+their own difficulty rules and never change saved Adventure assistance.
+
 **Kids Mode** keeps lives and game over, slows enemy traversal to 45% speed while projectiles retain normal speed, keeps four keys and early-stage movement/spawn pacing.
 Words grow with the stage, including multipress keys, with a six-press total cap.
 Linked pairs use the same 200 ms window as normal mode. Boss actions, animations,

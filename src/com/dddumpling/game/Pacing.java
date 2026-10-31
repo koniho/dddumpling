@@ -11,6 +11,14 @@ final class Pacing {
 
     private Pacing() {}
 
+    static final int EXTRA_HELP=0, LIGHT_HELP=1, NORMAL=2;
+    static int assistedPresses(int cap,int tier) {
+        return Math.min(cap,tier==EXTRA_HELP?3:tier==LIGHT_HELP?5:cap);
+    }
+    static int distinctKeys(int tier) {return tier==EXTRA_HELP?2:tier==LIGHT_HELP?3:Glyph.COUNT;}
+    static float assistedSpeed(int tier) {return tier==EXTRA_HELP?.75f:tier==LIGHT_HELP?.9f:1f;}
+
+
     /**
      * How far one stage advances the ramp. 5/9 because at a full step per stage every dial arrived at
      * once and the game hit a wall at stage 6; what landed at 6 now lands at 10. Stage 1 is

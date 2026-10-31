@@ -181,6 +181,7 @@ final class TestHighScores extends Check {
         c.time=(float)Math.PI/3.5f;
         check("title text pulses in scale and color",HighScoreScreen.titleTextScale(c)>low && HighScoreScreen.titleTextColor(c)!=lowColor);
         check("completed run calls attention on returning to title",c.highScores.unread && c.state==GameCore.TITLE);
+        advance(c,L,GameCore.ROSTER_SCENE_TIME+.1f);
         c.highScoreScreen.show(c);c.highScoreScreen.update(HighScoreScreen.ENTRY_TIME);
         check("viewing scores acknowledges attention",c.highScoreScreen.open && !c.highScores.unread);
         c.highScoreScreen.back(c);c.startGame();c.score=1;c.highScores.finish(c);c.toTitle();

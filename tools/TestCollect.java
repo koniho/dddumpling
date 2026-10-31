@@ -715,7 +715,8 @@ final class TestCollect extends Check {
         c.tapKey(0, L);
         advance(c, L, GameCore.RETURN_FADE + DT);
         check("an outer key returns to the title", c.state == GameCore.TITLE);
-        check("and a run starts again from there", startFromTitle(c, L, 3));
+        advance(c,L,GameCore.ROSTER_SCENE_TIME+.1f);
+        check("and a run starts again with a remaining key", startFromTitle(c, L, 0));
 
         // And an inner one does the same: no key drops straight back into a run any more.
         boolean allToTitle = true, noneToPlay = true;
@@ -801,6 +802,7 @@ final class TestCollect extends Check {
 
         // The summary fades away before the title appears; repeated taps cannot skip it.
         GameCore f = new GameCore(store, 147L);
+        f.onboarding.learn(f,TutorialSpeech.MODES); // This fixture tests returning, not the first-run tour.
         f.startGame();
         f.lives = 1;
         f.enemies.clear();
@@ -816,8 +818,9 @@ final class TestCollect extends Check {
         advance(f, L, GameCore.RETURN_FADE);
         check("return fade finishes cleanly", f.returnFade == 0f && f.startFade == 0f);
         check("and the case is shut on arrival", !f.caseOpen && f.caseFade == 0f);
-        f.tapKey(3, L);
-        check("the press after that fades into a run", f.starting());
+        advance(f,L,GameCore.ROSTER_SCENE_TIME+.1f);
+        f.tapKey(0, L);
+        check("the remaining key starts after the farewell", f.starting());
     }
 
     /** The send-off: the case's squishy settling into its run home as play starts. */

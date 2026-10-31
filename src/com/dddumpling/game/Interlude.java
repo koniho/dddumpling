@@ -211,6 +211,7 @@ final class Interlude {
      * finished, so the interlude opens after that celebration rather than on top of it.
      */
     static void beginStageEnd(GameCore c) {
+        c.assessRosterStage();
         c.highScores.stages++;
         c.progress.completeStage(c.score,c.perfectRound());
         c.companion.react(RunCompanion.STAGE_CLEAR, 1f);

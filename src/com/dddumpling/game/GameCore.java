@@ -738,11 +738,13 @@ final class GameCore {
     final CaveCart cart = new CaveCart();
     /** Unlocked for this run after defeating the stage-5 slime. */
     boolean cubeUnlocked;
-    /** Cat and Grapes stay until three consecutive runs end before stage 6. */
+    /** Saved six-key choice; an early defeat returns the next run to four. */
     boolean fullRoster;
     /** Snapshot used by the current run; settings only changes the next one. */
     boolean runFullRoster;
-    int earlyLosses;
+    int rosterStrongStages, rosterStageHits, rosterStartStage;
+    int difficultyTier=Pacing.EXTRA_HELP, runDifficultyTier=Pacing.NORMAL;
+    static final int ROSTER_STRONG_STAGES=3, ROSTER_EARLY_STAGES=2;
     boolean rosterLeavePending;
     static final int ROSTER_JOIN = 1, ROSTER_LEAVE = -1;
     static final float ROSTER_SCENE_TIME = 2.8f;
@@ -1704,7 +1706,9 @@ final class GameCore {
             stars.wins = Math.max(0, Math.min(StarPath.MAX_DIFFICULTY, store.loadStarWins()));
             int roster = store.loadRosterState();
             fullRoster = (roster & 1) != 0;
-            earlyLosses = Math.min(2, (roster >> 1) & 3);
+            // Older saves retain their established roster without interpreting old loss bits as help.
+            difficultyTier=(roster&64)!=0?Math.min(Pacing.NORMAL,(roster>>4)&3)
+                    :fullRoster?Pacing.NORMAL:Pacing.EXTRA_HELP;
             rosterLeavePending = (roster & 8) != 0;
             if (rosterLeavePending) beginRosterLeave();
         }
@@ -1742,13 +1746,38 @@ final class GameCore {
     }
     private void saveRoster() {
         if (store != null) store.saveRosterState((fullRoster ? 1 : 0)
-                | (Math.min(2, earlyLosses) << 1) | (rosterLeavePending ? 8 : 0));
+                | (rosterLeavePending ? 8 : 0) | 64 | (difficultyTier<<4));
     }
     void unlockRoster() {
         if (fullRoster || kidsRun) return;
-        fullRoster = runFullRoster = true; earlyLosses = 0; rosterLeavePending = false;
+        fullRoster = runFullRoster = true; rosterStrongStages = 0; rosterLeavePending = false;
+        rosterStartStage=stage+1;difficultyTier=runDifficultyTier=Pacing.NORMAL;
         rosterScene = ROSTER_JOIN; rosterSceneT = ROSTER_SCENE_TIME;
         if (sound != null) sound.rosterJoin();
+        saveRoster();
+    }
+    /** Called before stage counters reset; promotion only happens on an empty playfield. */
+    void assessRosterStage() {
+        if(kidsRun || survival.active || timeAttack.active)return;
+        boolean pressure=hurtThisStage>0 || pushUsed;
+        boolean ordinary=Boss.kindFor(stage)<0 && !Cave.active(this);
+        boolean earnedStep=false;
+        if(ordinary) {
+            int correct=Math.max(0,hits-rosterStageHits),presses=correct+missesThisStage;
+            boolean strong=correct>=8 && 10L*correct>=9L*presses && !pressure;
+            boolean struggling=pressure || presses>=8 && 4L*correct<3L*presses;
+            if(struggling)runDifficultyTier=Math.max(Pacing.EXTRA_HELP,runDifficultyTier-1);
+            rosterStrongStages=strong?Math.min(ROSTER_STRONG_STAGES,rosterStrongStages+1):0;
+            if(rosterStrongStages>=ROSTER_STRONG_STAGES) {
+                runDifficultyTier=Math.min(Pacing.NORMAL,runDifficultyTier+1);
+                earnedStep=true;
+                if(runDifficultyTier<Pacing.NORMAL)rosterStrongStages=0;
+            }
+        } else if(pressure)rosterStrongStages=0;
+        difficultyTier=runDifficultyTier;
+        if(!runFullRoster && runDifficultyTier==Pacing.NORMAL
+                && (earnedStep || rosterStrongStages>=ROSTER_STRONG_STAGES)
+                && ModeSelector.bossUnlocked(this,Boss.SLIME))unlockRoster();
         saveRoster();
     }
     private void beginRosterLeave() {
@@ -1818,7 +1847,8 @@ final class GameCore {
     void setNextRoster(boolean six) {
         if (!BuildFlags.DEVELOPER) return;
         fullRoster = six;
-        earlyLosses = 0;
+        difficultyTier=six?Pacing.NORMAL:Pacing.EXTRA_HELP;
+        rosterStrongStages = 0;
         rosterLeavePending = false;
         saveRoster();
     }
@@ -1864,8 +1894,10 @@ final class GameCore {
     static final float RAMP = Pacing.RAMP;
     static final int MAX_PRESSES = Pacing.MAX_PRESSES;
 
-    /** Kids slow traversal only; allowed call sites are listed in docs/game-timing.md. */
-    float traversalRate() { return kidsRun ? .45f : 1f; }
+    /** Only ordinary enemy traversal uses this; projectiles retain their authored speed. */
+    float traversalRate() { return (kidsRun ? .45f : 1f)*Pacing.assistedSpeed(assistanceTier()); }
+    int assistanceTier() {return kidsRun || survival.active || timeAttack.active ? Pacing.NORMAL : runDifficultyTier;}
+    int distinctEnemyKeys() {return Pacing.distinctKeys(assistanceTier());}
 
     int pacingStage() { return kidsRun ? 1 : stage; }
 
@@ -1877,11 +1909,14 @@ final class GameCore {
 
     int maxEnemies() { return survival.active?survival.crowd(this):Pacing.maxEnemies(pacingStage()); }
 
-    int maxPresses() { return RainbowLand.active(this) ? 5 : kidsRun ? 6 : Pacing.MAX_PRESSES; }
+    int maxPresses() {
+        int cap=RainbowLand.active(this)?5:kidsRun?6:Pacing.MAX_PRESSES;
+        return Pacing.assistedPresses(cap,assistanceTier());
+    }
 
     int maxWordLen() { return Math.min(maxPresses(), Pacing.maxWordLen(stage)); }
 
-    int minWordLen() { return Pacing.minWordLen(stage); }
+    int minWordLen() { return Math.min(maxWordLen(),Pacing.minWordLen(stage)); }
 
     int stageQuota() { return Pacing.stageQuota(pacingStage()); }
 
@@ -2047,11 +2082,13 @@ final class GameCore {
         steamer.kids = kidsRun;
         stars.difficultyCap = kidsRun ? StarPath.KIDS_DIFFICULTY : StarPath.MAX_DIFFICULTY;
         runFullRoster = !kidsRun && fullRoster;
+        runDifficultyTier=difficultyTier;
         if(modes.selected==ModeSelector.SURVIVAL)survival.begin(this);
         time = 0;
         score = 0;
         squishes = 0;
         stage = Lands.firstStage(runStartLand);
+        rosterStartStage=stage;rosterStrongStages=rosterStageHits=0;
         spawnedThisStage = 0;
         fastEnemyNext = false;
         resolvedThisStage = 0;
@@ -3648,9 +3685,7 @@ final class GameCore {
         stage = Math.max(1, n);
         progress.enterStage(stage);
         stageDamageHold=0f;
-        if (fullRoster && stage >= 6 && earlyLosses != 0) {
-            earlyLosses = 0; saveRoster();
-        }
+        rosterStageHits=hits;
         // One per stage, and this is where a stage begins.
         pushUsed = false;
         if(onboarding.rescueGuide)onboarding.clear();
@@ -3720,6 +3755,7 @@ final class GameCore {
         // damage across would misreport a stage nobody played.
         missesThisStage = 0;
         hurtThisStage = 0;
+        rosterStrongStages=0;
         enterStage(n);
         if (sound != null) sound.frenzy(false);
     }
@@ -3743,6 +3779,7 @@ final class GameCore {
         companion.react(RunCompanion.DAMAGE,1f);
         if(!(BuildFlags.DEVELOPER && devInfiniteLives))lives--;
         hurtThisStage++;
+        rosterStrongStages=0;
         combo = 0;
         shake = boss.kind==Boss.ALLIGATOR && boss.fighting()?1.2f:1f;
         if (sound != null) sound.damage();
@@ -3822,12 +3859,13 @@ final class GameCore {
         finishTownRun();
         highScores.finish(this);
         progress.finishRun(score, false);
-        if (!survival.active && !timeAttack.active && runFullRoster && fullRoster) {
-            if (stage >= 6) earlyLosses = 0;
-            else if (++earlyLosses >= 3) {
-                fullRoster = false; earlyLosses = 0; rosterLeavePending = true;
+        if (!kidsRun && !survival.active && !timeAttack.active) {
+            boolean early=stage>=rosterStartStage && stage-rosterStartStage<ROSTER_EARLY_STAGES;
+            difficultyTier=early?Pacing.EXTRA_HELP:Math.max(Pacing.EXTRA_HELP,runDifficultyTier-1);
+            if (early && runFullRoster && fullRoster) {
+                fullRoster = false; rosterLeavePending = true;
             }
-            saveRoster();
+            rosterStrongStages=0;saveRoster();
         }
         LandPicker.recordBest(this);
     }
@@ -3835,7 +3873,7 @@ final class GameCore {
     private boolean spawn(Layout L) {
         Enemy e = new Enemy();
         int len = minWordLen() + rnd.nextInt(maxWordLen() - minWordLen() + 1);
-        Words.fill(e, len, stackChance(), rnd, playRosterFull(), maxPresses());
+        Words.fill(e, len, stackChance(), rnd, playRosterFull(), maxPresses(),distinctEnemyKeys());
 
         float half = L.wordWidth(len) / 2f;
         e.sway = Math.min(0.035f * L.w, Math.max(0f, (L.playRight - L.playLeft) / 2f - half - 4f));

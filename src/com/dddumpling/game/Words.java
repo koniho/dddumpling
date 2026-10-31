@@ -27,6 +27,10 @@ final class Words {
     }
 
     static void fill(GameCore.Enemy e, int len, float stackChance, Random rnd, boolean fullRoster, int maxPresses) {
+        fill(e,len,stackChance,rnd,fullRoster,maxPresses,Glyph.COUNT);
+    }
+
+    static void fill(GameCore.Enemy e, int len, float stackChance, Random rnd, boolean fullRoster, int maxPresses,int distinct) {
         e.word = new int[len];
         e.need = new int[len];
         e.gone = new boolean[len];
@@ -43,6 +47,8 @@ final class Words {
             budget -= extra;
         }
 
+        int[] palette=distinct<Roster.count(fullRoster)?new int[Math.max(2,distinct)]:null;
+        int used=0;
         for (int i = 0; i < len; i++) {
             // A stack beside its own letter is unreadable: it is the same key either way, so
             // nothing on screen tells you where the stack ended and the next tile began, and a
@@ -56,6 +62,17 @@ final class Words {
                 // One draw over the other five, so the letter stays uniform and the RNG is
                 // consumed at exactly one call per tile either way.
                 e.word[i] = Roster.randomExcept(fullRoster, avoid, rnd);
+            }
+            if(palette!=null) {
+                int index=0;while(index<used && palette[index]!=e.word[i])index++;
+                if(index==used) {
+                    if(used<palette.length)palette[used++]=e.word[i];
+                    else {
+                        index=Roster.ordinal(fullRoster,e.word[i])%used;
+                        if(palette[index]==avoid)index=(index+1)%used;
+                        e.word[i]=palette[index];
+                    }
+                }
             }
         }
 

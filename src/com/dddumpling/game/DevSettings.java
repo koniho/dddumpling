@@ -110,7 +110,8 @@ final class DevSettings extends Draw {
         LandPicker.reset(c);c.landSuppressed=0;LandPicker.save(c);
         c.modes.restore(ModeSelector.ADVENTURE);c.preferences.kids=false;c.preferences.save(c);
         c.fullRoster=c.runFullRoster=c.rosterLeavePending=false;
-        c.earlyLosses=c.rosterScene=0;c.rosterSceneT=0;
+        c.difficultyTier=c.runDifficultyTier=Pacing.EXTRA_HELP;
+        c.rosterStrongStages=c.rosterStageHits=c.rosterStartStage=c.rosterScene=0;c.rosterSceneT=0;
         c.caveChoice=-1;c.caveMiningNext=false;c.cart.progress=c.mining.carts=0;
         c.town.leave();c.town.load(new Town().save());c.townOpen=false;
         c.townRunId=0;c.townRunTickets=0;
