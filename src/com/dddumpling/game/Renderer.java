@@ -31,6 +31,11 @@ final class Renderer extends Draw {
             Pause.draw(p,c,L);
             return;
         }
+        if (c.state == GameCore.BONUS && c.squishyFit.active) {
+            SquishyFitScreen.draw(p,c,L);
+            if(c.settingsOpen)PlayerSettings.draw(p,c,L);
+            Pause.draw(p,c,L);return;
+        }
         if (c.state == GameCore.BONUS && CaveInterlude.active(c)) {
             if(c.mining.active) CaveMiningScreen.draw(p,c,L);
             else if(c.cart.active) CaveCartScreen.draw(p,c,L);

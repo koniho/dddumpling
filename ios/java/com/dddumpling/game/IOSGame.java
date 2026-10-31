@@ -57,6 +57,7 @@ public final class IOSGame {
         keyboard.clear();
         core.cancelTownInput();
         settingsInput.cancel();
+        core.squishyFit.cancelTouch();
         core.releaseNotes.cancelTouch();
         core.updatePrompt.cancelTouch();
         core.cave.input.release();
@@ -196,6 +197,14 @@ public final class IOSGame {
             if(action==IOSTouch.ACTION_DOWN) settingsPointer=ev.getPointerId(ev.getActionIndex());
             if(i>=0 && settingsInput.touch(core,layout,action,ev.getPointerId(i),ev.getX(i),ev.getY(i))) {
                 if (host != null) host.openPrivacy(PrivacyUi.URL);
+            }
+            return true;
+        }
+        if(core.state==GameCore.BONUS && core.squishyFit.active) {
+            if(action==2) {
+                for(int i=0;i<ev.getPointerCount();i++)core.squishyFit.touch(core,layout,action,ev.getPointerId(i),ev.getX(i),ev.getY(i));
+            } else {
+                int i=ev.getActionIndex();core.squishyFit.touch(core,layout,action,ev.getPointerId(i),ev.getX(i),ev.getY(i));
             }
             return true;
         }
@@ -805,6 +814,8 @@ public final class IOSGame {
         }
         int caveFeedback=Math.max(core.cart.scene.takeFeedback(),Math.max(core.cave.effects.takeFeedback(),core.mining.scene.takeFeedback()));
         if(caveFeedback>0 && !core.paused && !core.settingsOpen)tick();
+        int fitFeedback=core.squishyFit.takeFeedback();
+        if(fitFeedback==2 && host!=null)host.impact();else if(fitFeedback>0)tick();
         int wardrobeFeedback=core.wardrobe.screen.takeFeedback();
         if(wardrobeFeedback==2 && host!=null)host.impact();
         else if(wardrobeFeedback>0)tick();

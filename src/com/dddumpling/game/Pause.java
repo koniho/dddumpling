@@ -44,6 +44,7 @@ final class Pause extends Draw {
         return false;
     }
     static void release(GameCore c) {
+        c.squishyFit.cancelTouch();
         c.wardrobe.screen.cancelTouch();
         c.boss.alligator.pointer=-1;
         c.starter.cancelTouch();

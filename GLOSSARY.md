@@ -853,3 +853,26 @@ Octopulse’s visual enrage warning starts at 40 seconds to allow for the added 
 - **Rainbow Land** — Adventure stages 26–30, after Swampland; floating clouds and rainbow arches.
 - **Rainbow Cat** — Rainbow Land boss. Tap him twice, then trace the shape for his current health band (circle, heart, diamond, figure eight, star) to catch him in a fishing net. Alternate a fixed pair of keys, one from each hand, during vulnerability. Each hit damages him immediately; twenty hits fill one health band, and each window is capped at the next band. Partial damage persists between catches.
 - **Sprinkle Paws** — Rainbow Cat's collectible boss friend.
+
+## Squishy Fit
+
+**Squishy Fit** is the Adventure interlude between Star Path and the next Steamer.
+Tap a waiting squishy to split it, then drag the pieces into the shaped bamboo tray.
+Two-finger pulling also works. Each split level has its own color; tap splits spring apart.
+Oversized or invalid drops rebound to their previous safe spot, with a split/fit cue.
+Small enough pieces compress into area-preserving ovals and snap to nearby room in the tray.
+They can be repositioned; overlap does not count twice. Reach the coverage target
+for the usual collectible, score and life recovery, followed by the collection parade.
+The original squishy's area is conserved when splitting. The tray changes after each win:
+oval, clover, bow, then star. The first oval needs 35% (one split and one placement);
+later trays need 60%. Unsplit pieces still require splitting before they can fit.
+
+Each attempt starts on the first piece touch and lasts 10 seconds after a perfect stage,
+8 after an unhurt stage with mistakes, 6 after damage, or 5 after a rescue swipe. Pieces,
+placements and the current shape carry between attempts within the same run. They reset
+when returning to the title or starting a new run; they are not written to persistent saves.
+A failed attempt keeps Squishy Fit selected; winning advances the rotation to Steamer.
+Developer Settings → Minigames → **SQUISHY FIT** launches the actual interlude during a run.
+
+Owners: `SquishyFit` (rules and gestures), `SquishyFitInterlude` (rotation/rewards),
+`SquishyFitScreen` (drawing). Android and iOS pass pointer IDs to the same touch handler.

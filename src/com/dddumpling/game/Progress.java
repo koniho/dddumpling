@@ -161,9 +161,10 @@ final class Progress {
         if (!available() || data.maximum("achievement_gauntlet_complete") != 0) return;
         data.maximum("achievement_gauntlet_complete", 1); changed();
     }
-    void startMinigame(boolean stars) {
+    void startMinigame(boolean stars) { startMinigame(stars ? "starpath" : "steamer"); }
+    void startMinigame(String name) {
         if (!available() || !running || minigame != null) return;
-        minigame = stars ? "starpath" : "steamer";
+        minigame = name;
         event(minigame + "_started"); changed();
     }
     void finishMinigame(boolean won) {

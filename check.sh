@@ -46,7 +46,10 @@ fi
 # compile while the APK builds fine.
 python3 tools/release-notes.py check >/dev/null
 
-PURE="src/com/dddumpling/game/TraceGesture.java
+PURE="src/com/dddumpling/game/SquishyFit.java
+src/com/dddumpling/game/SquishyFitInterlude.java
+src/com/dddumpling/game/SquishyFitScreen.java
+src/com/dddumpling/game/TraceGesture.java
 src/com/dddumpling/game/TimeAttackRecords.java
 src/com/dddumpling/game/WorldCatalog.java
 src/com/dddumpling/game/RainbowCatTaunt.java

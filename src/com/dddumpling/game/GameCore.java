@@ -677,6 +677,7 @@ final class GameCore {
 
     // ---- between-stages minigame -------------------------------------------
     final Steamer steamer = new Steamer();
+    final SquishyFit squishyFit = new SquishyFit();
     final StarPath stars = new StarPath();
     final Town town = new Town();
     boolean townOpen, townClosing;
@@ -1132,12 +1133,12 @@ final class GameCore {
 
     /** True while the spinner is still settling on this round's pair. */
     boolean bonusRolling() {
-        return state == BONUS && !starBonus && !band.active && !cart.active && !mining.active && !bossReward && bonusTimer > bonusRollEnd;
+        return state == BONUS && !starBonus && !squishyFit.active && !band.active && !cart.active && !mining.active && !bossReward && bonusTimer > bonusRollEnd;
     }
 
     /** True while the interlude accepts presses. */
     boolean bonusMashing() {
-        return state == BONUS && !starBonus && !band.active && !cart.active && !mining.active && !bossReward && !bonusPrizeWon()
+        return state == BONUS && !starBonus && !squishyFit.active && !band.active && !cart.active && !mining.active && !bossReward && !bonusPrizeWon()
                 && bonusTimer <= bonusRollEnd && bonusTimer > MASH_END;
     }
 
@@ -1148,13 +1149,13 @@ final class GameCore {
 
     /** True during the beat after the clock runs out, before anything fades. */
     boolean bonusHolding() {
-        return state == BONUS && !starBonus && !band.active && !cart.active && !mining.active && !bossReward && !bonusPrizeWon()
+        return state == BONUS && !starBonus && !squishyFit.active && !band.active && !cart.active && !mining.active && !bossReward && !bonusPrizeWon()
                 && bonusTimer <= MASH_END && bonusTimer > BONUS_STATUS;
     }
 
     /** True while a won prize is climbing out, which is all that is left of a won round. */
     boolean bonusEscape() {
-        return state == BONUS && !starBonus && !band.active && !cart.active && !mining.active && !bossReward && bonusPrizeWon() && bonusTimer > 0f;
+        return state == BONUS && !starBonus && !squishyFit.active && !band.active && !cart.active && !mining.active && !bossReward && bonusPrizeWon() && bonusTimer > 0f;
     }
 
     /**
@@ -1177,7 +1178,7 @@ final class GameCore {
      * watching it join the line.
      */
     boolean bonusStatus() {
-        return state == BONUS && !starBonus && !band.active && !cart.active && !mining.active && !bossReward && !bonusPrizeWon() && bonusTimer <= BONUS_STATUS;
+        return state == BONUS && !starBonus && !squishyFit.active && !band.active && !cart.active && !mining.active && !bossReward && !bonusPrizeWon() && bonusTimer <= BONUS_STATUS;
     }
 
     /** True once something has been won this interlude, for the whole rest of it. */
@@ -1468,7 +1469,7 @@ final class GameCore {
         caretOwner = null;
         spawnedThisStage = stageQuota();
         resolvedThisStage = stageQuota();
-        starNext = true;
+        starNext = true;squishyFit.next=false;
         Interlude.enterBonus(this, L);
     }
 
@@ -1485,7 +1486,7 @@ final class GameCore {
         spawnedThisStage = stageQuota();
         resolvedThisStage = stageQuota();
         earnedMash = MASH_PERFECT;
-        starNext = false;
+        starNext = false;squishyFit.next=false;
         Interlude.enterBonus(this, L);
     }
 
@@ -1987,6 +1988,7 @@ final class GameCore {
         if(sound!=null)sound.rocket(0);
         stars.resetRun();
         starNext = starBonus = false;
+        squishyFit.resetRun();
     }
 
     HighScores runScores() {return survival.active?survival.history():highScores;}
@@ -2147,6 +2149,7 @@ final class GameCore {
     }
 
     void toTitle() {
+        squishyFit.resetRun();
         stopCombatSounds();
         slimeBubbles.reset();slimeBanks.reset();crystalField.reset();waterRipples.reset();
         bossRetry.finish(this);bossRetry.clear();
@@ -3050,6 +3053,12 @@ final class GameCore {
         Fx.updateShots(this, dt, L);
 
         if (state == BONUS) {
+            if (squishyFit.active) {
+                if (SquishyFitInterlude.update(this,L,dt,elapsed)) {
+                    advanceStage();state=PLAY;time=0;
+                }
+                return;
+            }
             if (CaveInterlude.active(this)) {
                 if (CaveInterlude.update(this, (mining.active || cart.active) ? dt : elapsed)) {
                     advanceStage(); state = PLAY; time = 0f;
@@ -3129,6 +3138,7 @@ final class GameCore {
                         paradeTimer = 0f;
                     }
                     if (stars.won) {
+                        squishyFit.next = true;
                         starNext = false;
                         stars.make(rnd);
                     }

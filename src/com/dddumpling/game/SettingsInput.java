@@ -149,6 +149,7 @@ final class SettingsInput {
             int i=h-SettingsUi.HIT_TEST;
             if(i==SettingsUi.TEST_STARS) c.playtestStars(L);
             else if(i==SettingsUi.TEST_STEAMER) c.playtestSteamer(L);
+            else if(i==SettingsUi.TEST_FIT) SquishyFitInterlude.playtest(c,L);
             else if(i==SettingsUi.TEST_BAND || i==SettingsUi.TEST_MINE)
                 CaveInterlude.playtest(c,L,i==SettingsUi.TEST_MINE);
             else c.playtestMode(Power.offeredAt(i),L);

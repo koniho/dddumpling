@@ -244,6 +244,15 @@ final class Bot {
         // The interlude is a mash, and a bounded player mashes no faster than they type. Failing it
         // for want of hands is a legitimate outcome — it costs the prize, not the run.
         if (c.state == GameCore.BONUS) {
+            if(c.squishyFit.active) {
+                // This combat bot starts the attempt but does not solve the spatial puzzle.
+                if(c.squishyFit.ready && !c.squishyFit.pieces.isEmpty()) {
+                    SquishyFit.Piece q=c.squishyFit.pieces.get(0);
+                    float x=SquishyFit.px(L,q.x),y=SquishyFit.py(L,q.y);
+                    c.squishyFit.touch(c,L,0,218,x,y);c.squishyFit.touch(c,L,1,218,x,y);
+                }
+                return;
+            }
             budget = Math.min(BURST, budget + dt * pps);
             if(c.bonusSwipeReady()) {
                 lidSwipeAge+=dt;

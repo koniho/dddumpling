@@ -37,6 +37,7 @@ final class Interlude {
             return;
         }
         if (CaveInterlude.enter(c)) return;
+        if (SquishyFitInterlude.enter(c,L)) return;
         c.starBonus = c.starNext;
         c.progress.startMinigame(c.starBonus);
         if (c.starBonus) {
@@ -169,6 +170,12 @@ final class Interlude {
         recordPrize(c, "steamer");
         // Scheduled, not started: it runs after the rest of the interlude has played out.
         c.paradeTimer = GameCore.PARADE_TIME;
+    }
+
+    static void awardFitPrize(GameCore c) {
+        c.prize=minigamePrize(c);
+        recordPrize(c,"squishy_fit");
+        c.paradeTimer=GameCore.PARADE_TIME;
     }
 
     static void awardMiningPrize(GameCore c) {

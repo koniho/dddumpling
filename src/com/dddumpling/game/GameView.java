@@ -87,6 +87,7 @@ public class GameView extends View implements InputManager.InputDeviceListener, 
         keyboard.clear();
         core.cancelTownInput();
         settingsInput.cancel();
+        core.squishyFit.cancelTouch();
         core.releaseNotes.cancelTouch();
         core.updatePrompt.cancelTouch();
         starDragPointer = bonusSwipePointer = bossDragPointer = -1;
@@ -318,6 +319,14 @@ public class GameView extends View implements InputManager.InputDeviceListener, 
                     new android.app.AlertDialog.Builder(getContext()).setTitle("Privacy policy")
                             .setMessage(PrivacyUi.URL).setPositiveButton("OK", null).show();
                 }
+            }
+            return true;
+        }
+        if(core.state==GameCore.BONUS && core.squishyFit.active) {
+            if(action==2) {
+                for(int i=0;i<ev.getPointerCount();i++)core.squishyFit.touch(core,layout,action,ev.getPointerId(i),ev.getX(i),ev.getY(i));
+            } else {
+                int i=ev.getActionIndex();core.squishyFit.touch(core,layout,action,ev.getPointerId(i),ev.getX(i),ev.getY(i));
             }
             return true;
         }
@@ -962,6 +971,8 @@ public class GameView extends View implements InputManager.InputDeviceListener, 
                 int caveFeedback=Math.max(core.cart.scene.takeFeedback(),Math.max(core.cave.effects.takeFeedback(),core.mining.scene.takeFeedback()));
                 if(caveFeedback>0 && !core.paused && !core.settingsOpen)
                     performHapticFeedback(caveFeedback>1?HapticFeedbackConstants.LONG_PRESS:HapticFeedbackConstants.KEYBOARD_TAP);
+                int fitFeedback=core.squishyFit.takeFeedback();
+                if(fitFeedback>0)performHapticFeedback(fitFeedback==2?HapticFeedbackConstants.LONG_PRESS:HapticFeedbackConstants.KEYBOARD_TAP);
                 int wardrobeFeedback=core.wardrobe.screen.takeFeedback();
                 if(wardrobeFeedback>0)performHapticFeedback(wardrobeFeedback==2?HapticFeedbackConstants.LONG_PRESS:HapticFeedbackConstants.KEYBOARD_TAP);
                 for (int i = 0, n = core.releaseNotes.takeFeedback(); i < n; i++) tick();

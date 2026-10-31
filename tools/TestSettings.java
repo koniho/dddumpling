@@ -598,7 +598,7 @@ final class TestSettings extends Check {
         check("Back closes public settings",!c.settingsOpen);
         int[] actions={SettingsUi.HIT_GAMEOVER,SettingsUi.HIT_STAGE+2,SettingsUi.HIT_TEST,
                 SettingsUi.HIT_TEST+SettingsUi.TEST_STARS,SettingsUi.HIT_TEST+SettingsUi.TEST_STEAMER,SettingsUi.HIT_DEBUFF,
-                SettingsUi.HIT_TEST+SettingsUi.TEST_BAND,SettingsUi.HIT_TEST+SettingsUi.TEST_MINE};
+                SettingsUi.HIT_TEST+SettingsUi.TEST_BAND,SettingsUi.HIT_TEST+SettingsUi.TEST_MINE,SettingsUi.HIT_TEST+SettingsUi.TEST_FIT};
         for(int state:new int[]{GameCore.TITLE,GameCore.OVER,GameCore.BONUS}) {
             c.state=state;int stage=c.stage;
             for(int h:actions) { SettingsInput.action(c,L,h);check("run-only action blocked in state "+state+" hit "+h,c.state==state && c.stage==stage && !c.powerActive()); }

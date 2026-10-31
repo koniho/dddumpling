@@ -20,13 +20,15 @@ final class SettingsUi {
     /** Power shortcuts and minigame shortcuts share action IDs, not a row. */
     static final int HIT_TEST = 200;
     static final int HIT_DEBUFF = 250;
-    /** All playtest actions: frenzy modes and all four minigames. */
-    static final int TEST_CHIPS = Power.OFFERED.length + 4;
+    /** All playtest actions: frenzy modes and all five minigames. */
+    static final int TEST_CHIPS = Power.OFFERED.length + 5;
     /** Star Path action offset. */
     static final int TEST_STARS = Power.OFFERED.length;
     /** Steamer action offset. */
     static final int TEST_STEAMER = Power.OFFERED.length + 1;
     static final int TEST_BAND = Power.OFFERED.length + 2, TEST_MINE = Power.OFFERED.length + 3;
+    static final int TEST_FIT = Power.OFFERED.length + 4;
+    float fitY;
     /** Stage-jump steppers are HIT_STAGE + index into {@link #STAGE_STEP}. */
     static final int HIT_STAGE = 300;
 
@@ -90,8 +92,9 @@ final class SettingsUi {
         }
         if(tab==MINIGAMES) {
             testY=panelT+s*16f; testLabelY=testY-s*.6f; caveY=testY+s*3f;
-            difficultyLabelY=panelT+s*24f; difficultyY=difficultyLabelY+s*.5f;
-            clearLabelY=panelT+s*28f;
+            fitY=testY+s*6f;
+            difficultyLabelY=panelT+s*26f; difficultyY=difficultyLabelY+s*.5f;
+            clearLabelY=panelT+s*30f;
         }
     }
 
@@ -134,6 +137,7 @@ final class SettingsUi {
                 if(inChip(x,0,2)) return HIT_TEST+TEST_BAND;
                 if(inChip(x,1,2)) return HIT_TEST+TEST_MINE;
             }
+            if(y>=fitY && y<=fitY+testH) return HIT_TEST+TEST_FIT;
             if(y>=difficultyY && y<=difficultyY+difficultyH) return HIT_RESET_DIFFICULTY;
         } else if(tab==POWERS) {
             if(y>=testY && y<=testY+testH) for(int i=0;i<Power.OFFERED.length;i++)

@@ -2085,6 +2085,32 @@ final class Preview {
         invite.update(.5f,L);
         shot(dir,"103-release-invite-enter-1",invite,L,w,h,ss);
 
+        GameCore fit=TestSquishyFit.game(L);
+        shot(dir,"218-fit-ready",fit,L,w,h,ss);
+        SquishyFit.Piece large=fit.squishyFit.pieces.get(0);
+        TestSquishyFit.touch(fit,L,0,1,large.x,large.y);
+        TestSquishyFit.touch(fit,L,2,1,0,0);
+        shot(dir,"218-fit-too-big",fit,L,w,h,ss);
+        TestSquishyFit.touch(fit,L,1,1,0,0);
+        shot(dir,"218-fit-rejected",fit,L,w,h,ss);
+        GameCore splitFit=TestSquishyFit.game(L);
+        SquishyFit.Piece tapPiece=splitFit.squishyFit.pieces.get(0);
+        TestSquishyFit.touch(splitFit,L,0,1,tapPiece.x,tapPiece.y);
+        TestSquishyFit.touch(splitFit,L,1,1,tapPiece.x,tapPiece.y);
+        splitFit.squishyFit.update(.05f,.05f);
+        shot(dir,"218-fit-tap-split",splitFit,L,w,h,ss);
+        SquishyFit.Piece oval=splitFit.squishyFit.pieces.get(0);oval.move(0,.08f);splitFit.squishyFit.settle(oval);
+        oval.drawSqueeze=oval.squeeze;oval.body.reset(oval.x*1000,oval.y*1000,oval.r*1000);
+        splitFit.squishyFit.measure();
+        shot(dir,"218-fit-deformed",splitFit,L,w,h,ss);
+        fit.squishyFit.ready=false;
+        for(int shape=0;shape<SquishyFit.SHAPES.length;shape++) {
+            fit.squishyFit.completed=shape;TestSquishyFit.pack(fit.squishyFit);
+            shot(dir,"218-fit-shape-"+shape,fit,L,w,h,ss);
+        }
+        fit.settingsOpen=true;fit.settingsPage=1;fit.settingsTab=SettingsUi.MINIGAMES;
+        shot(dir,"218-fit-developer",fit,L,w,h,ss);
+
         GameCore book=new GameCore(new Mem(),7001L);
         book.releaseNotes.show(book,L);
         for(int frame=0;frame<7;frame++) {

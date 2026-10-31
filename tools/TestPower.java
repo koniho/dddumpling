@@ -1755,15 +1755,15 @@ final class TestPower extends Check {
         for (int i = 0; i < chips; i++) {
             boolean mini=i>=SettingsUi.TEST_STARS;
             ui.compute(L,mini?SettingsUi.MINIGAMES:SettingsUi.POWERS);
-            int index=mini?(i-SettingsUi.TEST_STARS)%2:i,n=mini?2:Power.OFFERED.length;
+            int index=mini?(i-SettingsUi.TEST_STARS)%2:i,n=i==SettingsUi.TEST_FIT?1:mini?2:Power.OFFERED.length;
             float cx = (ui.testChipL(index,n)+ui.testChipR(index,n))*.5f;
-            if(ui.hit(cx,(i>=SettingsUi.TEST_BAND?ui.caveY:ui.testY)+ui.testH*.5f)!=SettingsUi.HIT_TEST+i) chipsOk=false;
+            if(ui.hit(cx,(i==SettingsUi.TEST_FIT?ui.fitY:i>=SettingsUi.TEST_BAND?ui.caveY:ui.testY)+ui.testH*.5f)!=SettingsUi.HIT_TEST+i) chipsOk=false;
             if(index>0 && ui.testChipL(index,n)<ui.testChipR(index-1,n)) chipsDistinct=false;
         }
-        check("the row has chips for both between-stage games",
+        check("the rows have chips for all five minigames",
                 SettingsUi.TEST_STARS == Power.OFFERED.length
                         && SettingsUi.TEST_STEAMER == Power.OFFERED.length + 1
-                        && chips == Power.OFFERED.length + 4);
+                        && chips == Power.OFFERED.length + 5);
         // Labels inside their boxes, which nothing was checking: adding the fifth chip put TEAM
         // SQUISH's label across two of its neighbours, and DOES NOT FIT only watches the screen
         // edge. Measured in the harness font, which is wider than the device's.
@@ -1775,8 +1775,8 @@ final class TestPower extends Check {
             String label = i == SettingsUi.TEST_STARS ? "STAR PATH"
                     : i == SettingsUi.TEST_STEAMER ? "STEAMER"
                     : i == SettingsUi.TEST_BAND ? "CART RUSH"
-                    : i == SettingsUi.TEST_MINE ? "DUMPLING MINE" : Power.CHIP[Power.offeredAt(i)];
-            int n=i>=SettingsUi.TEST_STARS?2:Power.OFFERED.length;
+                    : i == SettingsUi.TEST_MINE ? "DUMPLING MINE" : i == SettingsUi.TEST_FIT ? "SQUISHY FIT" : Power.CHIP[Power.offeredAt(i)];
+            int n=i==SettingsUi.TEST_FIT?1:i>=SettingsUi.TEST_STARS?2:Power.OFFERED.length;
             float box = ui.testChipR(0, n) - ui.testChipL(0, n);
             float wide = RasterPainter.textWidth(label, chipType);
             if (wide / box > worst) { worst = wide / box; widest = label; }

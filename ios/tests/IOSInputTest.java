@@ -1176,7 +1176,28 @@ public final class IOSInputTest extends Check {
 
     }
 
+    private static void squishyFit() {
+        IOSGame game=game();GameCore c=game.core();Layout l=game.geometry();
+        c.startGame();c.earnedMash=GameCore.MASH_PERFECT;c.squishyFit.next=true;
+        Interlude.enterBonus(c,l);SquishyFit m=c.squishyFit;
+        SquishyFit.Piece q=m.pieces.get(0);float x=SquishyFit.px(l,q.x),y=SquishyFit.py(l,q.y);
+        game.touch(new IOSTouch(0,0,new int[]{41},new float[]{x-l.w*.10f},new float[]{y}));
+        game.touch(new IOSTouch(5,1,new int[]{41,82},new float[]{x-l.w*.10f,x+l.w*.10f},new float[]{y,y}));
+        game.touch(new IOSTouch(2,0,new int[]{82,41},new float[]{x+l.w*.24f,x-l.w*.24f},new float[]{y,y}));
+        check("fit native pointer IDs survive reorder and split",m.pieces.size()==2);
+        game.touch(new IOSTouch(6,0,new int[]{82,41},new float[]{x+l.w*.24f,x-l.w*.24f},new float[]{y,y}));
+        game.touch(new IOSTouch(1,0,new int[]{41},new float[]{x-l.w*.24f},new float[]{y}));
+        check("fit lift releases both pieces",!m.held(m.pieces.get(0)) && !m.held(m.pieces.get(1)));
+        q=m.pieces.get(0);x=SquishyFit.px(l,q.x);y=SquishyFit.py(l,q.y);
+        game.touch(new IOSTouch(0,0,new int[]{3},new float[]{x},new float[]{y}));
+        game.background(true);float timer=m.timer;game.update(3);
+        check("fit background cancels grab and freezes time",!m.held(q) && m.timer==timer);
+        game.background(false);Pause.resume(c);game.update(.1f);
+        check("fit foreground resumes timer",m.timer<timer);
+    }
+
     public static void main(String[] args) {
+        squishyFit();
         rainbowCatGestures();
         cloudSaveUi();
         alligatorSwipes();
