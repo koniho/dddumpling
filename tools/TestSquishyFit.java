@@ -61,8 +61,8 @@ final class TestSquishyFit extends Check {
         check("tap children spring apart",Math.abs(child.x-sibling.x)>child.r+sibling.r);
         child.move(0,.08f);check("round child does not fit near edge",!m.fits(child));
         check("piece compresses to fit and preserves area",m.settle(child) && child.squeeze!=1 && Math.abs((child.r*child.squeeze)*(child.r/child.squeeze)-child.r*child.r)<.000001f);
-        m.measure();check("first tray completes with one split and one placement",m.coverage>=m.target());
-        m.update(.01f,.01f);check("first easy placement wins",m.won);
+        m.measure();check("first tray requires sixty percent too",m.target()==.60f && m.coverage<m.target());
+        m.update(.01f,.01f);check("one small placement does not finish first tray",!m.finished && !m.won);
         m.pieces.clear();q=new SquishyFit.Piece(.32f,0,.1f,0);m.pieces.add(q);
         check("nearby valid spot attracts an imprecise drop",!m.room(q) && m.settle(q) && q.x<.32f && m.fits(q));
         SquishyFit.Piece collision=new SquishyFit.Piece(q.x,q.y,.07f,0);m.pieces.add(collision);

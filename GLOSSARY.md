@@ -864,8 +864,8 @@ Small enough pieces compress into area-preserving ovals and snap to nearby room 
 They can be repositioned; overlap does not count twice. Reach the coverage target
 for the usual collectible, score and life recovery, followed by the collection parade.
 The original squishy's area is conserved when splitting. The tray changes after each win:
-oval, clover, bow, then star. The first oval needs 35% (one split and one placement);
-later trays need 60%. Unsplit pieces still require splitting before they can fit.
+oval, clover, bow, then star. Every tray requires at least 60% coverage, including the first.
+Unsplit pieces still require splitting before they can fit.
 
 Each attempt starts on the first piece touch and lasts 10 seconds after a perfect stage,
 8 after an unhurt stage with mistakes, 6 after damage, or 5 after a rescue swipe. Pieces,

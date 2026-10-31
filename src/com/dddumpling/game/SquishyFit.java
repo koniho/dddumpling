@@ -32,7 +32,7 @@ final class SquishyFit {
     private float downX,downY,travel;
     private float ax,ay,bx,by,offsetAX,offsetAY,offsetBX,offsetBY,startDistance;
 
-    float target() {return completed==0?.35f:TARGET;}
+    float target() {return TARGET;}
     int shape() {return Math.min(completed,SHAPES.length-1);}
     static float attemptTime(float earned) {
         if(earned>=GameCore.MASH_PERFECT)return 10;
