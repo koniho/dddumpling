@@ -1,29 +1,37 @@
 # Let more players meet the bosses
 
-*DDDUMPLING dev blog · November 1, 2026*
+*DDDUMPLING dev blog · November 1, 2026 · Development update*
 
-Playtesting DDDUMPLING with kids made a problem clear: the difficulty ramp was too severe, especially for players who were still learning the keys. Familiarity with your own game makes it easy to underestimate how much a new player has to process. Recognizing a character, finding its matching key, reading the next prompt and deciding which enemy needs attention all take practice.
+I did some playtesting with kids and the difficulty ramp was too much. Especially the word length. There is a lot going on when you are still learning which squishy goes with which key, and adding more keys and longer words makes that pile up quickly.
 
-That matters because some of DDDUMPLING's biggest payoffs come later. The bosses are characters to discover, with their own personalities, physical interactions and squishy celebrations. We want less experienced players to have a real chance to reach them. The ordinary stages need to build the skills and confidence that get players there.
+I want players to be challenged, but I also want them to get to the bosses. That's the big payoff. The bosses have different mechanics, personalities and a bunch of animation work that I want people to actually see. Getting stuck in the ordinary stages before reaching them is a problem.
 
-The design goal is a dynamic difficulty system that keeps players challenged while making that journey more accessible. A player who is comfortably clearing the screen should feel the game ask more of them. Someone still learning should have room to learn without repeatedly losing before the good stuff.
+So we started working on dynamic difficulty for Adventure. The existing ramp is still the ceiling. The game can give you help underneath that, then take the help away as you get comfortable.
 
-The first decision was to keep spawn pressure intact. Clearing a steady stream of enemies is a large part of the game's energy. Instead, assistance adjusts how complicated each enemy is and how quickly it approaches.
+I didn't want to reduce spawn pressure. Clearing enemies should still feel busy and fun. The knobs are how many presses each enemy needs, how many different symbols it uses, and how quickly it moves.
 
-At the most assisted setting, an enemy requires at most three presses and uses at most two different key symbols, moving at 75% of its stage's normal speed. A middle setting relaxes those limits. Normal restores the existing difficulty ramp, which remains the ceiling. New players start with four keys; the additional two arrive after strong play and the first boss milestone. Returning players keep their earned roster and saved assistance, with an early-loss fallback to help when a new run goes badly.
+![Three assistance levels: Extra Help limits enemies to three presses and two symbols at 75% speed; Light Help uses five presses and three symbols at 90%; Normal restores the existing stage ramp.](assets/difficulty/01-assistance-levels.png)
 
-Getting those settings right was only half the work. We also had to decide what good play looks like.
+The first version was too cautious. It needed three strong stages in a row to remove one level of help. A few misses could reset that progress. Ninja was a problem too: you could clear a ton of enemies but barely press a key, so the game didn't think you had demonstrated anything.
 
-Our first attempt required consecutive strong stages with high accuracy. Local playthrough logs exposed how easily that could get stuck. One recording cleared twelve ordinary stages without damage or a rescue, yet stayed at maximum assistance. A clean Ninja stage had too few counted key presses to qualify. Other stages narrowly missed the accuracy threshold and erased earlier progress, even when enemies barely entered the playfield.
+I added local playthrough logs so we could see what was actually happening. In one run, I cleared twelve ordinary stages without taking damage or using rescue. The game still kept me at maximum assistance. It felt easy because it was keeping everything easy.
 
-That led to a useful observation: if enemies never make it halfway down the screen, the player probably has spare capacity. We now consider that control of the playfield alongside accuracy. Side-entry enemies are excluded from that particular signal because they can arrive lower down already.
+One useful observation: if enemies never get halfway down the screen, I'm probably doing pretty well. Accuracy by itself misses that. We now look at field control too, excluding side-entry enemies because they can start lower down.
 
-We also stopped treating rescue use as a failure. It is a tool we give players, and using it well should not automatically count against them. Power-up stages hold assistance rather than judging performance under a different set of rules. Boss encounters stay separate from ordinary-stage assessment too.
+I also don't want rescue use to count as trouble. It's there to be used. Damage counts. Power-up stages should just hold, since they change how you play. Bosses should be separate too. Losing a boss doesn't necessarily mean the ordinary enemies were too hard.
 
-The next recording exposed another problem: holding during power-ups was working, but it left too few eligible stages to remove assistance promptly. We made the adjustment asymmetric. One strong ordinary stage now removes one level of help. Three damaged ordinary stages, without a strong stage clearing that negative confidence, add a level of help. Borderline stages hold steady. Run-ending ordinary-stage losses retain a more immediate fallback.
+That fixed some things, but the next run still felt too easy. Five of the eight ordinary stages used a power-up. Holding those stages meant it took until stage 19 to get out of Extra Help.
 
-In the latest test, the player started on Light Help and reached Normal after the first eligible stage. Later waves created noticeably more pressure, while a single hit did not immediately undo the promotion. That is closer to the behavior we want.
+![Three recorded runs: the strict streak never left Extra Help; the next system reached Light Help after stage 19; the asymmetric system started on Light Help and reached Normal after stage 16.](assets/difficulty/02-playtest-progression.png)
 
-These recordings are local developer logs, exported manually for analysis. They help us understand what happened; they cannot tell us everything about how a player felt, or whether a loss was deliberate. More playtesting with less experienced players is still essential.
+So let's make it asymmetric. One strong ordinary stage removes one level of help. It takes three damaged stages to add help back, with a strong stage clearing that negative confidence. A borderline stage holds. One mistake shouldn't send everything backwards.
 
-The bosses should feel like an exciting destination players can work toward. Our job is to make the path demanding enough to be satisfying, and flexible enough that more players get to discover what is waiting at the end of it.
+There is still a quicker fallback for a game over in an ordinary stage. An early loss can return the player to four keys and Extra Help. A later loss adds one level of help for the next run. Power-up and boss losses keep the saved assistance.
+
+![Current rules: power-up stages hold, strong damage-free ordinary stages remove help, damage subtracts confidence, and borderline stages hold. Rescue is neutral and bosses stay separate.](assets/difficulty/03-current-rules.png)
+
+The latest run did what I expected. I started on Light Help, reached Normal after the first eligible stage, and the later waves put more pressure on me. Taking one hit didn't immediately reduce the difficulty again.
+
+These charts are from my follow-up runs, not a claim that we have finished testing with kids. They're different runs with different starting points. The logs are local developer recordings that I exported manually; nothing is being automatically uploaded from players.
+
+This feels much closer. I want the game to notice when someone is doing well and challenge them. I also want a less experienced player to have enough room to learn, make progress, and get to that big squishy boss waiting at the end of the land.
