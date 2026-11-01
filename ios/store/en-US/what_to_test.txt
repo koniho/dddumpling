@@ -1,3 +1,3 @@
-Dress up your squishies! Tap a pal in your display case to get started. Achievements unlock hats, eyewear, shoes, masks and magical flair. Tap or drag to equip, or shake for a surprise outfit. Looks save automatically. Plus: livelier boss arenas, clearer Super Slime attack sounds, and occasional invitations to leave a review.
+Adventure adapts to your play, helping newer players reach the bosses while strong play raises the challenge. Stolen keys are clearer across skins, and duplicate notes are gone.
 
-Please test achievement unlocks, including existing progress; tap and drag to equip or remove accessories; saved outfits for different squishies; shake-to-scramble; wardrobe scrolling and exit animations. Check the dress-up changelog demo, Super Slime and Octopulse arena motion, Super Slime audio, and opening cloud-save panels.
+Please test Adventure assistance after strong stages and early losses, progression from four to six keys, and saved assistance across app restarts. Power-up stages should hold assistance, rescue use alone should not lower it, and spawn pressure should stay unchanged. Check stolen keys in both skins and the updated changelog.

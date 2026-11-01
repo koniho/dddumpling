@@ -208,7 +208,12 @@ final class TestProgress extends Check {
                 && landRun.progress.maximum("best_score_land_1") == 900 && landStore.best == 500);
         GameCore reopened = new GameCore(landStore, 620L);
         check("production app launch restores land and its record", reopened.landChoice == 1
-                && reopened.best == 900 && reopened.landBests[1] == 900 && LandPicker.visible(reopened));
+                && reopened.best == 900 && reopened.landBests[1] == 900);
+        check("early loss keeps land hidden during roster farewell", reopened.rosterScene == GameCore.ROSTER_LEAVE
+                && !LandPicker.visible(reopened));
+        for (int i=0; i<200; i++) reopened.update(.02f, L);
+        check("saved land returns after roster farewell", LandPicker.visible(reopened)
+                && reopened.landChoice == 1 && reopened.best == 900);
         try {
             ProgressData remoteLand = new ProgressData(); remoteLand.maximum("best_score_land_1", 1200);
             reopened.progress.restore(remoteLand.encode(), reopened);

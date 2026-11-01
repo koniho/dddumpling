@@ -13,7 +13,7 @@ final class ReleaseReview extends Draw {
             int item=ReleaseContent.ITEMS[0][row];
             float y=120+row*230;
             for(int frame=0;frame<3;frame++)
-                ReleaseChange.icon(p,ReleaseContent.ICONS[item],110+frame*150,y+85,48,ReleaseChange.homes(ReleaseContent.ICONS[item])?frame*ReleaseHomes.PERIOD+1.8f:ReleaseContent.ICONS[item]==ReleaseChange.WARDROBE?.25f+frame*.65f:.4f+frame*.65f);
+                ReleaseChange.icon(p,ReleaseContent.ICONS[item],110+frame*150,y+85,48,ReleaseChange.homes(ReleaseContent.ICONS[item])?frame*ReleaseHomes.PERIOD+1.8f:ReleaseContent.ICONS[item]==ReleaseChange.WARDROBE?.25f+frame*.65f:ReleaseContent.ICONS[item]==ReleaseChange.DIFFICULTY?.4f+frame*2.2f:.4f+frame*.65f);
             p.text(ReleaseContent.TITLES[item],510,y+70,25,INK,Painter.LEFT,true);
             p.text("AUTO RESET: "+(ReleaseContent.AUTO_RESET[item] ? "YES" : "NO"),510,y+110,18,INK_DIM,Painter.LEFT,false);
         }
@@ -29,6 +29,7 @@ final class ReleaseReview extends Draw {
             notes.touch(game,layout,layout.w*.5f,(notes.demoTop(layout)+notes.demoBottom(layout))*.5f);
             notes.update(ReleaseNotes.RESTART_DELAY+.2f,layout);
             if(!ReleaseContent.AUTO_RESET[item] && (ReleaseContent.ICONS[item]==ReleaseChange.WARDROBE
+                    || ReleaseContent.ICONS[item]==ReleaseChange.DIFFICULTY
                     || ReleaseMascots.active(ReleaseContent.ICONS[item])) && notes.celebration<ReleaseNotes.RESTART_DELAY)
                 throw new AssertionError("Unexpected automatic reset: "+ReleaseContent.TITLES[item]);
             if(!ReleaseChange.homes(ReleaseContent.ICONS[item]))continue;

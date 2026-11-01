@@ -112,6 +112,7 @@ Keep a separate entry only when it communicates a distinct change the player nee
 | `companion` | Starter choice and run companions | Bouncing Melon Wedge collectible |
 | `tutorial` | Companion guidance | Melon Wedge with a speech bubble |
 | `professor` | Guided introductions and lessons | Lavender cat in a mortarboard, round glasses and bow tie |
+| `difficulty` | Adaptive Adventure challenge | Squishy hops between steps as prompt length and variety change; tap to replay |
 | `wardrobe` | Achievement-earned accessories | Accessory flies from its box onto a squishy, followed by a sparkly dance; tap to replay |
 | `achievements` | Achievements and game services | Golden dumpling in a sparkling trophy |
 | `town` | Town visits and attractions | The title screen's meadow and slide |

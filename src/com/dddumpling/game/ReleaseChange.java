@@ -5,7 +5,7 @@ final class ReleaseChange extends Draw {
     static final int TRAVEL=0, STARS=1, BUGS=2, SHUFFLE=3, DISGUISE=4, SLIME=5,
             PAIR=6, FLEX=7, TEAM=8, NEWS=9, FLURRY=10, MISC=11, SETTINGS=12, SWIPE=13, SCORES=14, OCTOPULSE=15,
             COMPANION=16, TUTORIAL=17, TOWN=18, SURVIVAL=19, TIME_ATTACK=20, SWAMP=21, RUSH=22, FOG=23, HALLOWEEN=24, RAINBOW=25, BOSS_RETRY=26,
-            ACHIEVEMENTS=27, PROFESSOR=28, LAND_HOMES=29, ARENA_HOMES=30, WARDROBE=31;
+            ACHIEVEMENTS=27, PROFESSOR=28, LAND_HOMES=29, ARENA_HOMES=30, WARDROBE=31, DIFFICULTY=32;
     private static final class FogIcon {
         static final GameCore.Enemy WORD=new GameCore.Enemy();
         static {WORD.word=new int[]{0,1,2};WORD.enterT=1f;WORD.swampKind=SwampEnemies.FOG;}
@@ -32,6 +32,28 @@ final class ReleaseChange extends Draw {
                 r*.47f,Skins.HALLOWEEN_COLORS[5],1-.04f*bob,.3f,0,time);
         HalloweenKeys.draw(p,Kawaii.CAT,x,y+r*(.32f-.10f*hop),r*.55f,
                 Skins.HALLOWEEN_COLORS[2],1+.07f*bob,.5f,0,time);
+    }
+    private static void difficulty(Painter p,float x,float y,float r,float time) {
+        float phase=time%8.8f/2.2f;
+        int step=(int)phase,level=step<=2?step:1;
+        float settle=Math.min(1f,(phase-step)*4f);
+        float hop=(float)Math.sin(settle*Math.PI)*r*.27f;
+        for(int i=0;i<3;i++) {
+            float sx=x+(i-1)*r*.62f,top=y+r*(.62f-i*.22f);
+            p.fillPoly(pill(sx,top+r*.13f,r*.28f,r*.13f,8),
+                    Glyph.withAlpha(Glyph.COLOR[i],i==level?230:95));
+            p.line(sx-r*.18f,top+r*.05f,sx+r*.18f,top+r*.05f,0x80FFFFFF,r*.045f);
+        }
+        float bx=x+(level-1)*r*.62f,by=y+r*(.62f-level*.22f)-r*.32f-hop;
+        Kawaii.moodDumpling(p,bx,by,r*.34f,Glyph.COLOR[0],1f,1f+.12f*(float)Math.sin(settle*6.283f));
+        int keys=level==0?2:level==1?3:5;
+        float kr=r*.17f,spacing=r*.36f;
+        for(int i=0;i<keys;i++) {
+            float kx=x+(i-(keys-1)*.5f)*spacing,ky=y-r*.73f+r*.035f*(float)Math.sin(time*3+i);
+            int key=i%(level+2);
+            p.fillPoly(Glyph.hex(kx,ky,kr),Glyph.COLOR[key]);
+            Kawaii.draw(p,key,kx,ky,kr*.69f,Glyph.COLOR[key],1f,0f);
+        }
     }
     private static void wardrobe(Painter p,float x,float y,float r,float time) {
         final int outfit=(int)(time/4.8f)%3;
@@ -81,7 +103,9 @@ final class ReleaseChange extends Draw {
         if(homes(id)) {
             ReleaseHomes.icon(p,id==ARENA_HOMES,x,y,r,time);return;
         }
-        if(id==WARDROBE) {
+        if(id==DIFFICULTY) {
+            difficulty(p,x,y,r,time);
+        } else if(id==WARDROBE) {
             wardrobe(p,x,y,r,time);
         } else if(id==ACHIEVEMENTS) {
             float jump=0f;
