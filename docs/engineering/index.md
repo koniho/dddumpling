@@ -14,6 +14,7 @@ These notes preserve past failures, including historical values that may no long
 | Seasonal skins, key artwork, boss visual variants | [Skins](skins.md) |
 | Input routing, gestures, RNG, state cleanup | [Input and state](input-state.md) |
 | Difficulty, timing, bots, star courses | [Pacing](pacing.md) |
+| Record/export real runs for tuning | [Playthrough logs](playthrough-logs.md) |
 | Sound effects or narration | [Audio](audio.md) |
 | Adding a land or boss | [Integration checklist](adding-lands-and-bosses.md) |
 | Boss rules, soft bodies, geometry | [Bosses and physics](bosses-physics.md) |

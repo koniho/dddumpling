@@ -26,6 +26,7 @@ public final class IOSGame {
     public void storeUpdateAvailable(String version) { core.storeUpdate.result(version); }
     public boolean takeUpdateAction() { return !core.updatePrompt.open && core.storeUpdate.takeRequest(); }
     public void reviewAvailable(boolean enabled) { core.reviewPrompt.available=enabled && !BuildFlags.DEVELOPER; }
+    public String takePlaythroughExport() {return core.playthrough.takeExport();}
     public int takeReviewAction() { return core.reviewPrompt.takeRequest(core); }
     public boolean reviewSafe() { return ReviewPrompt.safe(core); }
     public static String storeCountry(String alpha3) { return StoreUpdate.country(alpha3); }

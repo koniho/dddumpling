@@ -954,6 +954,8 @@ public class GameView extends View implements InputManager.InputDeviceListener, 
                 if (!KeyboardInput.available(core)) keyboard.clear();
                 if(!core.updatePrompt.open && core.storeUpdate.takeRequest())
                     ((MainActivity)getContext()).openUpdateListing();
+                String playLog=core.playthrough.takeExport();
+                if(playLog!=null)((MainActivity)getContext()).exportPlaythroughs(playLog);
                 int review=core.reviewPrompt.takeRequest(core);
                 if(review!=0)((MainActivity)getContext()).requestReview(review==2);
                 int external=core.preferences.takeExternal(core);

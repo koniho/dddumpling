@@ -9,6 +9,24 @@
 @end
 
 @implementation DDStoreTests
+- (void)testPlaythroughLogPersistsSeparatelyFromProgress {
+  NSURL *directory=[[NSURL fileURLWithPath:NSTemporaryDirectory()] URLByAppendingPathComponent:NSUUID.UUID.UUIDString];
+  NSURL *url=[directory URLByAppendingPathComponent:@"store"];
+  DDIOSStore *store=[[DDIOSStore alloc] initWithURL:url];
+  XCTAssertEqualObjects([store loadPlaythroughLog],@"");
+  NSString *log=@"{\"schema\":1,\"event\":\"run_start\"}\n";
+  XCTAssertTrue([store savePlaythroughLogWithNSString:log]);
+  NSPredicate *written=[NSPredicate predicateWithBlock:^BOOL(id object,NSDictionary *bindings) {
+    return [[store loadPlaythroughLog] isEqualToString:log];
+  }];
+  [self expectationForPredicate:written evaluatedWithObject:store handler:nil];
+  [self waitForExpectationsWithTimeout:3 handler:nil];
+  DDIOSStore *restored=[[DDIOSStore alloc] initWithURL:url];
+  XCTAssertEqualObjects([restored loadPlaythroughLog],log);
+  XCTAssertEqual([restored loadBest],0);
+  [[NSFileManager defaultManager] removeItemAtURL:directory error:nil];
+}
+
 - (void)testAchievementsBindWithoutICloudAndRejectOtherPlayers {
   NSURL *url = [self temporaryFile];
   DDIOSStore *store = [[DDIOSStore alloc] initWithURL:url];

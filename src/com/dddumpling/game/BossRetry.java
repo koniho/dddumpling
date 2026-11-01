@@ -24,6 +24,7 @@ final class BossRetry extends Draw {
     }
     void retry(GameCore c) {
         if(!pending || !c.overReady() || c.returnFade>0)return;
+        c.playthrough.endStage(c,"retry");
         pending=false;
         if(c.highScores.bossRetries<Integer.MAX_VALUE)c.highScores.bossRetries++;
         c.score=score;c.lives=GameCore.START_LIVES;c.combo=0;

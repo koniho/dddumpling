@@ -77,6 +77,8 @@ final class DevSettings extends Draw {
         chip(p,u,u.runY,0,2,c.fullRoster?"NEXT RUN: 6 KEYS":"NEXT RUN: 4 KEYS",s,false);
         chip(actions,u,u.runY,1,2,"END RUN",s,false);
         chip(p,u,u.infiniteLivesY,0,1,"INFINITE LIVES: "+(c.devInfiniteLives?"ON":"OFF"),s,c.devInfiniteLives);
+        label(p,u,u.playthroughY-s*.6f,c.playthrough.saveFailed?"LOG SAVE FAILED":"LOCAL PLAYTHROUGH LOG",s);
+        chip(p,u,u.playthroughY,0,1,"EXPORT PLAYTHROUGHS",s,false);
     }
     static void completeBosses(GameCore c) {
         if(!BuildFlags.DEVELOPER)return;

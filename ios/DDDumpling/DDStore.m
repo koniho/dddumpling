@@ -13,6 +13,8 @@ static NSString *const DDStoreWriterKey = @"progressWriter";
 @property(nonatomic) NSLock *lock;
 @property(nonatomic, readwrite, nullable) NSString *error;
 @property(nonatomic) BOOL healthy;
+@property(nonatomic, strong) dispatch_queue_t playthroughQueue;
+@property(atomic) BOOL playthroughWriteFailed;
 @end
 
 @implementation DDIOSStore
@@ -23,6 +25,7 @@ static NSString *const DDStoreWriterKey = @"progressWriter";
 
 - (instancetype)initWithURL:(NSURL *)fileURL {
   if ((self = [super init])) {
+    _playthroughQueue=dispatch_queue_create("com.dddumpling.playthrough-log",DISPATCH_QUEUE_SERIAL);
     _lock = [[NSLock alloc] init];
     _values = [NSMutableDictionary dictionary];
     _fileURL = [fileURL copy];
@@ -337,6 +340,21 @@ static NSString *const DDStoreWriterKey = @"progressWriter";
 
 - (jint)loadStarWins { return MAX(0, [self intForKey:@"starWins" defaultValue:0]); }
 - (void)saveStarWinsWithInt:(jint)wins { [self setValue:@(wins) forKey:@"starWins"]; }
+
+- (NSURL *)playthroughURL {
+  return [[_fileURL URLByDeletingLastPathComponent] URLByAppendingPathComponent:@"difficulty-playthroughs.jsonl"];
+}
+- (NSString *)loadPlaythroughLog {
+  return [NSString stringWithContentsOfURL:[self playthroughURL] encoding:NSUTF8StringEncoding error:nil] ?: @"";
+}
+- (jboolean)savePlaythroughLogWithNSString:(NSString *)text {
+  NSURL *url=[self playthroughURL];
+  dispatch_async(self.playthroughQueue, ^{
+    [[NSFileManager defaultManager] createDirectoryAtURL:[url URLByDeletingLastPathComponent] withIntermediateDirectories:YES attributes:nil error:nil];
+    self.playthroughWriteFailed=![text writeToURL:url atomically:YES encoding:NSUTF8StringEncoding error:nil];
+  });
+  return !self.playthroughWriteFailed;
+}
 
 - (jint)loadRosterState {
   NSNumber *saved = [self numberForKey:@"roster"];

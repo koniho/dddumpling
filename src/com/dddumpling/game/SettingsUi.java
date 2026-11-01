@@ -13,7 +13,7 @@ final class SettingsUi {
     static final int HIT_POWERS = 15, HIT_PROGRESS = 16, HIT_COLLECT_ALL = 17, HIT_RESET_PROGRESS = 18;
     static final int HIT_COMPLETE_BOSSES = 19, HIT_RESET_UPDATE_PROMPT = 20, HIT_INFINITE_LIVES = 21, HIT_TEST_UPDATE = 22, HIT_TEST_REVIEW = 23, HIT_RESET_REVIEW = 24;
     static final int HIT_ACCESSORY_GRANT=25,HIT_ACCESSORY_ALL=26,HIT_ACCESSORY_RESET=27;
-    static final int HIT_ACCESSORY_CATEGORY=28;
+    static final int HIT_ACCESSORY_CATEGORY=28, HIT_EXPORT_PLAYTHROUGHS=40;
     float accessoryY;
     final float[] accessoryCategoryY=new float[(Accessories.SLOTS+1)/2];
     static final String[] TABS = {"RUN", "MINIGAMES", "POWERS", "PROGRESS"};
@@ -50,7 +50,7 @@ final class SettingsUi {
     /** Stage-jump row: one chip per {@link #STAGE_STEP}. */
     float stageLabelY, stageY, stageH;
     /** Next-run roster toggle and end-current-run button. */
-    float runLabelY, runY, runH, infiniteLivesY;
+    float runLabelY, runY, runH, infiniteLivesY, playthroughY;
     /** Reset for persistent difficulty progression. */
     float difficultyLabelY, difficultyY, difficultyH, updatePromptY, reviewPromptY;
     /** Empty-the-display-case button, at the foot of the panel. */
@@ -72,7 +72,7 @@ final class SettingsUi {
         testH=stageH=runH=clearH=difficultyH=s*2f;
         difficultyStepLabelY=panelT+s*9f; difficultyStepY=panelT+s*10.3f;
         stageLabelY=panelT+s*9f; stageY=stageLabelY+s*.5f;
-        runLabelY=panelT+s*13f; runY=runLabelY+s*.5f;infiniteLivesY=runY+s*3f;
+        runLabelY=panelT+s*13f; runY=runLabelY+s*.5f;infiniteLivesY=runY+s*3f;playthroughY=infiniteLivesY+s*4f;
         testLabelY=panelT+s*9f; testY=testLabelY+s*.5f;
         debuffY=panelT+s*14f;
         difficultyLabelY=panelT+s*20f; difficultyY=difficultyLabelY+s*.5f;
@@ -163,6 +163,7 @@ final class SettingsUi {
             if(y>=resetProgressY && y<=resetProgressY+testH && inChip(x,0,1)) return HIT_RESET_PROGRESS;
             if(y>=collectAllY && y<=collectAllY+testH && inChip(x,0,1)) return HIT_COLLECT_ALL;
         } else {
+            if(y>=playthroughY && y<=playthroughY+testH && inChip(x,0,1))return HIT_EXPORT_PLAYTHROUGHS;
             if(y>=infiniteLivesY && y<=infiniteLivesY+testH && inChip(x,0,1))return HIT_INFINITE_LIVES;
             if(y>=stageY && y<=stageY+stageH) for(int i=0;i<STAGE_STEP.length;i++)
                 if(inChip(x,i,STAGE_STEP.length)) return HIT_STAGE+i;

@@ -565,8 +565,10 @@ public final class IOSInputTest extends Check {
             game.touch(one(1, 42, l.keyX[0], l.keyY[0]));
             check("return gesture cannot start a run or browse title", c.state == GameCore.TITLE
                     && !c.starting() && !c.titleTouchDown && !c.caseOpen);
-            tap(game, l.keyX[0], l.keyY[0]);
-            check("next separate key tap starts normally", c.starting());
+            c.onboarding.learn(c,TutorialSpeech.MODES);
+            for(int i=0;i<240 && c.rosterSceneT>0;i++)game.update(DT);
+            tap(game, c.keyX(l,0), c.keyY(l,0));
+            check("next separate remaining-key tap starts after farewell", c.starting());
         }
     }
 
@@ -1176,7 +1178,19 @@ public final class IOSInputTest extends Check {
 
     }
 
+    private static void playthroughExport() {
+        Mem save=new Mem();save.playLog="";
+        IOSGame game=new IOSGame(save,new Ear(),220);game.layout(393,852,0,59,0,34);
+        GameCore c=game.core();c.startGame();c.settingsOpen=true;c.settingsPage=1;c.settingsTab=SettingsUi.GENERAL;
+        SettingsUi ui=new SettingsUi();ui.compute(game.geometry(),SettingsUi.GENERAL);
+        tap(game,game.geometry().w*.5f,ui.playthroughY+ui.testH*.5f);
+        String log=game.takePlaythroughExport();
+        check("native export chip supplies structured playthrough snapshot",log!=null && log.contains("export_snapshot") && log.contains("run_start"));
+        check("native export is one-shot",game.takePlaythroughExport()==null);
+    }
+
     public static void main(String[] args) {
+        playthroughExport();
         rainbowCatGestures();
         cloudSaveUi();
         alligatorSwipes();

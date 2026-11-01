@@ -178,6 +178,9 @@ final class GameCore {
 
     /** Persistence seam; the Activity backs this with SharedPreferences. */
     interface Store extends Progress.Store {
+        /** Null means this host does not support local developer playthrough recording. */
+        default String loadPlaythroughLog() { return null; }
+        default boolean savePlaythroughLog(String text) { return false; }
         default String loadTown() { return ""; }
         default boolean saveTown(String value) { return true; }
         /** Native marketing version and build number, independent of the shared news catalog. */
@@ -1386,6 +1389,7 @@ final class GameCore {
         runScores().effect(effect);
         fastEnemyNext = false;
         mode = effect;
+        playthrough.power(this,effect);
         modeLeft = Power.DURATION;
         companion.react(RunCompanion.POWER,.9f);
         if(power==null || !power.hit) {
@@ -1496,6 +1500,7 @@ final class GameCore {
      * destroyed and the wave counts as fully released, so the interlude follows.
      */
     private void endPower(Layout L) {
+        playthrough.event(this,"power_end");playthrough.cleanup=true;
         boolean teamEnded=mode==Power.TEAM;
         mode = -1;
         modeLeft = 0f;
@@ -1509,6 +1514,7 @@ final class GameCore {
         }
         if(!survival.active)spawnedThisStage = stageQuota();
         else spawnTimer=Math.min(spawnTimer,.18f);
+        playthrough.cleanup=false;
         stageByPower = !survival.active;
         companion.react(RunCompanion.POWER_END,.6f);
         flash = Math.max(flash, 1f);
@@ -1588,6 +1594,7 @@ final class GameCore {
 
     final Random rnd;
     final Store store;
+    final PlaythroughLog playthrough;
     final Progress progress;
     final Wardrobe wardrobe=new Wardrobe();
 
@@ -1647,6 +1654,7 @@ final class GameCore {
 
     GameCore(Store store, long seed, boolean trackProgress) {
         this.store = store;
+        playthrough=new PlaythroughLog(store);
         storeUpdate.load(store);
         reviewPrompt.load(store);
         updatePrompt.launch(this);
@@ -1758,7 +1766,7 @@ final class GameCore {
     }
     /** Called before stage counters reset; promotion only happens on an empty playfield. */
     void assessRosterStage() {
-        if(kidsRun || survival.active || timeAttack.active)return;
+        if(kidsRun || survival.active || timeAttack.active){playthrough.assessed(this,"separate_mode");return;}
         boolean pressure=hurtThisStage>0 || pushUsed;
         boolean ordinary=Boss.kindFor(stage)<0 && !Cave.active(this);
         boolean earnedStep=false;
@@ -1766,6 +1774,7 @@ final class GameCore {
             int correct=Math.max(0,hits-rosterStageHits),presses=correct+missesThisStage;
             boolean strong=correct>=8 && 10L*correct>=9L*presses && !pressure;
             boolean struggling=pressure || presses>=8 && 4L*correct<3L*presses;
+            playthrough.assessed(this,hurtThisStage>0?"damage":pushUsed?"rescue":correct<8?"too_few_inputs":strong?"strong":struggling?"low_accuracy":"below_promotion_accuracy");
             if(struggling)runDifficultyTier=Math.max(Pacing.EXTRA_HELP,runDifficultyTier-1);
             rosterStrongStages=strong?Math.min(ROSTER_STRONG_STAGES,rosterStrongStages+1):0;
             if(rosterStrongStages>=ROSTER_STRONG_STAGES) {
@@ -1773,7 +1782,7 @@ final class GameCore {
                 earnedStep=true;
                 if(runDifficultyTier<Pacing.NORMAL)rosterStrongStages=0;
             }
-        } else if(pressure)rosterStrongStages=0;
+        } else {playthrough.assessed(this,pressure?"boss_damage_or_rescue":"boss_or_cave_not_counted");if(pressure)rosterStrongStages=0;}
         difficultyTier=runDifficultyTier;
         if(!runFullRoster && runDifficultyTier==Pacing.NORMAL
                 && (earnedStep || rosterStrongStages>=ROSTER_STRONG_STAGES)
@@ -2050,6 +2059,7 @@ final class GameCore {
     void startGame() {
         slimeBubbles.reset();slimeBanks.reset();crystalField.reset();waterRipples.reset();
         if(!modes.playable(this))return;
+        playthrough.finish(this,"restarted");
         stopCombatSounds();
         reviewPrompt.play(this);
         bossRetry.finish(this);bossRetry.clear();
@@ -2166,6 +2176,7 @@ final class GameCore {
         preferences.apply(this);
         LinkedPairs.beginStage(this);
         if (Starter.introPending(this)) onboarding.introduceCompanion(this);
+        playthrough.start(this);
     }
 
     void tapGameOver(float x,float y,Layout L) {
@@ -2190,6 +2201,7 @@ final class GameCore {
         pairSpawnSlots = 0;
         titleKeyHint = 0f;
         diagnostic("to-title");
+        playthrough.finish(this,"abandoned");
         survival.leave(this);
         if(timeAttack.versus.active(this) && sound!=null)sound.hush();
         timeAttack.leave();
@@ -2762,6 +2774,7 @@ final class GameCore {
 
         runScores().swipes++;
         pushUsed = true;
+        playthrough.event(this,"rescue");
         pushCount = moved;
         pushT = PUSH_TIME;
         companion.rescue();
@@ -3239,6 +3252,7 @@ final class GameCore {
             return;
         }
 
+        playthrough.tick(this,elapsed,L);
         survival.update(this,elapsed);
         updatePower(dt, L);
         Blade.updateTrail(this, dt, L);
@@ -3491,6 +3505,7 @@ final class GameCore {
      */
     void destroyWord(Enemy e, float px, float py, Layout L, boolean chime) {
         if (e.destroyed || LinkedPairs.cleared(this, e, L)) return;
+        playthrough.cleared(this,e,L);
         // The word is credited now but stays listed until it has flown apart, so anything
         // gated on the field being clear waits for the animation.
         if (powerActive() && !e.destroyed) {
@@ -3680,6 +3695,7 @@ final class GameCore {
      * differently from the way play sets one up is a debug tool that hides the bug you are hunting.
      */
     void enterStage(int n) {
+        playthrough.endStage(this,"interrupted");
         boolean hadBoss = boss.active();
         Lands.transition(this, Math.max(1, n));
         stage = Math.max(1, n);
@@ -3706,6 +3722,7 @@ final class GameCore {
         cave.begin(this);
         LinkedPairs.beginStage(this);
         if (sound != null && bk < 0) sound.selectMusic(normalMusicChoice());
+        playthrough.beginStage(this);
     }
 
     /**
@@ -3723,6 +3740,7 @@ final class GameCore {
     void jumpToStage(int n, Layout L) {
         if (!BuildFlags.DEVELOPER) return;
         if (state != PLAY) return;
+        playthrough.endStage(this,"developer_jump");
         enemies.clear();
         shots.clear();
         particles.clear();
@@ -3786,6 +3804,7 @@ final class GameCore {
         flash = 1f;
         flashColor = FLASH_DAMAGE;
         Fx.explode(this, rnd, px, L.dangerY, L.enemyR * 2f, 16, 0xFFFF7A9E);
+        playthrough.event(this,"damage");
         if (lives <= 0) die();
         else {
             stageDamageHold=DAMAGE_HOLD;
@@ -3867,6 +3886,7 @@ final class GameCore {
             }
             rosterStrongStages=0;saveRoster();
         }
+        playthrough.finish(this,"defeat");
         LandPicker.recordBest(this);
     }
 

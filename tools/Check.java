@@ -121,6 +121,9 @@ abstract class Check {
         int collectTotalSaves;
         int steamerOpens, steamerOpenSaves;
         int starWins, starWinSaves;
+        String playLog;int playLogSaves;
+        public String loadPlaythroughLog() {return playLog;}
+        public boolean savePlaythroughLog(String text) {playLog=text;playLogSaves++;return true;}
         int rosterState = 1, rosterSaves;
         public int loadBest() { return best; }
         public void saveBest(int b) { best = b; saves++; }

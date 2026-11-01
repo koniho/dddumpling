@@ -364,6 +364,19 @@
     [self refreshNavigation];
     [self setNeedsDisplay];
 }
+- (void)exportPlaythroughs:(NSString *)text {
+    NSURL *file=[NSURL fileURLWithPath:[NSTemporaryDirectory() stringByAppendingPathComponent:@"dddumpling-playthroughs.jsonl"]];
+    UIViewController *presenter=self.window.rootViewController;
+    if(![text writeToURL:file atomically:YES encoding:NSUTF8StringEncoding error:nil]) {
+        UIAlertController *alert=[UIAlertController alertControllerWithTitle:@"Could not export log" message:@"The local copy is still available." preferredStyle:UIAlertControllerStyleAlert];
+        [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil]];
+        [presenter presentViewController:alert animated:YES completion:nil];return;
+    }
+    UIActivityViewController *sheet=[[UIActivityViewController alloc] initWithActivityItems:@[file] applicationActivities:nil];
+    sheet.popoverPresentationController.sourceView=self;
+    sheet.popoverPresentationController.sourceRect=CGRectMake(CGRectGetMidX(self.bounds),CGRectGetMidY(self.bounds),1,1);
+    [presenter presentViewController:sheet animated:YES completion:nil];
+}
 - (void)frame:(CADisplayLink *)link {
     if (!self.active || self.bounds.size.width <= 0) return;
     CFTimeInterval now = link.timestamp;
@@ -385,6 +398,8 @@
     [self.game updateWithFloat:elapsed];
     if([self.game takeUpdateAction])[self.appUpdate openListing];
     if(!self.storeAlertVisible && !self.gameCenterVisible && !self.window.rootViewController.presentedViewController) {
+        NSString *playLog=[self.game takePlaythroughExport];
+        if(playLog) {[self exportPlaythroughs:playLog];return;}
         int review=[self.game takeReviewAction];
         if(review)[self.appReview request:self.game view:self preview:review==2];
     }

@@ -88,6 +88,40 @@ public class MainActivity extends Activity implements GameCore.Store {
         }
     }
 
+    private static final int PLAYTHROUGH_EXPORT=111;
+    private String pendingPlaythroughExport;
+    private static final java.util.concurrent.ExecutorService playthroughWriter=java.util.concurrent.Executors.newSingleThreadExecutor();
+    private volatile boolean playthroughWriteFailed;
+    private android.util.AtomicFile playthroughFile() {
+        return new android.util.AtomicFile(new java.io.File(getFilesDir(),"difficulty-playthroughs.jsonl"));
+    }
+    @Override public String loadPlaythroughLog() {
+        if(!BuildFlags.DEVELOPER)return null;
+        try {return new String(playthroughFile().readFully(),java.nio.charset.StandardCharsets.UTF_8);}
+        catch(java.io.IOException absent){return "";}
+    }
+    @Override public boolean savePlaythroughLog(String text) {
+        if(!BuildFlags.DEVELOPER)return false;
+        playthroughWriter.execute(() -> {
+            android.util.AtomicFile file=playthroughFile();java.io.FileOutputStream out=null;
+            try {out=file.startWrite();out.write(text.getBytes(java.nio.charset.StandardCharsets.UTF_8));file.finishWrite(out);playthroughWriteFailed=false;}
+            catch(java.io.IOException failed){file.failWrite(out);playthroughWriteFailed=true;}
+        });
+        return !playthroughWriteFailed;
+    }
+    void exportPlaythroughs(String text) {
+        if(!BuildFlags.DEVELOPER)return;
+        pendingPlaythroughExport=text;
+        android.content.Intent intent=new android.content.Intent(android.content.Intent.ACTION_CREATE_DOCUMENT)
+                .addCategory(android.content.Intent.CATEGORY_OPENABLE).setType("application/json")
+                .putExtra(android.content.Intent.EXTRA_TITLE,"dddumpling-playthroughs.jsonl");
+        try {startActivityForResult(intent,PLAYTHROUGH_EXPORT);}
+        catch(android.content.ActivityNotFoundException unavailable) {
+            pendingPlaythroughExport=null;
+            new android.app.AlertDialog.Builder(this).setMessage("No file picker is available. The local run log is still saved.").setPositiveButton("OK",null).show();
+        }
+    }
+
     private static final int APP_ACTION_REQUEST=110;
     @Override protected void onNewIntent(android.content.Intent intent) {
         super.onNewIntent(intent);
@@ -142,6 +176,21 @@ public class MainActivity extends Activity implements GameCore.Store {
     }
     @Override protected void onActivityResult(int request,int result,android.content.Intent data) {
         super.onActivityResult(request,result,data);
+        if(request==PLAYTHROUGH_EXPORT) {
+            String text=pendingPlaythroughExport;pendingPlaythroughExport=null;
+            if(result==RESULT_OK && data!=null && data.getData()!=null && text!=null) {
+                android.net.Uri uri=data.getData();
+                playthroughWriter.execute(() -> {
+                    try(java.io.OutputStream out=getContentResolver().openOutputStream(uri,"wt")) {
+                        if(out==null)throw new java.io.IOException("No output stream");
+                        out.write(text.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                        runOnUiThread(() -> android.widget.Toast.makeText(this,"Playthrough log saved",android.widget.Toast.LENGTH_SHORT).show());
+                    } catch(java.io.IOException | SecurityException failed) {
+                        runOnUiThread(() -> new android.app.AlertDialog.Builder(this).setMessage("Could not export the log. The local copy is still available.").setPositiveButton("OK",null).show());
+                    }
+                });
+            }
+        }
         if(request==APP_ACTION_REQUEST && game!=null) game.core().preferences.externalFinished(game.core());
     }
 

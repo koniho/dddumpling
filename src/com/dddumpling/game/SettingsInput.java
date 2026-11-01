@@ -125,6 +125,7 @@ final class SettingsInput {
         else if(h==SettingsUi.HIT_RESET_PROGRESS) DevSettings.resetProgress(c);
         else if(h==SettingsUi.HIT_COLLECT_ALL) CaseUi.collectAll(c);
         else if(h==SettingsUi.HIT_COMPLETE_BOSSES) DevSettings.completeBosses(c);
+        else if(h==SettingsUi.HIT_EXPORT_PLAYTHROUGHS) c.playthrough.requestExport(c);
         else if(h==SettingsUi.HIT_ROSTER) c.setNextRoster(!c.fullRoster);
         else if(h==SettingsUi.HIT_GAMEOVER) c.endCurrentRun();
         else if(h==SettingsUi.HIT_INFINITE_LIVES) {
