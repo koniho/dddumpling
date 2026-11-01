@@ -435,6 +435,37 @@ final class TestSettings extends Check {
         check("Super Ghost has a seasonal display name",Skins.bossName(Skins.HALLOWEEN,Boss.SLIME).equals("SUPER GHOST")
                 && Skins.bossName(Skins.DEFAULT,Boss.SLIME).equals("SUPER SLIME"));
     }
+    private static int[] keyPixels(GameCore c,Layout L,int skin) {
+        RasterPainter raster=new RasterPainter((int)L.w,(int)L.h,1);raster.clear(0xFF000000);
+        Renderer.keys(Skins.painter(raster,skin),c,L);return raster.resolve();
+    }
+    private static long keyBrightness(int[] pixels,GameCore c,Layout L,int key) {
+        int x=(int)c.keyX(L,key),y=(int)c.keyY(L,key),r=(int)(L.keyR*.35f);long total=0;
+        for(int yy=y-r;yy<=y+r;yy++)for(int xx=x-r;xx<=x+r;xx++) {
+            int color=pixels[yy*(int)L.w+xx];total+=(color>>16&255)+(color>>8&255)+(color&255);
+        }
+        return total;
+    }
+    private static void stolenSkinKeys() {
+        group("stolen-key appearance across skins");
+        Layout L=new Layout();L.compute(320,700,0,0,0,0);
+        GameCore c=new GameCore(new Mem(),221L);c.startGame();
+        c.fullRoster=c.runFullRoster=true;c.boss.begin(Boss.OCTOPUS,15,c.rnd);c.boss.intro=0;
+        for(int skin=0;skin<Skins.COUNT;skin++) {
+            c.boss.disabledKeys=0;int[] normal=keyPixels(c,L,skin);
+            for(int key=0;key<Glyph.COUNT;key++) {
+                c.boss.disabledKeys=1<<key;int[] stolen=keyPixels(c,L,skin);
+                check("entire stolen character is subdued "+skin+"/"+key,
+                        keyBrightness(stolen,c,L,key)<keyBrightness(normal,c,L,key)*.7);
+                boolean neighbors=true;
+                for(int other=0;other<Glyph.COUNT;other++)if(other!=key)
+                    neighbors &= keyBrightness(stolen,c,L,other)==keyBrightness(normal,c,L,other);
+                check("theft leaves neighboring characters available "+skin+"/"+key,neighbors);
+            }
+            c.boss.disabledKeys=0;
+            check("returned keys recover all skin colors "+skin,java.util.Arrays.equals(normal,keyPixels(c,L,skin)));
+        }
+    }
     private static final class NamePainter extends OpacityPainter {
         final java.util.List<String> labels=new java.util.ArrayList<>();
         NamePainter(int skin) {super(Skins.painter(new RasterPainter(1,1,1),skin),1);}
@@ -553,6 +584,7 @@ final class TestSettings extends Check {
     static void all(Layout L) {
         servicesTab(L);
         seasonalSkins(L);
+        stolenSkinKeys();
         skinGameplayParity(L);
         infiniteLives(L);
         developerBossCompletion(L);

@@ -992,7 +992,9 @@ final class Renderer extends Draw {
             }
 
             // Activated keys strobe through the palette rather than merely brightening.
-            boolean bossDisabled = c.boss.keyDisabled(g) || c.boss.playerLocked();
+            boolean stolen = c.boss.keyDisabled(g);
+            boolean bossDisabled = stolen || c.boss.playerLocked();
+            float disabledAmount = 0f;
             int col = c.flurry() ? rainbowAt(cy, L, c.clock) : Skins.keyColor(p,g);
             if (bossDisabled) {
                 float gray = 1f;
@@ -1001,6 +1003,7 @@ final class Renderer extends Draw {
                     gray = Math.min(1f, elapsed / 0.12f)
                             * Math.min(1f, c.boss.slimeKeyLock / 0.16f);
                 }
+                disabledAmount = gray;
                 col = Glyph.mix(col, 0xFF898992, 0.90f * gray);
             }
             if (press > 0.02f) {
@@ -1035,26 +1038,38 @@ final class Renderer extends Draw {
             p.strokePoly(Glyph.hex(cx, cy, r), Glyph.withAlpha(col, (int) ((190 + 65 * press) * appear)),
                     r * 0.085f);
 
+            // Apply availability after skin artwork chooses its colors, including costume details.
+            Painter keyArt = disabledAmount > 0f
+                    ? new OpacityPainter(new MonochromePainter(p, disabledAmount), 1f - .72f * disabledAmount) : p;
             if (c.incognito()) {
-                Kawaii.incognito(p,g,cx,cy,r*0.60f,col,c.incognitoMorph);
+                Kawaii.incognito(keyArt,g,cx,cy,r*0.60f,col,c.incognitoMorph);
             } else if (newcomer && c.rosterScene == GameCore.ROSTER_LEAVE) {
-                Kawaii.crying(p, g, cx, cy, r * 0.60f, col, 1f, c.clock * 5f + g, 1f);
+                Kawaii.crying(keyArt, g, cx, cy, r * 0.60f, col, 1f, c.clock * 5f + g, 1f);
             } else if (gone > 0.02f) {
                 // Stagger the sobs so the deck feels alive rather than moving as one stamp.
                 float sob = c.clock * 4.8f + g * 1.37f;
                 float tremble = (float) Math.sin(sob * 2.3f) * r * 0.025f * gone;
                 float sag = r * (0.05f + 0.025f * (float) Math.sin(sob)) * gone;
-                Kawaii.crying(p, g, cx + tremble, cy + sag, r * 0.60f, col,
+                Kawaii.crying(keyArt, g, cx + tremble, cy + sag, r * 0.60f, col,
                         1f + 0.10f * gone, sob, gone);
             } else if (c.state == GameCore.BONUS && c.starBonus) {
-                starArrow(p, cx, cy, r, g < Glyph.COUNT / 2 ? -1f : 1f, col, press);
+                starArrow(keyArt, cx, cy, r, g < Glyph.COUNT / 2 ? -1f : 1f, col, press);
             } else {
-                Kawaii.draw(p, g, cx, cy, r * 0.60f * (1f + 0.12f * press), col,
+                Kawaii.draw(keyArt, g, cx, cy, r * 0.60f * (1f + 0.12f * press), col,
                         1f + 0.20f * press, 0.25f + 0.6f * press);
             }
+            if (stolen) stolenKeyBadge(p, cx + r * .54f, cy + r * .54f, r * .28f);
             if (c.boss.kind == Boss.SLIME && c.boss.slimeKeyLock > 0f)
                 slimeKeyCover(p, c, L, cx, cy, r, g);
         }
+    }
+
+    /** A non-color cue remains readable even for naturally pale or gray skins. */
+    private static void stolenKeyBadge(Painter p, float x, float y, float r) {
+        p.fillCircle(x, y, r, 0xFF292739);
+        p.arc(x, y - r * .15f, r * .34f, r * .45f, 180, 180, 0xFFE8E6F1, r * .15f);
+        p.fillRect(x - r * .53f, y - r * .12f, x + r * .53f, y + r * .55f, 0xFFE8E6F1);
+        p.line(x, y + r * .12f, x, y + r * .30f, 0xFF292739, r * .15f);
     }
 
     /** A launched punishment blob that coats one key, then sags and drips clear. */

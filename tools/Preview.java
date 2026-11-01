@@ -255,6 +255,12 @@ final class Preview {
     }
     private static void skinFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wantedGroup("200-"))return;
+        for(int skin=0;skin<Skins.COUNT;skin++) {
+            GameCore stolen=TestBoss.enterBoss(L,Boss.OCTOPUS,221L);
+            stolen.preferences.skin=skin;stolen.stageBanner=0;
+            stolen.boss.disabledKeys=(1<<0)|(1<<2)|(1<<4);
+            shot(dir,"200-stolen-keys-"+skin,stolen,L,w,h,ss);
+        }
         for(int boss=0;boss<Boss.COUNT;boss++) {
             GameCore names=TestTimeAttack.start(boss);names.preferences.skin=Skins.HALLOWEEN;
             names.toTitle();names.returnFade=0;
