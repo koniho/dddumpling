@@ -12,7 +12,7 @@ final class TestPlaythroughLog extends Check {
         c.playthrough.tick(c,2,L);check("frames do not write the log",save.playLogSaves==writes);
         enemy.y=L.playTop+(L.dangerY-L.playTop)*.6f;c.playthrough.tick(c,2,L);
         c.playthrough.cleared(c,enemy,L);c.hits=2;c.assessRosterStage();c.playthrough.endStage(c,"cleared");
-        check("captures promotion rejection evidence",save.playLog.contains("\"decision\":\"too_few_inputs\"") && save.playLog.contains("\"correct\":2"));
+        check("captures held-stage evidence",save.playLog.contains("\"decision\":\"hold\"") && save.playLog.contains("\"correct\":2"));
         check("captures halfway pressure and clear depth",save.playLog.contains("\"halfway_s\":2.0") && save.playLog.contains("\"deepest_enemy\":0.6") && save.playLog.contains("\"mean_clear_depth\":0.6"));
         c.enterStage(2);c.paused=true;writes=save.playLogSaves;
         c.playthrough.tick(c,100,L);check("pause does not advance checkpoints",save.playLogSaves==writes);

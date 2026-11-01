@@ -698,16 +698,18 @@ movement speed. Light help caps at five presses and three symbols, with 90% move
 Normal uses the current ramp unchanged. Land-specific caps still apply. Spawn intervals,
 concurrent-enemy caps, stage quotas, power-up refill rules and enemy introductions are unchanged.
 
-New four-key players start with extra help; existing six-key saves retain Normal. Three strong
-ordinary stages remove one tier of assistance. A strong stage has at least eight correct inputs,
-at least 90% accuracy, no damage and no rescue swipe. Damage, rescue use, or accuracy below 75%
-with at least eight attempts adds one tier of help at stage clear. Other weak stages break the
-streak. Bosses and minigames do not earn promotion; boss damage breaks the streak. The streak
-starts fresh each run. Changes take effect between stages, never midway through an enemy.
-Six keys join only upon reaching Normal through sustained strong play and after earning Super
-Slime's collectible. An early defeat in either of the first two stages played with six keys
-returns the next run to four keys with extra help, relative to the selected starting land or
-where six keys joined. Other defeats add one tier of help for the next run. Existing join and
+New four-key players start with extra help; existing six-key saves retain Normal. Ordinary stages
+accumulate confidence: a damage-free stage earns one point with either eight correct inputs at
+90% accuracy, or observed top-entry enemies staying above halfway to the damage line. Borderline
+stages hold confidence. Rescue use is not a penalty. Damage subtracts one point per stage.
+Three positive points remove one tier of assistance; three negative points add one, resetting the
+meter after either change. Any power-up usage holds both confidence and assistance for that stage,
+even if damage occurs or the run ends. Bosses and caves also hold; boss defeats do not lower
+ordinary-stage assistance. Confidence starts fresh each run. Changes take effect between stages.
+Six keys join upon reaching Normal through strong play and after earning Super Slime's collectible.
+An early ordinary-stage defeat in either of the first two stages played with six keys returns the
+next run to four keys with extra help, relative to the selected starting land or where six keys
+joined. Other ordinary-stage defeats add one tier of help for the next run. Existing join and
 farewell animations announce roster changes. Kids Mode, Survival and Boss Time Attack retain
 their own difficulty rules and never change saved Adventure assistance.
 

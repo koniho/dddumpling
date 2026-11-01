@@ -15,18 +15,18 @@ python3 tools/analyze-playthroughs.py dddumpling-playthroughs.jsonl --csv > stag
 
 The schema version is 1. Each line identifies a run by a monotonic timestamp-based ID and stage
 attempt. Run starts include app/build versions. Stages record starting/ending assistance,
-key count, confidence streak, effective word/speed/spawn settings, accuracy inputs, damage,
+key count, signed confidence, effective word/speed/spawn settings, accuracy inputs, damage,
 rescue use, power-up types, ordinary/rush/fog/dive/pair clear counts and clear depth/timing.
-Difficulty decisions explicitly explain insufficient inputs, accuracy, damage, rescue, strong
-play and excluded boss/cave stages. This makes successful Ninja stages with few counted key
-presses visible rather than treating their absence of typing as poor performance.
+Difficulty decisions record `strong_accuracy`, `strong_control`, `damage`, `hold`, `power_hold`
+and `boss_or_cave_not_counted`. Rescue is recorded but is not a difficulty penalty. Power-up stages
+always hold. The legacy `streak` / `start_streak` fields now contain signed confidence points.
 
 Depth is normalized over the playable approach: 0 at the top, 0.5 halfway, 1 at the damage line.
 `deepest_enemy` tracks the furthest active threat, not only enemies eventually cleared.
 `halfway_s` measures active time with any threat below halfway; separate top-entry metrics
 exclude side-entry enemies that can start lower down. A clean stage with little or no halfway
-pressure is evidence the player has spare capacity. These measurements do not themselves
-change the difficulty algorithm.
+pressure is evidence the player has spare capacity. The game separately tracks whether top-entry
+enemies cross halfway, even when logging is disabled, as an alternative strong-play signal. Side-entry depth does not affect that signal.
 
 All stage measurements are cumulative. Analyze the last record per `(run, attempt)`; never sum
 checkpoints. `stage_cleared` is a completed stage; death, abandonment, retries and developer jumps

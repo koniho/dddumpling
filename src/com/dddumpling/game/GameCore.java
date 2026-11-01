@@ -746,6 +746,7 @@ final class GameCore {
     /** Snapshot used by the current run; settings only changes the next one. */
     boolean runFullRoster;
     int rosterStrongStages, rosterStageHits, rosterStartStage;
+    boolean rosterStagePowerUsed, rosterTopSeen, rosterTopCrossed;
     int difficultyTier=Pacing.EXTRA_HELP, runDifficultyTier=Pacing.NORMAL;
     static final int ROSTER_STRONG_STAGES=3, ROSTER_EARLY_STAGES=2;
     boolean rosterLeavePending;
@@ -1389,6 +1390,7 @@ final class GameCore {
         runScores().effect(effect);
         fastEnemyNext = false;
         mode = effect;
+        rosterStagePowerUsed=true;
         playthrough.power(this,effect);
         modeLeft = Power.DURATION;
         companion.react(RunCompanion.POWER,.9f);
@@ -1767,27 +1769,37 @@ final class GameCore {
     /** Called before stage counters reset; promotion only happens on an empty playfield. */
     void assessRosterStage() {
         if(kidsRun || survival.active || timeAttack.active){playthrough.assessed(this,"separate_mode");return;}
-        boolean pressure=hurtThisStage>0 || pushUsed;
         boolean ordinary=Boss.kindFor(stage)<0 && !Cave.active(this);
         boolean earnedStep=false;
-        if(ordinary) {
+        if(ordinary && !rosterStagePowerUsed) {
             int correct=Math.max(0,hits-rosterStageHits),presses=correct+missesThisStage;
-            boolean strong=correct>=8 && 10L*correct>=9L*presses && !pressure;
-            boolean struggling=pressure || presses>=8 && 4L*correct<3L*presses;
-            playthrough.assessed(this,hurtThisStage>0?"damage":pushUsed?"rescue":correct<8?"too_few_inputs":strong?"strong":struggling?"low_accuracy":"below_promotion_accuracy");
-            if(struggling)runDifficultyTier=Math.max(Pacing.EXTRA_HELP,runDifficultyTier-1);
-            rosterStrongStages=strong?Math.min(ROSTER_STRONG_STAGES,rosterStrongStages+1):0;
+            boolean accurate=correct>=8 && 10L*correct>=9L*presses;
+            boolean controlled=rosterTopSeen && !rosterTopCrossed;
+            if(hurtThisStage>0) {
+                rosterStrongStages--;
+                playthrough.assessed(this,"damage");
+            } else if(accurate || controlled) {
+                rosterStrongStages++;
+                playthrough.assessed(this,accurate?"strong_accuracy":"strong_control");
+            } else playthrough.assessed(this,"hold");
             if(rosterStrongStages>=ROSTER_STRONG_STAGES) {
                 runDifficultyTier=Math.min(Pacing.NORMAL,runDifficultyTier+1);
-                earnedStep=true;
-                if(runDifficultyTier<Pacing.NORMAL)rosterStrongStages=0;
+                earnedStep=true;rosterStrongStages=0;
+            } else if(rosterStrongStages<=-ROSTER_STRONG_STAGES) {
+                runDifficultyTier=Math.max(Pacing.EXTRA_HELP,runDifficultyTier-1);
+                rosterStrongStages=0;
             }
-        } else {playthrough.assessed(this,pressure?"boss_damage_or_rescue":"boss_or_cave_not_counted");if(pressure)rosterStrongStages=0;}
+        } else playthrough.assessed(this,rosterStagePowerUsed?"power_hold":"boss_or_cave_not_counted");
         difficultyTier=runDifficultyTier;
         if(!runFullRoster && runDifficultyTier==Pacing.NORMAL
-                && (earnedStep || rosterStrongStages>=ROSTER_STRONG_STAGES)
+                && earnedStep
                 && ModeSelector.bossUnlocked(this,Boss.SLIME))unlockRoster();
         saveRoster();
+    }
+    void observeRosterEnemy(Enemy e,Layout L) {
+        if(e.destroyed || e.dying || e.sideEntry)return;
+        rosterTopSeen=true;
+        rosterTopCrossed|=e.y>=L.playTop+(L.dangerY-L.playTop)*.5f;
     }
     private void beginRosterLeave() {
         rosterScene = ROSTER_LEAVE;
@@ -2099,6 +2111,7 @@ final class GameCore {
         squishes = 0;
         stage = Lands.firstStage(runStartLand);
         rosterStartStage=stage;rosterStrongStages=rosterStageHits=0;
+        rosterStagePowerUsed=rosterTopSeen=rosterTopCrossed=false;
         spawnedThisStage = 0;
         fastEnemyNext = false;
         resolvedThisStage = 0;
@@ -3252,6 +3265,7 @@ final class GameCore {
             return;
         }
 
+        for(Enemy e:enemies)observeRosterEnemy(e,L);
         playthrough.tick(this,elapsed,L);
         survival.update(this,elapsed);
         updatePower(dt, L);
@@ -3505,6 +3519,7 @@ final class GameCore {
      */
     void destroyWord(Enemy e, float px, float py, Layout L, boolean chime) {
         if (e.destroyed || LinkedPairs.cleared(this, e, L)) return;
+        observeRosterEnemy(e,L);
         playthrough.cleared(this,e,L);
         // The word is credited now but stays listed until it has flown apart, so anything
         // gated on the field being clear waits for the animation.
@@ -3702,6 +3717,7 @@ final class GameCore {
         progress.enterStage(stage);
         stageDamageHold=0f;
         rosterStageHits=hits;
+        rosterStagePowerUsed=powerActive();rosterTopSeen=rosterTopCrossed=false;
         // One per stage, and this is where a stage begins.
         pushUsed = false;
         if(onboarding.rescueGuide)onboarding.clear();
@@ -3797,7 +3813,6 @@ final class GameCore {
         companion.react(RunCompanion.DAMAGE,1f);
         if(!(BuildFlags.DEVELOPER && devInfiniteLives))lives--;
         hurtThisStage++;
-        rosterStrongStages=0;
         combo = 0;
         shake = boss.kind==Boss.ALLIGATOR && boss.fighting()?1.2f:1f;
         if (sound != null) sound.damage();
@@ -3878,7 +3893,8 @@ final class GameCore {
         finishTownRun();
         highScores.finish(this);
         progress.finishRun(score, false);
-        if (!kidsRun && !survival.active && !timeAttack.active) {
+        if (!kidsRun && !survival.active && !timeAttack.active
+                && Boss.kindFor(stage)<0 && !Cave.active(this) && !rosterStagePowerUsed) {
             boolean early=stage>=rosterStartStage && stage-rosterStartStage<ROSTER_EARLY_STAGES;
             difficultyTier=early?Pacing.EXTRA_HELP:Math.max(Pacing.EXTRA_HELP,runDifficultyTier-1);
             if (early && runFullRoster && fullRoster) {
