@@ -698,12 +698,13 @@ movement speed. Light help caps at five presses and three symbols, with 90% move
 Normal uses the current ramp unchanged. Land-specific caps still apply. Spawn intervals,
 concurrent-enemy caps, stage quotas, power-up refill rules and enemy introductions are unchanged.
 
-New four-key players start with extra help; existing six-key saves retain Normal. Ordinary stages
-accumulate confidence: a damage-free stage earns one point with either eight correct inputs at
+New four-key players start with extra help; legacy six-key saves migrate to Normal. Returning
+players resume their saved tier. Ordinary stages assess confidence: a damage-free stage is strong with either eight correct inputs at
 90% accuracy, or observed top-entry enemies staying above halfway to the damage line. Borderline
 stages hold confidence. Rescue use is not a penalty. Damage subtracts one point per stage.
-Three positive points remove one tier of assistance; three negative points add one, resetting the
-meter after either change. Any power-up usage holds both confidence and assistance for that stage,
+One strong stage removes one tier of assistance and clears earlier negative confidence. Three
+negative points add one tier of assistance and reset the meter. Any power-up usage holds both
+confidence and assistance for that stage,
 even if damage occurs or the run ends. Bosses and caves also hold; boss defeats do not lower
 ordinary-stage assistance. Confidence starts fresh each run. Changes take effect between stages.
 Six keys join upon reaching Normal through strong play and after earning Super Slime's collectible.

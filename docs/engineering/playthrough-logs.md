@@ -19,7 +19,8 @@ key count, signed confidence, effective word/speed/spawn settings, accuracy inpu
 rescue use, power-up types, ordinary/rush/fog/dive/pair clear counts and clear depth/timing.
 Difficulty decisions record `strong_accuracy`, `strong_control`, `damage`, `hold`, `power_hold`
 and `boss_or_cave_not_counted`. Rescue is recorded but is not a difficulty penalty. Power-up stages
-always hold. The legacy `streak` / `start_streak` fields now contain signed confidence points.
+always hold. The legacy `streak` / `start_streak` fields now contain signed confidence points. One strong ordinary stage promotes and resets
+confidence; three negative points demote. Held stages preserve the existing value.
 
 Depth is normalized over the playable approach: 0 at the top, 0.5 halfway, 1 at the damage line.
 `deepest_enemy` tracks the furthest active threat, not only enemies eventually cleared.

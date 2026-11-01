@@ -748,7 +748,7 @@ final class GameCore {
     int rosterStrongStages, rosterStageHits, rosterStartStage;
     boolean rosterStagePowerUsed, rosterTopSeen, rosterTopCrossed;
     int difficultyTier=Pacing.EXTRA_HELP, runDifficultyTier=Pacing.NORMAL;
-    static final int ROSTER_STRONG_STAGES=3, ROSTER_EARLY_STAGES=2;
+    static final int ROSTER_STRONG_STAGES=1, ROSTER_DAMAGE_STAGES=3, ROSTER_EARLY_STAGES=2;
     boolean rosterLeavePending;
     static final int ROSTER_JOIN = 1, ROSTER_LEAVE = -1;
     static final float ROSTER_SCENE_TIME = 2.8f;
@@ -1779,13 +1779,13 @@ final class GameCore {
                 rosterStrongStages--;
                 playthrough.assessed(this,"damage");
             } else if(accurate || controlled) {
-                rosterStrongStages++;
+                rosterStrongStages=ROSTER_STRONG_STAGES;
                 playthrough.assessed(this,accurate?"strong_accuracy":"strong_control");
             } else playthrough.assessed(this,"hold");
             if(rosterStrongStages>=ROSTER_STRONG_STAGES) {
                 runDifficultyTier=Math.min(Pacing.NORMAL,runDifficultyTier+1);
                 earnedStep=true;rosterStrongStages=0;
-            } else if(rosterStrongStages<=-ROSTER_STRONG_STAGES) {
+            } else if(rosterStrongStages<=-ROSTER_DAMAGE_STAGES) {
                 runDifficultyTier=Math.max(Pacing.EXTRA_HELP,runDifficultyTier-1);
                 rosterStrongStages=0;
             }
