@@ -2,6 +2,8 @@
 
 *DDDUMPLING dev blog · November 1, 2026 · Development update*
 
+[Read on itch.io](https://theorifice.itch.io/dddumpling/devlog/1745553/let-more-players-meet-the-bosses)
+
 I did some playtesting with kids and the difficulty ramp was too much. Especially the word length. There is a lot going on when you are still learning which squishy goes with which key, and adding more keys and longer words makes that pile up quickly.
 
 I want players to be challenged, but I also want them to get to the bosses. That's the big payoff. The bosses have different mechanics, personalities and a bunch of animation work that I want people to actually see. Getting stuck in the ordinary stages before reaching them is a problem.
