@@ -16,6 +16,14 @@ determined and crying states. Key IDs and input positions remain unchanged: 0 gh
 2 Jack-o'-lantern, 3 witch, 4 Frankenstein, 5 black cat. `Skins.keyColor` supplies the matching key and
 prompt palette. Gameplay RNG, matching, collision geometry and progress do not depend on skins.
 
+Key availability belongs to `Renderer.keys`, after the skin has selected all of its artwork colors.
+The shared painter desaturates and fades the complete disabled character; stolen keys also receive
+a lock badge, so pale/gray characters retain a non-color cue. New skins must draw through the
+provided `Painter` (including costume details) rather than bypassing its effects. Do not implement
+stolen/disabled palettes inside individual skins. `TestSettings` renders every registered skin/key
+to check dimming, unaffected neighboring keys and full restoration; `200-stolen-keys-` previews
+show each skin with alternating available/stolen keys.
+
 Boss skins reuse the existing spring-body geometry and animation entry points in `BossScreen`,
 `BossCollect` and `AlligatorArt`. Local palette wrappers preserve shading, transparency and
 flashes; decorations follow the body pose. Palette wrappers disable cached art stamps where
