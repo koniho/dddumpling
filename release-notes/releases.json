@@ -1,6 +1,22 @@
 {
   "releases": [
     {
+      "version": "0.1.39",
+      "changes": [
+        {
+          "icon": "misc",
+          "title": "Little improvements",
+          "autoReset": false,
+          "improvements": [
+            {
+              "where": "In your display case",
+              "why": "Hats sit more naturally on your squishies, and shoes fit neatly on star-shaped friends."
+            }
+          ]
+        }
+      ]
+    },
+    {
       "version": "0.1.38",
       "changes": [
         {
