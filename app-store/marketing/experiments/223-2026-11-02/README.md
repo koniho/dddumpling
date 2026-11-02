@@ -46,4 +46,18 @@ Physical-phone profile-to-store handoff is still unverified: no device was conne
 
 ## Current state
 
-Launch in progress. No completed publication is asserted by this initial entry. See subsequent ledger updates and issue comments for verified URLs and schedules.
+All 18 posts are confirmed scheduled: six each on @dddumplingplay, @theorifice and @dddumpling.play. None is asserted published before its scheduled time. See the publication ledger for every URL, account and checkpoint.
+
+## Follow-up files and checkpoints
+
+- [Publication ledger](publication-ledger.csv): 18 placements with planned versus confirmed schedules, exact media hashes, post URLs, and provisional 48-hour / seven-day checks.
+- [Measurement log](measurement-log.csv): append one row per metric and checkpoint; preserve each platform's metric names and reporting windows.
+- First planned check: November 4, 2026 after 18:00–18:30 Chicago. Recalculate from actual publication if delayed.
+- Day-14 interim: November 15. Final seven-day maturity of the last planned posts: November 20 after 18:30 Chicago; allow additional store reporting lag.
+- No automatic future measurement or reminder job is configured.
+
+November 2 progress: PR #224 merged; page deployment succeeded (run 41420026396). YouTube download page verified live. Both YouTube profile links are saved, and all 18 social placements are confirmed scheduled. TikTok desktop profile has no website field, so its approved captions use app-store search.
+
+Additional authorized intervention: update both store descriptions and create a gameplay supercut preview. This is separate from the six-clip creative comparison. Record the actual submission and live dates below before comparing store outcomes; concurrent changes prevent attributing an install lift solely to the Shorts.
+
+Store work: [supercut provenance and state](store-supercut.json), [description copy](store-description.txt). Keep exact store submission and live timestamps separate from social publication dates.

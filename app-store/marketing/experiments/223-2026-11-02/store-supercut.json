@@ -1,0 +1,56 @@
+{
+  "assets": [
+    {
+      "file": "apple-preview.mp4",
+      "sha256": "03fc78f7d4232ab29f18aea3aaf795815f3d42aca5437690ceeb4340ddc9238d",
+      "duration_seconds": 27
+    },
+    {
+      "file": "play-preview.mp4",
+      "sha256": "4404557a269eacca9ecc2c19bf1f8e9667e94300654e0412d4cda7d4835d5054",
+      "duration_seconds": 27
+    }
+  ],
+  "local_directory": "/Users/akho/dev/dddumpling/out/video/growth-223/supercut",
+  "shots": [
+    [
+      "C1-ninja",
+      3,
+      4
+    ],
+    [
+      "B1-meowcula",
+      5.5,
+      6
+    ],
+    [
+      "W1-pear-drop",
+      1,
+      6
+    ],
+    [
+      "B2-gator",
+      3,
+      4
+    ],
+    [
+      "C2-flurry",
+      4,
+      3
+    ],
+    [
+      "W2-dohnut",
+      0,
+      4
+    ]
+  ],
+  "apple_status": "Uploaded and processed in Asset Library; recognized as App Preview for iPhone with Dynamic Island (large display). Awaiting new Apple version; 0.1.39 release notes drafted for user approval. Agreement accepted by Account Holder.",
+  "google_status": "New full description and video saved. Submission attempted; review state not yet confirmed.",
+  "apple_asset_id": "e9000019-5fee-87f3-811b-b6d79e510916",
+  "youtube_host": {
+    "url": "https://www.youtube.com/watch?v=nAevNW-4zY8",
+    "channel": "@dddumplingplay",
+    "visibility": "unlisted",
+    "status": "uploaded_verified"
+  }
+}
