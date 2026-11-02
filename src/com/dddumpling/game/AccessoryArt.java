@@ -19,7 +19,8 @@ final class AccessoryArt extends Draw {
             else if(slot==Accessories.BOOTS) {
                 // The cat's four independently stepping paws are dressed by its portrait renderer.
                 if(who!=Collect.RAINBOW_CAT_FRIEND)item(out,item,feetX,feetY,r*.68f*bootScale,clock,
-                        who>=Collect.DUCK_FIRST && who<Collect.DUCK_FIRST+Collect.DUCK_COUNT?.88f:.49f);
+                        who>=Collect.DUCK_FIRST && who<Collect.DUCK_FIRST+Collect.DUCK_COUNT?.88f:
+                        Collect.SHAPE[who]==Collect.STAR?.76f:.49f); // Star shoes overlap the two lower tips.
             }
             else {
                 int variant=Accessories.variant(item);

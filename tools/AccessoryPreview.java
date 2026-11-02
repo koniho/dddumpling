@@ -4,6 +4,18 @@ import java.io.File;
 /** Portrait review sheets use exactly the live wardrobe and character renderers. */
 final class AccessoryPreview {
     static void frames(File dir,Layout L,int w,int h,int ss) throws Exception {
+        for(int who:new int[]{9,32,28,16,1,10})for(int item:new int[]{18,19,2,6,7,8,23,24,25,26}) {
+            int slot=Accessories.slot(item);
+            if(slot==Accessories.BOOTS && who!=32 || (who==1 || who==10) && item!=19)continue;
+            GameCore fit=TestAccessories.ready();TestAccessories.grant(fit);fit.clock=1.2f;
+            fit.collected=Collect.add(fit.collected,who);fit.caseOpen=true;fit.caseFade=1;
+            fit.caseIndex=who;fit.openStory();fit.storyT=2;fit.storyPulse=2;
+            fit.wardrobe.equip(fit,item,who);fit.wardrobe.screen.show(fit,who);
+            fit.wardrobe.screen.choose(fit,10+slot);
+            fit.wardrobe.screen.trayT=1;fit.wardrobe.screen.danceT=3;
+            RasterPainter canvas=new RasterPainter(w,h,ss);Renderer.draw(canvas,fit,L);
+            Png.write(new File(dir,(slot==Accessories.HAT?"214-hat-fit-":"214-shoe-fit-")+who+"-"+item+".png"),canvas.resolve(),w,h);
+        }
         GameCore cat=TestAccessories.ready();TestAccessories.grant(cat);cat.clock=1.2f;
         cat.collected=Collect.add(cat.collected,Collect.RAINBOW_CAT_FRIEND);
         cat.caseOpen=true;cat.caseFade=1;cat.caseIndex=Collect.RAINBOW_CAT_FRIEND;cat.openStory();cat.storyT=2;cat.storyPulse=2;

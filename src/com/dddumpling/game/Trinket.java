@@ -87,7 +87,7 @@ final class Trinket {
         float faceY=cy+r*FACE_DY[shape],faceR=r*FACE_R[shape];
         if(mood<0) face(p, i % 3, cx, faceY, faceR, fade);
         else reactionFace(p,cx,faceY,faceR,clock,fade,mood,look);
-        AccessoryArt.outfit(p,i,cx,faceY,faceR,cy+r*AccessoryAnchors.TOP[shape],cx,cy+r*AccessoryAnchors.FEET[shape],r,clock,fade,ninja,shape==Collect.CONE?.50f:1f);
+        AccessoryArt.outfit(p,i,cx,faceY,faceR,cy+r*AccessoryAnchors.hatTop(shape,p.accessory(i,Accessories.HAT)),cx,cy+r*AccessoryAnchors.FEET[shape],r,clock,fade,ninja,shape==Collect.CONE?.50f:1f);
         if(ninja) ninjaMask(p,cx,faceY,r*.82f,fade);
         if(glitter!=null)glitter.finish();
         AccessoryArt.flair(p,i,cx,cy+r*AccessoryAnchors.TOP[shape],cy+r*AccessoryAnchors.FEET[shape],r,clock,fade);
