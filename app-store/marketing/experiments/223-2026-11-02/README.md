@@ -56,7 +56,7 @@ All 18 posts are confirmed scheduled: six each on @dddumplingplay, @theorifice a
 - Day-14 interim: November 15. Final seven-day maturity of the last planned posts: November 20 after 18:30 Chicago; allow additional store reporting lag.
 - No automatic future measurement or reminder job is configured.
 
-November 2 progress: PR #224 merged; page deployment succeeded (run 41420026396). YouTube download page verified live. Both YouTube profile links are saved, and all 18 social placements are confirmed scheduled. TikTok desktop profile has no website field, so its approved captions use app-store search.
+November 2 progress: PR #224 merged; page deployment succeeded (run 41420026396). YouTube and TikTok download pages verified live with their campaign parameters. Both YouTube profile links are saved, and all 18 social placements are confirmed scheduled. TikTok desktop profile has no website field, so its approved captions use app-store search.
 
 Additional authorized intervention: update both store descriptions and create a gameplay supercut preview. This is separate from the six-clip creative comparison. Record the actual submission and live dates below before comparing store outcomes; concurrent changes prevent attributing an install lift solely to the Shorts.
 

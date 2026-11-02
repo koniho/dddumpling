@@ -44,13 +44,19 @@
       4
     ]
   ],
-  "apple_status": "Uploaded and processed in Asset Library; recognized as App Preview for iPhone with Dynamic Island (large display). Awaiting new Apple version; 0.1.39 release notes drafted for user approval. Agreement accepted by Account Holder.",
-  "google_status": "New full description and video saved. Submission attempted; review state not yet confirmed.",
+  "apple_status": "0.1.39 created; approved full description and release notes saved. Supercut assigned as sole preview in the iPhone Face ID large display slot and inherited by Dynamic Island medium/large. Default five-second Meowcula poster retained. Build preparation PR #225 merged after passing checks; signed build and upload running.",
+  "google_status": "Full description and unlisted video URL saved. Repeated Send changes for review attempts return to Changes not yet submitted for review; no new submission activity. User asked to try the visible button while Apple build continues.",
   "apple_asset_id": "e9000019-5fee-87f3-811b-b6d79e510916",
   "youtube_host": {
     "url": "https://www.youtube.com/watch?v=nAevNW-4zY8",
     "channel": "@dddumplingplay",
     "visibility": "unlisted",
     "status": "uploaded_verified"
-  }
+  },
+  "apple_version": "0.1.39",
+  "apple_release_notes_approved": "2026-11-02",
+  "apple_release_pr": "https://github.com/koniho/dddumpling/pull/225",
+  "apple_build": "33.1",
+  "apple_release_commit": "1a3f73eef4ad9d4e8a90ccc434dc17b9f9b995ca",
+  "apple_build_run": "https://github.com/koniho/dddumpling/actions/runs/41428451304"
 }
