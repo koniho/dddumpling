@@ -44,7 +44,7 @@
       4
     ]
   ],
-  "apple_status": "0.1.39 created; approved full description and release notes saved. Supercut assigned as sole preview in the iPhone Face ID large display slot and inherited by Dynamic Island medium/large. Default five-second Meowcula poster retained. Build preparation PR #225 merged after passing checks; signed build and upload running.",
+  "apple_status": "Submitted for review: 0.1.39 (33.1), with updated full description, approved release notes and the 27-second supercut as sole iPhone preview. Waiting for Review; automatic release after approval remains selected. Existing rating retained.",
   "google_status": "Full description and unlisted video URL saved. Repeated Send changes for review attempts return to Changes not yet submitted for review; no new submission activity. User asked to try the visible button while Apple build continues.",
   "apple_asset_id": "e9000019-5fee-87f3-811b-b6d79e510916",
   "youtube_host": {
@@ -58,5 +58,22 @@
   "apple_release_pr": "https://github.com/koniho/dddumpling/pull/225",
   "apple_build": "33.1",
   "apple_release_commit": "1a3f73eef4ad9d4e8a90ccc434dc17b9f9b995ca",
-  "apple_build_run": "https://github.com/koniho/dddumpling/actions/runs/41428451304"
+  "apple_build_run": "https://github.com/koniho/dddumpling/actions/runs/41428451304",
+  "apple_full_checks": {
+    "url": "https://github.com/koniho/dddumpling/actions/runs/41428451007",
+    "status": "success",
+    "includes": [
+      "shared production checks",
+      "native and UI tests",
+      "unsigned device archive"
+    ]
+  },
+  "apple_upload_displayed_at": "Nov 2, 2026 4:48 AM America/Chicago",
+  "apple_build_status": "Uploaded, processed, Ready to Submit",
+  "apple_build_id": "fc8d5d66-68b8-4d11-ab26-2105be0d35f0",
+  "apple_build_run_status": "success",
+  "apple_submission_id": "9186d890-e013-4688-8836-f2f0531bac4b",
+  "apple_submitted_at": "2026-11-02T04:53:00-06:00",
+  "apple_submission_url": "https://appstoreconnect.apple.com/apps/6811478003/distribution/reviewsubmissions/details/9186d890-e013-4688-8836-f2f0531bac4b",
+  "apple_live_at": null
 }
