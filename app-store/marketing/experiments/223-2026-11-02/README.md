@@ -62,6 +62,6 @@ Additional authorized intervention: update both store descriptions and create a 
 
 Store work: [supercut provenance and state](store-supercut.json), [description copy](store-description.txt). Keep exact store submission and live timestamps separate from social publication dates.
 
-Store status, November 2: Apple 0.1.39 (33.1) was submitted at 04:53 America/Chicago and is Waiting for Review, with the supercut and updated description. All release checks and the signed upload passed. Google Play has both changes saved, but repeated review submissions returned to “not yet submitted”; a manual attempt is pending. Neither store update is asserted live.
+Store status, November 2: Apple 0.1.39 (33.1) was submitted at 04:53 America/Chicago and is Waiting for Review, with the supercut and updated description. All release checks and the signed upload passed. Google Play submission 47 was submitted by Alexander and is In review; the console displays November 2 at 07:04 AM. Neither store update is asserted live.
 
-[Final handoff and review links](https://github.com/koniho/dddumpling/issues/223#issuecomment-6575363974). Record Apple's approval/live date and Google's actual submission/live dates before interpreting acquisition results.
+[Final handoff and review links](https://github.com/koniho/dddumpling/issues/223#issuecomment-6575363974). Record both stores' approval/live dates before interpreting acquisition results.

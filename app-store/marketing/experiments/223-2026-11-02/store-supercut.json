@@ -45,7 +45,7 @@
     ]
   ],
   "apple_status": "Submitted for review: 0.1.39 (33.1), with updated full description, approved release notes and the 27-second supercut as sole iPhone preview. Waiting for Review; automatic release after approval remains selected. Existing rating retained.",
-  "google_status": "Full description and unlisted video URL saved. Repeated Send changes for review attempts return to Changes not yet submitted for review; no new submission activity. User asked to try the visible button while Apple build continues.",
+  "google_status": "Submitted by Alexander; Google Play submission 47 is In review.",
   "apple_asset_id": "e9000019-5fee-87f3-811b-b6d79e510916",
   "youtube_host": {
     "url": "https://www.youtube.com/watch?v=nAevNW-4zY8",
@@ -75,5 +75,9 @@
   "apple_submission_id": "9186d890-e013-4688-8836-f2f0531bac4b",
   "apple_submitted_at": "2026-11-02T04:53:00-06:00",
   "apple_submission_url": "https://appstoreconnect.apple.com/apps/6811478003/distribution/reviewsubmissions/details/9186d890-e013-4688-8836-f2f0531bac4b",
-  "apple_live_at": null
+  "apple_live_at": null,
+  "google_submission_id": "47",
+  "google_submitted_displayed_at": "Nov 02, 2026, 7:04 AM (Play Console display)",
+  "google_submission_url": "https://play.google.com/console/u/0/developers/5411064851941850442/app/4973066597819420716/publishing/submission-activity/47/details",
+  "google_live_at": null
 }
