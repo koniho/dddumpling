@@ -2,7 +2,7 @@ name: Web port preview
 on:
   workflow_dispatch:
   pull_request:
-    paths: ['web/**', '.github/workflows/web-port.yml']
+    paths: ['web/**', 'src/**/*.java', 'ios/java/**', 'check.sh', 'tools/build-flags.sh', 'assets/fonts/**', '.github/workflows/web-port.yml']
 permissions:
   contents: read
 jobs:
