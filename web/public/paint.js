@@ -21,6 +21,20 @@ window.ddd = window.ddd || {};
     arc(c,x,y,rx,ry,a,s,n,w){if(rx<=0||ry<=0||w<=0)return;c.beginPath();c.ellipse(x,y,rx,ry,0,a*Math.PI/180,(a+s)*Math.PI/180,s<0);stroke(c,n,w);},
     line(c,x,y,a,b,n,w){if(w<=0)return;c.beginPath();c.moveTo(x,y);c.lineTo(a,b);stroke(c,n,w);}
   };
+  // Cave textures are authored at 256px wide. Blend them at that resolution, then
+  // composite once; all motion/lighting still updates every frame and actors stay sharp.
+  ddd.cave={
+    create(){const canvas=document.createElement('canvas');return {canvas,context:canvas.getContext('2d')};},
+    begin(layer,w,h){
+      if(w<=0||h<=0||!layer.context)return null;
+      const width=Math.min(256,Math.ceil(w)),height=Math.max(1,Math.round(h*width/w));
+      if(layer.canvas.width!==width||layer.canvas.height!==height){layer.canvas.width=width;layer.canvas.height=height;}
+      layer.width=w;layer.height=h;const c=layer.context;
+      c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,width,height);c.setTransform(width/w,0,0,height/h,0,0);
+      return c;
+    },
+    end(target,layer){target.drawImage(layer.canvas,0,0,layer.width,layer.height);}
+  };
   const entries=new Map(),limit=64*1024*1024;let bytes=0,serial=0;
   function get(key){const v=entries.get(key);if(!v)return null;entries.delete(key);entries.set(key,v);return v;}
   function remove(key){const v=entries.get(key);if(v){bytes-=v.width*v.height*4;entries.delete(key);v.close?.();}}

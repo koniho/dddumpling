@@ -47,6 +47,7 @@ public final class WebGame {
             if(name.endsWith("-no-cave"))replay.hideOcto(GatorReplay.HIDE_CAVE);
             if(name.endsWith("-no-haze"))replay.hideOcto(GatorReplay.HIDE_HAZE);
             if(name.endsWith("-no-lighting"))replay.hideOcto(GatorReplay.HIDE_LIGHTING);
+            if(name.endsWith("-direct"))replay.hideOcto(GatorReplay.DIRECT_CAVE);
             if(name.endsWith("-no-kelp"))replay.hideOcto(GatorReplay.HIDE_KELP);
             return;
         }

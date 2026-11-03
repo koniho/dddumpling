@@ -53,6 +53,7 @@ final class TestUnderwater extends Check {
                 && Underwater.fishShimmer((float)Math.PI*.5f)>.99f);
         beamLighting(L);
         caveMotion(L);
+        cavePass(L);
         cachedScenery(L);
         perspective(L);
         backdropSeams();
@@ -189,6 +190,27 @@ final class TestUnderwater extends Check {
         check("restarting boss discards delayed kelp motion at "+hz+" Hz",history.damage[near]==0 && history.flow[far]==0);
         c.state=GameCore.OVER;history.update(c,L);
         check("leaving play clears delayed kelp motion at "+hz+" Hz",history.damage[far]==0 && history.flow[near]==0);
+    }
+    private static void cavePass(Layout L) {
+        final int[] began={0},ended={0};
+        ArtStamp cache=new ArtStamp() {
+            public boolean stamp(int art,float x,float y,float w,float h,float angle,int tint,float amount){return false;}
+            public boolean beginCave(float w,float h){began[0]++;return true;}
+            public void endCave(){ended[0]++;}
+            public boolean reefVista(int art,float x,float y,float w,float h,int alpha){throw new IllegalStateException("drawing probe");}
+        };
+        Painter probe=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),new Class<?>[]{Painter.class},(proxy,method,args)-> {
+            if(method.getName().equals("stamps"))return cache;
+            return null;
+        });
+        GameCore c=TestBossRetry.fight(L,Boss.OCTOPUS);
+        boolean threw=false;
+        try {UnderwaterCave.draw(new OpacityPainter(probe,1),c,L,1,1);}
+        catch(IllegalStateException expected){threw=true;}
+        check("cave pass restores host target after drawing fails",threw && began[0]==1 && ended[0]==1);
+        ArtStamp mono=new MonochromePainter(new OpacityPainter(probe,1),.5f).stamps();
+        check("monochrome cave keeps host pass through both wrappers",mono.beginCave(L.w,L.h));
+        mono.endCave();check("wrapped cave ends the same host pass",began[0]==2 && ended[0]==2);
     }
     private static void cachedScenery(Layout L) {
         GameCore c=stage(L);c.waterRipples.prepare(c,L);

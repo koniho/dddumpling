@@ -111,6 +111,10 @@ static CGGradientRef DDGradient(CGColorSpaceRef space,IOSIntArray *colors,IOSFlo
 - (jboolean)accessoryTargets { return NO; }
 - (void)accessoryTargetWithInt:(jint)slot withFloatArray:(IOSFloatArray *)corners {}
 
+// Core Graphics keeps its existing full-resolution cave passes.
+- (jboolean)beginCaveWithFloat:(jfloat)width withFloat:(jfloat)height { return NO; }
+- (void)endCave {}
+
 // Immutable forest artwork is cached; unsupported stamp families retain vectors.
 - (id)stamps { return _drawingForest ? nil : self; }
 - (jboolean)stampWithInt:(jint)art withFloat:(jfloat)x withFloat:(jfloat)y

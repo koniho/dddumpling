@@ -6,6 +6,22 @@ import org.teavm.jso.JSObject;
 /** Bounded browser textures for the same expensive art cached by Android and iOS. */
 final class WebStamps implements ArtStamp {
     private final WebPainter p;
+    private JSObject cave,outerContext;
+    public boolean beginCave(float width,float height) {
+        if(outerContext!=null)return false;
+        if(cave==null)cave=newCave();
+        JSObject context=beginCave(cave,width,height);
+        if(context==null)return false;
+        outerContext=p.context;p.context=context;return true;
+    }
+    public void endCave() {
+        if(outerContext==null)return;
+        p.context=outerContext;outerContext=null;
+        endCave(p.context,cave);
+    }
+    @JSBody(script="return ddd.cave.create();") private static native JSObject newCave();
+    @JSBody(params={"cave","w","h"},script="return ddd.cave.begin(cave,w,h);") private static native JSObject beginCave(JSObject cave,float w,float h);
+    @JSBody(params={"c","cave"},script="ddd.cave.end(c,cave);") private static native void endCave(JSObject c,JSObject cave);
     WebStamps(WebPainter p) {this.p=p;}
     static JSObject image(String group,int art) {
         String key=group+art;

@@ -5,6 +5,9 @@ interface ArtStamp {
     default boolean swampLayer(int art,float w,float h,float deck,float shift,int alpha,float mono) {return false;}
     default boolean swampGrass(int art,float x,float y,float r,float sway,int alpha,float mono) {return false;}
     int PALM=0, PEBBLE=1, COUNT=2;
+    /** Optional cave-only offscreen pass; preserve painter wrappers and restore on every exit. */
+    default boolean beginCave(float width,float height) {return false;}
+    default void endCave() {}
     /** Alpha is applied to the completed foliage image, avoiding hundreds of translucent paths. */
     default boolean forest(int art,float x,float y,float r,float lean,int color,int alpha) {return false;}
     default boolean waterBand(float[] xy,float radius,int alpha) {return false;}
