@@ -581,7 +581,28 @@ final class TestSettings extends Check {
         check("player footer now only opens privacy",PlayerSettings.hit(c,L,x,PlayerSettings.row(L,3))==PlayerSettings.PRIVACY);
         check("services stay inside panel",PlayerSettings.serviceY(L,1)+PlayerSettings.unit(L)*5.5f<PlayerSettings.bottom(L));
     }
+    private static void embeddedHost(Layout L) {
+        group("embedded settings without external services");
+        GameCore c=new GameCore(new Mem(),230L,true);c.externalServices=false;
+        c.progress.timeAttackBossWon(Boss.SLIME);byte[] progress=c.progress.snapshot();
+        PlayerSettings.open(c);c.preferences.panelEntrance=1;
+        NamePainter p=new NamePainter(Skins.DEFAULT);PlayerSettings.draw(p,c,L);
+        check("embedded player settings omit links",!p.labels.contains("Share App") && !p.labels.contains("Rate your app") && !p.labels.contains("PRIVACY POLICY"));
+        check("embedded player settings retain audio and skins",p.labels.contains("MUSIC") && p.labels.contains("SKINS"));
+        for(int action:new int[]{PlayerSettings.SHARE,PlayerSettings.RATE,PlayerSettings.PRIVACY,PlayerSettings.CLOUD,PlayerSettings.ACHIEVEMENTS}) {
+            boolean external=SettingsInput.action(c,L,1000+action);
+            check("embedded external action is inert "+action,!external && !c.cloudUi.open && !c.preferences.externalBusy);
+        }
+        c.settingsPage=PlayerSettings.SERVICES_PAGE;p.labels.clear();PlayerSettings.draw(p,c,L);
+        check("embedded progress shows local milestones instead of native services",p.labels.contains("YOUR MILESTONES") && p.labels.contains("1 / "+Achievements.size()+" EARNED") && !p.labels.contains("CLOUD SYNC") && !p.labels.contains("NOT AVAILABLE"));
+        check("embedded settings preserve earned achievements",java.util.Arrays.equals(progress,c.progress.snapshot()));
+        check("compact reset controls have matching hit targets",PlayerSettings.hit(c,L,L.w*.5f,PlayerSettings.resetY(c,L))==ScoreReset.OPEN && PlayerSettings.hit(c,L,L.w*.5f,PlayerSettings.tutorialY(c,L))==PlayerSettings.TUTORIALS);
+        check("embedded progress fits its panel",PlayerSettings.tutorialY(c,L)+PlayerSettings.unit(L)*1.2f<PlayerSettings.panelBottom(c,L));
+        c.storeUpdate.available="99";c.storeUpdate.preview=true;c.reviewPrompt.preview=true;
+        check("embedded host cannot offer a native update or review",!c.storeUpdate.beginCheck(c) && !c.storeUpdate.ready(c) && c.reviewPrompt.takeRequest(c)==0);
+    }
     static void all(Layout L) {
+        embeddedHost(L);
         servicesTab(L);
         seasonalSkins(L);
         stolenSkinKeys();

@@ -2,7 +2,7 @@ package com.dddumpling.game;
 
 import org.teavm.jso.JSBody;
 
-/** Standalone browser progress, isolated from native saves. Playables needs its own SDK store. */
+/** Synchronous game Store; the host selects local storage or the loaded Playables save. */
 final class WebStore implements GameCore.Store {
     @JSBody(params="key",script="return ddd.storage.get(key);") private static native String get(String key);
     @JSBody(params={"key","value"},script="return ddd.storage.put(key,value);") private static native boolean put(String key,String value);

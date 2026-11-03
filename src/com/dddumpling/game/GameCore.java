@@ -1598,6 +1598,7 @@ final class GameCore {
 
     final Random rnd;
     final Store store;
+    boolean externalServices=true; // Embedded hosts omit store links and native service UI.
     boolean mouseStretch; // Host capability; touch hosts keep the two-finger lesson.
     final PlaythroughLog playthrough;
     final Progress progress;

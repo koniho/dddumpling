@@ -4,6 +4,7 @@
   const seen='KeyboardGuideVersion';
   function draw(key,happy){const card=cards.get(key.letter),canvas=card.querySelector('canvas'),c=canvas.getContext('2d');c.clearRect(0,0,96,96);api.guideKey(c,key.glyph,happy);}
   function practice(letter){
+    if(ddd.platform?.paused)return false;
     const key=keys.find(k=>k.letter===letter && k.active);if(!key)return false;
     pressed.add(letter);ddd.audio.unlock();draw(key,true);const card=cards.get(letter);card.classList.add('tried');
     if(!matchMedia('(prefers-reduced-motion: reduce)').matches)card.animate([{transform:'scale(1)'},{transform:'scale(1.16,.78) rotate(-5deg)'},{transform:'scale(.94,1.10)'},{transform:'scale(1)'}],{duration:400});
@@ -12,7 +13,7 @@
     return true;
   }
   function close(){
-    if(!dialog?.open)return;dialog.close();ddd.storage.put(seen,'1');
+    if(!dialog?.open||ddd.platform?.paused)return;dialog.close();ddd.storage.put(seen,'1');
     if(ddd.platform?.paused)return;api.hidden(false);if(!wasPaused && api.paused())api.back();gameCanvas.focus({preventScroll:true});
   }
   function show(){
