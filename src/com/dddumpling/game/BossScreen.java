@@ -1770,7 +1770,7 @@ final class BossScreen extends Draw {
         // It is instructions: it has a job at the start and none afterwards.
         float say = 1f - Math.max(0f, b.age - BLURB_HOLD) / BLURB_FADE;
         if (say > 0.01f && b.kind != Boss.SLIME) {
-            p.text(Boss.BLURB[b.kind], L.w / 2f, blurbY(L), blurbSize(L),
+            p.text(c.mouseStretch && b.kind==Boss.SPLITTER?"HIT THE MARK, DRAG TO STRETCH":Boss.BLURB[b.kind], L.w / 2f, blurbY(L), blurbSize(L),
                     Glyph.withAlpha(INK_DIM, (int) (255 * fade * Math.min(1f, say))),
                     Painter.CENTER, false);
         }
