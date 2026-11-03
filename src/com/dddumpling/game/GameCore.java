@@ -1612,6 +1612,7 @@ final class GameCore {
 
     final Random rnd;
     final Store store;
+    boolean mouseStretch; // Host capability; touch hosts keep the two-finger lesson.
     final PlaythroughLog playthrough;
     final Progress progress;
     final LeaderboardSubmissions leaderboards;

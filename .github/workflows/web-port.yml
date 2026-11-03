@@ -19,11 +19,17 @@ jobs:
         with:
           node-version: '22'
       - name: Host tests and browser build
-        run: python3 web/build.py
+        run: |
+          python3 web/build.py
+          python3 web/build.py --playables
       - uses: actions/upload-artifact@v6
         with:
           name: web-playable-preview
           path: build/web/
+      - uses: actions/upload-artifact@v6
+        with:
+          name: youtube-playables-preview
+          path: build/web-playables/
   browser:
     needs: build
     runs-on: ubuntu-latest
@@ -41,6 +47,10 @@ jobs:
         with:
           name: web-playable-preview
           path: build/web/
+      - uses: actions/download-artifact@v6
+        with:
+          name: youtube-playables-preview
+          path: build/web/playables/
       - name: Browser test tools
         run: |
           npm install --prefix "$RUNNER_TEMP/web-check" --no-package-lock playwright@1.55.0
@@ -51,6 +61,7 @@ jobs:
           WEB_ENGINE: ${{ matrix.engine }}
         run: |
           python3 -m http.server 8766 --bind 127.0.0.1 --directory build/web > build/web-server.log 2>&1 &
+          node web/test/playables.mjs
           node web/test/browser.mjs
           node web/test/octopulse.mjs
           node web/test/divide.mjs

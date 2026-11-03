@@ -13,14 +13,14 @@
   }
   function close(){
     if(!dialog?.open)return;dialog.close();ddd.storage.put(seen,'1');
-    api.hidden(false);if(!wasPaused && api.paused())api.back();gameCanvas.focus({preventScroll:true});
+    if(ddd.platform?.paused)return;api.hidden(false);if(!wasPaused && api.paused())api.back();gameCanvas.focus({preventScroll:true});
   }
   function show(){
-    if(!api || dialog?.open)return;
+    if(!api || dialog?.open || ddd.platform?.paused)return;
     if(!dialog){
       dialog=document.createElement('dialog');dialog.id='keyboard-guide';dialog.setAttribute('aria-labelledby','keyboard-guide-title');
-      dialog.innerHTML='<h1 id="keyboard-guide-title">Your keyboard crew</h1><p>Match the squishy. Press its key.</p><div class="keyboard-crew"></div><p data-progress aria-live="polite"></p><p data-extra class="keyboard-extra"></p><p class="keyboard-extra">Use your mouse to click, swipe and trace.<br><kbd>Esc</kbd> pauses. <kbd>?</kbd> brings this guide back.</p><button class="keyboard-ready">Got it!</button>';
-      document.body.append(dialog);dialog.querySelector('.keyboard-ready').onclick=close;dialog.addEventListener('cancel',e=>{e.preventDefault();close();});
+      dialog.innerHTML='<h1 id="keyboard-guide-title">Your keyboard crew</h1><p>Match the squishy. Press its key.</p><div class="keyboard-crew"></div><p data-progress aria-live="polite"></p><p data-extra class="keyboard-extra"></p><p class="keyboard-extra">Use your mouse to click, swipe and trace.<br>Drag a ready Dark Divide glob to stretch it. A mirrored finger helps you split it.<br><kbd>Esc</kbd> pauses. <kbd>?</kbd> brings this guide back.</p><button class="keyboard-ready">Got it!</button>';
+      document.body.append(dialog);dialog.querySelector('.keyboard-ready').onclick=close;dialog.addEventListener('cancel',close);
     }
     keys=api.keyboardGuide().split(';').filter(Boolean).map(s=>{const [letter,glyph,active]=s.split(',');return {letter,glyph:Number(glyph),active:active==='1'};});
     pressed.clear();cards.clear();const row=dialog.querySelector('.keyboard-crew');row.replaceChildren();
@@ -35,11 +35,11 @@
     wasPaused=api.paused();api.hidden(true);dialog.showModal();dialog.querySelector('.keyboard-ready').focus();
   }
   window.addEventListener('keydown',e=>{
-    if(e.ctrlKey||e.metaKey||e.altKey)return;
+    if(ddd.platform?.paused||e.ctrlKey||e.metaKey||e.altKey)return;
     if(dialog?.open){
       const letter=e.key.toLowerCase();
       if(keys.some(k=>k.letter===letter)){e.preventDefault();e.stopImmediatePropagation();if(!e.repeat)practice(letter);}
-      else if(e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();close();}
+      else if(e.key==='Escape'){e.dddGuideHandled=true;close();}
       return;
     }
     if(e.key==='?' && !e.target.closest('input,textarea,select,[contenteditable="true"]')){e.preventDefault();e.stopImmediatePropagation();show();}
