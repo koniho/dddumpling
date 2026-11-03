@@ -114,6 +114,13 @@ for(const [engine,type] of engines){
   for(const scene of ['profile:divide','profile:octopulse']){
     await page.evaluate(s=>{ddd.api.scene(s);ddd.test.stop();ddd.api.advanceReplay(1200);ddd.test.step(1);},scene);
     await page.waitForFunction(()=>!ddd.artState || ddd.artState().pending===0);
+    if(scene==='profile:octopulse') {
+      const lines=await page.evaluate(()=>{
+        let count=0;const line=ddd.paint.line;ddd.paint.line=(...args)=>{count++;return line(...args);};
+        try{ddd.test.step(1);}finally{ddd.paint.line=line;}return count;
+      });
+      if(lines>=100)throw Error(`Tentacle capsule strokes returned: ${lines} lines/frame`);
+    }
     await page.evaluate(()=>ddd.test.resume());await page.waitForTimeout(3000);
     await page.evaluate(()=>ddd.test.clearMetrics());await page.waitForTimeout(3000);
     const sample=await page.evaluate(()=>{ddd.test.stop();return ddd.stats();});

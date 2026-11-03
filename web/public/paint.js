@@ -51,7 +51,8 @@ window.ddd = window.ddd || {};
     pixels(c,pixels,w,h){const d=c.createImageData(w,h);for(let i=0;i<pixels.length;i++){const p=pixels[i];d.data[i*4]=p>>>16&255;d.data[i*4+1]=p>>>8&255;d.data[i*4+2]=p&255;d.data[i*4+3]=p>>>24;}c.putImageData(d,0,0);},get bytes(){return bytes;},get count(){return entries.size;},
     draw(c,img,x,y,w,h,alpha,mono,shade,water){if(!img||w<=0||h<=0||alpha<=0)return;const tex=mono||shade!==1?filtered(img,matrixFor(mono,shade,water)):img;c.save();c.globalAlpha*=Math.min(255,alpha)/255;c.drawImage(tex,x,y,w,h);c.restore();},
     matrix(c,img,x,y,l,t,w,h,angle,alpha,m){if(!img)return;c.save();c.globalAlpha*=alpha/255;c.translate(x,y);c.rotate(angle);c.drawImage(filtered(img,Array.from(m)),l,t,w,h);c.restore();},
-    band(c,img,xy,r,a,mono){if(!img)return;const tex=mono?filtered(img,matrixFor(mono,1,0)):img;c.save();c.globalAlpha*=a/255;for(let i=2;i<xy.length;i+=2){const x0=xy[i-2],y0=xy[i-1],x1=xy[i],y1=xy[i+1];triangle(c,tex,[0,0,tex.width,0,0,tex.height],[x0,y0-r,x1,y1-r,x0,y0+r]);triangle(c,tex,[tex.width,0,tex.width,tex.height,0,tex.height],[x1,y1-r,x1,y1+r,x0,y0+r]);}c.restore();},
+    // A haze segment is a parallelogram: one affine image needs no triangle clip masks.
+    band(c,img,xy,r,a,mono){if(!img||r<=0||a<=0)return;const tex=mono?filtered(img,matrixFor(mono,1,0)):img;c.save();c.globalAlpha*=a/255;for(let i=2;i<xy.length;i+=2){const x0=xy[i-2],y0=xy[i-1],dx=xy[i]-x0,dy=xy[i+1]-y0;if(!dx)continue;c.save();c.transform(dx/tex.width,dy/tex.width,0,2*r/tex.height,x0,y0-r);c.drawImage(tex,0,0);c.restore();}c.restore();},
     mesh(c,img,x,y,w,h,offsets,left,alpha){if(!img)return;c.save();c.globalAlpha*=alpha/255;const n=offsets.length-1;for(let i=0;i<n;i++){
       const y0=y+h*i/n,y1=y+h*(i+1)/n,s0=img.height*i/n,s1=img.height*(i+1)/n;
       const l0=x-(left?0:offsets[i]),l1=x-(left?0:offsets[i+1]),r0=x+w+(left?offsets[i]:0),r1=x+w+(left?offsets[i+1]:0);
