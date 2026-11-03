@@ -10,6 +10,10 @@ final class MonochromePainter implements Painter,ArtStamp {
     public DuckBodies ducks() { return p.ducks(); }
     public GatorCompanion gator() { return p.gator(); }
     public ArtStamp stamps() { return p.stamps()==null?null:amount==0?p.stamps():this; }
+    public boolean beginCave(float width,float height) {
+        return p.stamps()!=null && p.stamps().beginCave(width,height);
+    }
+    public void endCave() {p.stamps().endCave();}
     public boolean stamp(int art,float x,float y,float w,float h,float angle,int tint,float mix) {return false;}
     public boolean waterBand(float[] xy,float radius,int alpha) {
         return p.stamps().waterBand(xy,radius,alpha,amount);

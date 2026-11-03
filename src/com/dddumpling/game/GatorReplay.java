@@ -2,7 +2,7 @@ package com.dddumpling.game;
 
 /** Isolated, fixed-step developer scene; no store, rewards, or player input. */
 final class GatorReplay {
-    static final int HIDE_ARMS=1,HIDE_CAVE=2,HIDE_HAZE=4,HIDE_LIGHTING=8,HIDE_KELP=16;
+    static final int HIDE_ARMS=1,HIDE_CAVE=2,HIDE_HAZE=4,HIDE_LIGHTING=8,HIDE_KELP=16,DIRECT_CAVE=32;
     static boolean showOcto(GameCore c,int part) {
         return !BuildFlags.DEVELOPER || (c.profileHiddenOcto&part)==0;
     }

@@ -10,6 +10,10 @@ final class ColorFadePainter implements Painter, ArtStamp {
     public DuckBodies ducks() { return p.ducks(); }
     public GatorCompanion gator() { return p.gator(); }
     public ArtStamp stamps() { return opacity==1 && p.stamps()!=null?this:null; }
+    public boolean beginCave(float width,float height) {
+        return p.stamps()!=null && p.stamps().beginCave(width,height);
+    }
+    public void endCave() {p.stamps().endCave();}
     public boolean stamp(int art,float x,float y,float w,float h,float angle,int inner,float mix) {
         ArtStamp cache=stamps()==null?null:p.stamps();
         if(cache==null)return false;

@@ -79,6 +79,13 @@ sync. Browser-specific store review/share services are unavailable.
   32 skin fills replace 768 overlapping capsule strokes, with the same physics,
   suckers and cues. Browser haze uses one affine image per segment instead of two
   clipped triangles; its mesh adapter is otherwise unchanged.
+- Octopulse's cave alone is composited into a reusable 256-pixel-wide background
+  surface (the width of its source artwork), then drawn once behind full-resolution
+  actors. Wall drift, kelp and impact lighting update every frame. The buffer adds
+  about 0.55 MiB on a phone-sized portrait viewport, outside the texture LRU. Painter
+  wrappers preserve skin/monochrome effects, and a finally block restores the main
+  target. Android and iOS retain their existing direct passes; their host adapters
+  do not opt into this browser raster/compositing optimization.
 - `host.js` owns frame scheduling, browser lifecycle, coordinates and errors.
   Native Android/iOS host and packaging paths are untouched.
 - CI also runs for changes to shared Java, the reused gesture router, the pure-source
@@ -118,6 +125,15 @@ scripted diagnostics; it bypasses display scheduling. Do not report its numbers 
 scenes in isolated cores without writing saves. Escape exits the replay. The Divide
 replay includes all fracture phases, eight pieces and the final explosion. Browser
 CI runs both and tests real DOM touch delivery; `ddd.artState()` reports worker health.
+
+`node web/test/octopulse.mjs` runs a cave isolation comparison through the normal
+RAF loop at fixed 1× and 2× density. It uses the same Playwright environment variables
+as `browser.mjs`. The scene suffixes `-no-arms`, `-no-cave`, `-no-haze`, `-no-lighting`
+and `-no-kelp` suppress drawing only on the isolated replay core. `-direct` bypasses
+cave compositing for an A/B comparison. Masks survive replay resets and never enter
+saves or ordinary gameplay. `ddd.test.renderScale(n)` fixes diagnostic density;
+passing `null` restores adaptive density. Compare matched density and both starting
+and ending baselines, rather than CPU submission times alone.
 
 Before claiming native-equivalent performance, test representative midrange Android
 Chrome and iPhone Safari, then both YouTube embedded hosts when access exists. Compare

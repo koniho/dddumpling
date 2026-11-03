@@ -19,6 +19,13 @@ final class UnderwaterCave extends Draw {
         if(!GatorReplay.showOcto(c,GatorReplay.HIDE_CAVE))return;
         boolean lighting=GatorReplay.showOcto(c,GatorReplay.HIDE_LIGHTING);
         if(p instanceof WaterPainter)p=((WaterPainter)p).anchored();
+        ArtStamp cache=p.stamps();
+        boolean grouped=GatorReplay.showOcto(c,GatorReplay.DIRECT_CAVE)
+                && cache!=null && cache.beginCave(L.w,L.h);
+        try {drawLayers(p,c,L,fade,arrival,lighting);}
+        finally {if(grouped)cache.endCave();}
+    }
+    private static void drawLayers(Painter p,GameCore c,Layout L,float fade,float arrival,boolean lighting) {
         Boss b=BossVictory.sceneBoss(c);
         float movement=motion(b,L),damage=damagePulse(b);
         float bx=b.body==null?b.bodyX(L):b.body.centreX();

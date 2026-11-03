@@ -6,7 +6,7 @@ import org.teavm.jso.JSObject;
 
 /** Canvas host. Cached scenery is generated through the same pure vector artwork. */
 final class WebPainter implements Painter {
-    final JSObject context;
+    JSObject context;
     private final WebStamps cache;
     WebPainter(JSObject context, boolean cached) {this.context=context;cache=cached?new WebStamps(this):null;}
     void warm(int i) {if(i<ArtStamp.COUNT)WebStamps.image("gator",i);else if(i<ArtStamp.COUNT+3)WebStamps.image("crystal",i-ArtStamp.COUNT);}
