@@ -13,7 +13,7 @@ env=dict(os.environ,DDDUMPLING_BUILD_ID='web-dev-1' if not a.production else 'we
 subprocess.run(['sh','tools/build-flags.sh',str(src),'false' if a.production else 'true'],env=env,check=True)
 subprocess.run([a.maven,'-B','-q','-f','web/pom.xml','-Dmaven.repo.local='+str(root/'build/web-tools/m2'),'package'],check=True)
 subprocess.run(['node','--check','build/web/game.js'],check=True)
-subprocess.run(['node','--test','web/test/host.test.cjs'],check=True)
+subprocess.run(['node','--test',*map(str,sorted(Path('web/test').glob('*.test.cjs')))],check=True)
 if not a.production:
  classes=Path('build/web-tests');classes.mkdir(exist_ok=True)
  cp=str(root/'build/web-maven/classes')

@@ -15,3 +15,15 @@ test('pointer-up delivered once; lost capture does not cancel a different active
 test('background cancels frame scheduling and tells game to release held input',()=>{const {win,listeners,calls,frames}=environment();win.document.hidden=true;listeners.visibilitychange();assert.deepEqual(calls.at(-1),['hidden',true]);assert.equal(frames.size,0);win.document.hidden=false;listeners.visibilitychange();assert.deepEqual(calls.at(-1),['hidden',false]);assert.equal(frames.size,1);});
 test('system shortcuts are untouched; Escape not preventDefault; mapped keys route',()=>{const {listeners,calls}=environment();let prevented=0;const e={key:'s',ctrlKey:true,target:{closest:()=>null},preventDefault(){prevented++;}};listeners.keydown(e);assert.equal(calls.filter(c=>c[0]==='key').length,0);e.ctrlKey=false;listeners.keydown(e);assert.equal(prevented,1);e.key='Escape';listeners.keydown(e);assert.equal(prevented,1);assert.deepEqual(calls.at(-1),['back']);});
 test('storage is namespaced and write failures are surfaced',()=>{const {win}=environment();assert.equal(win.ddd.storage.put('Best','42'),true);assert.equal(win.ddd.storage.get('Best'),'42');win.localStorage.setItem=()=>{throw Error('quota');};assert.equal(win.ddd.storage.put('Best','99'),false);assert.equal(win.ddd.storage.get('Best'),'42');});
+test('slow rendering reduces pixels without relayout or dropping an ongoing touch',()=>{
+ const {win,listeners,elements,calls,frames}=environment();
+ const touch={pointerId:8,pointerType:'touch',clientX:20,clientY:40,preventDefault(){}};
+ listeners['game:pointerdown'](touch);
+ let now=1;for(let i=0;i<240;i++){const f=[...frames.values()].at(-1);frames.clear();f(now);now+=40;}
+ assert.equal(elements.game.width,390);assert.equal(calls.filter(c=>c[0]==='resize').length,1);
+ listeners['game:pointerup'](touch);assert.deepEqual(calls.at(-1),['pointer',1,8,20,40]);
+ assert.equal(elements.game.style.width,'390px');
+ // Recovery needs sustained headroom and never exceeds the original pixel cap.
+ for(let i=0;i<6000;i++){const f=[...frames.values()].at(-1);frames.clear();f(now);now+=16;}
+ assert.equal(elements.game.width,780);assert.equal(calls.filter(c=>c[0]==='resize').length,1);
+});

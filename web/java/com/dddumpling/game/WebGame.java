@@ -8,6 +8,7 @@ public final class WebGame {
     private static IOSGame game;
     private static WebPainter painter;
     private static WebPointers pointers;
+    private static GatorReplay replay;
     public static void main(String[] args) {
         game=new IOSGame(new WebStore(),new WebSound(),230L);
         game.geometry().nativePause=false;
@@ -25,15 +26,21 @@ public final class WebGame {
         connect();
     }
     public static void resize(float w,float h) {pointers.cancel();game.layout(w,h,0,0,0,0);}
-    public static void frame(float dt) {game.update(dt);game.draw(painter);}
-    public static void pointer(int action,int id,float x,float y) {pointers.event(action,id,x,y);}
-    public static boolean key(int code,boolean down,boolean repeat) {return down?game.keyDown(code,repeat):game.keyUp(code);}
+    public static void frame(float dt) {
+        if(replay!=null){replay.update(dt,game.geometry());Renderer.draw(painter,replay.core,game.geometry());}
+        else {game.update(dt);game.draw(painter);}
+    }
+    public static void pointer(int action,int id,float x,float y) {if(replay==null)pointers.event(action,id,x,y);}
+    public static boolean key(int code,boolean down,boolean repeat) {return replay==null && (down?game.keyDown(code,repeat):game.keyUp(code));}
     public static void hidden(boolean value) {pointers.cancel();game.background(value);}
-    public static void back() {game.back();}
+    public static void back() {if(replay!=null)replay=null;else game.back();}
     public static void shake() {game.shakeOutfit();}
     public static void scene(String name) {
         if(!BuildFlags.DEVELOPER)return;
         pointers.cancel();
+        replay=null;
+        if(name.equals("profile:divide")){replay=new GatorReplay(Boss.SPLITTER,false,false);return;}
+        if(name.equals("profile:octopulse")){replay=new GatorReplay(Boss.OCTOPUS,false,false);return;}
         if(name.equals("survival")) {
             game.debugScene("play");game.core().modes.selected=ModeSelector.SURVIVAL;game.core().startGame();
             game.core().survival.seconds=180;game.core().onboarding.clear();game.core().onboarding.saved|=Onboarding.SKIPPED;
@@ -46,13 +53,14 @@ public final class WebGame {
             game.core().onboarding.clear();game.core().onboarding.saved|=Onboarding.SKIPPED;
         }
     }
-    public static String status() {return game.debugStatus()+";best="+game.core().best;}
+    public static String status() {return replay!=null?"profile="+replay.core.boss.kind+";tick="+replay.tick+";phase="+CrystalArena.phase(replay.core.boss)+";pieces="+replay.core.boss.pieceCount():game.debugStatus()+";best="+game.core().best+";key0="+game.core().keyPress[0]+";key0x="+game.core().keyX(game.geometry(),0)+";key0y="+game.core().keyY(game.geometry(),0);}
     public static boolean paused() {return game.paused();}
     public static void warm(int i) {painter.warm(i);}
+    public static JSObject art(String group,int id) {return WebStamps.image(group,id);}
     @JSBody(script="return ddd.context;") private static native JSObject context();
     @JSBody(params="ms",script="if(ddd.haptics && navigator.vibrate)navigator.vibrate(ms);") private static native void vibrate(int ms);
     @JSBody(params="url",script="window.open(url,'_blank','noopener,noreferrer');") private static native void open(String url);
     @JSBody(params="s",script="ddd.notice(s);") private static native void notice(String s);
-    @JSBody(script="ddd.connect({resize:(w,h)=>javaMethods.get('com.dddumpling.game.WebGame.resize(FF)V').invoke(w,h),frame:dt=>javaMethods.get('com.dddumpling.game.WebGame.frame(F)V').invoke(dt),pointer:(a,id,x,y)=>javaMethods.get('com.dddumpling.game.WebGame.pointer(IIFF)V').invoke(a,id,x,y),key:(c,d,r)=>javaMethods.get('com.dddumpling.game.WebGame.key(IZZ)Z').invoke(c,d,r),hidden:v=>javaMethods.get('com.dddumpling.game.WebGame.hidden(Z)V').invoke(v),back:()=>javaMethods.get('com.dddumpling.game.WebGame.back()V').invoke(),shake:()=>javaMethods.get('com.dddumpling.game.WebGame.shake()V').invoke(),scene:s=>javaMethods.get('com.dddumpling.game.WebGame.scene(Ljava/lang/String;)V').invoke(s),status:()=>javaMethods.get('com.dddumpling.game.WebGame.status()Ljava/lang/String;').invoke(),paused:()=>javaMethods.get('com.dddumpling.game.WebGame.paused()Z').invoke(),warm:i=>javaMethods.get('com.dddumpling.game.WebGame.warm(I)V').invoke(i)});")
+    @JSBody(script="ddd.connect({art:(g,i)=>javaMethods.get('com.dddumpling.game.WebGame.art(Ljava/lang/String;I)Lorg/teavm/jso/JSObject;').invoke(g,i),resize:(w,h)=>javaMethods.get('com.dddumpling.game.WebGame.resize(FF)V').invoke(w,h),frame:dt=>javaMethods.get('com.dddumpling.game.WebGame.frame(F)V').invoke(dt),pointer:(a,id,x,y)=>javaMethods.get('com.dddumpling.game.WebGame.pointer(IIFF)V').invoke(a,id,x,y),key:(c,d,r)=>javaMethods.get('com.dddumpling.game.WebGame.key(IZZ)Z').invoke(c,d,r),hidden:v=>javaMethods.get('com.dddumpling.game.WebGame.hidden(Z)V').invoke(v),back:()=>javaMethods.get('com.dddumpling.game.WebGame.back()V').invoke(),shake:()=>javaMethods.get('com.dddumpling.game.WebGame.shake()V').invoke(),scene:s=>javaMethods.get('com.dddumpling.game.WebGame.scene(Ljava/lang/String;)V').invoke(s),status:()=>javaMethods.get('com.dddumpling.game.WebGame.status()Ljava/lang/String;').invoke(),paused:()=>javaMethods.get('com.dddumpling.game.WebGame.paused()Z').invoke(),warm:i=>javaMethods.get('com.dddumpling.game.WebGame.warm(I)V').invoke(i)});")
     private static native void connect();
 }

@@ -1,9 +1,9 @@
 // Optional local Skia smoke test. This is NOT a browser or a device FPS benchmark.
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
-const {createCanvas,GlobalFonts}=require('../../build/web-test-deps/node_modules/@napi-rs/canvas');
+const {createCanvas,GlobalFonts,Path2D}=require('../../build/web-test-deps/node_modules/@napi-rs/canvas');
 GlobalFonts.registerFromPath('assets/fonts/Bungee-Regular.ttf','Bungee');
 const canvas=createCanvas(390,844),storage=new Map(),sounds=[];
-const sandbox={console,performance,TextDecoder,TextEncoder,Date,Math,WebAssembly,setTimeout,clearTimeout,document:{createElement:()=>createCanvas(1,1)},navigator:{},window:{open(){}},crypto:require('node:crypto').webcrypto};sandbox.window=sandbox;sandbox.self=sandbox;
+const sandbox={Path2D,console,performance,TextDecoder,TextEncoder,Date,Math,WebAssembly,setTimeout,clearTimeout,document:{createElement:()=>createCanvas(1,1)},navigator:{},window:{open(){}},crypto:require('node:crypto').webcrypto};sandbox.window=sandbox;sandbox.self=sandbox;
 sandbox.ddd={context:canvas.getContext('2d'),storage:{get:k=>storage.get(k)??null,put:(k,v)=>{storage.set(k,v);return true;}},notice:console.log,audio:{effect:(...a)=>sounds.push(a),music(){},volumes(){},loop(){},speak(){},hush(){}},connect:api=>sandbox.api=api};
 vm.createContext(sandbox);
 for(const f of ['web/public/paint.js','build/web/game.js'])vm.runInContext(fs.readFileSync(f,'utf8'),sandbox,{filename:f});
