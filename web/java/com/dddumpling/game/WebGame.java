@@ -41,7 +41,15 @@ public final class WebGame {
         pointers.cancel();
         replay=null;
         if(name.equals("profile:divide")){replay=new GatorReplay(Boss.SPLITTER,false,false);return;}
-        if(name.equals("profile:octopulse")){replay=new GatorReplay(Boss.OCTOPUS,false,false);return;}
+        if(name.equals("profile:octopulse") || name.startsWith("profile:octopulse-")) {
+            replay=new GatorReplay(Boss.OCTOPUS,false,false);
+            if(name.endsWith("-no-arms"))replay.hideOcto(GatorReplay.HIDE_ARMS);
+            if(name.endsWith("-no-cave"))replay.hideOcto(GatorReplay.HIDE_CAVE);
+            if(name.endsWith("-no-haze"))replay.hideOcto(GatorReplay.HIDE_HAZE);
+            if(name.endsWith("-no-lighting"))replay.hideOcto(GatorReplay.HIDE_LIGHTING);
+            if(name.endsWith("-no-kelp"))replay.hideOcto(GatorReplay.HIDE_KELP);
+            return;
+        }
         if(name.equals("survival")) {
             game.debugScene("play");game.core().modes.selected=ModeSelector.SURVIVAL;game.core().startGame();
             game.core().survival.seconds=180;game.core().onboarding.clear();game.core().onboarding.saved|=Onboarding.SKIPPED;

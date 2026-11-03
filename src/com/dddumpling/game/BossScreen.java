@@ -1169,6 +1169,7 @@ final class BossScreen extends Draw {
     }
 
     private static void drawOctopusArms(Painter p, GameCore c, Layout L, Boss b, int col, float fade) {
+        if(!GatorReplay.showOcto(c,GatorReplay.HIDE_ARMS))return;
         p=Skins.squid(p);
         boolean victory = c.dying() && c.bossVictory == b;
         if(b.body!=null)Skins.squidFrill(p,b.body.centreX(),b.body.centreY(),

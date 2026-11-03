@@ -191,6 +191,7 @@ final class Underwater extends Draw {
         p.restore();
     }
     private static void haze(Painter p,GameCore c,Layout L,float fade) {
+        if(!GatorReplay.showOcto(c,GatorReplay.HIDE_HAZE))return;
         float[] ribbon=c.waterRipples.hazeRibbon,centre=c.waterRipples.hazeCentre;
         for(int i=0;i<3;i++) {
             float span=L.h*1.5f,y=(i*span/3+hash(i+571)*L.h*.12f+scrollY(c,L,0))%span-L.h*.25f;

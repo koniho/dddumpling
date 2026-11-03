@@ -27,3 +27,12 @@ test('slow rendering reduces pixels without relayout or dropping an ongoing touc
  for(let i=0;i<6000;i++){const f=[...frames.values()].at(-1);frames.clear();f(now);now+=16;}
  assert.equal(elements.game.width,780);assert.equal(calls.filter(c=>c[0]==='resize').length,1);
 });
+
+test('fixed diagnostic scale isolates render cost without changing game coordinates',()=>{
+ const {win,elements,calls,frames}=environment();win.ddd.test.renderScale(1.5);
+ let now=1;for(let i=0;i<240;i++){const f=[...frames.values()].at(-1);frames.clear();f(now);now+=40;}
+ assert.equal(elements.game.width,585);assert.equal(calls.filter(c=>c[0]==='resize').length,1);
+ win.ddd.test.renderScale(null);
+ for(let i=0;i<240;i++){const f=[...frames.values()].at(-1);frames.clear();f(now);now+=40;}
+ assert.equal(elements.game.width,390);
+});

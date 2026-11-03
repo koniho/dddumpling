@@ -1776,6 +1776,15 @@ final class TestBoss extends Check {
      */
     static void octopus(Layout L) {
         group("boss: octopulse");
+        GatorReplay visible=new GatorReplay(Boss.OCTOPUS,false,false),hidden=new GatorReplay(Boss.OCTOPUS,false,false);
+        hidden.hideOcto(GatorReplay.HIDE_ARMS|GatorReplay.HIDE_CAVE|GatorReplay.HIDE_HAZE);
+        for(int i=0;i<GatorReplay.LENGTH+1;i++){visible.step(L);hidden.step(L);}
+        check("Octopulse diagnostic layers survive replay loops without changing simulation",
+                hidden.core.profileHiddenOcto==7 && hidden.tick==visible.tick
+                && hidden.core.boss.age==visible.core.boss.age && hidden.core.lives==visible.core.lives
+                && java.util.Arrays.deepEquals(hidden.core.boss.octoX,visible.core.boss.octoX));
+        check("ordinary games have no Octopulse diagnostic mask",new GameCore(new Mem(),168).profileHiddenOcto==0);
+
         float[] straight={0,0,0,30,0,60},original=straight.clone();
         float[] coat=BossScreen.octoArmCoat(straight,20,1,0);
         float minY=Float.MAX_VALUE,maxY=-Float.MAX_VALUE;
