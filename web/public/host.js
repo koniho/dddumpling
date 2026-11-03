@@ -54,7 +54,7 @@
     document.getElementById('shake').onclick=()=>{ddd.audio.unlock();api.shake();};document.getElementById('haptics').onchange=e=>{ddd.haptics=e.target.checked;};
     if(params.has('debug'))document.getElementById('tools').hidden=false;
     if(params.has('scene'))api.scene(params.get('scene'));
-    ddd.ready=true;canvas.focus({preventScroll:true});draw(0);ddd.keyboardGuide?.init(api,canvas,!params.has('debug')&&!params.has('scene'));raf=requestAnimationFrame(frame);
+    ddd.ready=true;ddd.navigation?.install(api);canvas.focus({preventScroll:true});draw(0);ddd.keyboardGuide?.init(api,canvas,!params.has('debug')&&!params.has('scene'));raf=requestAnimationFrame(frame);
     let warm=0;const warmOne=()=>{if(warm<5){api.warm(warm++);setTimeout(warmOne,100);}};setTimeout(warmOne,200);
   };
   const pct=(a,p)=>a.length?[...a].sort((x,y)=>x-y)[Math.min(a.length-1,Math.floor(a.length*p))]:0;

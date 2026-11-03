@@ -45,5 +45,5 @@
     if(e.key==='?' && !e.target.closest('input,textarea,select,[contenteditable="true"]')){e.preventDefault();e.stopImmediatePropagation();show();}
   },true);
   window.addEventListener('keyup',e=>{if(dialog?.open && keys.some(k=>k.letter===e.key.toLowerCase())){e.preventDefault();e.stopImmediatePropagation();}},true);
-  ddd.keyboardGuide={show,get open(){return !!dialog?.open;},init(game,canvas,automatic){api=game;gameCanvas=canvas;if(automatic && matchMedia('(any-pointer: fine) and (any-hover: hover)').matches && ddd.storage.get(seen)!=='1')show();}};
+  ddd.keyboardGuide={show,close,get open(){return !!dialog?.open;},init(game,canvas,automatic){api=game;gameCanvas=canvas;if(automatic && matchMedia('(any-pointer: fine) and (any-hover: hover)').matches && ddd.storage.get(seen)!=='1')show();}};
 })();
