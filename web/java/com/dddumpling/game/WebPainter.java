@@ -1,6 +1,7 @@
 package com.dddumpling.game;
 
 import org.teavm.jso.JSBody;
+import org.teavm.jso.JSByRef;
 import org.teavm.jso.JSObject;
 
 /** Canvas host. Cached scenery is generated through the same pure vector artwork. */
@@ -26,9 +27,9 @@ final class WebPainter implements Painter {
     public void save() {save(context);}
     public void restore() {restore(context);}
     public void translate(float x,float y) {translate(context,x,y);}
-    @JSBody(params={"c","p","color","width","closed"},script="ddd.paint.poly(c,p,color,width,closed);") private static native void poly(JSObject c,float[] p,int color,float width,boolean closed);
+    @JSBody(params={"c","p","color","width","closed"},script="ddd.paint.poly(c,p,color,width,closed);") private static native void poly(JSObject c,@JSByRef float[] p,int color,float width,boolean closed);
     @JSBody(params="c",script="c.beginPath();") private static native void begin(JSObject c);
-    @JSBody(params={"c","p"},script="ddd.paint.contour(c,p);") private static native void contour(JSObject c,float[] p);
+    @JSBody(params={"c","p"},script="ddd.paint.contour(c,p);") private static native void contour(JSObject c,@JSByRef float[] p);
     @JSBody(params={"c","color"},script="c.fillStyle=ddd.paint.color(color);c.fill('evenodd');") private static native void finish(JSObject c,int color);
     @JSBody(params={"c","x","y","rx","ry","color","w"},script="ddd.paint.ellipse(c,x,y,rx,ry,color,w);") private static native void ellipse(JSObject c,float x,float y,float rx,float ry,int color,float w);
     @JSBody(params={"c","x","y","rx","ry","a","s","color","w"},script="ddd.paint.arc(c,x,y,rx,ry,a,s,color,w);") private static native void arc(JSObject c,float x,float y,float rx,float ry,float a,float s,int color,float w);

@@ -25,7 +25,9 @@ Tap/swipe as on the phone. S D F J K L are the existing physical deck bindings;
 Escape uses the existing back/pause handler. Pointer capture supports dragging and
 multiple fingers. Backgrounding cancels held input, pauses play and suspends audio.
 The portrait playfield is centered within the available viewport; resizing preserves
-state. Drawing resolution is capped at 2x CSS pixels and 1080 pixels wide.
+state. Drawing resolution is capped at 2x CSS pixels and 1080 pixels wide. Sustained
+slow frames lower raster density toward 1x, with slow recovery after sustained
+headroom. This does not relayout the game, change key hit areas or cancel touches.
 
 The browser must receive a user interaction before sound/speech can play. The
 existing synthesized/recorded effects and music are exported to WAV at build time,
@@ -53,6 +55,11 @@ sync. Browser-specific store review/share services are unavailable.
   texture cache. Palette variants are quantized to bound recoloring work; spring
   geometry and game rules are unchanged. Measure texture warm-up and palette churn
   as well as steady frames. Cache accounting excludes browser-managed overhead.
+- Geometry crosses TeaVM's JavaScript boundary by reference (read-only), and cached
+  paths detect mutations in reusable spring-body buffers. Static arena artwork is
+  generated in an OffscreenCanvas worker using the same Java game bundle. Dark
+  Divide requests the next fracture's images ahead of the pinch. Transferred
+  bitmaps are closed on eviction; unsupported/failed workers use synchronous art.
 - `WebSound` maps native sound IDs/pitches/gains to `audio.js`; `WebAssets` renders
   native samples on the build host so synthesis never blocks a gameplay frame.
 - `host.js` owns frame scheduling, browser lifecycle, coordinates and errors.
@@ -86,8 +93,12 @@ Use `?debug=1` for the scene selector, outfit shuffle, optional haptics and timi
 readout. `?scene=stage:25&debug=1` jumps to Gator in a developer build. Debug scenes
 can change local progress; use a separate browser profile/origin for benchmarks.
 `ddd.stats()` reports bounded p50/p95/p99 frame intervals, CPU update+draw time,
-cache size, audio state and heap where supported. `ddd.test.step()` is only for
+cache size, render scale, audio state and heap where supported. `ddd.test.step()` is only for
 scripted diagnostics; it bypasses display scheduling. Do not report its numbers as FPS.
+`profile:divide` and `profile:octopulse` replay the existing 36-second native profiling
+scenes in isolated cores without writing saves. Escape exits the replay. The Divide
+replay includes all fracture phases, eight pieces and the final explosion. Browser
+CI runs both and tests real DOM touch delivery; `ddd.artState()` reports worker health.
 
 Before claiming native-equivalent performance, test representative midrange Android
 Chrome and iPhone Safari, then both YouTube embedded hosts when access exists. Compare

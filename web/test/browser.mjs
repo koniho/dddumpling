@@ -14,10 +14,15 @@ for(const [engine,type] of [['chromium',chromium],['webkit',webkit]]){
   page.on('pageerror',e=>errors.push(e.stack||e.message));
   await page.goto(origin+'/?debug=1');await page.waitForFunction(()=>window.ddd?.ready||window.ddd?.error,{},{timeout:90000});
   if(await page.evaluate(()=>ddd.error))throw Error(await page.evaluate(()=>ddd.error));
+  await page.waitForFunction(()=>!ddd.artState || ddd.artState().ready || ddd.artState().failed);
+  if(await page.evaluate(()=>ddd.artState?.().failed))throw Error('Artwork worker failed');
   await page.waitForTimeout(500);
   await page.locator('#game').screenshot({path:`${out}/${engine}-title.png`});
   // Real DOM keyboard input follows the same router as the touch deck.
   await page.evaluate(()=>{ddd.api.scene('keyboard:6');ddd.test.stop();});
+  const deck=await page.evaluate(()=>Object.fromEntries(ddd.api.status().split(';').map(s=>s.split('='))));
+  await page.touchscreen.tap(Number(deck.key0x),Number(deck.key0y));
+  if(Number((await page.evaluate(()=>ddd.api.status())).match(/;key0=([^;]+)/)[1])!==1)throw Error('Touch deck did not respond immediately');
   await page.keyboard.press('s');
   if(!/keyboardPresses=1/.test(await page.evaluate(()=>ddd.api.status())))throw Error('Keyboard did not dispatch');
   await page.keyboard.down('d');await page.keyboard.down('d');await page.keyboard.up('d');
@@ -46,6 +51,21 @@ for(const [engine,type] of [['chromium',chromium],['webkit',webkit]]){
     await writeFile(`${out}/metrics.json`,JSON.stringify(results,null,2));
     console.log(`${engine}: ${scene} rendered`);
     if(await page.evaluate(()=>ddd.error))throw Error(await page.evaluate(()=>ddd.error));
+  }
+  // Full fixed replays include fracture stalls, eight globs, the exit and Octopulse's arena.
+  for(const scene of ['profile:divide','profile:octopulse']){
+    await page.evaluate(s=>{ddd.api.scene(s);ddd.test.stop();ddd.test.clearMetrics();},scene);
+    const trace=[];
+    for(let i=0;i<72;i++){
+      await page.evaluate(()=>ddd.test.step(30));
+      trace.push(await page.evaluate(()=>({state:ddd.api.status(),art:ddd.artState?.(),...ddd.stats()})));
+      if([20,40,56,63].includes(i))await page.locator('#game').screenshot({path:`${out}/${engine}-${scene.replace(':','-')}-${i}.png`});
+    }
+    if(trace.some(s=>s.art?.failed))throw Error('Artwork worker failed during replay');
+    if(scene==='profile:divide' && !trace.some(s=>/pieces=8(?:;|$)/.test(s.state)))throw Error('Replay missed eight-piece phase');
+    await writeFile(`${out}/${engine}-${scene.replace(':','-')}.json`,JSON.stringify(trace,null,2));
+    results.push({engine,scene,environment:'CI fixed replay, not device FPS',...await page.evaluate(()=>ddd.stats())});
+    await writeFile(`${out}/metrics.json`,JSON.stringify(results,null,2));console.log(`${engine}: ${scene} replay passed`);
   }
   // Exercise audio unlock; a browser may start suspended, but should accept the interaction.
   await page.evaluate(()=>ddd.api.scene('keyboard:6'));await page.locator('#game').click({position:{x:200,y:700}});

@@ -1,0 +1,20 @@
+const test=require('node:test'),assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs');
+function env(){
+ class Path {constructor(){this.points=[];}moveTo(...p){this.points.push(p);}lineTo(...p){this.points.push(p);}closePath(){this.closed=true;}}
+ const win={Path2D:Path,Float32Array};win.window=win;vm.runInNewContext(fs.readFileSync('web/public/paint.js','utf8'),win);return win;
+}
+test('cached paths reuse unchanged coordinates and notice mutable spring-body buffers',()=>{
+ const {ddd}=env(),drawn=[],ctx={fill:p=>drawn.push(p),stroke:p=>drawn.push(p)},p=new Float32Array([0,0,1,0,0,1]);
+ ddd.paint.poly(ctx,p,0xffffffff,0,true);ddd.paint.poly(ctx,p,0xff000000,2,true);assert.equal(drawn[0],drawn[1]);
+ p[2]=4;ddd.paint.poly(ctx,p,0xffffffff,0,true);assert.notEqual(drawn[1],drawn[2]);assert.equal(drawn[2].points[1][0],4);
+ ddd.paint.poly(ctx,p,0xffffffff,1,false);assert.equal(drawn[3].closed,undefined);
+});
+test('transparent paths do not submit raster work',()=>{
+ const {ddd}=env();ddd.paint.poly({fill(){throw Error('invisible path drawn');}},new Float32Array([0,0,1,1]),0,0,true);
+});
+test('texture eviction releases transferred bitmap memory and keeps accounting bounded',()=>{
+ const {ddd}=env();let closed=0;const texture=()=>({width:4096,height:2048,close(){closed++;}});
+ ddd.cache.put('a',texture());ddd.cache.put('b',texture());ddd.cache.get('a');ddd.cache.put('c',texture());
+ assert.equal(ddd.cache.get('b'),null);assert.equal(closed,1);assert.equal(ddd.cache.bytes,64*1024*1024);
+ ddd.cache.remove('a');assert.equal(closed,2);assert.equal(ddd.cache.bytes,32*1024*1024);
+});
