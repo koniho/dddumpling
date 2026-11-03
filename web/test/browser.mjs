@@ -61,6 +61,16 @@ for(const [engine,type] of engines){
   if(await page.evaluate(()=>ddd.artState?.().failed))throw Error('Artwork worker failed');
   await page.waitForTimeout(500);
   await page.locator('#game').screenshot({path:`${out}/${engine}-title.png`});
+  // Desktop mirror gesture drives the actual pinch handler, with a visible helper finger.
+  await page.evaluate(()=>{ddd.api.scene('mouse:divide');ddd.test.stop();ddd.test.step(1);});
+  const target=await page.evaluate(()=>Object.fromEntries(ddd.api.status().split(';').map(s=>s.split('='))));
+  const box=await page.locator('#game').boundingBox(),gx=box.x+Number(target.globX),gy=box.y+Number(target.globY),radius=Number(target.globR);
+  await page.mouse.move(gx,gy);await page.mouse.down();await page.mouse.move(gx+radius*.1,gy);
+  if(!/divideSplits=0(?:;|$)/.test(await page.evaluate(()=>ddd.api.status())))throw Error('Short mouse stretch split the glob');
+  await page.evaluate(()=>ddd.test.step(1));
+  await page.locator('#game').screenshot({path:`${out}/${engine}-divide-mirror.png`});
+  await page.mouse.move(gx+radius*1.3,gy);await page.mouse.up();
+  if(!/divideSplits=1(?:;|$)/.test(await page.evaluate(()=>ddd.api.status())))throw Error('Mouse mirror did not split the glob');
   // Real DOM keyboard input follows the same router as the touch deck.
   await page.evaluate(()=>{ddd.api.scene('keyboard:6');ddd.test.stop();});
   const deck=await page.evaluate(()=>Object.fromEntries(ddd.api.status().split(';').map(s=>s.split('='))));

@@ -122,9 +122,9 @@ final class Onboarding extends Draw {
         bubbleAge=0;
         c.diagnostic("tutorial-explain");
         narrator=c;
-        if(c.sound!=null)c.sound.explain(TutorialSpeech.spokenPage(speech,speechPage,c.preferences.skin));
+        if(c.sound!=null)c.sound.explain(TutorialSpeech.spokenPage(speech,speechPage,c.preferences.skin,c.mouseStretch));
     }
-    boolean moreSpeech(GameCore c) { return speechPage+1<TutorialSpeech.pageCount(speech,c.preferences.skin); }
+    boolean moreSpeech(GameCore c) { return speechPage+1<TutorialSpeech.pageCount(speech,c.preferences.skin,c.mouseStretch); }
     void rescue(GameCore c) {
         clear();speech=TutorialSpeech.RESCUE;rescueGuide=briefing=true;age=0;narrate(c);
     }

@@ -1,13 +1,14 @@
 const test=require('node:test'),assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs');
-function environment(){
+function environment(platform){
+ const calls=[];let paused=false;
  const listeners={},elements={};
  const context={setTransform(){},save(){},restore(){}};
  const element=id=>elements[id]??=( {hidden:true,textContent:'',width:0,height:0,style:{},addEventListener(n,f){listeners[id+':'+n]=f;},getContext(){return context;},getBoundingClientRect(){return {left:0,top:0,width:390,height:844};},setPointerCapture(){},focus(){}} );
  const storage=new Map(),frames=new Map();let next=0;
- const win={ddd:{audio:{suspend(){},unlock(){},preload(){},state:{}},cache:{bytes:0,count:0}},addEventListener(n,f){listeners[n]=f;},devicePixelRatio:3};win.window=win;
+ const win={ddd:{platform,audio:{setAllowed(v){calls.push(['allowed',v]);},suspend(){},unlock(){},preload(){},state:{}},cache:{bytes:0,count:0}},addEventListener(n,f){listeners[n]=f;},devicePixelRatio:3};win.window=win;
  Object.assign(win,{document:{hidden:false,getElementById:element,querySelector:()=>element('main'),addEventListener(n,f){listeners[n]=f;},fonts:{load:async()=>{},ready:Promise.resolve()}},location:{search:''},URLSearchParams,performance:{now:()=>100},localStorage:{getItem:k=>storage.get(k)??null,setItem:(k,v)=>storage.set(k,v)},getComputedStyle:()=>({paddingTop:'0',paddingBottom:'0',paddingLeft:'0',paddingRight:'0'}),requestAnimationFrame:f=>{frames.set(++next,f);return next;},cancelAnimationFrame:id=>frames.delete(id),setTimeout(){},clearTimeout(){},setInterval(){},console});
  vm.runInNewContext(fs.readFileSync('web/public/host.js','utf8'),win);
- const calls=[],api={resize:(...a)=>calls.push(['resize',...a]),hidden:v=>calls.push(['hidden',v]),frame:d=>calls.push(['frame',d]),pointer:(...a)=>calls.push(['pointer',...a]),key:(...a)=>{calls.push(['key',...a]);return true;},paused:()=>false,status:()=>'',back:()=>calls.push(['back'])};win.ddd.connect(api);
+ const api={warm(){},resize:(...a)=>calls.push(['resize',...a]),hidden:v=>{calls.push(['hidden',v]);if(v)paused=true;},frame:d=>calls.push(['frame',d]),mouse:(...a)=>calls.push(['mouse',...a]),pointer:(...a)=>calls.push(['pointer',...a]),key:(...a)=>{calls.push(['key',...a]);return true;},paused:()=>paused,status:()=>'',back:()=>{calls.push(['back']);paused=false;}};win.ddd.connect(api);
  return {win,listeners,elements,calls,frames};
 }
 test('pixel ratio capped; CSS game coordinates remain independent of backing pixels',()=>{const {elements,calls}=environment();assert.equal(elements.game.width,780);assert.deepEqual(calls[0],['resize',390,844]);});
@@ -35,4 +36,21 @@ test('fixed diagnostic scale isolates render cost without changing game coordina
  win.ddd.test.renderScale(null);
  for(let i=0;i<240;i++){const f=[...frames.values()].at(-1);frames.clear();f(now);now+=40;}
  assert.equal(elements.game.width,390);
+});
+
+test('Playables uses only SDK lifecycle, freezes rendering/input, and preserves a manual pause',()=>{
+ let notify;const platform={playables:true,paused:false,audioAllowed:false,gameReady(){},subscribe(fn){notify=fn;fn();}};
+ const {listeners,frames,calls}=environment(platform);
+ assert.equal(listeners.visibilitychange,undefined);assert.equal(listeners.blur,undefined);assert.equal(listeners.focus,undefined);
+ platform.paused=true;notify();assert.equal(frames.size,0);
+ listeners['game:pointerdown']({pointerId:1,pointerType:'touch',clientX:20,clientY:40,preventDefault(){}});
+ assert.equal(calls.filter(c=>c[0]==='pointer').length,0);
+ platform.audioAllowed=true;notify();assert.equal(frames.size,0);
+ platform.paused=false;notify();assert.equal(frames.size,1);assert.ok(calls.some(c=>c[0]==='back'));
+});
+test('SDK mute changes preserve an active pointer and mouse packets use the mirror adapter',()=>{
+ let notify;const platform={playables:true,paused:false,audioAllowed:true,gameReady(){},subscribe(fn){notify=fn;fn();}};
+ const {listeners,calls}=environment(platform),e={pointerId:1,pointerType:'mouse',clientX:20,clientY:40,button:0,preventDefault(){}};
+ listeners['game:pointerdown'](e);platform.audioAllowed=false;notify();listeners['game:pointerup'](e);
+ assert.deepEqual(calls.filter(c=>c[0]==='mouse'),[['mouse',0,20,40],['mouse',1,20,40]]);
 });

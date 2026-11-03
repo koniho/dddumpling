@@ -23,7 +23,11 @@ Use HTTPS when hosting outside localhost. Hosting/uploading is a separate action
 
 Tap/swipe as on the phone. S D F J K L are the existing physical deck bindings;
 Escape uses the existing back/pause handler. Pointer capture supports dragging and
-multiple fingers. Backgrounding cancels held input, pauses play and suspends audio.
+multiple fingers. Desktop hosts teach dragging in the boss tutorial and keyboard guide.
+On a mouse, dragging a charged Dark Divide glob adds a mirrored
+virtual finger and feeds the existing two-pointer pinch handler. Short stretches
+do not split; releasing/canceling clears both fingers. Other bosses and touch input
+keep their existing gestures. Backgrounding cancels held input, pauses play and suspends audio.
 On a desktop browser's first visit, a keyboard practice card shows the actual squishy
 artwork and bindings supplied by `KeyboardInput`. Inactive roster keys are dimmed and
 explained. Practice cannot trigger gameplay. Completion is remembered in browser
@@ -47,8 +51,8 @@ implemented; caves remain unreachable through normal Adventure routing.
 
 Progress is local to the browser's origin in `dddumpling.web.v1.*` localStorage keys.
 It is separate from native phone saves. Clearing site data removes it; private mode,
-quota or denied storage can prevent saving and displays a notice. This is not cloud
-sync. Browser-specific store review/share services are unavailable.
+quota or denied storage can prevent saving and displays a notice. This standalone mode is not cloud
+sync; the separate YouTube build below uses SDK-managed saves. Browser-specific store review/share services are unavailable.
 
 ## Architecture
 
@@ -152,12 +156,62 @@ Gator entry/parries, Slime bank recoil, Dark Divide splits and wardrobe glitter.
 
 Application and detailed gates: https://github.com/koniho/dddumpling/issues/230
 
-This is a standalone browser port, **not yet a Playables SDK integration**. The
-Playables host must replace localStorage with SDK save/load, use SDK pause/audio
-callbacks instead of page visibility, signal firstFrameReady/gameReady correctly,
-remove incompatible external links/UI and pass certification. Keep that host policy
-separate from the shared gameplay and standalone browser adapter. No application,
-licensing agreement or publication has been submitted by this work.
+Build the separate YouTube host with:
+
+```sh
+python3 web/build.py --playables
+```
+
+Output is `build/web-playables/`; developer Java flags and preview controls are disabled.
+The official `https://www.youtube.com/game_api/v1` script loads before game code.
+The standalone entry point does not load or depend on the SDK. A YouTube build opened
+outside the Playables environment stops with an explanation rather than silently
+falling back to localStorage. Use the official Test Suite or portal preview to run it.
+
+`playables.js` adapts the same synchronous Store to an in-memory string dictionary,
+loaded with `ytgame.game.loadData()` before constructing the game. Its saved envelope
+is `{version:1, values:{...}}`; unknown versions/malformed data stop initialization
+without overwriting the cloud save. New keys can be added compatibly; breaking format
+changes require a migration before incrementing the version. No native/browser-local
+save is imported automatically. Developer playthrough logs are excluded.
+
+Writes coalesce briefly, send serialized snapshots one at a time and retain newer
+changes during an in-flight save. Failures keep the snapshot dirty and retry with
+bounded backoff while active. Pause flushes pending changes, including a newer snapshot
+behind an in-flight save. Accepted synchronous writes mean queued locally in memory,
+not durably synced; failures are surfaced without pretending the SDK saved them.
+Writes stay queued until the game reaches readiness, so a failed initialization cannot
+save partially constructed defaults. Saves are conservatively checked against the SDK's 3 MiB limit.
+
+The HTML loading screen signals `firstFrameReady`; the interactive game/keyboard guide
+signals `gameReady` once. Failed loads offer Retry. SDK pause/resume exclusively controls
+host suspension in YouTube: no page visibility/focus handlers or browser history guard.
+Pause releases input, stops RAF/audio, aborts pending audio fetches and terminates the
+art worker; queued art resumes in a new worker while completed main-thread textures stay
+cached. Manual in-game pause is preserved. YouTube mute gates music, effects, loops and
+speech independently of in-game volume controls. Muted/pause-stale effects cannot play
+when decoding finishes. Audio unlock is attempted on SDK-enabled startup but never
+blocks readiness on an autoplay permission promise.
+
+`node web/test/playables.mjs` runs the production bundle with an SDK contract fixture
+in Chromium/WebKit (CI serves it at `/playables/`). It checks delayed/failed load,
+readiness, cloud restore/save/reload, paused rendering/input/worker behavior, host mute,
+and absence of standalone storage/history/visibility handling. Unit tests cover save
+races/retries and pending audio. **These are not official certification results.**
+
+Before submission, run the official SDK Test Suite and portal preview on desktop,
+mobile web, YouTube Android and YouTube iOS. Remaining product work includes removing
+native-only settings/share/review UI, audience/rights review, metadata/rating and
+sustained physical-device checks. External URL opening is blocked in the SDK host;
+visible entries still need a product cleanup. No application, licensing agreement,
+upload or publication has been submitted. Optional score reporting and ads are not
+implemented; multiple game modes need an explicit score choice before `sendScore`.
+
+SDK references (checked 2026-11-03):
+- https://developers.google.com/youtube/gaming/playables/reference/getting_started
+- https://developers.google.com/youtube/gaming/playables/reference/sdk
+- https://developers.google.com/youtube/gaming/playables/certification/requirements_integration
+- https://developers.google.com/youtube/gaming/playables/reference/test_suite_guide
 
 Dependencies: https://teavm.org/docs/intro/overview.html and
 https://teavm.org/docs/runtime/jso.html. Font license ships with the generated bundle.
