@@ -55,7 +55,7 @@ public final class WebGame {
         }
         if(name.equals("mouse:divide")) {
             game.debugScene("stage:10");GameCore c=game.core();c.onboarding.clear();c.onboarding.saved|=Onboarding.SKIPPED;
-            c.stageGap=0;c.boss.intro=0;c.boss.update(1f/60,game.geometry(),c.rnd);c.boss.pieceHits[0]=Boss.DIVIDE_HITS;
+            c.stageBanner=c.stageGap=0;c.boss.intro=0;c.boss.update(1f/60,game.geometry(),c.rnd);c.boss.pieceHits[0]=Boss.DIVIDE_HITS;
         } else if(name.equals("survival")) {
             game.debugScene("play");game.core().modes.selected=ModeSelector.SURVIVAL;game.core().startGame();
             game.core().survival.seconds=180;game.core().onboarding.clear();game.core().onboarding.saved|=Onboarding.SKIPPED;
