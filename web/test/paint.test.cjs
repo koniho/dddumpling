@@ -18,3 +18,10 @@ test('texture eviction releases transferred bitmap memory and keeps accounting b
  assert.equal(ddd.cache.get('b'),null);assert.equal(closed,1);assert.equal(ddd.cache.bytes,64*1024*1024);
  ddd.cache.remove('a');assert.equal(closed,2);assert.equal(ddd.cache.bytes,32*1024*1024);
 });
+test('worker-backed tint requests never read pixels on the input thread',()=>{
+ const {ddd}=env(),image={artGroup:'vista',artId:22,width:256,height:512};let request;
+ ddd.cache.requestPalette=(...args)=>{request=args;return true;};
+ const matrix=Array(20).fill(0);matrix[0]=matrix[6]=matrix[12]=.5;matrix[18]=1;
+ assert.equal(ddd.cache.filtered(image,matrix),image);assert.equal(request[0],'vista');assert.equal(request[1],22);
+ assert.deepEqual(Array.from(request[3]),matrix);
+});

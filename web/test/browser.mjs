@@ -19,10 +19,11 @@ async function keyboardGuide(browser,engine){
  if(await page.evaluate(()=>ddd.storage.get('KeyboardGuideVersion'))!=='1')throw Error('Keyboard lesson completion was not saved');
  await page.reload();await page.waitForFunction(()=>ddd.ready);
  if(await page.evaluate(()=>ddd.keyboardGuide.open))throw Error('Keyboard lesson repeated after reload');
- await page.evaluate(()=>ddd.api.scene('keyboard:6'));await page.keyboard.press('Shift+/');
+ await page.evaluate(()=>ddd.api.scene('keyboard:6'));await page.keyboard.press('?');
+ await page.locator('#keyboard-guide').waitFor({state:'visible'});
  if(!await page.evaluate(()=>ddd.api.paused()))throw Error('Keyboard guide did not pause combat');
  await page.keyboard.press('Escape');if(await page.evaluate(()=>ddd.api.paused()))throw Error('Closing guide did not resume combat');
- await page.keyboard.press('Escape');await page.keyboard.press('Shift+/');await page.keyboard.press('Escape');
+ await page.keyboard.press('Escape');await page.keyboard.press('?');await page.keyboard.press('Escape');
  if(!await page.evaluate(()=>ddd.api.paused()))throw Error('Guide incorrectly resumed an already paused game');
  if(errors.length)throw Error(errors.join('\n'));await context.close();
  const touch=await browser.newContext({viewport:{width:390,height:844},hasTouch:true,isMobile:true}),mobile=await touch.newPage();
@@ -30,7 +31,9 @@ async function keyboardGuide(browser,engine){
  if(await mobile.evaluate(()=>ddd.keyboardGuide.open))throw Error('Keyboard guide appeared on a touch-only browser');
  await touch.close();console.log(`${engine}: desktop keyboard tutorial passed`);
 }
-for(const [engine,type] of [['chromium',chromium],['webkit',webkit]]){
+const engines=[['chromium',chromium],['webkit',webkit]].filter(([name])=>!process.env.WEB_ENGINE || name===process.env.WEB_ENGINE);
+if(!engines.length)throw Error('Unknown WEB_ENGINE');
+for(const [engine,type] of engines){
  console.log(`Checking ${engine}`);
  const browser=await type.launch({headless:true});
  try{
@@ -102,4 +105,4 @@ for(const [engine,type] of [['chromium',chromium],['webkit',webkit]]){
  }finally{await browser.close();}
 }
 await writeFile(`${out}/metrics.json`,JSON.stringify(results,null,2));
-console.log(`Passed both engines; ${results.length} scripted scene samples. Metrics are CPU timings, not phone FPS.`);
+console.log(`Passed ${engines.length} browser engine(s); ${results.length} scripted scene samples. Metrics are CPU timings, not phone FPS.`);
