@@ -4,8 +4,16 @@
 
 **Testing inside the YouTube Android/iOS app requires an onboarded channel and access
 to the invitation-only Playables Developer Portal.** The public SDK Test Suite does
-not grant that access. Portal access has not been established in this work. No interest
-application, partner agreement, portal upload or public release was submitted.
+not grant that access. Portal access has not been established.
+
+**Submission update:** on 2026-11-03 the user reported submitting the Playables interest
+form. Treat it as submitted and awaiting a possible response; do not submit a duplicate.
+No receipt/reference or invitation was provided. No partner agreement, portal upload
+or public release was performed by this agent.
+
+The [official interest form](https://docs.google.com/forms/d/e/1FAIpQLSdvdQ0lgIq2369aemj1O6w8R8FwGn9O5ARRGODDDUbVINCRJQ/viewform)
+publishes no response timeline and says they may not respond to every submission;
+they contact developers if interested. Do not invent an expected review window.
 
 The previous agent presented in-app testing as the immediate next step without making
 this prerequisite clear. The user was understandably frustrated. Do not repeat that
@@ -100,15 +108,16 @@ relax the game's CSP. A Test Suite pass is not certification or publishing appro
 
 ## Next agent's task
 
-1. Confirm whether the owner has since obtained an invitation. If not, **prepare the
-   interest application** using #230 and the existing marketing materials. Be clear
-   about the access dependency before proposing any in-app testing.
+1. The owner has submitted the interest form. Confirm whether a response or invitation
+   has arrived; do not prepare or submit a duplicate application. Be clear about the
+   access dependency before proposing any in-app testing.
 2. Use the existing [promotion handoff](../app-store/marketing/experiments/223-2026-11-02/promotion-handoff.md)
    and [supercut provenance](../app-store/marketing/experiments/223-2026-11-02/store-supercut.json).
    Do not conflate a Playables application with YouTube Promote advertising.
 3. Confirm audience eligibility, asset rights and business terms. The game has Kids
    Mode; the audience question remains unresolved. Renaming it is not a resolution.
-   Application submission/agreement acceptance has not been authorized by this handoff.
+   The user submitted the interest form themselves; this handoff does not authorize
+   the next agent to accept additional agreements.
 4. After portal onboarding, upload a reviewed bundle and use its preview link for
    actual YouTube Android/iOS tests, then complete rating/metadata/review requirements.
    This work has not approved a merge, deployment or release.
