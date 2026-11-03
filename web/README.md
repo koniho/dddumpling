@@ -244,3 +244,12 @@ certificate access, then paste that URL into the official Test Suite's **Game UR
 Allow local-network access if the browser asks. The standalone `web-playable-preview`
 artifact instead works with `python -m http.server 8766` and `http://localhost:8766/`;
 it does not require the YouTube SDK or Test Suite.
+
+On 2026-11-03, [live official validation](https://github.com/koniho/dddumpling/actions/runs/41664937731)
+passed all five automated MUST checks and the five-second startup SHOULD check in
+headless desktop Chromium. The suite measured a 3.07 MiB initial bundle and 0.654 s
+initial readiness on the CI runner's loopback server; these are not device/network
+performance claims. Save restoration, failed-save recovery, pause/resume and mute also
+passed, with no game CSP violations. `sendScore` remains intentionally unimplemented
+and its optional check is untested. Embedded Android/iOS testing and platform approval
+remain separate gates.
