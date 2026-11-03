@@ -9,7 +9,14 @@ final class TestCrystalField extends Check {
         arrival(L);
 
         GatorReplay replay=new GatorReplay(Boss.SPLITTER),chunked=new GatorReplay(Boss.SPLITTER);
-        for(int i=0;i<1440;i++){replay.step(L);if(i%2==1)chunked.update(GatorReplay.STEP*2,L);}
+        boolean splitEffects=false;
+        for(int i=0;i<1440;i++) {
+            int before=replay.core.boss.divideSplits;replay.step(L);
+            if(replay.core.boss.divideSplits>before)splitEffects|=replay.core.shake>0
+                    && replay.core.crystalField.hasLights(replay.core);
+            if(i%2==1)chunked.update(GatorReplay.STEP*2,L);
+        }
+        check("Divide replay includes real pinch lighting and shake",splitEffects);
         check("Divide profiling reproduces the busy split state without a playthrough",replay.core.boss.pieceCount()==Boss.DIVIDE_PIECES);
         check("Divide profiling is frame chunk independent",replay.tick==chunked.tick
                 && replay.core.boss.divideSplits==chunked.core.boss.divideSplits);

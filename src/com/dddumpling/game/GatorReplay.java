@@ -78,7 +78,7 @@ final class GatorReplay {
             if(b.fighting() && tick%(finish?30:150)==0)for(int n=0;n<Boss.DIVIDE_NODES;n++) {
                 if(!b.nodeActive(n) || (!finish && b.nodeDepth(n)>=Boss.DIVIDE_LEVELS))continue;
                 b.pieceHits[n]=Boss.DIVIDE_HITS;
-                if(b.beginPinch(100))b.pinch(100*(Boss.DIVIDE_SCALE+.02f));
+                if(b.beginPinch(100))BossPlay.pinch(core,100*(Boss.DIVIDE_SCALE+.02f),l);
                 break;
             }
             core.lives=3;core.update(STEP,l);tick++;return;
