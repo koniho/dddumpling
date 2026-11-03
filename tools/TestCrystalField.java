@@ -7,6 +7,13 @@ final class TestCrystalField extends Check {
         arenaLights(L);
         splitLighting(L);
         arrival(L);
+        float[] square={0,0,2,0,2,2,0,2};
+        check("crystal clip keeps boundary points and interpolates crossing edges",
+                java.util.Arrays.equals(CrystalField.clip(square,1,0,1),new float[]{0,0,1,0,1,2,0,2}));
+        float[] kept=CrystalField.clip(square,1,0,2);
+        check("crystal clip owns its output even when nothing is clipped",kept!=square && java.util.Arrays.equals(kept,square));
+        check("crystal clip handles fully excluded and empty shapes",
+                CrystalField.clip(square,1,0,-1).length==0 && CrystalField.clip(new float[0],1,0,1).length==0);
 
         GatorReplay replay=new GatorReplay(Boss.SPLITTER),chunked=new GatorReplay(Boss.SPLITTER);
         boolean splitEffects=false;
