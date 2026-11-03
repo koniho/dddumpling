@@ -110,22 +110,19 @@ for(const [engine,type] of engines){
     results.push({engine,scene,environment:'CI fixed replay, not device FPS',...await page.evaluate(()=>ddd.stats())});
     await writeFile(`${out}/metrics.json`,JSON.stringify(results,null,2));console.log(`${engine}: ${scene} replay passed`);
   }
-  // Exercise audio unlock; a browser may start suspended, but should accept the interaction.
+  // Use the normal RAF loop too: batched draws can exaggerate GPU queue stalls.
   for(const scene of ['profile:divide','profile:octopulse']){
-    await page.evaluate(s=>{ddd.api.scene(s);ddd.test.stop();ddd.api.advanceReplay(1440);ddd.test.step(1);},scene);
+    await page.evaluate(s=>{ddd.api.scene(s);ddd.test.stop();ddd.api.advanceReplay(1200);ddd.test.step(1);},scene);
     await page.waitForFunction(()=>!ddd.artState || ddd.artState().pending===0);
-    const sample=await page.evaluate(async()=>{
-      ddd.test.clearMetrics();const intervals=[];let previous;
-      for(let i=0;i<180;i++){
-        const now=await new Promise(requestAnimationFrame);if(previous!==undefined)intervals.push(now-previous);previous=now;
-        ddd.test.step(1);
-      }
-      intervals.sort((a,b)=>a-b);const p=q=>intervals[Math.floor((intervals.length-1)*q)];
-      return {...ddd.stats(),presentedFrameMs:{p50:p(.5),p95:p(.95),p99:p(.99)}};
-    });
-    results.push({engine,scene:scene+'-paced',environment:'CI requestAnimationFrame replay, not physical-device FPS',...sample});
+    await page.evaluate(()=>ddd.test.resume());await page.waitForTimeout(3000);
+    await page.evaluate(()=>ddd.test.clearMetrics());await page.waitForTimeout(3000);
+    const sample=await page.evaluate(()=>{ddd.test.stop();return ddd.stats();});
+    if(sample.frames<10 || sample.renderScale<1 || sample.renderScale>2)throw Error('Normal RAF/resolution loop failed');
+    results.push({engine,scene:scene+'-paced',environment:'CI normal RAF with adaptive resolution, not physical-device FPS',...sample});
+    await page.locator('#game').screenshot({path:`${out}/${engine}-${scene.replace(':','-')}-paced.png`});
     await writeFile(`${out}/metrics.json`,JSON.stringify(results,null,2));
   }
+  // Exercise audio unlock; a browser may start suspended, but should accept the interaction.
   await page.evaluate(()=>ddd.api.scene('keyboard:6'));await page.locator('#game').click({position:{x:200,y:700}});
   await page.waitForTimeout(500);
   const audio=await page.evaluate(()=>ddd.audio.state);if(audio.context==='locked')throw Error('Audio never unlocked');

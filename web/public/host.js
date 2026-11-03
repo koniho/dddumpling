@@ -60,7 +60,7 @@
   const pct=(a,p)=>a.length?[...a].sort((x,y)=>x-y)[Math.min(a.length-1,Math.floor(a.length*p))]:0;
   ddd.stats=()=>({frames:timings.length,frameMs:{p50:pct(timings,.5),p95:pct(timings,.95),p99:pct(timings,.99)},cpuMs:{p50:pct(renders,.5),p95:pct(renders,.95),p99:pct(renders,.99)},cacheMiB:ddd.cache.bytes/1048576,cacheEntries:ddd.cache.count,heapMiB:performance.memory?performance.memory.usedJSHeapSize/1048576:null,renderScale:scale,resolution:[canvas.width,canvas.height],audio:ddd.audio.state,state:api?.status()});
   // Explicit test controls never alter ordinary frame timing or user progress.
-  ddd.test={stop(){cancelAnimationFrame(raf);},step(n,dt=1/60){cancelAnimationFrame(raf);for(let i=0;i<n;i++)draw(dt);},clearMetrics(){timings.length=renders.length=0;}};
+  ddd.test={stop(){cancelAnimationFrame(raf);},resume(){cancelAnimationFrame(raf);last=0;if(!hidden&&focused)raf=requestAnimationFrame(frame);},step(n,dt=1/60){cancelAnimationFrame(raf);for(let i=0;i<n;i++)draw(dt);},clearMetrics(){timings.length=renders.length=0;}};
   setInterval(()=>{if(params.has('debug')&&api)document.getElementById('metrics').textContent=JSON.stringify(ddd.stats(),null,1);},1000);
   ddd.boot=async()=>{try{await document.fonts.load('16px Bungee');await document.fonts.ready;ddd.audio.preload();main();}catch(e){fail(e);}};
 })();
