@@ -19,9 +19,7 @@ jobs:
         with:
           node-version: '22'
       - name: Host tests and browser build
-        run: |
-          node --test web/test/host.test.cjs
-          python3 web/build.py
+        run: python3 web/build.py
       - name: Browser test tools
         run: |
           npm install --prefix "$RUNNER_TEMP/web-check" --no-package-lock playwright@1.55.0

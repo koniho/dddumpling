@@ -15,6 +15,6 @@ for(const scene of ['title','keyboard:6','stage:5','stage:10','stage:15','stage:
 }
 api.scene('keyboard:6');api.key(115,true,false);api.key(115,false,false);assert.match(api.status(),/keyboardPresses=1/);assert.ok(sounds.length);
 api.scene('progress:12345:0:2');assert.ok(storage.get('progress'));assert.match(api.status(),/best=12345/);
-api.hidden(true);assert.equal(api.paused(),true);api.hidden(false);
+api.scene('keyboard:6');api.hidden(true);assert.equal(api.paused(),true);api.hidden(false);
 fs.writeFileSync(`${out}/metrics.json`,JSON.stringify({environment:'Node/Skia, local CPU smoke only, not browser FPS',samples:timings},null,2));
 console.log('Compiled JavaScript gameplay, native audio events, saves, input and scene rendering passed.');
