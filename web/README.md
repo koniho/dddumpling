@@ -1,5 +1,8 @@
 # Browser port (issue #230)
 
+**Resuming this work? Read [the handoff](HANDOFF.md), especially the invitation-only
+portal requirement before promising YouTube app testing.**
+
 Isolated prototype of DDDumpling's actual shared game. It compiles the existing Java
 core/renderer with TeaVM 0.16.0 and adds browser drawing, input, audio and persistence.
 No replacement game engine or copy of gameplay rules. This work stays on
