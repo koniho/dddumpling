@@ -75,8 +75,12 @@ sync. Browser-specific store review/share services are unavailable.
   temporary bitmap transfers are additional to those cache figures.
 - `WebSound` maps native sound IDs/pitches/gains to `audio.js`; `WebAssets` renders
   native samples on the build host so synthesis never blocks a gameplay frame.
+- Octopulse uses the shared continuous, rounded tentacle coats on every platform:
+  32 skin fills replace 768 overlapping capsule strokes, with the same physics,
+  suckers and cues. Browser haze uses one affine image per segment instead of two
+  clipped triangles; its mesh adapter is otherwise unchanged.
 - `host.js` owns frame scheduling, browser lifecycle, coordinates and errors.
-  Native Android/iOS render and packaging paths are untouched.
+  Native Android/iOS host and packaging paths are untouched.
 - CI also runs for changes to shared Java, the reused gesture router, the pure-source
   manifest and build flags, so a native change cannot silently break browser compilation.
 

@@ -1776,6 +1776,20 @@ final class TestBoss extends Check {
      */
     static void octopus(Layout L) {
         group("boss: octopulse");
+        float[] straight={0,0,0,30,0,60},original=straight.clone();
+        float[] coat=BossScreen.octoArmCoat(straight,20,1,0);
+        float minY=Float.MAX_VALUE,maxY=-Float.MAX_VALUE;
+        boolean finite=true;
+        for(int i=0;i<coat.length;i++) {
+            finite&=Float.isFinite(coat[i]);
+            if(i%2==1){minY=Math.min(minY,coat[i]);maxY=Math.max(maxY,coat[i]);}
+        }
+        check("tentacle coat rounds both ends beyond the physics centreline",finite && minY<0 && maxY>60);
+        check("tentacle skin never changes physics points",java.util.Arrays.equals(straight,original));
+        finite=true;
+        for(float value:BossScreen.octoArmCoat(new float[]{4,7,4,7,4,7},20,1,0))finite&=Float.isFinite(value);
+        check("collapsed tentacle skin stays finite",finite);
+
         GameCore defeated = enterBoss(L, Boss.OCTOPUS, 914L);
         defeated.boss.hp = 1f;
         defeated.boss.octoVulnerableArm = 3; defeated.boss.held = -3;

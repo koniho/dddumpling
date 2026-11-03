@@ -25,3 +25,11 @@ test('worker-backed tint requests never read pixels on the input thread',()=>{
  assert.equal(ddd.cache.filtered(image,matrix),image);assert.equal(request[0],'vista');assert.equal(request[1],22);
  assert.deepEqual(Array.from(request[3]),matrix);
 });
+
+test('water haze maps each segment to one unclipped parallelogram',()=>{
+ const {ddd}=env(),transforms=[],stack=[];let draws=0;
+ const ctx={globalAlpha:.8,save(){stack.push(this.globalAlpha);},restore(){this.globalAlpha=stack.pop();},transform(...v){transforms.push(v);},drawImage(){draws++;}};
+ ddd.cache.band(ctx,{width:2,height:64},[10,30,50,40,90,25],12,128,0);
+ assert.equal(draws,2);assert.deepEqual(transforms,[[20,5,0,24/64,10,18],[20,-7.5,0,24/64,50,28]]);
+ assert.equal(ctx.globalAlpha,.8);assert.equal(stack.length,0);
+});

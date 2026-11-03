@@ -1134,6 +1134,40 @@ final class BossScreen extends Draw {
         p.fillPoly(oval, color);
     }
 
+    /** One rounded, tapered skin per coat instead of 24 overlapping capsule strokes. */
+    static float[] octoArmCoat(float[] curve,float thick,float scale,float offset) {
+        int count=curve.length/2,caps=8;
+        float[] out=new float[(count*2+2*(caps-1))*2];
+        int at=0;
+        // Trace both sides; rounded caps connect them without a separate draw/alpha overlap.
+        for(int side=0;side<2;side++) {
+            for(int step=0;step<count;step++) {
+                int i=side==0?step:count-1-step;
+                int before=Math.max(0,i-1),after=Math.min(count-1,i+1);
+                float dx=curve[after*2]-curve[before*2],dy=curve[after*2+1]-curve[before*2+1];
+                float len=(float)Math.sqrt(dx*dx+dy*dy);
+                float tx=len>.0001f?dx/len:0,ty=len>.0001f?dy/len:1;
+                float width=thick*(1.18f-.76f*Math.min(i,count-2)/(count-1f));
+                float radius=width*scale*.5f,shift=width*offset,sign=side==0?1:-1;
+                float x=curve[i*2]+shift,y=curve[i*2+1]+shift;
+                out[at++]=x-ty*radius*sign;out[at++]=y+tx*radius*sign;
+                if(step==count-1)for(int cap=1;cap<caps;cap++) {
+                    float ca=OCTO_CAP_COS[cap-1],sa=OCTO_CAP_SIN[cap-1];
+                    out[at++]=x+(-ty*ca+tx*sa)*radius*sign;
+                    out[at++]=y+(tx*ca+ty*sa)*radius*sign;
+                }
+            }
+        }
+        return out;
+    }
+    private static final float[] OCTO_CAP_COS=new float[7],OCTO_CAP_SIN=new float[7];
+    static {
+        for(int i=0;i<7;i++) {
+            float angle=(i+1)*(float)Math.PI/8;
+            OCTO_CAP_COS[i]=(float)Math.cos(angle);OCTO_CAP_SIN[i]=(float)Math.sin(angle);
+        }
+    }
+
     private static void drawOctopusArms(Painter p, GameCore c, Layout L, Boss b, int col, float fade) {
         p=Skins.squid(p);
         boolean victory = c.dying() && c.bossVictory == b;
@@ -1170,26 +1204,16 @@ final class BossScreen extends Draw {
                 // Complete each coat before the next, so dark segment caps cannot stripe the arm.
                 if(Skins.halloween(p))Skins.squidArm(p,curve,thick*variety*1.18f
                         *(dying?1f-death*.72f:1f),armCol,fade);
-                else for (int coat = 0; coat < 4; coat++) {
-                    for (int s = 0; s < steps; s++) {
-                        float u = s / (float) steps;
-                        float width = thick * variety * (1.18f - 0.76f * u)
-                                * (dying ? 1f - death * 0.72f : 1f);
-                        float x1 = curve[s * 2], y1 = curve[s * 2 + 1];
-                        float x2 = curve[s * 2 + 2], y2 = curve[s * 2 + 3];
-                        if (coat == 0) p.line(x1, y1, x2, y2,
-                                Glyph.withAlpha(OCTO_INK, (int) (255 * fade)),
-                                width * 1.22f);
-                        if (coat == 1) p.line(x1, y1, x2, y2, Glyph.withAlpha(armCol, (int) (255 * fade)), width);
-                        if (coat == 2) p.line(x1 + width * 0.16f, y1 + width * 0.16f,
-                                x2 + width * 0.16f, y2 + width * 0.16f,
-                                Glyph.withAlpha(Glyph.mix(armCol, OCTO_SHADE, 0.72f),
-                                        (int) (255 * fade)), width * 0.48f);
-                        if (coat == 3) p.line(x1 - width * 0.10f, y1 - width * 0.10f,
-                                x2 - width * 0.10f, y2 - width * 0.10f,
-                                Glyph.withAlpha(Glyph.mix(armCol, OCTO_GLEAM, 0.30f),
-                                        (int) (255 * fade)), width * 0.14f);
-                    }
+                else {
+                    float armWidth=thick*variety*(dying?1f-death*.72f:1f);
+                    p.fillPoly(octoArmCoat(curve,armWidth,1.22f,0),
+                            Glyph.withAlpha(OCTO_INK,(int)(255*fade)));
+                    p.fillPoly(octoArmCoat(curve,armWidth,1,0),
+                            Glyph.withAlpha(armCol,(int)(255*fade)));
+                    p.fillPoly(octoArmCoat(curve,armWidth,.48f,.16f),
+                            Glyph.withAlpha(Glyph.mix(armCol,OCTO_SHADE,.72f),(int)(255*fade)));
+                    p.fillPoly(octoArmCoat(curve,armWidth,.14f,-.10f),
+                            Glyph.withAlpha(Glyph.mix(armCol,OCTO_GLEAM,.30f),(int)(255*fade)));
                 }
                 // A row of soft pink suckers follows the lower side of each curl.
                 for (int s = steps * 5 / 9; s < steps; s += 3) {
