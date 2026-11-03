@@ -36,6 +36,7 @@ try {
  const paused=await game.evaluate(()=>({frames:ddd.stats().frames,state:ddd.api.status(),audio:ddd.audio.state,art:ddd.artState?.()}));
  if(paused.frames!==frozen.frames||paused.state!==frozen.state||!paused.audio.hidden||paused.art?.ready)throw Error('Official pause failed');
  await page.locator('#pause-button').click();await game.waitForFunction(()=>!ddd.platform.paused);
+ await game.waitForFunction(frames=>ddd.stats().frames>frames,frozen.frames);
  await page.locator('#audio-button').click();await game.waitForFunction(()=>!ddd.platform.audioAllowed);
  await game.evaluate(()=>{ddd.audio.volumes(1,1);ddd.audio.unlock();});
  if(await game.evaluate(()=>ddd.audio.state.allowed))throw Error('Game volume bypassed SDK mute');
@@ -54,6 +55,12 @@ try {
  await page.locator('#refresh-button').click();await ready();
  if(await game.evaluate(()=>ddd.storage.get('OfficialSuiteCheck'))!=='retry-me')throw Error('Retried save did not restore');
  results.checks.push('Official save error retained progress and recovered');
+ // Refresh resets the suite's save-size indicator. Exercise a new save for the final report.
+ await game.evaluate(()=>ddd.storage.put('OfficialSuiteCheck','complete'));
+ await game.waitForFunction(()=>!ddd.platform.saveState.pending);
+ await page.locator('.requirement-section').first().locator('.requirement-entry .pass').nth(4).waitFor();
+ const runtime=await game.evaluate(()=>({error:ddd.error,art:ddd.artState?.()}));
+ if(runtime.error||runtime.art?.failed)throw Error('Game runtime/artwork failed: '+JSON.stringify(runtime));
  security.push(...await game.evaluate(()=>window.cspViolations));
  if(security.length)throw Error('Game CSP violations: '+JSON.stringify(security));
  results.checks.push('No game CSP violations under documented YouTube policy');
