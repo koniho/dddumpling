@@ -123,7 +123,8 @@ cache size, render scale, audio state and heap where supported. `ddd.test.step()
 scripted diagnostics; it bypasses display scheduling. Do not report its numbers as FPS.
 `profile:divide` and `profile:octopulse` replay the existing 36-second native profiling
 scenes in isolated cores without writing saves. Escape exits the replay. The Divide
-replay includes all fracture phases, eight pieces and the final explosion. Browser
+replay uses the real pinch handler, including particles, shake and edge lighting,
+through all fracture phases, eight pieces and the final explosion. Browser
 CI runs both and tests real DOM touch delivery; `ddd.artState()` reports worker health.
 
 `node web/test/octopulse.mjs` runs a cave isolation comparison through the normal
@@ -134,6 +135,12 @@ cave compositing for an A/B comparison. Masks survive replay resets and never en
 saves or ordinary gameplay. `ddd.test.renderScale(n)` fixes diagnostic density;
 passing `null` restores adaptive density. Compare matched density and both starting
 and ending baselines, rather than CPU submission times alone.
+
+`node web/test/divide.mjs` samples normal RAF at fixed 1× and 2× through successive
+splits and the eight-glob phase. It separates the first 0.8 seconds after each
+fracture from settled frames and keeps the per-frame trace for stall analysis.
+The shared crystal renderer avoids boxed-coordinate clipping and prepares light
+strengths/positions once per draw; Android and iOS use those same optimizations.
 
 Before claiming native-equivalent performance, test representative midrange Android
 Chrome and iPhone Safari, then both YouTube embedded hosts when access exists. Compare
