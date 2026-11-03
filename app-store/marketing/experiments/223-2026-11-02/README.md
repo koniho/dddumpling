@@ -65,3 +65,7 @@ Store work: [supercut provenance and state](store-supercut.json), [description c
 Store status, November 2: Apple 0.1.39 (33.1) was submitted at 04:53 America/Chicago and is Waiting for Review, with the supercut and updated description. All release checks and the signed upload passed. Google Play submission 47 was submitted by Alexander and is In review; the console displays November 2 at 07:04 AM. Neither store update is asserted live.
 
 [Final handoff and review links](https://github.com/koniho/dddumpling/issues/223#issuecomment-6575363974). Record both stores' approval/live dates before interpreting acquisition results.
+
+## November 2 evening promotion handoff
+
+See [current promotion activities](promotion-handoff.md) for the phone-side YouTube Promote setup, website supercut update, video preferences and Playables application ticket. The paid campaign has not been verified launched; keep its results separate from the organic schedule above.
