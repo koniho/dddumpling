@@ -31,7 +31,7 @@
     else fastFrames=0;
   }
   function draw(dt){const start=performance.now(),c=ddd.context;c.setTransform(scale,0,0,scale,0,0);c.save();try{api.frame(dt);}finally{c.restore();}renders.push(performance.now()-start);if(renders.length>900)renders.shift();}
-  function frame(now){if(hidden||!focused)return;try{const dt=last?Math.min(.1,(now-last)/1000):0;const interval=last?now-last:0;last=now;if(interval){timings.push(interval);if(timings.length>900)timings.shift();}tune(interval);draw(dt);if(api.paused())ddd.audio.suspend(true);else ddd.audio.suspend(false);raf=requestAnimationFrame(frame);}catch(e){fail(e);}}
+  function frame(now){if(hidden||!focused)return;if(ddd.keyboardGuide?.open){last=0;raf=requestAnimationFrame(frame);return;}try{const dt=last?Math.min(.1,(now-last)/1000):0;const interval=last?now-last:0;last=now;if(interval){timings.push(interval);if(timings.length>900)timings.shift();}tune(interval);draw(dt);if(api.paused())ddd.audio.suspend(true);else ddd.audio.suspend(false);raf=requestAnimationFrame(frame);}catch(e){fail(e);}}
   function activity(){const stopped=hidden||!focused;pointerIDs.clear();api.hidden(stopped);ddd.audio.suspend(stopped);cancelAnimationFrame(raf);last=0;quality.length=0;fastFrames=0;if(!stopped)raf=requestAnimationFrame(frame);}
   function event(e,action){if(!api||hidden||!focused||e.pointerType==='mouse'&&e.button>0&&action===0)return;
     if(action===0){canvas.focus({preventScroll:true});ddd.audio.unlock();pointerIDs.add(e.pointerId);canvas.setPointerCapture(e.pointerId);}
@@ -54,7 +54,7 @@
     document.getElementById('shake').onclick=()=>{ddd.audio.unlock();api.shake();};document.getElementById('haptics').onchange=e=>{ddd.haptics=e.target.checked;};
     if(params.has('debug'))document.getElementById('tools').hidden=false;
     if(params.has('scene'))api.scene(params.get('scene'));
-    ddd.ready=true;canvas.focus({preventScroll:true});raf=requestAnimationFrame(frame);
+    ddd.ready=true;canvas.focus({preventScroll:true});draw(0);ddd.keyboardGuide?.init(api,canvas,!params.has('debug')&&!params.has('scene'));raf=requestAnimationFrame(frame);
     let warm=0;const warmOne=()=>{if(warm<5){api.warm(warm++);setTimeout(warmOne,100);}};setTimeout(warmOne,200);
   };
   const pct=(a,p)=>a.length?[...a].sort((x,y)=>x-y)[Math.min(a.length-1,Math.floor(a.length*p))]:0;

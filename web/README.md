@@ -24,6 +24,12 @@ Use HTTPS when hosting outside localhost. Hosting/uploading is a separate action
 Tap/swipe as on the phone. S D F J K L are the existing physical deck bindings;
 Escape uses the existing back/pause handler. Pointer capture supports dragging and
 multiple fingers. Backgrounding cancels held input, pauses play and suspends audio.
+On a desktop browser's first visit, a keyboard practice card shows the actual squishy
+artwork and bindings supplied by `KeyboardInput`. Inactive roster keys are dimmed and
+explained. Practice cannot trigger gameplay. Completion is remembered in browser
+storage; `?` reopens the guide, and the preview tools have a replay button. Touch-only
+browsers do not show it automatically. Opening it during a run pauses that run and
+preserves an existing pause when closing.
 The portrait playfield is centered within the available viewport; resizing preserves
 state. Drawing resolution is capped at 2x CSS pixels and 1080 pixels wide. Sustained
 slow frames lower raster density toward 1x, with slow recovery after sustained
@@ -64,6 +70,8 @@ sync. Browser-specific store review/share services are unavailable.
   native samples on the build host so synthesis never blocks a gameplay frame.
 - `host.js` owns frame scheduling, browser lifecycle, coordinates and errors.
   Native Android/iOS render and packaging paths are untouched.
+- CI also runs for changes to shared Java, the reused gesture router, the pure-source
+  manifest and build flags, so a native change cannot silently break browser compilation.
 
 ## Verification and profiling
 

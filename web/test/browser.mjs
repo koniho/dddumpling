@@ -5,10 +5,36 @@ const {chromium,webkit}=require('playwright');
 const origin=process.env.WEB_ORIGIN||'http://127.0.0.1:8766';
 const out='build/web-review';await mkdir(out,{recursive:true});
 const results=[];
+async function keyboardGuide(browser,engine){
+ const context=await browser.newContext({viewport:{width:800,height:1000}}),page=await context.newPage();
+ const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.goto(origin);await page.waitForFunction(()=>ddd.ready);
+ await page.locator('#keyboard-guide').waitFor({state:'visible'});
+ const keys=(await page.evaluate(()=>ddd.api.keyboardGuide())).split(';').filter(Boolean).map(s=>s.split(','));
+ for(const [letter,,active] of keys)if(active==='1')await page.keyboard.press(letter);
+ if(await page.locator('#keyboard-guide [data-progress]').textContent()!=='Ready to squish!')throw Error('Keyboard lesson practice did not complete');
+ if(!/keyboardPresses=0(?:;|$)/.test(await page.evaluate(()=>ddd.api.status())))throw Error('Practice keys leaked into gameplay');
+ await page.screenshot({path:`${out}/${engine}-keyboard-guide.png`});
+ await page.locator('.keyboard-ready').click();
+ if(await page.evaluate(()=>ddd.storage.get('KeyboardGuideVersion'))!=='1')throw Error('Keyboard lesson completion was not saved');
+ await page.reload();await page.waitForFunction(()=>ddd.ready);
+ if(await page.evaluate(()=>ddd.keyboardGuide.open))throw Error('Keyboard lesson repeated after reload');
+ await page.evaluate(()=>ddd.api.scene('keyboard:6'));await page.keyboard.press('Shift+/');
+ if(!await page.evaluate(()=>ddd.api.paused()))throw Error('Keyboard guide did not pause combat');
+ await page.keyboard.press('Escape');if(await page.evaluate(()=>ddd.api.paused()))throw Error('Closing guide did not resume combat');
+ await page.keyboard.press('Escape');await page.keyboard.press('Shift+/');await page.keyboard.press('Escape');
+ if(!await page.evaluate(()=>ddd.api.paused()))throw Error('Guide incorrectly resumed an already paused game');
+ if(errors.length)throw Error(errors.join('\n'));await context.close();
+ const touch=await browser.newContext({viewport:{width:390,height:844},hasTouch:true,isMobile:true}),mobile=await touch.newPage();
+ await mobile.goto(origin);await mobile.waitForFunction(()=>ddd.ready);
+ if(await mobile.evaluate(()=>ddd.keyboardGuide.open))throw Error('Keyboard guide appeared on a touch-only browser');
+ await touch.close();console.log(`${engine}: desktop keyboard tutorial passed`);
+}
 for(const [engine,type] of [['chromium',chromium],['webkit',webkit]]){
  console.log(`Checking ${engine}`);
  const browser=await type.launch({headless:true});
  try{
+  await keyboardGuide(browser,engine);
   const context=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:2,hasTouch:true});
   const page=await context.newPage(),errors=[];
   page.on('pageerror',e=>errors.push(e.stack||e.message));
