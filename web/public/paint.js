@@ -19,7 +19,7 @@ window.ddd = window.ddd || {};
     if(m.every((v,i)=>Math.abs(v-([0,6,12,18].includes(i)?1:0))<.0001))return img;
     const q=m.map((v,i)=>Math.round(v*(i%5===4?1/8:16))/(i%5===4?1/8:16));
     const key=`palette:${img.cacheID}:${q.join(',')}`;let out=get(key);if(out)return out;
-    out=document.createElement('canvas');out.width=img.width;out.height=img.height;const ctx=out.getContext('2d');ctx.drawImage(img,0,0);
+    out=document.createElement('canvas');out.width=img.width;out.height=img.height;const ctx=out.getContext('2d',{willReadFrequently:true});ctx.drawImage(img,0,0);
     const pixels=ctx.getImageData(0,0,out.width,out.height),d=pixels.data;
     for(let i=0;i<d.length;i+=4){const r=d[i],g=d[i+1],b=d[i+2];for(let j=0;j<3;j++)d[i+j]=q[j*5]*r+q[j*5+1]*g+q[j*5+2]*b+q[j*5+4];}
     ctx.putImageData(pixels,0,0);put(key,out);return out;
@@ -33,7 +33,8 @@ window.ddd = window.ddd || {};
     c.save();c.beginPath();c.moveTo(u0,v0);c.lineTo(u1,v1);c.lineTo(u2,v2);c.closePath();c.clip();c.transform(a,b,cc,dd,u0-a*x0-cc*y0,v0-b*x0-dd*y0);c.drawImage(img,0,0);c.restore();
   }
   ddd.cache={get,put,
-    create(w,h){const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;return canvas;},
+    // Cached art is recolored on the CPU. Avoid repeated GPU readback during palette changes.
+    create(w,h){const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;canvas.getContext('2d',{willReadFrequently:true});return canvas;},
     pixels(c,pixels,w,h){const d=c.createImageData(w,h);for(let i=0;i<pixels.length;i++){const p=pixels[i];d.data[i*4]=p>>>16&255;d.data[i*4+1]=p>>>8&255;d.data[i*4+2]=p&255;d.data[i*4+3]=p>>>24;}c.putImageData(d,0,0);},get bytes(){return bytes;},get count(){return entries.size;},
     draw(c,img,x,y,w,h,alpha,mono,shade,water){if(w<=0||h<=0||alpha<=0)return;const tex=mono||shade!==1?filtered(img,matrixFor(mono,shade,water)):img;c.save();c.globalAlpha*=Math.min(255,alpha)/255;c.drawImage(tex,x,y,w,h);c.restore();},
     matrix(c,img,x,y,l,t,w,h,angle,alpha,m){c.save();c.globalAlpha*=alpha/255;c.translate(x,y);c.rotate(angle);c.drawImage(filtered(img,Array.from(m)),l,t,w,h);c.restore();},

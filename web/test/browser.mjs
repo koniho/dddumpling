@@ -6,6 +6,7 @@ const origin=process.env.WEB_ORIGIN||'http://127.0.0.1:8766';
 const out='build/web-review';await mkdir(out,{recursive:true});
 const results=[];
 for(const [engine,type] of [['chromium',chromium],['webkit',webkit]]){
+ console.log(`Checking ${engine}`);
  const browser=await type.launch({headless:true});
  try{
   const context=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:2,hasTouch:true});
@@ -42,6 +43,8 @@ for(const [engine,type] of [['chromium',chromium],['webkit',webkit]]){
     for(let i=0;i<16;i++)await page.evaluate(()=>ddd.test.step(30));
     await page.locator('#game').screenshot({path:`${out}/${engine}-${scene.replace(':','-')}.png`});
     results.push({engine,scene,environment:'CI headless, scripted 60 Hz simulation (not device FPS)',...await page.evaluate(()=>ddd.stats())});
+    await writeFile(`${out}/metrics.json`,JSON.stringify(results,null,2));
+    console.log(`${engine}: ${scene} rendered`);
     if(await page.evaluate(()=>ddd.error))throw Error(await page.evaluate(()=>ddd.error));
   }
   // Exercise audio unlock; a browser may start suspended, but should accept the interaction.
