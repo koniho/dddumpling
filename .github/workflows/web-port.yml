@@ -52,6 +52,7 @@ jobs:
         run: |
           python3 -m http.server 8766 --bind 127.0.0.1 --directory build/web > build/web-server.log 2>&1 &
           node web/test/browser.mjs
+          node web/test/octopulse.mjs
       - uses: actions/upload-artifact@v6
         if: always()
         with:

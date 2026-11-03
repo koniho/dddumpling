@@ -633,6 +633,8 @@ final class GameCore {
     /** Session-only developer aid; damage feedback still plays normally. */
     boolean devInfiniteLives,devLandBonuses;
     final LandBonus landBonus;
+    // Transient draw-only mask, set on isolated developer replays; never saved.
+    int profileHiddenOcto;
     /** Newly collected stars in this update, including the winning pickup. */
     int starPickups;
     int starBlastHaptic; // Per-frame completion storm: 1 light, 2 heavy.

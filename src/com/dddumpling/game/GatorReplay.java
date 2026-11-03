@@ -2,11 +2,17 @@ package com.dddumpling.game;
 
 /** Isolated, fixed-step developer scene; no store, rewards, or player input. */
 final class GatorReplay {
+    static final int HIDE_ARMS=1,HIDE_CAVE=2,HIDE_HAZE=4,HIDE_LIGHTING=8,HIDE_KELP=16;
+    static boolean showOcto(GameCore c,int part) {
+        return !BuildFlags.DEVELOPER || (c.profileHiddenOcto&part)==0;
+    }
     static final float STEP=1f/60f;
     static final int LENGTH=36*60;
     GameCore core;
     int tick,loops;
     private float remainder;
+    private int hiddenOcto;
+    void hideOcto(int mask) {hiddenOcto=mask;core.profileHiddenOcto=mask;}
     private final boolean slime;
     private final int kind;
     private final boolean monochrome,stageLead,swamp;
@@ -22,6 +28,7 @@ final class GatorReplay {
     }
     private void reset() {
         core=new GameCore(null,168,false);
+        core.profileHiddenOcto=hiddenOcto;
         core.collected=Collect.MASK;core.landSeen=LandPicker.stateMask();
         core.onboarding.saved=Onboarding.SKIPPED;core.onboarding.savedPowers=-1;
         core.modes.restore(ModeSelector.TIME_ATTACK);core.timeAttack.selected=kind;

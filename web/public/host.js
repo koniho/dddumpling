@@ -3,7 +3,7 @@
   const canvas=document.getElementById('game'),loading=document.getElementById('loading'),params=new URLSearchParams(location.search);
   ddd.context=canvas.getContext('2d',{alpha:false});
   let api,last=0,raf=0,hidden=document.hidden,focused=true,noticeTimer,width=0,height=0,scale=1;
-  let ceiling=1,qualityWait=0,fastFrames=0;const quality=[];
+  let ceiling=1,qualityWait=0,fastFrames=0,fixedScale=false;const quality=[];
   const timings=[],renders=[],pointerIDs=new Set(),prefix='dddumpling.web.v1.';
   ddd.haptics=false;
   ddd.notice=text=>{const n=document.getElementById('notice');n.textContent=text;n.hidden=false;clearTimeout(noticeTimer);noticeTimer=setTimeout(()=>{n.hidden=true;},5000);};
@@ -22,6 +22,7 @@
   function setScale(next){scale=next;canvas.width=Math.round(width*scale);canvas.height=Math.round(height*scale);}
   // Change raster density only: never relayout the game or cancel an active tap/pinch.
   function tune(interval){
+    if(fixedScale)return;
     if(api.paused()||interval<=0){quality.length=0;fastFrames=0;return;}
     if(qualityWait>0){qualityWait--;return;}
     quality.push(Math.min(120,Math.max(interval,renders.at(-1)||0)));if(quality.length<30)return;
@@ -60,7 +61,7 @@
   const pct=(a,p)=>a.length?[...a].sort((x,y)=>x-y)[Math.min(a.length-1,Math.floor(a.length*p))]:0;
   ddd.stats=()=>({frames:timings.length,frameMs:{p50:pct(timings,.5),p95:pct(timings,.95),p99:pct(timings,.99)},cpuMs:{p50:pct(renders,.5),p95:pct(renders,.95),p99:pct(renders,.99)},cacheMiB:ddd.cache.bytes/1048576,cacheEntries:ddd.cache.count,heapMiB:performance.memory?performance.memory.usedJSHeapSize/1048576:null,renderScale:scale,resolution:[canvas.width,canvas.height],audio:ddd.audio.state,state:api?.status()});
   // Explicit test controls never alter ordinary frame timing or user progress.
-  ddd.test={stop(){cancelAnimationFrame(raf);},resume(){cancelAnimationFrame(raf);last=0;if(!hidden&&focused)raf=requestAnimationFrame(frame);},step(n,dt=1/60){cancelAnimationFrame(raf);for(let i=0;i<n;i++)draw(dt);},clearMetrics(){timings.length=renders.length=0;}};
+  ddd.test={renderScale(value){fixedScale=Number.isFinite(value);quality.length=0;qualityWait=fastFrames=0;if(fixedScale)setScale(Math.max(.5,Math.min(ceiling,value)));},stop(){cancelAnimationFrame(raf);},resume(){cancelAnimationFrame(raf);last=0;if(!hidden&&focused)raf=requestAnimationFrame(frame);},step(n,dt=1/60){cancelAnimationFrame(raf);for(let i=0;i<n;i++)draw(dt);},clearMetrics(){timings.length=renders.length=0;}};
   setInterval(()=>{if(params.has('debug')&&api)document.getElementById('metrics').textContent=JSON.stringify(ddd.stats(),null,1);},1000);
   ddd.boot=async()=>{try{await document.fonts.load('16px Bungee');await document.fonts.ready;ddd.audio.preload();main();}catch(e){fail(e);}};
 })();

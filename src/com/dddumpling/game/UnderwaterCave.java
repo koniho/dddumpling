@@ -16,15 +16,17 @@ final class UnderwaterCave extends Draw {
         return L.h*(-.025f+(.003f+plane*.002f)*(float)Math.sin(time*(.23f+plane*.031f)+plane*1.8f));
     }
     static void draw(Painter p,GameCore c,Layout L,float fade,float arrival) {
+        if(!GatorReplay.showOcto(c,GatorReplay.HIDE_CAVE))return;
+        boolean lighting=GatorReplay.showOcto(c,GatorReplay.HIDE_LIGHTING);
         if(p instanceof WaterPainter)p=((WaterPainter)p).anchored();
         Boss b=BossVictory.sceneBoss(c);
         float movement=motion(b,L),damage=damagePulse(b);
         float bx=b.body==null?b.bodyX(L):b.body.centreX();
         float by=b.body==null?b.bodyY(L):b.body.centreY();
         UnderwaterVista.image(p,UnderwaterVista.CAVE,0,0,L.w,L.h,fade);
-        kelp(p,c,L,b,fade,0,KELP_PATCHES);
-        glow(p,bx,by+L.h*.13f,L.w*(.36f+damage*.14f),L.h*(.27f+damage*.10f),fade*(12+movement*24+damage*90));
-        for(int i=0;i<3;i++) {
+        if(GatorReplay.showOcto(c,GatorReplay.HIDE_KELP))kelp(p,c,L,b,fade,0,KELP_PATCHES);
+        if(lighting)glow(p,bx,by+L.h*.13f,L.w*(.36f+damage*.14f),L.h*(.27f+damage*.10f),fade*(12+movement*24+damage*90));
+        for(int i=0;lighting && i<3;i++) {
             float pulse=c.waterRipples.beamPulse(c.clock,.24f+i*.25f);
             float drift=(float)Math.sin(c.clock*.17f+i*2.4f)*L.w*.045f+(bx-L.w*.5f)*.28f;
             float light=.20f+UnderwaterVista.beamIdle(c.clock*.7f,i)*.65f+pulse*.30f+movement*.10f+damage*.48f;
@@ -38,9 +40,9 @@ final class UnderwaterCave extends Draw {
         for(int plane=0;plane<3;plane++) {
             float x=planeX(c.clock,plane,L),py=y+planeY(c.clock,plane,L);
             UnderwaterVista.image(p,planeArt(plane,false),x,py,L.w*1.05f,L.h*1.05f,fade);
-            UnderwaterVista.image(p,planeArt(plane,true),x,py,L.w*1.05f,L.h*1.05f,relight);
+            if(lighting)UnderwaterVista.image(p,planeArt(plane,true),x,py,L.w*1.05f,L.h*1.05f,relight);
         }
-        for(int side=0;side<2;side++) {
+        for(int side=0;lighting && side<2;side++) {
             int arm=side==0?1:6;
             float reachY=b.octoPlaced && (b.octoArms&(1<<arm))!=0?b.octoY[arm][Boss.OCTO_NODES-1]:by+L.h*.15f;
             float gy=Math.max(L.h*.25f,Math.min(L.h*.79f,reachY));
