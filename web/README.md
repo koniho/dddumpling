@@ -66,6 +66,10 @@ sync. Browser-specific store review/share services are unavailable.
   generated in an OffscreenCanvas worker using the same Java game bundle. Dark
   Divide requests the next fracture's images ahead of the pinch. Transferred
   bitmaps are closed on eviction; unsupported/failed workers use synchronous art.
+  Palette recoloring also runs in that worker; base artwork remains visible while
+  a tint is pending. Main and worker texture caches each have a 64 MiB bound, and
+  palette requests stop queuing at 32 pending jobs. Browser/native allocations and
+  temporary bitmap transfers are additional to those cache figures.
 - `WebSound` maps native sound IDs/pitches/gains to `audio.js`; `WebAssets` renders
   native samples on the build host so synthesis never blocks a gameplay frame.
 - `host.js` owns frame scheduling, browser lifecycle, coordinates and errors.
@@ -83,7 +87,7 @@ JAVA_HOME=/path/to/jdk21 bash ios/scripts/test-input.sh
 The `Web port preview` workflow builds the bundle, runs host tests, and uses
 Playwright Chromium **and WebKit** to check keyboard/lifecycle, persistence, resizing,
 audio unlock and representative gameplay/boss scenes. It saves screenshots and
-`metrics.json` as `web-preview-review`, plus the runnable bundle as
+`metrics.json` as `web-preview-review-<engine>`, plus the runnable bundle as
 `web-playable-preview`. This workflow does not deploy anything.
 
 For optional local CPU rendering on Termux (Skia supports Android arm64):

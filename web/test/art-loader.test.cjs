@@ -13,3 +13,8 @@ test('art requests queue until ready, deduplicate and accept transferred artwork
 test('worker failure/timeout permits synchronous rendering instead of permanently missing art',()=>{
  for(const mode of ['error','timeout']){const {win,worker,timeout}=env();win.ddd.cache.requestArt('vista',22);if(mode==='error')worker.onerror({message:'unsupported'});else timeout();assert.equal(win.ddd.cache.requestArt('vista',22),false);assert.equal(worker.stopped,true);assert.equal(win.ddd.artState().pending,0);}
 });
+test('rapid palette changes cannot create an unbounded worker queue',()=>{
+ const {win,worker,sent}=env();worker.onmessage({data:{ready:true}});
+ for(let i=0;i<100;i++)win.ddd.cache.requestPalette('vista',22,'tint'+i,[i]);
+ assert.equal(sent.length,32);assert.equal(win.ddd.artState().pending,32);
+});
