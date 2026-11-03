@@ -31,6 +31,19 @@ async function keyboardGuide(browser,engine){
  if(await mobile.evaluate(()=>ddd.keyboardGuide.open))throw Error('Keyboard guide appeared on a touch-only browser');
  await touch.close();console.log(`${engine}: desktop keyboard tutorial passed`);
 }
+async function browserBack(browser,engine){
+ const context=await browser.newContext({viewport:{width:390,height:844},hasTouch:true}),page=await context.newPage();
+ await page.goto(origin+'/web.css');await page.goto(origin+'/?debug=1');await page.waitForFunction(()=>ddd.ready);
+ const count=await page.evaluate(()=>history.length);await page.reload();await page.waitForFunction(()=>ddd.ready);
+ if(await page.evaluate(()=>history.length)!==count)throw Error('Reload duplicated browser history guard');
+ await page.evaluate(()=>ddd.api.scene('keyboard:6'));await page.evaluate(()=>history.back());await page.waitForFunction(()=>ddd.api.paused());
+ await page.evaluate(()=>history.back());await page.waitForFunction(()=>!ddd.api.paused());
+ await page.evaluate(()=>ddd.api.scene('title'));await page.keyboard.press('?');await page.locator('#keyboard-guide').waitFor({state:'visible'});
+ await page.evaluate(()=>history.back());await page.waitForFunction(()=>!ddd.keyboardGuide.open);
+ if(await page.evaluate(()=>history.length)!==count)throw Error('Game back handling grew browser history');
+ await page.evaluate(()=>history.back());await page.waitForURL(origin+'/web.css');
+ await context.close();console.log(`${engine}: browser Back routing passed`);
+}
 const engines=[['chromium',chromium],['webkit',webkit]].filter(([name])=>!process.env.WEB_ENGINE || name===process.env.WEB_ENGINE);
 if(!engines.length)throw Error('Unknown WEB_ENGINE');
 for(const [engine,type] of engines){
@@ -38,6 +51,7 @@ for(const [engine,type] of engines){
  const browser=await type.launch({headless:true});
  try{
   await keyboardGuide(browser,engine);
+  await browserBack(browser,engine);
   const context=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:2,hasTouch:true});
   const page=await context.newPage(),errors=[];
   page.on('pageerror',e=>errors.push(e.stack||e.message));
@@ -97,6 +111,21 @@ for(const [engine,type] of engines){
     await writeFile(`${out}/metrics.json`,JSON.stringify(results,null,2));console.log(`${engine}: ${scene} replay passed`);
   }
   // Exercise audio unlock; a browser may start suspended, but should accept the interaction.
+  for(const scene of ['profile:divide','profile:octopulse']){
+    await page.evaluate(s=>{ddd.api.scene(s);ddd.test.stop();ddd.api.advanceReplay(1440);ddd.test.step(1);},scene);
+    await page.waitForFunction(()=>!ddd.artState || ddd.artState().pending===0);
+    const sample=await page.evaluate(async()=>{
+      ddd.test.clearMetrics();const intervals=[];let previous;
+      for(let i=0;i<180;i++){
+        const now=await new Promise(requestAnimationFrame);if(previous!==undefined)intervals.push(now-previous);previous=now;
+        ddd.test.step(1);
+      }
+      intervals.sort((a,b)=>a-b);const p=q=>intervals[Math.floor((intervals.length-1)*q)];
+      return {...ddd.stats(),presentedFrameMs:{p50:p(.5),p95:p(.95),p99:p(.99)}};
+    });
+    results.push({engine,scene:scene+'-paced',environment:'CI requestAnimationFrame replay, not physical-device FPS',...sample});
+    await writeFile(`${out}/metrics.json`,JSON.stringify(results,null,2));
+  }
   await page.evaluate(()=>ddd.api.scene('keyboard:6'));await page.locator('#game').click({position:{x:200,y:700}});
   await page.waitForTimeout(500);
   const audio=await page.evaluate(()=>ddd.audio.state);if(audio.context==='locked')throw Error('Audio never unlocked');

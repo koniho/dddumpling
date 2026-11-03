@@ -30,6 +30,9 @@ explained. Practice cannot trigger gameplay. Completion is remembered in browser
 storage; `?` reopens the guide, and the preview tools have a replay button. Touch-only
 browsers do not show it automatically. Opening it during a run pauses that run and
 preserves an existing pause when closing.
+Browser Back follows the game's existing back handler: dismiss a panel or pause/resume
+a run before leaving the page. A single reusable history guard prevents accidental
+navigation during play; from the idle Adventure title, Back can leave normally.
 The portrait playfield is centered within the available viewport; resizing preserves
 state. Drawing resolution is capped at 2x CSS pixels and 1080 pixels wide. Sustained
 slow frames lower raster density toward 1x, with slow recovery after sustained
