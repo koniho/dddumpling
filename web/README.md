@@ -199,11 +199,17 @@ readiness, cloud restore/save/reload, paused rendering/input/worker behavior, ho
 and absence of standalone storage/history/visibility handling. Unit tests cover save
 races/retries and pending audio. **These are not official certification results.**
 
+The Playables settings omit store/share/privacy links and native cloud/service cards.
+The Progress tab keeps the local milestone tally and reset controls; achievement tracking,
+accessory unlocks and saved progression still use the shared game systems. Native and
+standalone settings retain their existing behavior. Store update/review requests are also
+gated at the action boundary.
+
 Before submission, run the official SDK Test Suite and portal preview on desktop,
-mobile web, YouTube Android and YouTube iOS. Remaining product work includes removing
-native-only settings/share/review UI, audience/rights review, metadata/rating and
+mobile web, YouTube Android and YouTube iOS. Remaining product work includes
+audience/rights review, metadata/rating and
 sustained physical-device checks. External URL opening is blocked in the SDK host;
-visible entries still need a product cleanup. No application, licensing agreement,
+those entries are also omitted from settings. No application, licensing agreement,
 upload or publication has been submitted. Optional score reporting and ads are not
 implemented; multiple game modes need an explicit score choice before `sendScore`.
 
@@ -216,3 +222,25 @@ SDK references (checked 2026-11-03):
 Dependencies: https://teavm.org/docs/intro/overview.html and
 https://teavm.org/docs/runtime/jso.html. Font license ships with the generated bundle.
 Audio provenance remains in `audio/recorded/README.md` and the music source files.
+
+### Official SDK validation
+
+The **Web port preview** workflow has an `official_suite` dispatch input. When enabled,
+it builds the production bundle and runs `web/test/official-playables.mjs` against
+Google's live Test Suite and SDK, without replacing either with mocks. The runner serves
+the bundle over loopback HTTPS with YouTube's documented CSP, records the suite's MUST
+and SHOULD statuses, and exercises save/reload, failed-save recovery, pause/resume and
+mute. Reports and screenshots are uploaded as `official-playables-review`. This is an
+integration test, not a platform certification or approval.
+
+The runner trusts its temporary localhost certificate and permits access from the public
+Test Suite to its loopback server. It does not relax the game's CSP. A live Google service
+or Test Suite UI change can fail this optional job independently of the game.
+
+For manual PC testing, download and unzip the `youtube-playables-preview` artifact.
+Serve it with `web/tools/serve-playables.py --directory PATH --cert CERT --key KEY` using
+a locally trusted localhost certificate. Open `https://localhost:8767/` once to verify
+certificate access, then paste that URL into the official Test Suite's **Game URL** field.
+Allow local-network access if the browser asks. The standalone `web-playable-preview`
+artifact instead works with `python -m http.server 8766` and `http://localhost:8766/`;
+it does not require the YouTube SDK or Test Suite.

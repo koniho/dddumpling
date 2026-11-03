@@ -54,7 +54,7 @@ final class ReviewPrompt {
                 && c.leaderboardNotice.board<0 && c.leaderboards.nextNotice()<0;
     }
     int takeRequest(GameCore c) {
-        if(!safe(c))return 0;
+        if(!c.externalServices || !safe(c))return 0;
         if(preview && BuildFlags.DEVELOPER) {preview=false;return 2;}
         if(!available || !pending || attempted || c.storeUpdate.shown || !eligible(c))return 0;
         pending=false;attempted=true;c.storeUpdate.shown=true;

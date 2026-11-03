@@ -12,6 +12,7 @@ public final class WebGame {
     public static void main(String[] args) {
         game=new IOSGame(new WebStore(),new WebSound(),230L);
         game.geometry().nativePause=false;
+        game.core().externalServices=!playablesHost();
         game.core().mouseStretch=mouseAvailable();
         game.achievementsEnabled(false);
         game.cloudStatus(CloudSaveUi.OFF);
@@ -95,6 +96,7 @@ public final class WebGame {
         if(pressed)game.core().sound.squish(glyph,0);
     }
     @JSBody(script="return typeof matchMedia==='function' && matchMedia('(any-pointer: fine) and (any-hover: hover)').matches;") private static native boolean mouseAvailable();
+    @JSBody(script="return !!ddd.platform?.playables;") private static native boolean playablesHost();
     @JSBody(script="return ddd.context;") private static native JSObject context();
     @JSBody(params="ms",script="if(ddd.haptics && navigator.vibrate)navigator.vibrate(ms);") private static native void vibrate(int ms);
     @JSBody(params="url",script="if(!ddd.platform?.playables)window.open(url,'_blank','noopener,noreferrer');") private static native void open(String url);
