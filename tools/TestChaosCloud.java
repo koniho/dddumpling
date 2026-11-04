@@ -11,7 +11,28 @@ final class TestChaosCloud extends Check {
         Boss b=c.boss;int d=b.cloud.lastDirection==1?-1:1;float r=Boss.bodyR(L),x=b.bodyX(L),y=b.bodyY(L);
         b.cloud.touch(c,L,0,234,x-d*r,y);b.cloud.touch(c,L,1,234,x+d*r,y);
     }
+    static void powerEntries(Layout L) {
+        group("Space power-up arrivals stay on the playfield");
+        for(int mode:new int[]{Power.FLURRY,Power.NINJA,Power.TEAM})for(boolean side:new boolean[]{false,true})for(int slot:new int[]{1,2}) {
+            GameCore c=fight(L);c.boss.leave();c.stage=31;c.collected=1;c.runWho=0;
+            c.startFrenzy(mode,L);c.powerSpawnedEnemies=slot;c.powerReplacements.addLast(side);c.spawnTimer=0;
+            c.update(.001f,L);
+            String tag=mode+"/"+side+"/"+slot;
+            check("requested power enemy spawns "+tag,c.enemies.size()==1);
+            if(c.enemies.size()!=1)continue;
+            GameCore.Enemy e=c.enemies.get(0);
+            check("replacement request consumed "+tag,c.powerReplacements.isEmpty());
+            for(int n=0;n<35;n++)SpaceLand.approach(e,.02f,L);
+            float first=c.tileX(e,0,L),last=c.tileX(e,e.word.length-1,L);
+            check("power entry ends visibly inside playfield "+tag,e.spaceArrival==0
+                    && first>=L.playLeft && last<=L.playRight && e.y>L.hudBottom() && e.y<L.dangerY);
+            c.destroyWord(e,c.enemyCentreX(e),e.y,L);
+            check("replacement keeps alternating entry source "+tag,
+                    c.powerReplacements.size()==1 && c.powerReplacements.peekFirst()==!side);
+        }
+    }
     static void all(Layout L) {
+        powerEntries(L);
         group("space progression and finale");
         check("space follows rainbow",Lands.forStage(31)==Lands.SPACE && Boss.kindFor(35)==Boss.CHAOS_CLOUD
                 && Lands.unlockBoss(Lands.SPACE)==Boss.RAINBOW_CAT && Lands.forStage(36)==0);

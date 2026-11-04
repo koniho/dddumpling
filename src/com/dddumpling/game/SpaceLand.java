@@ -14,7 +14,8 @@ final class SpaceLand extends Draw {
     static float originY(Layout L) {return L.playTop+(L.deckTop-L.playTop)*.28f;}
     static float arrivalY(Layout L) {return Math.max(L.playTop,L.hudBottom())+L.enemyR*1.65f;}
     static void approach(GameCore.Enemy e,Layout L) {
-        e.spaceArrival=APPROACH;e.spaceLane=e.baseX;
+        e.spaceArrival=APPROACH;e.spaceSideEntry=e.sideEntry;
+        e.spaceLane=e.sideEntry?e.pathEndX:e.baseX;
         e.spaceOriginX=L.w*.5f;e.spaceOriginY=originY(L);
         e.baseX=e.spaceOriginX;e.y=e.spaceOriginY;
         e.headerRush=false;e.rushSpan=0;e.sideEntry=false;e.sway=0;

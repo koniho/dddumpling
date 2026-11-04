@@ -453,6 +453,7 @@ final class GameCore {
         /** 0..1 as the word slides in from above the top edge. */
         float enterT;
         float spaceArrival,spaceLane,spaceOriginX,spaceOriginY;
+        boolean spaceSideEntry; // Planned power entrance, before Space replaces its visual path.
         /** 0..1 as the word closes on the danger line. */
         float warn;
         /** Final lunge at the player, just before a life is lost. */
@@ -3535,7 +3536,7 @@ final class GameCore {
         if (powerActive() && !e.destroyed) {
             if (clock - powerLastClear <= 0.25f) powerRefillBurst = 2;
             powerLastClear = clock;
-            powerReplacements.addLast(!e.sideEntry);
+            powerReplacements.addLast(!(e.sideEntry || e.spaceSideEntry));
         }
         e.destroyed = true;
         e.destroyT = 0f;
@@ -3951,7 +3952,7 @@ final class GameCore {
                     SwampEnemies.assign(this,e);
                     if(SpaceLand.active(this))SpaceLand.approach(e,L);
                     enemies.add(e);
-                    PowerRush.admitted(this,e.sideEntry);
+                    PowerRush.admitted(this,e.sideEntry || e.spaceSideEntry);
                     return true;
                 }
             }
