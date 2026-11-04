@@ -589,6 +589,7 @@ final class GameCore {
     int spawnedThisStage;
     int spaceFormationStage=-1;
     float spaceTurn;
+    final SpaceLand.Starfield spaceStars=new SpaceLand.Starfield();
     boolean fastEnemyNext;
     /** Two reserved linked-pair slots in this ordinary Adventure wave. */
     int pairSpawnSlots;
@@ -2116,7 +2117,7 @@ final class GameCore {
         rosterStartStage=stage;rosterStrongStages=rosterStageHits=0;
         rosterStagePowerUsed=rosterTopSeen=rosterTopCrossed=false;
         spawnedThisStage = 0;
-        spaceFormationStage=-1;spaceTurn=0;
+        spaceFormationStage=-1;spaceTurn=0;spaceStars.reset();
         fastEnemyNext = false;
         resolvedThisStage = 0;
         stageGap = 0;
@@ -2995,6 +2996,7 @@ final class GameCore {
         float previousSky=skyClock;
         spaceTurn+=((SpaceLand.active(this) && (pendingBonus || state==BONUS || stageGap>0 || paradeTimer>0)?1f:0f)-spaceTurn)*(1f-(float)Math.exp(-dt*2.4f));
         skyClock += dt * (powerActive() ? Power.SKY_RATE : skyRate) * (1f-MushroomForest.groveProgress(this)) * (1f-SlimeBasin.progress(this)) * (1f-Underwater.caveProgress(this));
+        spaceStars.update(this,L,skyClock-previousSky);
         slimeBubbles.update(this,L,dt,skyClock-previousSky);
         landBlend = Math.min(1f, landBlend + dt / Lands.FADE_TIME);
         LandPicker.updateDiscovery(this, dt);

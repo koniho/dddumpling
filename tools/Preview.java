@@ -20,7 +20,12 @@ final class Preview {
             e.y=L.playTop+L.unit*(6+(i/3)*8);if(e.fastSingle)e.y+=L.unit*2;
         }
         shot(dir,"234-space-formation",stage,L,w,h,ss);
-        stage.spaceTurn=1;shot(dir,"234-space-upward",stage,L,w,h,ss);
+        for(int frame=0;frame<120;frame++) {
+            stage.spaceTurn+=(1-stage.spaceTurn)*(1-(float)Math.exp(-2.4f/60));
+            stage.spaceStars.update(stage,L,1f/60);
+            if(frame==29)shot(dir,"234-space-turning",stage,L,w,h,ss);
+        }
+        shot(dir,"234-space-upward",stage,L,w,h,ss);
         for(int skin=0;skin<Skins.COUNT;skin++)for(int phase=0;phase<3;phase++) {
             GameCore c=TestChaosCloud.fight(L);c.preferences.skin=skin;c.clock=c.skyClock=5;c.boss.cloud.phase=phase;
             for(int n=0;n<65;n++)c.boss.update(1f/60,L,c.rnd);

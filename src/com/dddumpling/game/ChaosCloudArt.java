@@ -102,7 +102,7 @@ final class ChaosCloudArt extends Draw {
             float ox=b.boltX(other,L),oy=b.boltY(other,L);
             p.line(x,y,ox,oy,0x559ADFFF,L.unit*.23f);p.line(x,y,ox,oy,0xDDE1E9FF,L.unit*.065f);
         }
-        SpaceEnemyArt.comet(p,x,y,r,color,c.clock+i,b.bfast[i]?1:.55f,255);
+        SpaceEnemyArt.comet(p,x,y,r,color,c.clock+i,b.bfast[i]?1:.55f,255,x-b.bsx[i],y-b.bsy[i]);
         p.fillPoly(Glyph.hex(x,y,r),Glyph.withAlpha(color,a.wait[i]>0?60:150));
         p.strokePoly(Glyph.hex(x,y,r),Glyph.withAlpha(color,240),r*.07f);
         Kawaii.draw(new OpacityPainter(p,a.wait[i]>0?.35f:1),g,x,y,r*.61f,color,1,.2f);

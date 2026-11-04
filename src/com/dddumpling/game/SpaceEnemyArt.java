@@ -1,35 +1,50 @@
 package com.dddumpling.game;
 
-/** Asteroid facets sit behind readable prompts; comet tails point away from the flight. */
+/** Tumbling faceted shells and a bounded particle wake, behind upright readable prompts. */
 final class SpaceEnemyArt extends Draw {
-    static void comet(Painter p,float x,float y,float r,int color,float clock,float speed,int fade) {
-        float length=r*(2+speed*4),w=r*.85f;
-        int light=Glyph.mix(color,0xFFFFFFDD,.55f);
-        for(int k=0;k<3;k++) {
-            float inset=1-k*.23f;
-            p.fillPoly(new float[]{x-w*inset,y,x-w*.36f*inset,y-length*.48f,
-                    x+r*.18f*(float)Math.sin(clock*4),y-length,x+w*.42f*inset,y-length*.45f,x+w*inset,y},
-                    Glyph.withAlpha(k==2?Glyph.mix(color,0xFFFFFFCC,.55f):color,fade*(25+k*24)/255));
+    static void comet(Painter p,float x,float y,float r,int color,float clock,float speed,int fade,float dx,float dy) {
+        float norm=(float)Math.sqrt(dx*dx+dy*dy);
+        if(norm<.001f) {dx=0;dy=1;norm=1;}
+        dx/=norm;dy/=norm;
+        int light=Glyph.mix(color,0xFFFFFFDD,.65f),stone=Glyph.mix(color,0xFF34314C,.55f);
+        float length=r*(3+speed*4),spin=clock*(.65f+speed*.5f);
+        // Recycled dust glows and drifts across the wake; no solid flame/cone underneath.
+        for(int n=0;n<16;n++) {
+            float t=(clock*(.85f+speed*.4f)+n*.618034f)%1f;
+            float scatter=(float)Math.sin(n*12.4f+clock*1.8f)*r*(.12f+t*.65f);
+            float distance=r*.7f+length*t;
+            float px=x-dx*distance-dy*scatter,py=y-dy*distance+dx*scatter;
+            float size=r*(.06f+hash(n*29+3)*.09f)*(1-t*.55f);
+            int a=(int)(fade*(1-t)*(1-t)*.85f);
+            p.fillCircle(px,py,size*3.3f,Glyph.withAlpha(color,a/7));
+            p.fillEllipse(px,py,size,size*.75f,Glyph.withAlpha(light,a));
         }
-        // Small ember fragments break up the taper without hiding adjacent words.
-        for(int n=0;n<5;n++) {
-            float t=(clock*1.4f+n*.618034f)%1f;
-            float px=x+(float)Math.sin(n*12.4f)*r*(.3f+t*.5f),py=y-r-length*t;
-            float size=r*(.045f+.055f*(1-t));int a=(int)(fade*(1-t)*.65f);
-            p.line(px,py+size*3,px,py-size*3,Glyph.withAlpha(color,a/4),size*4);
-            p.fillCircle(px,py,size,Glyph.withAlpha(light,a));
-        }
-        float[] rock=new float[20];
+        float[] rock=new float[20],inner=new float[20],shadow=new float[20];
         for(int n=0;n<10;n++) {
-            float a=n*Softbody.TAU/10,rr=r*(1.1f+hash(n*43+11)*.23f);
-            rock[n*2]=x+(float)Math.cos(a)*rr;rock[n*2+1]=y+(float)Math.sin(a)*rr;
+            float angle=n*Softbody.TAU/10+spin;
+            float rr=r*(1.16f+hash(n*43+11)*.22f);
+            float xx=(float)Math.cos(angle)*rr,yy=(float)Math.sin(angle)*rr;
+            rock[n*2]=x+xx;rock[n*2+1]=y+yy;
+            inner[n*2]=x+xx*.81f-r*.04f;inner[n*2+1]=y+yy*.81f-r*.07f;
+            shadow[n*2]=x+xx+r*.11f;shadow[n*2+1]=y+yy+r*.16f;
         }
-        p.fillPoly(rock,Glyph.withAlpha(Glyph.mix(color,0xFF24253F,.65f),fade*210/255));
-        p.strokePoly(rock,Glyph.withAlpha(Glyph.mix(color,0xFFE6DBFF,.3f),fade*130/255),r*.07f);
-        p.fillPoly(new float[]{rock[10],rock[11],rock[12],rock[13],rock[14],rock[15],x-r*.18f,y-r*.62f},
-                Glyph.withAlpha(light,fade*65/255));
-        p.fillPoly(new float[]{rock[0],rock[1],rock[2],rock[3],rock[4],rock[5],x+r*.58f,y+r*.20f},
-                Glyph.withAlpha(0xFF15162B,fade*100/255));
-        p.line(x-r*.8f,y-r*.65f,x-r*.2f,y-r*.95f,Glyph.withAlpha(color,fade*170/255),r*.08f);
+        p.fillPoly(shadow,Glyph.withAlpha(0xFF090B20,fade*110/255));
+        p.fillPoly(rock,Glyph.withAlpha(stone,fade*235/255));
+        for(int n=0;n<10;n++) {
+            int j=(n+1)%10;
+            float angle=(n+.5f)*Softbody.TAU/10+spin;
+            float lit=.5f-.5f*(float)Math.cos(angle-.75f);
+            int facet=Glyph.mix(Glyph.mix(stone,0xFF151329,.55f),light,lit*.78f);
+            p.fillPoly(new float[]{rock[n*2],rock[n*2+1],rock[j*2],rock[j*2+1],
+                    inner[j*2],inner[j*2+1],inner[n*2],inner[n*2+1]},Glyph.withAlpha(facet,fade*220/255));
+        }
+        p.fillPoly(inner,Glyph.withAlpha(Glyph.mix(stone,color,.25f),fade*165/255));
+        p.strokePoly(rock,Glyph.withAlpha(light,fade*115/255),r*.055f);
+        for(int n=0;n<3;n++) {
+            float angle=spin+n*2.1f,rr=r*(n==1?1.05f:1.13f);
+            float cx=x+(float)Math.cos(angle)*rr,cy=y+(float)Math.sin(angle)*rr;
+            p.fillCircle(cx,cy,r*.10f,Glyph.withAlpha(0xFF222039,fade*150/255));
+            p.fillCircle(cx+r*.025f,cy+r*.03f,r*.065f,Glyph.withAlpha(light,fade*95/255));
+        }
     }
 }

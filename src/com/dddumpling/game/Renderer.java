@@ -286,7 +286,8 @@ final class Renderer extends Draw {
             boolean cleared = i < e.pos && !e.linkWaiting && destroy == 0f;
             float x = c.tileX(e, i, L) + jx;
             float y = e.y + jy;
-            if(SpaceLand.active(c) && !e.destroyed && !cleared && !e.gone[i])SpaceEnemyArt.comet(p,x,y,L.enemyR*enter,Skins.keyColor(p,g),c.clock+e.phase,e.fastSingle?1:.5f,fade);
+            if(SpaceLand.active(c) && !e.destroyed && !cleared && !e.gone[i])SpaceEnemyArt.comet(p,x,y,L.enemyR*enter,Skins.keyColor(p,g),c.clock+e.phase,e.fastSingle?1:.5f,fade,
+                    e.spaceArrival>0?x-e.spaceOriginX:0,e.spaceArrival>0?y-e.spaceOriginY:1);
             x+=Underwater.enemyShift(c,x,y,L);
 
             // Tiles removed out of order fly off along the direction they were sent.

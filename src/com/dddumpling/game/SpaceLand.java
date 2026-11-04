@@ -11,9 +11,10 @@ final class SpaceLand extends Draw {
         return (c.landFrom==Lands.SPACE?1-t:0)+(active(c)?t:0);
     }
     static float rushSpeed(GameCore c) {return FastEnemies.SPEED*(active(c)?3:1);}
+    static float originY(Layout L) {return L.playTop+(L.deckTop-L.playTop)*.28f;}
     static void approach(GameCore.Enemy e,Layout L) {
         e.spaceArrival=APPROACH;e.spaceLane=e.baseX;
-        e.spaceOriginX=L.w*.5f;e.spaceOriginY=L.hudBottom()+L.enemyR;
+        e.spaceOriginX=L.w*.5f;e.spaceOriginY=originY(L);
         e.baseX=e.spaceOriginX;e.y=e.spaceOriginY;
         e.headerRush=false;e.rushSpan=0;e.sideEntry=false;e.sway=0;
         e.enterT=0;
@@ -34,8 +35,13 @@ final class SpaceLand extends Draw {
             GameCore.Enemy e=new GameCore.Enemy();
             Words.fill(e,lane==1?2:1,0,c.rnd,c.playRosterFull());
             e.phase=row*2+lane;e.baseX=L.w*(lane==0?.12f:lane==1?.5f:.88f);
-            e.fastSingle=lane!=1;e.swampKind=lane==1?SwampEnemies.DIVE:SwampEnemies.NONE;
-            e.speed=((L.dangerY+L.enemyR*2.2f)/c.travelSeconds())*(lane==1?.62f:rushSpeed(c));
+            if(lane!=1) {
+                boolean full=c.playRosterFull();int half=Roster.count(full)/2;
+                int key=Roster.ordinal(full,e.word[0])%half+(lane==2?half:0);
+                e.word[0]=Roster.at(full,key);
+            }
+            e.fastSingle=lane!=1;e.swampKind=lane==1?(row==0?SwampEnemies.DIVE:SwampEnemies.FOG):SwampEnemies.NONE;
+            e.speed=((L.dangerY+L.enemyR*2.2f)/c.travelSeconds())*(lane==1?.62f:rushSpeed(c)*.75f);
             approach(e,L);
             // Rows enter in succession; everyone shares the same distant origin.
             e.spaceArrival+=row*.85f;
@@ -43,28 +49,76 @@ final class SpaceLand extends Draw {
         }
         return true;
     }
+    /** Stars keep their positions as the flow turns; only offscreen stars are recycled. */
+    static final class Starfield {
+        static final int COUNT=120;
+        final float[] x=new float[COUNT],y=new float[COUNT],depth=new float[COUNT],
+                vx=new float[COUNT],vy=new float[COUNT],age=new float[COUNT];
+        final int[] cycle=new int[COUNT];
+        boolean ready;
+        void reset() {ready=false;}
+        static int seed(int i) {return 1201+(i%40)*37+(i/40)*743;}
+        void prepare(Layout L) {
+            if(ready)return;
+            ready=true;
+            float horizon=originY(L)/L.h;
+            for(int i=0;i<COUNT;i++) {
+                int seed=seed(i);float t=hash(seed),angle=hash(seed+9)*Softbody.TAU;
+                float reach=t*t*(.65f+hash(seed+4)*.40f);
+                x[i]=.5f+(float)Math.cos(angle)*reach*L.h/L.w;
+                y[i]=horizon+(float)Math.sin(angle)*reach;
+                depth[i]=t;age[i]=1;cycle[i]=0;vx[i]=vy[i]=0;
+            }
+        }
+        void update(GameCore c,Layout L,float dt) {
+            if(presence(c)<=0) {reset();return;}
+            prepare(L);
+            if(dt<=0)return;
+            float horizon=originY(L);
+            float rate=c.boss.active()?.23f:.14f,turn=c.spaceTurn;
+            for(int i=0;i<COUNT;i++) {
+                int seed=seed(i);float layer=.65f+(i/40)*.3f;
+                float dx=(x[i]-.5f)*L.w,dy=y[i]*L.h-horizon;
+                float length=Math.max(.001f,(float)Math.sqrt(dx*dx+dy*dy));
+                float speed=2*Math.max(.07f,depth[i])*L.h*(.65f+hash(seed+4)*.40f)*rate*layer;
+                // Blend velocity, never coordinates. The stars bend into the new flow.
+                vx[i]=dx/length*(1-turn)*speed;
+                vy[i]=(dy/length*(1-turn)-turn)*speed;
+                x[i]+=vx[i]*dt/L.w;y[i]+=vy[i]*dt/L.h;
+                depth[i]=Math.min(1,depth[i]+dt*rate*layer);age[i]+=dt;
+                float margin=L.h*.23f/L.w;
+                if(x[i]<-margin || x[i]>1+margin || y[i]<-.23f || y[i]>L.deckTop/L.h+.23f) {
+                    int next=seed+(++cycle[i])*157;
+                    if(turn>.5f) {
+                        x[i]=hash(next+17);y[i]=L.deckTop/L.h+.22f;
+                        depth[i]=.45f+hash(next+21)*.45f;
+                    } else {
+                        float angle=hash(next+9)*Softbody.TAU;
+                        x[i]=.5f+(float)Math.cos(angle)*.003f*L.h/L.w;
+                        y[i]=horizon/L.h+(float)Math.sin(angle)*.003f;depth[i]=.07f;
+                    }
+                    age[i]=0;vx[i]=vy[i]=0;
+                }
+            }
+        }
+    }
     static void backdrop(Painter p,GameCore c,Layout L,float fade) {
         if(fade<=0)return;
+        Starfield stars=c.spaceStars;stars.prepare(L);
         p.save();p.clipRect(0,0,L.w,L.deckTop);
-        float x=L.w*.5f,y=L.playTop+(L.deckTop-L.playTop)*.28f;
-        float speed=c.boss.active()?.23f:.14f;
-        for(int layer=0;layer<3;layer++)for(int i=0;i<40;i++) {
-            int seed=1201+i*37+layer*743;
-            float t=(hash(seed)+c.skyClock*speed*(.65f+layer*.3f))%1f;
-            float angle=hash(seed+9)*Softbody.TAU;
+        for(int i=0;i<Starfield.COUNT;i++) {
+            int layer=i/40,seed=Starfield.seed(i);
+            float t=stars.depth[i],xx=stars.x[i]*L.w,yy=stars.y[i]*L.h;
             float reach=t*t*L.h*(.65f+hash(seed+4)*.40f);
-            float xx=x+(float)Math.cos(angle)*reach,yy=y+(float)Math.sin(angle)*reach;
-            float turn=c.spaceTurn;
-            float upX=L.w*(hash(seed+17)*1.2f-.1f),upY=L.deckTop*(1.15f-t*1.4f);
-            xx+=(upX-xx)*turn;yy+=(upY-yy)*turn;
-            float tail=reach*(.015f+t*.07f),r=L.unit*(.018f+.045f*t)*(1+layer*.22f);
+            float tail=2*reach*(.015f+t*.07f),r=2*L.unit*(.018f+.045f*t)*(1+layer*.22f);
             int color=layer==0?0xFF887CC9:layer==1?0xFFA9CCFF:0xFFFFE9CB;
-            int a=(int)(fade*Math.min(1,t*6)*(95+layer*65));
-            float dx=(float)Math.cos(angle)*tail*(1-turn),dy=(float)Math.sin(angle)*tail*(1-turn)-tail*turn;
-            p.line(xx-dx,yy-dy,xx,yy,
-                    Glyph.withAlpha(color,a/3),r*3);
-            p.line(xx-dx*.65f,yy-dy*.65f,xx,yy,
-                    Glyph.withAlpha(color,a),Math.max(.6f,r));
+            int a=(int)(fade*Math.min(1,stars.age[i]*4)*Math.min(1,t*6)*(95+layer*65));
+            float dx=stars.vx[i],dy=stars.vy[i];
+            float length=(float)Math.sqrt(dx*dx+dy*dy);
+            if(length<.001f) {float angle=hash(seed+9)*Softbody.TAU;dx=(float)Math.cos(angle);dy=(float)Math.sin(angle);length=1;}
+            dx=dx/length*tail;dy=dy/length*tail;
+            p.line(xx-dx,yy-dy,xx,yy,Glyph.withAlpha(color,a/3),r*3);
+            p.line(xx-dx*.65f,yy-dy*.65f,xx,yy,Glyph.withAlpha(color,a),Math.max(1.2f,r));
         }
         p.restore();
     }

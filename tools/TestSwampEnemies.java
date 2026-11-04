@@ -24,7 +24,7 @@ final class TestSwampEnemies extends Check {
             c.jumpToStage(stage,L);
             e.phase=Lands.forStage(stage)==Lands.RAINBOW?6.283f*.4f:.1f;
             SwampEnemies.assign(c,e);
-            boolean fogLand=WorldCatalog.bossForLand(Lands.forStage(stage))>=WorldCatalog.bossForLand(Lands.SWAMP);
+            boolean fogLand=Lands.forStage(stage)!=Lands.SPACE && WorldCatalog.bossForLand(Lands.forStage(stage))>=WorldCatalog.bossForLand(Lands.SWAMP);
             check("fog follows late Adventure lands "+stage,
                     (e.swampKind==SwampEnemies.FOG)==(fogLand && !Boss.isBossStage(stage)));
         }

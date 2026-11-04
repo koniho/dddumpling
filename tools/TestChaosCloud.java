@@ -23,9 +23,23 @@ final class TestChaosCloud extends Check {
         check("slower middle word flanked by runners",c.enemies.get(1).swampKind==SwampEnemies.DIVE
                 && c.enemies.get(0).fastSingle && c.enemies.get(2).fastSingle
                 && c.enemies.get(0).speed>c.enemies.get(1).speed*5);
+        check("fog is present inside a flanked formation",c.enemies.get(4).swampKind==SwampEnemies.FOG);
         for(GameCore.Enemy e:c.enemies) {
+            check("enemy enters from starfield origin",e.baseX==L.w*.5f && e.y==SpaceLand.originY(L));
             for(int k=0;k<100;k++)SpaceLand.approach(e,.02f,L);
             check("arrival completes at its own lane",e.spaceArrival==0 && Math.abs(e.baseX-e.spaceLane)<.01f && e.enterT==1);
+        }
+        for(boolean full:new boolean[]{false,true}) {
+            c.fullRoster=c.runFullRoster=full;c.kidsRun=!full;c.spaceFormationStage=-1;c.enemies.clear();
+            SpaceLand.formation(c,L);int half=Roster.count(full)/2;
+            for(int row=0;row<2;row++) {
+                GameCore.Enemy left=c.enemies.get(row*3),right=c.enemies.get(row*3+2);
+                check("formation flank prompts match hands "+full+"/"+row,
+                        Roster.ordinal(full,left.word[0])<half && Roster.ordinal(full,right.word[0])>=half);
+                float ordinary=(L.dangerY+L.enemyR*2.2f)/c.travelSeconds();
+                check("formation flanks slowed by one quarter "+full+"/"+row,
+                        Math.abs(left.speed-ordinary*SpaceLand.rushSpeed(c)*.75f)<.01f);
+            }
         }
         c.state=GameCore.BONUS;c.bonusTimer=10;c.update(.1f,L);
         float turned=c.spaceTurn;
@@ -36,6 +50,38 @@ final class TestChaosCloud extends Check {
         long old=Collect.SAVE_TAG|((1L<<62)-1);
         check("old collection does not acquire the new friend",!Collect.has(Collect.decode(old),62));
         check("new friend saves with old IDs intact",Collect.decode(Collect.encode(Collect.MASK))==Collect.MASK);
+        group("Space rush frequency and formation-only fog");
+        for(int mode:new int[]{-1,Power.FLURRY,Power.NINJA,Power.TEAM}) {
+            c=fight(L);c.boss.leave();c.stage=31;c.mode=mode;c.modeLeft=mode<0?0:100;
+            int rush=0,fog=0;
+            for(int i=0;i<1000;i++) {
+                GameCore.Enemy e=new GameCore.Enemy();Words.fill(e,3,0,c.rnd,true);
+                e.phase=(i+.5f)*6.283f/1000;FastEnemies.assign(c,e);SwampEnemies.assign(c,e);
+                if(e.fastSingle)rush++;if(e.swampKind==SwampEnemies.FOG)fog++;
+            }
+            check("Space rush share increased in every power mode "+mode,rush==680);
+            check("ordinary Space wave has no fog "+mode,fog==0);
+        }
+        c=fight(L);c.boss.leave();c.stage=31;c.spawnedThisStage=3;c.pairSpawnSlots=0;
+        GameCore.Enemy preceding=new GameCore.Enemy();Words.fill(preceding,1,0,c.rnd);preceding.fastSingle=true;c.enemies.add(preceding);
+        check("Space solo arrivals use shorter gaps",Math.abs(FastEnemies.nextDelay(c,L)-Power.spawnDelay(c,L)*.70f)<.0001f);
+        group("starfield flow continuity");
+        c=fight(L);c.boss.leave();c.stage=31;c.spaceStars.prepare(L);
+        SpaceLand.Starfield stars=c.spaceStars;
+        for(int i=0;i<SpaceLand.Starfield.COUNT;i++) {
+            stars.x[i]=.2f+(i%10)*.06f;stars.y[i]=.4f+(i%5)*.04f;
+        }
+        float[] beforeX=stars.x.clone(),beforeY=stars.y.clone();
+        c.spaceTurn=1;stars.update(c,L,0);
+        boolean stationary=true,upward=true;
+        for(int i=0;i<SpaceLand.Starfield.COUNT;i++)stationary&=stars.x[i]==beforeX[i] && stars.y[i]==beforeY[i];
+        check("changing flow never relocates existing stars",stationary);
+        stars.update(c,L,1f/60);
+        for(int i=0;i<SpaceLand.Starfield.COUNT;i++)upward&=stars.x[i]==beforeX[i] && stars.y[i]<beforeY[i];
+        check("upward flow moves every existing star upward",upward);
+        float oldX=stars.x[0],oldY=stars.y[0];c.spaceTurn=0;stars.update(c,L,1f/60);
+        check("return to forward flow preserves continuity",Math.abs(stars.x[0]-oldX)<.03f && Math.abs(stars.y[0]-oldY)<.03f);
+        c.startGame();check("new run discards star positions",!stars.ready);
         group("fast finite boss phases");
         for(int fps:new int[]{30,60,120}) {
             c=fight(L);b=c.boss;int[] emitted=new int[3];int previous=0,damage=0;
