@@ -326,12 +326,13 @@ final class Renderer extends Draw {
             float scale = head ? Layout.HEAD_SCALE : cleared ? Layout.TILE_SCALE * 0.84f
                     : Layout.TILE_SCALE;
             float cellR = L.enemyR * scale * swell;
+            Painter tilePainter=SpaceLand.active(c)?SpaceEnemyArt.promptPainter(p,x,y,c.clock+e.phase,e.fastSingle?1:.5f):p;
             if(SwampEnemies.hidden(e,i)) {
-                SwampEnemies.silhouette(p,g,x,y,cellR,fade);
+                SwampEnemies.silhouette(tilePainter,g,x,y,cellR,fade);
                 continue;
             }
             float fogTint=SwampEnemies.tintAmount(e,i);
-            Painter characterPainter=fogTint>0?new ColorFadePainter(p,SwampEnemies.FOG_INK,fogTint,1):p;
+            Painter characterPainter=fogTint>0?new ColorFadePainter(tilePainter,SwampEnemies.FOG_INK,fogTint,1):tilePainter;
 
             // FLURRY recolours every letter on one upward-travelling rainbow wave.
             int col = c.flurry() ? rainbowAt(y, L, c.clock) : Skins.keyColor(p,g);
@@ -359,18 +360,18 @@ final class Renderer extends Draw {
             int left = c.pressesLeft(e, i);
             for (int k = left - 1; k >= 1; k--) {
                 float off = cellR * 0.15f * k;
-                p.fillPoly(Glyph.hex(x + off, y - off, cellR),
+                tilePainter.fillPoly(Glyph.hex(x + off, y - off, cellR),
                         Glyph.withAlpha(col, (26 - k * 4) * fade / 255));
-                p.strokePoly(Glyph.hex(x + off, y - off, cellR),
+                tilePainter.strokePoly(Glyph.hex(x + off, y - off, cellR),
                         Glyph.withAlpha(col, (95 - k * 18) * fade / 255), cellR * 0.055f);
             }
 
             if(starTile && !e.fastSingle && !e.destroyed && !e.dying)
-                FastEnemies.glow(p,x,y,cellR,col,fade,.85f+.15f*(float)Math.sin(c.clock*5+e.phase));
-            if(starTile)FastEnemies.body(p,x,y,cellR,col,fade,cleared);
+                FastEnemies.glow(tilePainter,x,y,cellR,col,fade,.85f+.15f*(float)Math.sin(c.clock*5+e.phase));
+            if(starTile)FastEnemies.body(tilePainter,x,y,cellR,col,fade,cleared);
             else {
-                p.fillPoly(Glyph.hex(x, y, cellR), Glyph.withAlpha(col, fillA * fade / 255));
-                p.strokePoly(Glyph.hex(x, y, cellR), Glyph.withAlpha(col, edgeA * fade / 255),
+                tilePainter.fillPoly(Glyph.hex(x, y, cellR), Glyph.withAlpha(col, fillA * fade / 255));
+                tilePainter.strokePoly(Glyph.hex(x, y, cellR), Glyph.withAlpha(col, edgeA * fade / 255),
                         cellR * (0.075f+0.045f*bondFlex));
             }
 
@@ -395,8 +396,8 @@ final class Renderer extends Draw {
                 float py = y + cellR * 0.60f;
                 float px = x - gap * (left - 1) / 2f;
                 for (int k = 0; k < left; k++) {
-                    p.fillCircle(px + k * gap, py, pr * 1.7f, Glyph.withAlpha(0xFF000000, 90));
-                    p.fillCircle(px + k * gap, py, pr, Glyph.withAlpha(INK, 240));
+                    tilePainter.fillCircle(px + k * gap, py, pr * 1.7f, Glyph.withAlpha(0xFF000000, 90));
+                    tilePainter.fillCircle(px + k * gap, py, pr, Glyph.withAlpha(INK, 240));
                 }
             }
 

@@ -20,6 +20,7 @@ final class Preview {
             e.y=L.playTop+L.unit*(6+(i/3)*8);if(e.fastSingle)e.y+=L.unit*2;
         }
         shot(dir,"234-space-formation",stage,L,w,h,ss);
+        stage.clock+=1;shot(dir,"234-space-spinning",stage,L,w,h,ss);stage.clock-=1;
         for(int frame=0;frame<120;frame++) {
             stage.spaceTurn+=(1-stage.spaceTurn)*(1-(float)Math.exp(-2.4f/60));
             stage.spaceStars.update(stage,L,1f/60);

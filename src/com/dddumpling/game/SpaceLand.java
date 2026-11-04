@@ -52,13 +52,13 @@ final class SpaceLand extends Draw {
     }
     /** Stars keep their positions as the flow turns; only offscreen stars are recycled. */
     static final class Starfield {
-        static final int COUNT=120;
+        static final int PER_LAYER=120,COUNT=PER_LAYER*3;
         final float[] x=new float[COUNT],y=new float[COUNT],depth=new float[COUNT],
                 vx=new float[COUNT],vy=new float[COUNT],age=new float[COUNT];
         final int[] cycle=new int[COUNT];
         boolean ready;
         void reset() {ready=false;}
-        static int seed(int i) {return 1201+(i%40)*37+(i/40)*743;}
+        static int seed(int i) {return 1201+(i%PER_LAYER)*37+(i/PER_LAYER)*743;}
         void prepare(Layout L) {
             if(ready)return;
             ready=true;
@@ -78,7 +78,7 @@ final class SpaceLand extends Draw {
             float horizon=originY(L);
             float rate=c.boss.active()?.23f:.14f,turn=c.spaceTurn;
             for(int i=0;i<COUNT;i++) {
-                int seed=seed(i);float layer=.65f+(i/40)*.3f;
+                int seed=seed(i);float layer=.65f+(i/PER_LAYER)*.3f;
                 float dx=(x[i]-.5f)*L.w,dy=y[i]*L.h-horizon;
                 float length=Math.max(.001f,(float)Math.sqrt(dx*dx+dy*dy));
                 float speed=2*Math.max(.07f,depth[i])*L.h*(.65f+hash(seed+4)*.40f)*rate*layer;
@@ -108,18 +108,12 @@ final class SpaceLand extends Draw {
         Starfield stars=c.spaceStars;stars.prepare(L);
         p.save();p.clipRect(0,0,L.w,L.deckTop);
         for(int i=0;i<Starfield.COUNT;i++) {
-            int layer=i/40,seed=Starfield.seed(i);
+            int layer=i/Starfield.PER_LAYER;
             float t=stars.depth[i],xx=stars.x[i]*L.w,yy=stars.y[i]*L.h;
-            float reach=t*t*L.h*(.65f+hash(seed+4)*.40f);
-            float tail=2*reach*(.015f+t*.07f),r=2*L.unit*(.018f+.045f*t)*(1+layer*.22f);
+            float r=2*L.unit*(.018f+.045f*t)*(1+layer*.22f);
             int color=layer==0?0xFF887CC9:layer==1?0xFFA9CCFF:0xFFFFE9CB;
             int a=(int)(fade*Math.min(1,stars.age[i]*4)*Math.min(1,t*6)*(95+layer*65));
-            float dx=stars.vx[i],dy=stars.vy[i];
-            float length=(float)Math.sqrt(dx*dx+dy*dy);
-            if(length<.001f) {float angle=hash(seed+9)*Softbody.TAU;dx=(float)Math.cos(angle);dy=(float)Math.sin(angle);length=1;}
-            dx=dx/length*tail;dy=dy/length*tail;
-            p.line(xx-dx,yy-dy,xx,yy,Glyph.withAlpha(color,a/3),r*3);
-            p.line(xx-dx*.65f,yy-dy*.65f,xx,yy,Glyph.withAlpha(color,a),Math.max(1.2f,r));
+            p.fillCircle(xx,yy,Math.max(.7f,r),Glyph.withAlpha(color,a));
         }
         p.restore();
     }

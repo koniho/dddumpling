@@ -1,13 +1,19 @@
 package com.dddumpling.game;
 
-/** Tumbling faceted shells and a bounded particle wake, behind upright readable prompts. */
+/** Tumbling faceted shells and a bounded particle wake, with matching rotating prompts. */
 final class SpaceEnemyArt extends Draw {
+    static float spin(float clock,float speed) {return clock*(.65f+speed*.5f);}
+    static Painter promptPainter(Painter p,float x,float y,float clock,float speed) {
+        float angle=spin(clock,speed),cos=(float)Math.cos(angle),sin=(float)Math.sin(angle);
+        // TurnPainter takes local coordinates; offset its origin to pivot world geometry here.
+        return new LinkedPairArt.TurnPainter(p,x-x*cos+y*sin,y-x*sin-y*cos,angle);
+    }
     static void comet(Painter p,float x,float y,float r,int color,float clock,float speed,int fade,float dx,float dy) {
         float norm=(float)Math.sqrt(dx*dx+dy*dy);
         if(norm<.001f) {dx=0;dy=1;norm=1;}
         dx/=norm;dy/=norm;
         int light=Glyph.mix(color,0xFFFFFFDD,.65f),stone=Glyph.mix(color,0xFF34314C,.55f);
-        float length=r*(3+speed*4),spin=clock*(.65f+speed*.5f);
+        float length=r*(3+speed*4),spin=spin(clock,speed);
         // Recycled dust glows and drifts across the wake; no solid flame/cone underneath.
         for(int n=0;n<16;n++) {
             float t=(clock*(.85f+speed*.4f)+n*.618034f)%1f;
