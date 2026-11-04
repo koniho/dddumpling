@@ -4,7 +4,7 @@ package com.dddumpling.game;
 final class FastEnemies {
     static final int FIRST_STAGE=16;
     static final float SPEED=2f;
-    static final float SPACE_GAP=.15f;
+    static final float SPACE_GAP=.75f;
     static final int SPACE_BURST=3;
     private FastEnemies() {}
 
@@ -27,6 +27,11 @@ final class FastEnemies {
         e.gone=new boolean[1];e.goneT=new float[1];e.goneDx=new float[1];e.goneDy=new float[1];
     }
 
+    /** Keep the authored rush beat when power-up refills clamp the pending timer. */
+    static float pendingDelay(GameCore c,Layout L) {
+        return SpaceLand.active(c) && c.fastEnemyNext && c.spaceRushCount>0?SPACE_GAP:Power.spawnDelay(c,L);
+    }
+
     /** Decide the next runner when its preceding word arrives, so only that gap shortens. */
     static float nextDelay(GameCore c,Layout L) {
         float normal=Power.spawnDelay(c,L);
@@ -38,10 +43,10 @@ final class FastEnemies {
                 if(last.fastSingle) {
                     if(++c.spaceRushCount<SPACE_BURST) {
                         c.fastEnemyNext=true;
-                        return Math.min(normal,SPACE_GAP);
+                        return SPACE_GAP;
                     }
                     c.spaceRushCount=0;
-                    return normal*.45f;
+                    return Math.max(SPACE_GAP,normal*.45f);
                 }
                 c.spaceRushCount=0;
                 return normal*.70f;

@@ -116,14 +116,22 @@ final class TestChaosCloud extends Check {
         for(int shot=1;shot<=3;shot++) {
             float delay=FastEnemies.nextDelay(c,L);
             if(shot<3) {
-                check("rush burst schedules its next target promptly "+shot,c.fastEnemyNext && delay<=.15f);
+                check("rush burst follows three-quarter-second beat "+shot,c.fastEnemyNext && Math.abs(delay-.75f)<.001f);
                 GameCore.Enemy follow=new GameCore.Enemy();Words.fill(follow,3,0,c.rnd);follow.phase=0;
                 FastEnemies.assign(c,follow);
                 check("scheduled burst target is always rush "+shot,follow.fastSingle);
                 c.enemies.add(follow);c.spawnedThisStage++;
-            } else check("three rushes leave a short recovery gap",!c.fastEnemyNext && c.spaceRushCount==0 && delay>.15f);
+            } else check("three rushes leave a short recovery gap",!c.fastEnemyNext && c.spaceRushCount==0 && delay>=.75f);
         }
         c.startGame();check("fresh run clears rush burst",c.spaceRushCount==0 && !c.fastEnemyNext);
+        for(int mode:new int[]{Power.FLURRY,Power.NINJA,Power.TEAM}) {
+            c=fight(L);c.boss.leave();c.stage=31;c.collected=1;c.runWho=0;c.startFrenzy(mode,L);
+            c.powerSpawnedEnemies=1;c.spaceRushCount=1;c.fastEnemyNext=true;c.spawnTimer=.75f;
+            advance(c,L,.4f);
+            check("power refill respects rush interval "+mode,c.enemies.isEmpty() && c.spawnTimer>.25f);
+            advance(c,L,.4f);
+            check("power rush arrives after scheduled interval "+mode,!c.enemies.isEmpty());
+        }
         starReturnCoverage(L);
         group("starfield flow continuity");
         c=fight(L);c.boss.leave();c.stage=31;c.spaceStars.prepare(L);

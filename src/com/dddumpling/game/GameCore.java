@@ -1407,7 +1407,7 @@ final class GameCore {
         powerRefillBurst = 0;
         powerSpawnedEnemies = 0;
         powerReplacements.clear();
-        spawnTimer = Math.min(spawnTimer, Power.spawnDelay(this, L));
+        spawnTimer = Math.min(spawnTimer, FastEnemies.pendingDelay(this, L));
         ninjaUsed = false;
         Blade.resetFeedback(this);
         // A finger already resting on the field does not get a free stroke: it has to lift and
@@ -3382,7 +3382,7 @@ final class GameCore {
         if (stageGap > 0) {
             stageGap -= dt;
         } else if (survival.active || powerActive() || (!boss.active() && spawnedThisStage < stageQuota())) {
-            if (powerActive()) spawnTimer = Math.min(spawnTimer, Power.spawnDelay(this, L));
+            if (powerActive()) spawnTimer = Math.min(spawnTimer, FastEnemies.pendingDelay(this, L));
             spawnTimer -= dt;
             // Counted against live words only: a word already flying apart is no longer
             // occupying the field as far as pacing is concerned. During a frenzy the quota
@@ -3557,7 +3557,7 @@ final class GameCore {
         e.attackT = 0f;
         e.failPulse = 0f;
         // Refill from the now-cleared field immediately, even at a formation boundary.
-        if (powerActive()) spawnTimer = Math.min(spawnTimer, Power.spawnDelay(this, L));
+        if (powerActive()) spawnTimer = Math.min(spawnTimer, FastEnemies.pendingDelay(this, L));
         else if(survival.active)spawnTimer=Math.min(spawnTimer,.18f);
         if (target == e) target = null;
         computeFlyDirs(e, L);
