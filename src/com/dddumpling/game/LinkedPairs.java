@@ -53,7 +53,7 @@ final class LinkedPairs {
             }
         }
         if(!clear)return false;
-        if(SpaceLand.active(c)) {SpaceLand.approach(a,L);SpaceLand.approach(b,L);}
+        if(SpaceLand.normalWave(c)) {SpaceLand.approach(a,L);SpaceLand.approach(b,L);}
         c.enemies.add(a);
         c.enemies.add(b);
         PowerRush.admitted(c,false);

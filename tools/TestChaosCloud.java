@@ -22,7 +22,9 @@ final class TestChaosCloud extends Check {
             if(c.enemies.size()!=1)continue;
             GameCore.Enemy e=c.enemies.get(0);
             check("replacement request consumed "+tag,c.powerReplacements.isEmpty());
-            for(int n=0;n<35;n++)SpaceLand.approach(e,.02f,L);
+            check("power entry uses usual top/side pattern "+tag,e.spaceArrival==0 && e.sideEntry==side);
+            check("power rush uses usual speed "+tag,SpaceLand.rushSpeed(c)==FastEnemies.SPEED);
+            advance(c,L,.6f);
             float first=c.tileX(e,0,L),last=c.tileX(e,e.word.length-1,L);
             check("power entry ends visibly inside playfield "+tag,e.spaceArrival==0
                     && first>=L.playLeft && last<=L.playRight && e.y>L.hudBottom() && e.y<L.dangerY);
@@ -108,7 +110,7 @@ final class TestChaosCloud extends Check {
                 e.phase=(i+.5f)*6.283f/1000;FastEnemies.assign(c,e);SwampEnemies.assign(c,e);
                 if(e.fastSingle)rush++;if(e.swampKind==SwampEnemies.FOG)fog++;
             }
-            check("Space rush share increased in every power mode "+mode,rush==680);
+            check("Space power-ups restore usual rush mix "+mode,rush==(mode<0?680:260));
             check("ordinary Space wave has no fog "+mode,fog==0);
         }
         c=fight(L);c.boss.leave();c.stage=31;c.spawnedThisStage=3;c.pairSpawnSlots=0;
@@ -126,11 +128,10 @@ final class TestChaosCloud extends Check {
         c.startGame();check("fresh run clears rush burst",c.spaceRushCount==0 && !c.fastEnemyNext);
         for(int mode:new int[]{Power.FLURRY,Power.NINJA,Power.TEAM}) {
             c=fight(L);c.boss.leave();c.stage=31;c.collected=1;c.runWho=0;c.startFrenzy(mode,L);
-            c.powerSpawnedEnemies=1;c.spaceRushCount=1;c.fastEnemyNext=true;c.spawnTimer=.75f;
-            advance(c,L,.4f);
-            check("power refill respects rush interval "+mode,c.enemies.isEmpty() && c.spawnTimer>.25f);
-            advance(c,L,.4f);
-            check("power rush arrives after scheduled interval "+mode,!c.enemies.isEmpty());
+            c.powerSpawnedEnemies=1;c.spaceRushCount=1;c.fastEnemyNext=true;
+            float delay=FastEnemies.nextDelay(c,L);
+            check("power-ups use standard refill pacing "+mode,delay==Power.spawnDelay(c,L)
+                    && !c.fastEnemyNext && c.spaceRushCount==0);
         }
         starReturnCoverage(L);
         group("starfield flow continuity");

@@ -5,16 +5,17 @@ final class SpaceLand extends Draw {
     static final float APPROACH=.48f;
     private SpaceLand() {}
     static boolean active(GameCore c) {return !c.survival.active && Lands.forStage(c.stage)==Lands.SPACE;}
+    static boolean normalWave(GameCore c) {return active(c) && !c.powerActive();}
     static float presence(GameCore c) {
         if(c.survival.active || c.state==GameCore.TITLE)return 0;
         float t=Lands.blend(c);
         return (c.landFrom==Lands.SPACE?1-t:0)+(active(c)?t:0);
     }
-    static float rushSpeed(GameCore c) {return FastEnemies.SPEED*(active(c)?3:1);}
+    static float rushSpeed(GameCore c) {return FastEnemies.SPEED*(normalWave(c)?3:1);}
     static float originY(Layout L) {return L.playTop+(L.deckTop-L.playTop)*.28f;}
     static float arrivalY(Layout L) {return Math.max(L.playTop,L.hudBottom())+L.enemyR*1.65f;}
     static void approach(GameCore.Enemy e,Layout L) {
-        e.spaceArrival=APPROACH;e.spaceSideEntry=e.sideEntry;
+        e.spaceArrival=APPROACH;
         e.spaceLane=e.sideEntry?e.pathEndX:e.baseX;
         e.spaceOriginX=L.w*.5f;e.spaceOriginY=originY(L);
         e.baseX=e.spaceOriginX;e.y=e.spaceOriginY;

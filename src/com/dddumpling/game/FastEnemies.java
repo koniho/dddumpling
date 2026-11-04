@@ -19,7 +19,7 @@ final class FastEnemies {
         // The first pair gets its introduction before the third spawn becomes a runner.
         // Power-up runners use 26% of solo candidates: 35% fewer than the former 40%.
         boolean rainbow=!c.survival.active && Lands.forStage(c.stage)==Lands.RAINBOW;
-        boolean chosen=SpaceLand.active(c)?c.fastEnemyNext || e.phase>=6.283f*.32f:c.powerActive()?e.phase>=6.283f*(rainbow?.61f:.74f)
+        boolean chosen=SpaceLand.normalWave(c)?c.fastEnemyNext || e.phase>=6.283f*.32f:c.powerActive()?e.phase>=6.283f*(rainbow?.61f:.74f)
                 :!c.survival.active && c.stage==FIRST_STAGE?c.spawnedThisStage==2:c.fastEnemyNext;
         if(!chosen)return;
         e.fastSingle=true;
@@ -27,16 +27,11 @@ final class FastEnemies {
         e.gone=new boolean[1];e.goneT=new float[1];e.goneDx=new float[1];e.goneDy=new float[1];
     }
 
-    /** Keep the authored rush beat when power-up refills clamp the pending timer. */
-    static float pendingDelay(GameCore c,Layout L) {
-        return SpaceLand.active(c) && c.fastEnemyNext && c.spaceRushCount>0?SPACE_GAP:Power.spawnDelay(c,L);
-    }
-
     /** Decide the next runner when its preceding word arrives, so only that gap shortens. */
     static float nextDelay(GameCore c,Layout L) {
         float normal=Power.spawnDelay(c,L);
         c.fastEnemyNext=false;
-        if(SpaceLand.active(c) && eligible(c) && (c.powerActive() || c.spawnedThisStage<c.stageQuota())
+        if(SpaceLand.normalWave(c) && eligible(c) && c.spawnedThisStage<c.stageQuota()
                 && !LinkedPairs.due(c) && !c.enemies.isEmpty()) {
             GameCore.Enemy last=c.enemies.get(c.enemies.size()-1);
             if(last.link==null) {

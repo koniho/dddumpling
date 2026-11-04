@@ -453,7 +453,6 @@ final class GameCore {
         /** 0..1 as the word slides in from above the top edge. */
         float enterT;
         float spaceArrival,spaceLane,spaceOriginX,spaceOriginY;
-        boolean spaceSideEntry; // Planned power entrance, before Space replaces its visual path.
         /** 0..1 as the word closes on the danger line. */
         float warn;
         /** Final lunge at the player, just before a life is lost. */
@@ -1407,7 +1406,7 @@ final class GameCore {
         powerRefillBurst = 0;
         powerSpawnedEnemies = 0;
         powerReplacements.clear();
-        spawnTimer = Math.min(spawnTimer, FastEnemies.pendingDelay(this, L));
+        spawnTimer = Math.min(spawnTimer, Power.spawnDelay(this, L));
         ninjaUsed = false;
         Blade.resetFeedback(this);
         // A finger already resting on the field does not get a free stroke: it has to lift and
@@ -3382,7 +3381,7 @@ final class GameCore {
         if (stageGap > 0) {
             stageGap -= dt;
         } else if (survival.active || powerActive() || (!boss.active() && spawnedThisStage < stageQuota())) {
-            if (powerActive()) spawnTimer = Math.min(spawnTimer, FastEnemies.pendingDelay(this, L));
+            if (powerActive()) spawnTimer = Math.min(spawnTimer, Power.spawnDelay(this, L));
             spawnTimer -= dt;
             // Counted against live words only: a word already flying apart is no longer
             // occupying the field as far as pacing is concerned. During a frenzy the quota
@@ -3537,7 +3536,7 @@ final class GameCore {
         if (powerActive() && !e.destroyed) {
             if (clock - powerLastClear <= 0.25f) powerRefillBurst = 2;
             powerLastClear = clock;
-            powerReplacements.addLast(!(e.sideEntry || e.spaceSideEntry));
+            powerReplacements.addLast(!(e.sideEntry));
         }
         e.destroyed = true;
         e.destroyT = 0f;
@@ -3557,7 +3556,7 @@ final class GameCore {
         e.attackT = 0f;
         e.failPulse = 0f;
         // Refill from the now-cleared field immediately, even at a formation boundary.
-        if (powerActive()) spawnTimer = Math.min(spawnTimer, FastEnemies.pendingDelay(this, L));
+        if (powerActive()) spawnTimer = Math.min(spawnTimer, Power.spawnDelay(this, L));
         else if(survival.active)spawnTimer=Math.min(spawnTimer,.18f);
         if (target == e) target = null;
         computeFlyDirs(e, L);
@@ -3951,9 +3950,9 @@ final class GameCore {
                 if (e.sideEntry) e.pathEndX = lane; else e.baseX = lane;
                 if (EnemyEntry.clear(e, this, L)) {
                     SwampEnemies.assign(this,e);
-                    if(SpaceLand.active(this))SpaceLand.approach(e,L);
+                    if(SpaceLand.normalWave(this))SpaceLand.approach(e,L);
                     enemies.add(e);
-                    PowerRush.admitted(this,e.sideEntry || e.spaceSideEntry);
+                    PowerRush.admitted(this,e.sideEntry);
                     return true;
                 }
             }
