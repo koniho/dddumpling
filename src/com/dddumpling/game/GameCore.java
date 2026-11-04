@@ -592,6 +592,7 @@ final class GameCore {
     float spaceTurn;
     final SpaceLand.Starfield spaceStars=new SpaceLand.Starfield();
     boolean fastEnemyNext;
+    int spaceRushCount;
     /** Two reserved linked-pair slots in this ordinary Adventure wave. */
     int pairSpawnSlots;
     /** Stage enemies resolved, after both halves of a pair clear or breach. */
@@ -1393,7 +1394,7 @@ final class GameCore {
         debuffLeft = monochromeFade = incognitoMorph = 0f;
         runScores().powers++;
         runScores().effect(effect);
-        fastEnemyNext = false;
+        fastEnemyNext = false;spaceRushCount=0;
         mode = effect;
         rosterStagePowerUsed=true;
         playthrough.power(this,effect);
@@ -2119,7 +2120,7 @@ final class GameCore {
         rosterStagePowerUsed=rosterTopSeen=rosterTopCrossed=false;
         spawnedThisStage = 0;
         spaceFormationStage=-1;spaceTurn=0;spaceStars.reset();
-        fastEnemyNext = false;
+        fastEnemyNext = false;spaceRushCount=0;
         resolvedThisStage = 0;
         stageGap = 0;
         perfectBanner = 0;
@@ -3733,7 +3734,7 @@ final class GameCore {
         if(onboarding.rescueGuide)onboarding.clear();
         spawnedThisStage = 0;
         spaceFormationStage=-1;
-        fastEnemyNext = false;
+        fastEnemyNext = false;spaceRushCount=0;
         resolvedThisStage = 0;
         stageBanner = BANNER_TIME;
         stageGap = STAGE_GAP;
@@ -3853,7 +3854,7 @@ final class GameCore {
         reviewPrompt.pending=false;
         pairSpawnSlots = 0;
         diagnostic("game-over");
-        fastEnemyNext = false;
+        fastEnemyNext = false;spaceRushCount=0;
         if(onboarding.rescueGuide)onboarding.clear();
         boolean retryOffered=bossRetry.offer(this);
         // The run companion belongs to the summary after play stops. It cries in place until the

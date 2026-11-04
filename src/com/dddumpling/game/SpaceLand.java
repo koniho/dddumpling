@@ -95,9 +95,14 @@ final class SpaceLand extends Draw {
                         x[i]=hash(next+17);y[i]=L.deckTop/L.h+.22f;
                         depth[i]=.45f+hash(next+21)*.45f;
                     } else {
-                        float angle=hash(next+9)*Softbody.TAU;
-                        x[i]=.5f+(float)Math.cos(angle)*.003f*L.h/L.w;
-                        y[i]=horizon/L.h+(float)Math.sin(angle)*.003f;depth[i]=.07f;
+                        // Replenish at varied depths, fading in. A center-only emitter leaves
+                        // the lower field empty when the upward population turns outward.
+                        float angle=hash(next+9)*Softbody.TAU,ax=(float)Math.cos(angle),ay=(float)Math.sin(angle);
+                        float t=.12f+hash(next+21)*.80f;
+                        float edge=Math.min(L.w*.5f/Math.max(.001f,Math.abs(ax)),
+                                (ay>0?L.deckTop-horizon:horizon)/Math.max(.001f,Math.abs(ay)));
+                        float reach=edge*t*t;
+                        x[i]=.5f+ax*reach/L.w;y[i]=(horizon+ay*reach)/L.h;depth[i]=t;
                     }
                     age[i]=0;vx[i]=vy[i]=0;
                 }

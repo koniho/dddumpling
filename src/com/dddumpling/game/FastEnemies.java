@@ -4,6 +4,8 @@ package com.dddumpling.game;
 final class FastEnemies {
     static final int FIRST_STAGE=16;
     static final float SPEED=2f;
+    static final float SPACE_GAP=.15f;
+    static final int SPACE_BURST=3;
     private FastEnemies() {}
 
     private static boolean eligible(GameCore c) {
@@ -17,7 +19,7 @@ final class FastEnemies {
         // The first pair gets its introduction before the third spawn becomes a runner.
         // Power-up runners use 26% of solo candidates: 35% fewer than the former 40%.
         boolean rainbow=!c.survival.active && Lands.forStage(c.stage)==Lands.RAINBOW;
-        boolean chosen=SpaceLand.active(c)?e.phase>=6.283f*.32f:c.powerActive()?e.phase>=6.283f*(rainbow?.61f:.74f)
+        boolean chosen=SpaceLand.active(c)?c.fastEnemyNext || e.phase>=6.283f*.32f:c.powerActive()?e.phase>=6.283f*(rainbow?.61f:.74f)
                 :!c.survival.active && c.stage==FIRST_STAGE?c.spawnedThisStage==2:c.fastEnemyNext;
         if(!chosen)return;
         e.fastSingle=true;
@@ -29,11 +31,27 @@ final class FastEnemies {
     static float nextDelay(GameCore c,Layout L) {
         float normal=Power.spawnDelay(c,L);
         c.fastEnemyNext=false;
+        if(SpaceLand.active(c) && eligible(c) && (c.powerActive() || c.spawnedThisStage<c.stageQuota())
+                && !LinkedPairs.due(c) && !c.enemies.isEmpty()) {
+            GameCore.Enemy last=c.enemies.get(c.enemies.size()-1);
+            if(last.link==null) {
+                if(last.fastSingle) {
+                    if(++c.spaceRushCount<SPACE_BURST) {
+                        c.fastEnemyNext=true;
+                        return Math.min(normal,SPACE_GAP);
+                    }
+                    c.spaceRushCount=0;
+                    return normal*.45f;
+                }
+                c.spaceRushCount=0;
+                return normal*.70f;
+            }
+        }
+        c.spaceRushCount=0;
         if(!eligible(c) || c.powerActive() || (!c.survival.active && c.spawnedThisStage>=c.stageQuota()) || LinkedPairs.due(c)
                 || c.enemies.isEmpty())return normal;
         GameCore.Enemy previous=c.enemies.get(c.enemies.size()-1);
         if(previous.link!=null)return normal;
-        if(SpaceLand.active(c))return normal*.70f;
         if(previous.fastSingle || previous.word.length<2)return normal;
         // Two-thirds of longer solo words yields roughly two runners in five solo arrivals.
         c.fastEnemyNext=!c.survival.active && c.stage==FIRST_STAGE?c.spawnedThisStage==2

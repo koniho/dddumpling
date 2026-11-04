@@ -31,6 +31,28 @@ final class TestChaosCloud extends Check {
                     c.powerReplacements.size()==1 && c.powerReplacements.peekFirst()==!side);
         }
     }
+    static void starReturnCoverage(Layout L) {
+        group("starfield stays populated after a summary");
+        for(int fps:new int[]{30,120})for(int hold:new int[]{2,8}) {
+            GameCore c=fight(L);c.boss.leave();c.stage=31;
+            boolean covered=true;
+            for(int frame=0;frame<fps*(10+hold+6);frame++) {
+                boolean summary=frame>=fps*10 && frame<fps*(10+hold);
+                c.state=summary?GameCore.BONUS:GameCore.PLAY;
+                c.spaceTurn+=((summary?1:0)-c.spaceTurn)*(1-(float)Math.exp(-2.4f/fps));
+                c.spaceStars.update(c,L,1f/fps);
+                if(frame<fps*(10+hold) || frame%(fps/2)!=0)continue;
+                int[] bands=new int[6];
+                for(int i=0;i<SpaceLand.Starfield.COUNT;i++) {
+                    float x=c.spaceStars.x[i],y=c.spaceStars.y[i]*L.h;
+                    if(x>=0 && x<=1 && y>=L.playTop && y<L.deckTop && c.spaceStars.age[i]>.15f)
+                        bands[Math.min(5,(int)((y-L.playTop)/(L.deckTop-L.playTop)*6))]++;
+                }
+                for(int count:bands)covered&=count>0;
+            }
+            check("return keeps stars in every playfield band "+fps+"/"+hold,covered);
+        }
+    }
     static void all(Layout L) {
         powerEntries(L);
         group("space progression and finale");
@@ -91,7 +113,18 @@ final class TestChaosCloud extends Check {
         }
         c=fight(L);c.boss.leave();c.stage=31;c.spawnedThisStage=3;c.pairSpawnSlots=0;
         GameCore.Enemy preceding=new GameCore.Enemy();Words.fill(preceding,1,0,c.rnd);preceding.fastSingle=true;c.enemies.add(preceding);
-        check("Space solo arrivals use shorter gaps",Math.abs(FastEnemies.nextDelay(c,L)-Power.spawnDelay(c,L)*.70f)<.0001f);
+        for(int shot=1;shot<=3;shot++) {
+            float delay=FastEnemies.nextDelay(c,L);
+            if(shot<3) {
+                check("rush burst schedules its next target promptly "+shot,c.fastEnemyNext && delay<=.15f);
+                GameCore.Enemy follow=new GameCore.Enemy();Words.fill(follow,3,0,c.rnd);follow.phase=0;
+                FastEnemies.assign(c,follow);
+                check("scheduled burst target is always rush "+shot,follow.fastSingle);
+                c.enemies.add(follow);c.spawnedThisStage++;
+            } else check("three rushes leave a short recovery gap",!c.fastEnemyNext && c.spaceRushCount==0 && delay>.15f);
+        }
+        c.startGame();check("fresh run clears rush burst",c.spaceRushCount==0 && !c.fastEnemyNext);
+        starReturnCoverage(L);
         group("starfield flow continuity");
         c=fight(L);c.boss.leave();c.stage=31;c.spaceStars.prepare(L);
         SpaceLand.Starfield stars=c.spaceStars;
