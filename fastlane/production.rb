@@ -1,3 +1,5 @@
+require_relative 'game_center_review'
+
 # Promote only already-uploaded, explicitly selected builds.
 def ios_production_version!(root, version)
   project = File.read(File.join(root, "ios/project.yml"))
@@ -79,6 +81,7 @@ platform :ios do
     UI.user_error!('App not found') unless app
     builds = Spaceship::ConnectAPI::Build.all(app_id: app.id, version: version, build_number: build_number, platform: 'IOS')
     UI.user_error!('Expected one processed uploaded build') unless builds.length == 1 && builds.first.processing_state == 'VALID'
+    UI.user_error!('Selected build needs export compliance information') if builds.first.uses_non_exempt_encryption.nil?
     versions = app.get_app_store_versions(filter: {platform: 'IOS'})
     versions.each { |v| UI.message("App Store #{v.version_string}: #{v.app_store_state}, release #{v.release_type}") }
     editable = app.get_edit_app_store_version(platform: 'IOS')
@@ -90,7 +93,13 @@ platform :ios do
     request = lambda do |method, path, body|
       request_json('https://api.appstoreconnect.apple.com/v1', Spaceship::ConnectAPI.token.text, method, path, body)
     end
-    request.call('get', "/apps/#{app.id}/gameCenterDetail", nil)
+    review_request = lambda do |method, path, body|
+      request_json('https://api.appstoreconnect.apple.com', Spaceship::ConnectAPI.token.text, method, path, body)
+    end
+    review = GameCenterReview.new(review_request)
+    achievement_plan = review.plan(app.id, JSON.parse(File.read(File.join(root, 'store/achievements.json'))))
+    achievement_plan.each { |item| UI.message("Achievement #{item[:key]}: #{item[:state]}") }
+    review.draft(app.id, editable&.id, achievement_plan) unless replacing
     if editable
       link = ios_game_center_version!(editable.id, request: request)
       UI.message("Game Center version link: #{link ? link.dig('attributes', 'enabled') : 'missing'}")
@@ -106,9 +115,20 @@ platform :ios do
         api_key: api_key, app_identifier: IOS_BUNDLE_ID, app_version: version,
         build_number: build_number, skip_binary_upload: true, skip_screenshots: true,
         release_notes: {'en-US' => notes}, force: true,
-        submit_for_review: true, automatic_release: true, reject_if_possible: true,
-        precheck_include_in_app_purchases: false
+        submit_for_review: false, automatic_release: true, reject_if_possible: false,
+        run_precheck_before_submit: false
       )
+      passed = check_app_store_metadata(api_key: api_key, app_identifier: IOS_BUNDLE_ID, include_in_app_purchases: false)
+      UI.user_error!('Apple metadata precheck failed') unless passed
+      # Deliver does not select a build when submit_for_review is false.
+      request.call('patch', "/appStoreVersions/#{selected.id}/relationships/build", {
+        data: {type: 'builds', id: builds.first.id}
+      })
+      selected_build = request.call('get', "/appStoreVersions/#{selected.id}/build", nil).fetch('data')
+      UI.user_error!('Apple selected a different build') unless selected_build && selected_build['id'] == builds.first.id
+      submission = review.draft(app.id, selected.id, achievement_plan, apply: true)
+      submitted = review.submit!(submission, selected.id, achievement_plan)
+      UI.message("Verified Apple review #{submitted.fetch('id')}: #{submitted.dig('attributes', 'state')}, including #{achievement_plan.count { |item| item[:state] != 'LIVE' }} achievements")
       saved = app.get_app_store_versions(filter: {platform: 'IOS', versionString: version}).first
       UI.message("Verified App Store #{saved.version_string}: #{saved.app_store_state}, release #{saved.release_type}")
     end

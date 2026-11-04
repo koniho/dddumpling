@@ -163,3 +163,5 @@ calls.clear
 ios_game_center_version!('version-1', request: request, apply: true)
 assert(calls.map(&:first) == ['get', 'patch', 'get'], 'reuse an existing disabled link')
 puts "Fastlane configuration checks passed"
+
+load File.expand_path('test-game-center-review.rb', __dir__)

@@ -46,4 +46,6 @@ until a matching Dev configuration is supplied; see [developer testing](play-gam
 Console drafts and compile tests do not establish live unlock delivery. Before release,
 test signed-in unlocks, offline/reconnect, cloud restore, duplicate replay and account changes
 on real service-enabled builds. Publish the Google configuration and submit Apple achievements
-for review as part of the release process, after release approval.
+for review as part of the release process, after release approval. The Apple production lane
+adds pending achievement versions to the app's review submission and verifies their states;
+creating definitions or enabling Game Center alone does not publish them.

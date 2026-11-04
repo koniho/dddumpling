@@ -237,7 +237,14 @@ Store review and processing may still delay public availability. Apple uses the 
 of `ios/store/en-US/what_to_test.txt` as its public release notes; later beta-testing instructions
 stay in TestFlight. Google uses the version-specific Play changelog. Apple promotion also
 enables and verifies the selected App Store version's Game Center link before submission,
-reusing the app's existing Game Center configuration.
+reusing the app's existing Game Center configuration. It checks every production achievement
+mapping in `store/achievements.json` against Apple's Game Center configuration and selects
+its latest version. Pending achievements are added to the same review submission as the
+selected app version; already-live achievements are left alone. Submission stops on missing
+or mismatched mappings, rejected/in-review achievement versions, unrelated draft items,
+or an existing active review. Retries reuse matching draft items without duplicating them.
+The lane verifies the exact submitted item set and achievement review states before reporting
+success. A successful binary upload or enabled Game Center link is not achievement publication.
 
 If an older Apple version is still waiting for review, `replace_ios_version` may name that
 exact version when replacing it has been authorized. Preflight verifies the older version

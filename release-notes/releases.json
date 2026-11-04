@@ -1,6 +1,18 @@
 {
   "releases": [
     {
+      "version": "0.1.40",
+      "changes": [
+        {
+          "icon": "achievements",
+          "title": "Game Center milestones",
+          "where": "iPhone achievements",
+          "why": "Connect Game Center to earn 26 achievements for collecting squishies, clearing stages, beating bosses and surviving longer runs.",
+          "autoReset": false
+        }
+      ]
+    },
+    {
       "version": "0.1.39",
       "changes": [
         {
