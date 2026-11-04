@@ -26,7 +26,13 @@ final class TestChaosCloud extends Check {
         check("fog is present inside a flanked formation",c.enemies.get(4).swampKind==SwampEnemies.FOG);
         for(GameCore.Enemy e:c.enemies) {
             check("enemy enters from starfield origin",e.baseX==L.w*.5f && e.y==SpaceLand.originY(L));
+            // Delayed formation rows use the same path once their launch begins.
+            e.spaceArrival=SpaceLand.APPROACH;
+            SpaceLand.approach(e,SpaceLand.APPROACH*.5f,L);
+            check("arrival fans upward from the star origin",e.y<SpaceLand.originY(L) && e.y>SpaceLand.arrivalY(L));
             for(int k=0;k<100;k++)SpaceLand.approach(e,.02f,L);
+            check("arrival finishes near top with header clearance",Math.abs(e.y-SpaceLand.arrivalY(L))<.01f
+                    && e.y-L.enemyR*1.4f>L.hudBottom());
             check("arrival completes at its own lane",e.spaceArrival==0 && Math.abs(e.baseX-e.spaceLane)<.01f && e.enterT==1);
         }
         for(boolean full:new boolean[]{false,true}) {

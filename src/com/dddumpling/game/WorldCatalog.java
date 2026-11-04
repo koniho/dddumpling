@@ -19,7 +19,7 @@ final class WorldCatalog {
         new Land(CaveArt.DARK,CaveArt.LIGHT,9,"Pebble adopted its own dumpling."),
         new Land(0xFF182F32,0xFF74B99C,10,"Lily pad booked you a swamp nap."),
         new Land(0xFF282341,0xFFDEA9EC,13,"A rainbow cloud borrowed you."),
-        new Land(0xFF14152D,0xFFA7B9F4,15,"A comet carried you to bedtime.")
+        new Land(0xFF050610,0xFFA7B9F4,15,"A comet carried you to bedtime.")
     };
     static final class BossEntry {
         final int land,friend,face,ending;

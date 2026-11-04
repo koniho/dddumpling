@@ -12,6 +12,7 @@ final class SpaceLand extends Draw {
     }
     static float rushSpeed(GameCore c) {return FastEnemies.SPEED*(active(c)?3:1);}
     static float originY(Layout L) {return L.playTop+(L.deckTop-L.playTop)*.28f;}
+    static float arrivalY(Layout L) {return Math.max(L.playTop,L.hudBottom())+L.enemyR*1.65f;}
     static void approach(GameCore.Enemy e,Layout L) {
         e.spaceArrival=APPROACH;e.spaceLane=e.baseX;
         e.spaceOriginX=L.w*.5f;e.spaceOriginY=originY(L);
@@ -22,9 +23,9 @@ final class SpaceLand extends Draw {
     static boolean approach(GameCore.Enemy e,float dt,Layout L) {
         if(e.spaceArrival<=0 || e.destroyed || e.dying || e.slideT>0)return false;
         e.spaceArrival=Math.max(0,e.spaceArrival-dt);
-        float t=Math.max(0,1-e.spaceArrival/APPROACH),u=t*t;
+        float t=Math.max(0,1-e.spaceArrival/APPROACH),u=t*t*(3-2*t);
         e.enterT=t;e.baseX=e.spaceOriginX+(e.spaceLane-e.spaceOriginX)*u;
-        e.y=e.spaceOriginY+L.enemyR*3*u;
+        e.y=e.spaceOriginY+(arrivalY(L)-e.spaceOriginY)*u;
         return true;
     }
     static boolean formation(GameCore c,Layout L) {
