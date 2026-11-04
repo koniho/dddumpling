@@ -317,6 +317,13 @@ abstract class Check {
     static boolean bossPlay(GameCore c, Layout L) {
         if (!c.bossFighting()) return false;
         Boss b = c.boss;
+        if(b.kind==Boss.CHAOS_CLOUD) {
+            if(b.cloud.vulnerable) {
+                float r=Boss.bodyR(L),x=b.bodyX(L),y=b.bodyY(L);int dir=b.cloud.lastDirection==1?-1:1;
+                b.cloud.touch(c,L,0,234,x-dir*r,y);b.cloud.touch(c,L,1,234,x+dir*r,y);
+            } else for(int i=0;i<Boss.MAX_BOLTS;i++)if(b.blive[i] && b.cloud.targetable(b,i)) {c.tapKey(b.bglyph[i],L);break;}
+            return true;
+        }
         if(b.kind==Boss.RAINBOW_CAT) {
             RainbowCat a=b.cat;
             int bolt=-1;for(int i=0;i<Boss.MAX_BOLTS;i++)if(b.blive[i]){bolt=i;break;}

@@ -452,6 +452,7 @@ final class GameCore {
         float failPulse;
         /** 0..1 as the word slides in from above the top edge. */
         float enterT;
+        float spaceArrival,spaceLane,spaceOriginX,spaceOriginY;
         /** 0..1 as the word closes on the danger line. */
         float warn;
         /** Final lunge at the player, just before a life is lost. */
@@ -586,6 +587,8 @@ final class GameCore {
     int squishes;
     /** Stage enemies released; a linked pair occupies one quota slot. */
     int spawnedThisStage;
+    int spaceFormationStage=-1;
+    float spaceTurn;
     boolean fastEnemyNext;
     /** Two reserved linked-pair slots in this ordinary Adventure wave. */
     int pairSpawnSlots;
@@ -2113,6 +2116,7 @@ final class GameCore {
         rosterStartStage=stage;rosterStrongStages=rosterStageHits=0;
         rosterStagePowerUsed=rosterTopSeen=rosterTopCrossed=false;
         spawnedThisStage = 0;
+        spaceFormationStage=-1;spaceTurn=0;
         fastEnemyNext = false;
         resolvedThisStage = 0;
         stageGap = 0;
@@ -2890,7 +2894,8 @@ final class GameCore {
     float tileX(Enemy e, int i, Layout L) {
         float rowW = L.wordWidth(e.word.length);
         float left = enemyCentreX(e) - rowW / 2f + Layout.HEAD_SCALE * L.enemyR;
-        return left + i * L.enemyStep;
+        float x=left+i*L.enemyStep;
+        return e.spaceArrival>0?enemyCentreX(e)+(x-enemyCentreX(e))*Math.max(.12f,e.enterT):x;
     }
 
     // ---- simulation ---------------------------------------------------------
@@ -2988,6 +2993,7 @@ final class GameCore {
         float skyRate=state==PLAY && boss.active() && boss.kind==Boss.RAINBOW_CAT?RainbowLand.BATTLE_SKY_RATE:1f;
         if(RainbowCatTaunt.retained(this) && dying())skyRate=RainbowCatTaunt.scrollRate(deathDuration()-deathT);
         float previousSky=skyClock;
+        spaceTurn+=((SpaceLand.active(this) && (pendingBonus || state==BONUS || stageGap>0 || paradeTimer>0)?1f:0f)-spaceTurn)*(1f-(float)Math.exp(-dt*2.4f));
         skyClock += dt * (powerActive() ? Power.SKY_RATE : skyRate) * (1f-MushroomForest.groveProgress(this)) * (1f-SlimeBasin.progress(this)) * (1f-Underwater.caveProgress(this));
         slimeBubbles.update(this,L,dt,skyClock-previousSky);
         landBlend = Math.min(1f, landBlend + dt / Lands.FADE_TIME);
@@ -3395,7 +3401,7 @@ final class GameCore {
                 }
             }
         } else if (stageCleared()) {
-            if(stageDamageHold<=0f)Interlude.beginStageEnd(this);
+            if(stageDamageHold<=0f && !SpaceLand.formation(this,L))Interlude.beginStageEnd(this);
             return;
         }
 
@@ -3416,6 +3422,7 @@ final class GameCore {
             for (int k = 0; k < e.word.length; k++) {
                 if (e.gone[k] && e.goneT[k] < 1f) e.goneT[k] = Math.min(1f, e.goneT[k] + dt * 3.2f);
             }
+            if(SpaceLand.approach(e,dt,L))continue;
             // Driven by position, not time: a timed ramp would finish while the word was
             // still above the top edge, so nobody would ever see it.
             e.enterT = clamp01((e.y + L.enemyR) / (L.enemyR * 3f));
@@ -3722,6 +3729,7 @@ final class GameCore {
         pushUsed = false;
         if(onboarding.rescueGuide)onboarding.clear();
         spawnedThisStage = 0;
+        spaceFormationStage=-1;
         fastEnemyNext = false;
         resolvedThisStage = 0;
         stageBanner = BANNER_TIME;
@@ -3933,12 +3941,13 @@ final class GameCore {
         // Ninja tries other entry heights too, keeping the word instead of wasting its spawn slot.
         for(int entrance=0;entrance<(ninja() && !Boolean.FALSE.equals(PowerRush.replacement(this))?4:1);entrance++) {
             if(entrance>0)PowerRush.ninjaAlternative(this,e,L,entrance-1);
-            e.speed=PowerRush.spawnSpeed(this,e,L)*(e.fastSingle?FastEnemies.SPEED:1f);
+            e.speed=PowerRush.spawnSpeed(this,e,L)*(e.fastSingle?SpaceLand.rushSpeed(this):1f);
             for (int attempt = 0; attempt < 9; attempt++) {
                 float lane = attempt == 0 ? preferredX : lo + (hi - lo) * (attempt - 1) / 7f;
                 if (e.sideEntry) e.pathEndX = lane; else e.baseX = lane;
                 if (EnemyEntry.clear(e, this, L)) {
                     SwampEnemies.assign(this,e);
+                    if(SpaceLand.active(this))SpaceLand.approach(e,L);
                     enemies.add(e);
                     PowerRush.admitted(this,e.sideEntry);
                     return true;

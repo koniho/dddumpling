@@ -122,6 +122,7 @@ final class BossScreen extends Draw {
     /** Draws either the live boss or a retained victory snapshot through the identical renderer. */
     static void body(Painter p, GameCore c, Layout L, Boss b, float alpha) {
         if (!b.active() || b.body == null) return;
+        if(b.kind==Boss.CHAOS_CLOUD) {ChaosCloudArt.draw(p,c,L,b,alpha);return;}
         if(b.kind==Boss.RAINBOW_CAT) {RainbowCatArt.draw(p,c,L,b,alpha);return;}
         if(b.kind==Boss.ALLIGATOR) {AlligatorArt.draw(p,c,L,b,alpha);return;}
         if(b.beaten && b.kind==Boss.SLIME) {SlimeDeath.draw(p,c,L,b,alpha);return;}
@@ -282,6 +283,7 @@ final class BossScreen extends Draw {
                     body.radiusX(),body.radiusY(),body.radius(),0xFF83E51C,clock,false,1);
             return;
         }
+        if(b.kind==Boss.CHAOS_CLOUD) {ChaosCloudArt.portrait(p,x,y,r,clock,1,true);return;}
         if(b.kind==Boss.RAINBOW_CAT) {RainbowCatArt.portrait(p,x,y,r,clock,true,1,-1);return;}
         if(b.kind==Boss.ALLIGATOR) {AlligatorArt.portrait(p,x,y,r,clock,true,1,true);return;}
         if(b.body==null)return;
@@ -1810,6 +1812,7 @@ final class BossScreen extends Draw {
                     ? slimeBoltR(c, L, 1f)
                     : standardBoltR(L, at);
             int col = Skins.keyColor(p,g);
+            if(b.kind==Boss.CHAOS_CLOUD) {ChaosCloudArt.projectile(p,c,L,b,i);continue;}
             if(b.kind==Boss.RAINBOW_CAT) {RainbowCatArt.rushProjectile(p,c,L,b,i,x,y,rr,col);continue;}
             float sporeMorph = b.kind == Boss.MUSHROOM ? Math.min(1f, at / 0.30f) : 1f;
             if (b.kind == Boss.MUSHROOM) {
@@ -1871,7 +1874,7 @@ final class BossScreen extends Draw {
     static void burst(Painter p, GameCore c, Layout L) {
         Boss b = c.boss;
         if (!b.active() || !b.beaten || b.body == null || b.kind == Boss.SPLITTER
-                || b.kind == Boss.RAINBOW_CAT || b.kind == Boss.MUSHROOM || b.kind == Boss.ALLIGATOR || b.kind == Boss.SLIME) return;
+                || b.kind == Boss.CHAOS_CLOUD || b.kind == Boss.RAINBOW_CAT || b.kind == Boss.MUSHROOM || b.kind == Boss.ALLIGATOR || b.kind == Boss.SLIME) return;
         float t = b.leaveProgress();
         float cx = b.body.centreX(), cy = b.body.centreY();
         float r = b.body.radius();

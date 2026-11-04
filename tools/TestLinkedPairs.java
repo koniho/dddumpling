@@ -96,9 +96,9 @@ final class TestLinkedPairs extends Check {
             }
             check("two pairs spawn across full ordinary stage " + stage, pairs == 2);
             check("each pair adds a partner without consuming another stage slot " + stage,
-                    characters.size()==wave.stageQuota()+2);
+                    characters.size()==wave.stageQuota()+2+(SpaceLand.active(wave)?6:0));
             check("two pairs preserve wave quota at stage " + stage,
-                    wave.spawnedThisStage == wave.stageQuota() && wave.resolvedThisStage == wave.stageQuota());
+                    wave.spawnedThisStage == wave.stageQuota() && wave.resolvedThisStage == wave.stageQuota()+(SpaceLand.active(wave)?6:0));
         }
         GameCore blocked = wave(L, 16);
         blocked.spawnedThisStage = 3;

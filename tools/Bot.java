@@ -263,6 +263,25 @@ final class Bot {
         if (c.state != GameCore.PLAY) return;
 
         budget = Math.min(BURST, budget + dt * pps);
+        if(c.bossFighting() && c.boss.kind==Boss.CHAOS_CLOUD) {
+            if(think>0) {think-=dt;return;}
+            Boss b=c.boss;
+            if(budget>=1 && b.cloud.vulnerable) {
+                budget-=1;think=reaction+Boss.bodyR(L)*2/(L.w*DRAG_SPEED);presses++;
+                float x=b.bodyX(L),y=b.bodyY(L),r=Boss.bodyR(L);int dir=b.cloud.lastDirection==1?-1:1;
+                b.cloud.touch(c,L,0,234,x-dir*r,y);b.cloud.touch(c,L,1,234,x+dir*r,y);
+            } else if(budget>=1) {
+                int slot=-1;
+                for(int i=0;i<Boss.MAX_BOLTS;i++)if(b.blive[i] && b.cloud.targetable(b,i)
+                        && b.bt[i]*b.cloud.flight()>reaction && (slot<0 || b.bt[i]>b.bt[slot]))slot=i;
+                if(slot>=0) {
+                    budget-=1;presses++;think=b.cloud.phase==2?Math.min(.10f,reaction):reaction;
+                    int key=b.bglyph[slot];if(rnd.nextFloat()<missRate)key=Roster.randomExcept(c.playRosterFull(),key,rnd);
+                    c.tapKey(key,L);
+                }
+            }
+            return;
+        }
         if(c.bossFighting() && c.boss.kind==Boss.RAINBOW_CAT) {
             RainbowCat a=c.boss.cat;
             if(catCircling) {

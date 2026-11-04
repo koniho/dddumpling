@@ -96,7 +96,7 @@ final class BossPlay {
         // A bolt in the air outranks everything, engaged word included: it is the only thing here
         // that costs a life.
         if (c.boss.boltWants(g)) return true;
-        if(c.boss.kind==Boss.RAINBOW_CAT)return true;
+        if(c.boss.kind==Boss.RAINBOW_CAT || c.boss.kind==Boss.CHAOS_CLOUD)return true;
 
         // A shielded Slime rejects every press, including one made during a word. While open it
         // only owns genuinely stray presses, so starting a valid enemy word still works.
@@ -159,6 +159,7 @@ final class BossPlay {
                 c.crystalField.arenaFlash(c,L,c.boss.hitX,c.boss.hitY,3,Glyph.COLOR[g]);
             if(c.boss.kind==Boss.SLIME)SlimeHills.surfaceRipple(c,c.boss.hitX,c.boss.hitY,Glyph.COLOR[g],L.enemyR);
             if(c.boss.boltDestroyed)c.timeAttack.defended();
+            if(c.boss.kind==Boss.CHAOS_CLOUD && c.boss.cloud.defendedExtra>0) {c.timeAttack.defended();c.boss.cloud.defendedExtra=0;}
             // Swatted, not landed on the boss: the score is the same as a hit but the boss is
             // untouched, so no shake and no flash — those read as damage.
             c.score += GameCore.BOSS_HIT;

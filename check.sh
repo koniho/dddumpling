@@ -46,7 +46,11 @@ fi
 # compile while the APK builds fine.
 python3 tools/release-notes.py check >/dev/null
 
-PURE="src/com/dddumpling/game/PlaythroughLog.java
+PURE="src/com/dddumpling/game/SpaceLand.java
+src/com/dddumpling/game/SpaceEnemyArt.java
+src/com/dddumpling/game/ChaosCloud.java
+src/com/dddumpling/game/ChaosCloudArt.java
+src/com/dddumpling/game/PlaythroughLog.java
 src/com/dddumpling/game/TraceGesture.java
 src/com/dddumpling/game/TimeAttackRecords.java
 src/com/dddumpling/game/WorldCatalog.java

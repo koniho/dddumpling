@@ -222,7 +222,7 @@ final class LinkedPairArt {
         float attack = e.attacking ? Math.min(1f, e.attackT / GameCore.ATTACK_TIME) : 0f;
         // Follow the rendered tile's entrance and threat scale. A small inset puts the
         // shoulder beneath its border instead of leaving a visible gap around the key.
-        float enter = 0.62f + 0.38f*e.enterT;
+        float enter = e.spaceArrival>0?.12f+.88f*e.enterT:0.62f + 0.38f*e.enterT;
         float tile = Layout.HEAD_SCALE*enter*(1f+0.26f*attack+0.08f*e.warn);
         float jitter = Math.max(e.warn, attack)*(0.14f+0.30f*attack);
         return r*(tile*0.965f+jitter);

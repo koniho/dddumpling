@@ -199,7 +199,7 @@ final class TestRules extends Check {
                 Math.abs(c.spawnInterval() - 2.75f * 1.15f) < 0.001f);
         c.stage = Boss.lastStage()+15;
         check("post-boss release interval reaches its floor", Math.abs(c.spawnInterval() - .75f) < 0.001f);
-        check("endless ramp starts after the final authored boss",Boss.kindFor(Boss.lastStage())==Boss.RAINBOW_CAT
+        check("endless ramp starts after the final authored boss",Boss.kindFor(Boss.lastStage())==Boss.COUNT-1
                 && !Boss.isBossStage(Boss.lastStage()+1) && Pacing.stageQuota(Boss.lastStage())==8);
         for(int extra=1;extra<=30;extra++) {
             int stage=Boss.lastStage()+extra;

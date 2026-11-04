@@ -22,6 +22,16 @@ final class BossCollect extends Draw {
     }
     static void draw(Painter p,int boss,float x,float y,float r,float clock,boolean known,float fade,
             int mood,float look,boolean ninja) {
+        if(boss==Boss.CHAOS_CLOUD) {
+            int who=Collect.CHAOS_CLOUD_FRIEND;
+            ChaosCloudArt.portrait(p,x,y,r,clock,fade,known);
+            if(known) {
+                AccessoryArt.outfit(p,who,x,y,r*.55f,y-r*.8f,x,y+r*.7f,r,clock,fade,ninja,1);
+                if(ninja)Trinket.ninjaMask(p,x,y,r*.8f,fade);
+                AccessoryArt.flair(p,who,x,y-r*.8f,y+r*.7f,r,clock,fade);
+            }
+            return;
+        }
         if(boss==Boss.RAINBOW_CAT) {
             Painter cat=ninja?new OpacityPainter(p,1) {
                 public int accessory(int who,int slot) {return slot==Accessories.BOOTS || slot==Accessories.FLAIR?p.accessory(who,slot):-1;}

@@ -2,7 +2,7 @@ package com.dddumpling.game;
 
 /** Five-stage scenery chapters. Cosmetic clocks never consume gameplay randomness. */
 final class Lands extends Draw {
-    static final int SWAMP = 5, RAINBOW = 6, COUNT = WorldCatalog.LANDS.length;
+    static final int SWAMP = 5, RAINBOW = 6, SPACE = 7, COUNT = WorldCatalog.LANDS.length;
     static final float FADE_TIME = 2.4f;
     static final int[] BG=new int[COUNT], TINT=new int[COUNT];
     static {for(int i=0;i<COUNT;i++){BG[i]=WorldCatalog.LANDS[i].background;TINT[i]=WorldCatalog.LANDS[i].tint;}}
@@ -59,6 +59,7 @@ final class Lands extends Draw {
         if(c.survival.active || c.state==GameCore.TITLE)return;
         float mix=blend(c),fade=(c.landFrom==RAINBOW?1-mix:0)
                 +(forStage(visualStage(c))==RAINBOW?mix:0);
+        SpaceLand.backdrop(p,c,L,SpaceLand.presence(c));
         Underwater.backdrop(p,c,L);
         c.crystalField.draw(p,c,L,CrystalField.presence(c)*(1-BossVictory.backdropDrain(c)));
         if(fade>0)RainbowLand.backdrop(p,c,L,fade*(1-BossVictory.backdropDrain(c)));
@@ -82,7 +83,7 @@ final class Lands extends Draw {
         if(land==0) {SlimeHills.scenery(p,c,L,fade);return;}
         if(land==Underwater.LAND)return;
         if(land==CrystalField.LAND)return; // The faceted floor is the crystal scenery.
-        if(land==RAINBOW)return; // Its scrolling bands are drawn before the clouds.
+        if(land==SPACE || land==RAINBOW)return; // Its scrolling bands are drawn before the clouds.
         if(land==MushroomForest.LAND) {MushroomForest.undergrowth(p,c,L,fade);return;}
         for (int layer = 0; layer < 2; layer++) {
             for (int i = 0; i < 8; i++) {
@@ -132,6 +133,7 @@ final class Lands extends Draw {
 
     private static void prop(Painter p, int land, float x, float y, float r, int a, float t,
             boolean silhouette, boolean animated) {
+        if (land == SPACE) {SpaceLand.prop(p,x,y,r,a,t,silhouette);return;}
         if (land == RAINBOW) {RainbowLand.prop(p,x,y,r,a,t,silhouette);return;}
         if (land == SWAMP) {Swamp.prop(p,x,y,r,a,t,silhouette);return;}
         if (land == Cave.LAND) { CaveArt.entrance(p, x, y, r, a, silhouette); return; }

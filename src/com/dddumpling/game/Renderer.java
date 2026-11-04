@@ -268,7 +268,7 @@ final class Renderer extends Draw {
 
         boolean locked = c.target == e && destroy == 0f;
         // Entrance: eases in as the word clears the top edge.
-        float enter = 0.62f + 0.38f * e.enterT;
+        float enter = e.spaceArrival>0?.12f+.88f*e.enterT:0.62f + 0.38f * e.enterT;
         float swell = (1f + 0.26f * attack + 0.08f * e.warn) * enter
                 * (1f - 0.30f * destroy);
         int fade = (int) ((90 + 165 * e.enterT) * (1f - destroy));
@@ -286,6 +286,7 @@ final class Renderer extends Draw {
             boolean cleared = i < e.pos && !e.linkWaiting && destroy == 0f;
             float x = c.tileX(e, i, L) + jx;
             float y = e.y + jy;
+            if(SpaceLand.active(c) && !e.destroyed && !cleared && !e.gone[i])SpaceEnemyArt.comet(p,x,y,L.enemyR*enter,Skins.keyColor(p,g),c.clock+e.phase,e.fastSingle?1:.5f,fade);
             x+=Underwater.enemyShift(c,x,y,L);
 
             // Tiles removed out of order fly off along the direction they were sent.
@@ -350,7 +351,7 @@ final class Renderer extends Draw {
             float bondFlex = e.link == null ? 0f : e.linkFlex;
             edgeA += (int)(65f*bondFlex);
 
-            FastEnemies.trail(p,c,e,L,x,y,cellR,col,fade);
+            if(!SpaceLand.active(c))FastEnemies.trail(p,c,e,L,x,y,cellR,col,fade);
 
             // Stacked tiles sit on a pile of offset copies, one per press still owed, so the
             // depth is legible before you even count the pips.

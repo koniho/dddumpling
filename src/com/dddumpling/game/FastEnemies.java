@@ -17,7 +17,7 @@ final class FastEnemies {
         // The first pair gets its introduction before the third spawn becomes a runner.
         // Power-up runners use 26% of solo candidates: 35% fewer than the former 40%.
         boolean rainbow=!c.survival.active && Lands.forStage(c.stage)==Lands.RAINBOW;
-        boolean chosen=c.powerActive()?e.phase>=6.283f*(rainbow?.61f:.74f)
+        boolean chosen=SpaceLand.active(c)?e.phase>=6.283f*.48f:c.powerActive()?e.phase>=6.283f*(rainbow?.61f:.74f)
                 :!c.survival.active && c.stage==FIRST_STAGE?c.spawnedThisStage==2:c.fastEnemyNext;
         if(!chosen)return;
         e.fastSingle=true;

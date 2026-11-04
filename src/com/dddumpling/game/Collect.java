@@ -20,7 +20,7 @@ final class Collect {
 
     static final int BLIND_COUNT = 30, STAR_FIRST = 30, STAR_COUNT = 5,
             CUBE_FIRST = 35, CUBE_COUNT = 10, BOSS_FIRST = 45, BOSS_COUNT = WorldCatalog.BOSSES.length,
-            DUCK_FIRST = 49, DUCK_COUNT = 11, ALLIGATOR_FRIEND = 60, RAINBOW_CAT_FRIEND = 61;
+            DUCK_FIRST = 49, DUCK_COUNT = 11, ALLIGATOR_FRIEND = 60, RAINBOW_CAT_FRIEND = 61, CHAOS_CLOUD_FRIEND = 62;
 
     // ---- families -----------------------------------------------------------
     static final int DUMPLINGS = 0, FRUITS = 1, GLOBS = 2, STARLINGS = 3, GEL_CUBES = 4, BOSSES = 5, DUCKS = 6;
@@ -75,6 +75,7 @@ final class Collect {
         "SUNNY DUCK", "BUBBLE DUCK", "STRAWBERRY DUCK", "MINT DUCK", "TANGERINE DUCK", "LAVENDER DUCK", "CLOUD DUCK", "SUNSET DUCK", "STARLIGHT DUCK", "PRISM DUCK", "RAINBOW CHAMPION",
         "LIL CHOMP",
         "SPRINKLE PAWS",
+        "COSMIC PUFF",
     };
 
     static final int COUNT=NAME.length;
@@ -87,6 +88,7 @@ final class Collect {
         4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
         5, 5, 5, 5,
         DUCKS, DUCKS, DUCKS, DUCKS, DUCKS, DUCKS, DUCKS, DUCKS, DUCKS, DUCKS, DUCKS,
+        BOSSES,
         BOSSES,
         BOSSES,
     };
@@ -102,6 +104,7 @@ final class Collect {
         BAO, BAO, BAO, BAO, BAO, BAO, BAO, BAO, BAO, BAO, BAO,
         GLOB,
         GLOB,
+        GLOB,
     };
 
     static final int[] FINISH = {
@@ -115,6 +118,7 @@ final class Collect {
         MATTE, MATTE, MATTE, MATTE, MATTE, MATTE, MATTE, MATTE, MATTE, MATTE, MATTE,
         CLEAR,
         CONFETTI,
+        GALAXY,
     };
 
     static final int[] TIER = {
@@ -127,6 +131,7 @@ final class Collect {
         CUBE_TIER, CUBE_TIER, CUBE_TIER, CUBE_TIER, CUBE_TIER,
         BOSS_TIER, BOSS_TIER, BOSS_TIER, BOSS_TIER,
         COMMON, COMMON, UNCOMMON, UNCOMMON, UNCOMMON, RARE, RARE, RARE, CHASE, CHASE, GRAIL,
+        BOSS_TIER,
         BOSS_TIER,
         BOSS_TIER,
     };
@@ -147,6 +152,7 @@ final class Collect {
         0xFFFFDA58, 0xFF71DDEA, 0xFFFF86AA, 0xFF9EE6BD, 0xFFFFA74D, 0xFFC3A2ED, 0xFFFFF5E5, 0xFFFFB396, 0xFF8571C8, 0xFFE6EDFF, 0xFFFFEBA4,
         0xFF71D5A0,
         0xFFFFA4D5,
+        0xFFA7B9F4,
     };
 
     /**
@@ -168,6 +174,7 @@ final class Collect {
         0xFFFFAF40, 0xFFFFF0CA, 0xFF70CA82, 0xFF54B78F, 0xFFFFE9AF, 0xFF9374CB, 0xFF9ADBF4, 0xFFFFD45E, 0xFFFFDD76, 0xFFFFA2CF, 0xFFFFC55B,
         0xFFF0F5BD,
         0xFFFFDEA6,
+        0xFFFFE5BD,
     };
 
     private Collect() {}

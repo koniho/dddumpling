@@ -6,7 +6,7 @@ final class TutorialSpeech extends Draw {
             DIG=7, CART=8, CLOSED=9, CHAIN=10, GLOB=11, DANGER=12, RETRY=13,
             STACK=14, RESCUE=15, SUCCESS=16, PINCH=17, DEFEND=18, TEAR=19, SHAKE=20, WAIT=21,
             POWER_FLURRY=22, POWER_NINJA=23, POWER_TEAM=24, POWER_PICKUP=25,
-            MINIGAMES=26, DISPLAY_CASE=27, STORIES=28, COMPANION=29, LANDS=30, ALLIGATOR=31, CAT_RUSH=32, CAT_TAPS=33, CAT_PROMPT=34, SCORES=35, SCORE_DETAILS=36, MODES=37, FOG=38, DIVEBOMB=39, RUSH=40, LINKED=41;
+            MINIGAMES=26, DISPLAY_CASE=27, STORIES=28, COMPANION=29, LANDS=30, ALLIGATOR=31, CAT_RUSH=32, CAT_TAPS=33, CAT_PROMPT=34, SCORES=35, SCORE_DETAILS=36, MODES=37, FOG=38, DIVEBOMB=39, RUSH=40, LINKED=41, CHAOS_DEFEND=42, CHAOS_SLASH=43;
     private static final int PAPER=0x4DFFF5DD, TEXT_INK=0xFF302440, ACCENT=0xFF754070;
     private static final String[][] LINES={
         {"", ""}, {"MATCH THE FACE!", "TAP ITS KEY BELOW."},
@@ -49,10 +49,14 @@ final class TutorialSpeech extends Draw {
         {"FOGGY FRIENDS!", "CLEAR TO REVEAL!"},
         {"WATCH THE LAST STAR!", "IT DIVES FAST!"},
         {"SHOOTING STAR!", "ONE KEY, DOUBLE SPEED!"},
-        {"LINKED FRIENDS!", "TAP BOTH TOGETHER!"}
+        {"LINKED FRIENDS!", "TAP BOTH TOGETHER!"},
+        {"COSMIC VOLLEYS!", "MATCH THE FLYING KEYS!"},
+        {"CLOUD IS EXPOSED!", "SLASH BACK AND FORTH!"}
     };
     static String spoken(int message) { return spoken(message,Skins.DEFAULT); }
     static String spoken(int message,int skin) {
+        if(message==CHAOS_DEFEND)return "Match the incoming keys! Three pips need three taps. Linked keys need both hands together.";
+        if(message==CHAOS_SLASH)return "After each volley, swipe across the cloud. Left, right, left, right!";
         if(message==FOG)return "Clear the visible key to reveal the next!";
         if(message==DIVEBOMB)return "Watch the final star! It dives fast. Clear it quickly!";
         if(message==RUSH)return "Shooting star! One key, twice the speed. Catch it quickly!";
@@ -119,8 +123,8 @@ final class TutorialSpeech extends Draw {
         return lines.toArray(new String[0]);
     }
     private static String[][][] makePages(int skin) {
-        String[][][] all=new String[LINKED+1][][];
-        for(int message=MATCH;message<=LINKED;message++) {
+        String[][][] all=new String[CHAOS_SLASH+1][][];
+        for(int message=MATCH;message<=CHAOS_SLASH;message++) {
             java.util.ArrayList<String[]> pages=new java.util.ArrayList<>();String pending="";
             // Page boundaries are sentence boundaries; copy must fit without splitting a sentence.
             for(String sentence:spoken(message,skin).split("(?<=[.!?]) +")) {
@@ -357,6 +361,12 @@ final class TutorialSpeech extends Draw {
             arrow(p,x-s,y,-s*3,0,s*.6f);arrow(p,x+s,y,s*3,0,s*.6f);
             Renderer.touchHint(p,x-spread,y,s*1.1f,1f,.95f,age);
             handX=x+spread;
+        } else if(message==CHAOS_DEFEND || message==CHAOS_SLASH) {
+            ChaosCloudArt.portrait(p,x,y,s*2.3f,age,1,true);
+            if(message==CHAOS_SLASH) {
+                float dx=(float)Math.sin(age*4)*s*3;
+                p.line(x-dx,y+s*.8f,x+dx,y-s*.8f,0xDDE8DCFF,s*.16f);
+            }
         } else if(message==CAT_RUSH) {
             float yy=y-s*2.1f+travel*s*3.8f;
             FastEnemies.glow(p,x,yy,s,Skins.keyColor(p,key),255,1);

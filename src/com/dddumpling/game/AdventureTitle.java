@@ -46,6 +46,7 @@ final class AdventureTitle extends Draw {
             if(amount<=0)continue;
             float rise=amount*amount*(3-2*amount),ground=y+s*(front?.12f:.025f);
             if(land==0) {slimePool(p,x,y,s,span,rise,now,fade,front);continue;}
+            if(land==Lands.SPACE) {if(!front)SpaceLand.prop(p,x,y-s*1.6f,s*2.1f,(int)(fade*190),now,false);continue;}
             if(land==Lands.RAINBOW) {RainbowLand.title(p,x,y,s,span,rise,now,fade,front);continue;}
             if(land==Lands.SWAMP) {swamp(p,x,y,s,span,rise,now,fade,front);continue;}
             boolean crystal=land==1 || land==Cave.LAND;

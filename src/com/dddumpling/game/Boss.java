@@ -22,6 +22,8 @@ final class Boss {
     static final int MUSHROOM = 3;
     static final int ALLIGATOR = 4;
     static final int RAINBOW_CAT = 5;
+    static final int CHAOS_CLOUD = 6;
+    final ChaosCloud cloud = new ChaosCloud();
     static final int COUNT = WorldCatalog.BOSSES.length;
     final RainbowCat cat = new RainbowCat();
     final Alligator alligator = new Alligator();
@@ -314,7 +316,7 @@ final class Boss {
     static float enrageAt(int kind) {
         // Eleven authored throws add recovery time to the eight-arm fight.
         // Five tap-and-trace phases now require twenty alternating hits each.
-        return kind==RAINBOW_CAT?75f:kind==ALLIGATOR?65f:kind == OCTOPUS ? 40f : ENRAGE_AT;
+        return kind==CHAOS_CLOUD?45f:kind==RAINBOW_CAT?75f:kind==ALLIGATOR?65f:kind == OCTOPUS ? 40f : ENRAGE_AT;
     }
 
     /** 0..1 of the visual enrage warning after this fight's time allowance. */
@@ -354,9 +356,10 @@ final class Boss {
         rosterFull = fullRoster;
         alligator.reset();
         cat.reset();
+        cloud.reset();
         kind = which;
         int visit = Math.max(0, Math.min(TOUGH_MAX, stage / EVERY - 1));
-        hpMax = HP[which] + (which == OCTOPUS || which == ALLIGATOR || which == RAINBOW_CAT ? 0f : TOUGH * visit);
+        hpMax = HP[which] + (which == OCTOPUS || which == ALLIGATOR || which == RAINBOW_CAT || which == CHAOS_CLOUD ? 0f : TOUGH * visit);
         hp = hpMax;
         age = 0f;
         intro = introDuration();
@@ -448,6 +451,7 @@ final class Boss {
     void leave() {
         alligator.reset();
         cat.reset();
+        cloud.reset();
         kind = -1;
         hp = hpMax = 0f;
         age = intro = leaveT = 0f;
@@ -606,6 +610,7 @@ final class Boss {
     private static final float BODY_DROP = 6.5f;
 
     float bodyY(Layout L) {
+        if(kind==CHAOS_CLOUD)return baseY(L);
         if(kind==RAINBOW_CAT)return cat.y;
         if(kind==ALLIGATOR)return L.playTop+L.unit*6.5f+bodyR(L)*.9f;
         if (beaten) return defeatY(L);
@@ -742,6 +747,7 @@ final class Boss {
     boolean open() {
         if (!fighting()) return false;
         if (slimeOpening()) return age >= SLIME_OPENING_RELEASE;
+        if (kind == CHAOS_CLOUD) return cloud.vulnerable;
         if (kind == RAINBOW_CAT) return cat.phase==RainbowCat.OPEN;
         if (kind == ALLIGATOR) return alligator.daze > 0;
         if (kind == SLIME && (!slimeCoverLearned || slimeRetaliating)) return true;
@@ -938,6 +944,7 @@ final class Boss {
             if (swatted != NONE) return swatted;
         }
         if (!fighting()) return NONE;
+        if (kind == CHAOS_CLOUD) return NONE;
         if (kind == RAINBOW_CAT) return cat.press(this,g,L,rnd);
         if (kind == ALLIGATOR) return alligator.press(this,L);
         if (kind == SLIME && (!open() || !asksFor(g))) {
@@ -1284,6 +1291,7 @@ final class Boss {
     void release() {
         alligator.pointer=-1;
         cat.release();
+        cloud.release();
         if (held >= 0 && etype[held] == E_GLOB) returning[held] = true;
         held = -1;
         mushroomShakes = mushroomDirection = 0;
@@ -1332,6 +1340,7 @@ final class Boss {
             hp = 0f;
             beaten = true;
             cat.release();
+            cloud.release();
             slimeEyeHit=0f;
             slimeVulnerableSoundT=slimeBoipTime=-1f;
             if(kind==SLIME && body!=null)slimeDeath=new SlimeDeath.Pose(body);
@@ -1997,10 +2006,12 @@ final class Boss {
 
     /** Where bolt {@code i} is now: launch point to its own key, straight. */
     float boltX(int i, Layout L) {
+        if(kind==CHAOS_CLOUD && bt[i]<0) {float t=cloud.morph(this,i);return cloud.sourceX[i]+(bsx[i]-cloud.sourceX[i])*t*t;}
         return bsx[i] + (Roster.keyX(L, bglyph[i], rosterFull ? 1f : 0f) - bsx[i]) * boltAt(i);
     }
 
     float boltY(int i, Layout L) {
+        if(kind==CHAOS_CLOUD && bt[i]<0) {float t=cloud.morph(this,i);return cloud.sourceY[i]+(bsy[i]-cloud.sourceY[i])*t*t;}
         return bsy[i] + (Roster.keyY(L, bglyph[i], rosterFull ? 1f : 0f) - bsy[i]) * boltAt(i);
     }
 
@@ -2036,6 +2047,7 @@ final class Boss {
         int best = -1;
         for (int i = 0; i < MAX_BOLTS; i++) {
             if(kind==RAINBOW_CAT && cat.escapeSequence && bt[i]<0)continue;
+            if(kind==CHAOS_CLOUD && !cloud.targetable(this,i))continue;
             if (blive[i] && bglyph[i] == g && (best < 0 || bt[i] > bt[best])) best = i;
         }
         return best;
@@ -2290,7 +2302,7 @@ final class Boss {
 
     private int singleBolt(Random rnd, float x, float y) {
         int slot = -1;
-        for (int i = 0,limit=kind==RAINBOW_CAT?MAX_BOLTS:NORMAL_BOLT_LIMIT; i < limit; i++) if (!blive[i]) { slot = i; break; }
+        for (int i = 0,limit=(kind==RAINBOW_CAT || kind==CHAOS_CLOUD)?MAX_BOLTS:NORMAL_BOLT_LIMIT; i < limit; i++) if (!blive[i]) { slot = i; break; }
         if (slot < 0) return -1;
         int glyph;
         if (kind == OCTOPUS) {
@@ -2328,6 +2340,7 @@ final class Boss {
         if (i < 0) return NONE;
         hitX = boltX(i, L);
         hitY = boltY(i, L);
+        if(kind==CHAOS_CLOUD)return cloud.swat(this,i);
         bhp[i]--;
         boltDestroyed = bhp[i] <= 0;
         if (boltDestroyed) blive[i] = false;
@@ -2525,7 +2538,7 @@ final class Boss {
                 // Shared death morph: gravity wins while the body is carried toward the player.
                 // Pulling below its travelling centre makes the silhouette neck, sag and melt.
                 float melt = defeatMelt();
-                if (kind == OCTOPUS || kind == MUSHROOM || kind == ALLIGATOR) body.letGo();
+                if (kind == OCTOPUS || kind == MUSHROOM || kind == ALLIGATOR || kind == CHAOS_CLOUD) body.letGo();
                 else if (melt > 0f) body.pull(body.centreX(), L.h + bodyR(L) * 2.5f,
                         0.11f + melt * 0.29f);
                 body.jiggle = kind == MUSHROOM ? JIGGLE[kind] * (1f - leaveProgress())
@@ -2562,14 +2575,14 @@ final class Boss {
                 else mushroomStem.letGo();
                 mushroomStem.update(dt);
             }
-            if (beaten && kind != OCTOPUS && kind != MUSHROOM && kind != ALLIGATOR) {
+            if (beaten && kind != OCTOPUS && kind != MUSHROOM && kind != ALLIGATOR && kind != CHAOS_CLOUD) {
                 float from = defeatStartW > 0f ? defeatStartW : body.spanX();
                 body.fitWidth(from + (L.w * 0.90f - from) * defeatStretch());
             }
         }
 
         // Age any remaining volleys through the exit.
-        int hits = ageBolts(projectileDt);
+        int hits = kind==CHAOS_CLOUD?cloud.age(this,projectileDt):ageBolts(projectileDt);
         if(beaten && kind==RAINBOW_CAT)hits=0;
 
         if (beaten) {
@@ -2608,6 +2621,7 @@ final class Boss {
         }
 
         age += dt;
+        if(kind==CHAOS_CLOUD) {cloud.update(this,dt,L,rnd);return hits;}
         if(kind==RAINBOW_CAT)return hits+cat.update(this,dt,L,rnd);
         if(kind==ALLIGATOR)return hits+alligator.update(this,dt,L,rnd);
         if (kind == MUSHROOM) {

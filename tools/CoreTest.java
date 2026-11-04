@@ -73,6 +73,7 @@ final class CoreTest {
         group("Stars", () -> {
             TestStars.game(L);
         });
+        group("ChaosCloud", () -> TestChaosCloud.all(L));
         group("RainbowCat", () -> TestRainbowCat.all(L));
         group("Alligator", () -> TestAlligator.all(L));
         group("TimeAttack", () -> TestTimeAttack.all(L));

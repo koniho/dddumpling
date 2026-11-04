@@ -18,7 +18,8 @@ final class WorldCatalog {
         new Land(0xFF202D2C,0xFF8FA58A,8,"Mushroom cap became your pillow."),
         new Land(CaveArt.DARK,CaveArt.LIGHT,9,"Pebble adopted its own dumpling."),
         new Land(0xFF182F32,0xFF74B99C,10,"Lily pad booked you a swamp nap."),
-        new Land(0xFF282341,0xFFDEA9EC,13,"A rainbow cloud borrowed you.")
+        new Land(0xFF282341,0xFFDEA9EC,13,"A rainbow cloud borrowed you."),
+        new Land(0xFF14152D,0xFFA7B9F4,15,"A comet carried you to bedtime.")
     };
     static final class BossEntry {
         final int land,friend,face,ending;
@@ -39,7 +40,8 @@ final class WorldCatalog {
         new BossEntry(2,47,Kawaii.BLOB,3,"OCTOPULSE","GHASTLY SQUID","octopulse","BEAT THE REACH",": eight hugs too many.",8,1.35f,2.2f,1,1,150,new float[]{1,1.06f,.89f,1.12f}),
         new BossEntry(3,48,Kawaii.DUMPLING,4,"FLY AGARIC","POISON CAP","fly_agaric","DRAG BACK AND FORTH"," made you a spore snack.",3,1.45f,1.9f,1,1,205,new float[]{1,.76f,1.34f,.63f}),
         new BossEntry(5,60,Kawaii.SQUISHY,11,"GUMMY GATOR","COSTUMED CROC","mossy_maw","PARRY, TAP, THEN STOP"," gave you a tummy hug.",72,2.7f,1.6f,1,1,180,new float[]{1,1.33f,1.12f,.84f}),
-        new BossEntry(6,61,Kawaii.CAT,12,"RAINBOW CAT","MEOWCULA","rainbow_cat","TAP TWICE, TRACE, THEN HIT"," washed you away in rainbow stars.",TraceGesture.SHAPE_COUNT,1.15f,1.6f,1,1,420,new float[]{1,1.5f,1.25f,1.8f})
+        new BossEntry(6,61,Kawaii.CAT,12,"RAINBOW CAT","MEOWCULA","rainbow_cat","TAP TWICE, TRACE, THEN HIT"," washed you away in rainbow stars.",TraceGesture.SHAPE_COUNT,1.15f,1.6f,1,1,420,new float[]{1,1.5f,1.25f,1.8f}),
+        new BossEntry(7,62,Kawaii.BLOB,14,"CHAOS CLOUD","BAT CLOUD","chaos_cloud","DEFEND, THEN SLASH"," sent you stargazing.",12,2.4f,1.8f,1,1,360,new float[]{1,1.2f,.8f,1.6f})
     };
     static int bossStage(int boss) {return (boss+1)*STAGES_PER_CHAPTER;}
     static int bossForLand(int land) {

@@ -31,7 +31,7 @@ final class SwampEnemies {
 
     static void assign(GameCore c,GameCore.Enemy e) {
         reset(e);
-        if(c.timeAttack.active || c.boss.active() || Cave.active(c) || e.link!=null || e.word.length<2)return;
+        if(c.timeAttack.active || c.boss.active() || Cave.active(c) || e.link!=null || e.fastSingle || e.word.length<2)return;
         int land=Lands.forStage(c.stage);
         if(!c.survival.active && (Boss.isBossStage(c.stage)
                 || WorldCatalog.bossForLand(land)<WorldCatalog.bossForLand(Lands.SWAMP)))return;
@@ -43,6 +43,7 @@ final class SwampEnemies {
         if(c.survival.active) {
             e.swampKind=pick<fogChance?FOG:c.survival.fullEnemyMix() && pick<fogChance+.20f?DIVE:NONE;
         }
+        else if(land==Lands.SPACE) {e.swampKind=pick<fogChance?FOG:pick<.48f?DIVE:NONE;}
         else if(land==Lands.RAINBOW) {
             // Keep Rainbow's existing dive band; fog takes part of the ordinary word band.
             e.swampKind=pick<.36f?DIVE:pick<.36f+fogChance?FOG:NONE;

@@ -8,6 +8,33 @@ import java.io.File;
  * without a build/install cycle: same Layout, same Renderer, same state machine as the APK.
  */
 final class Preview {
+    private static void spaceFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
+        if(!wantedGroup("234-"))return;
+        GameCore stage=TestChaosCloud.fight(L);stage.boss.leave();stage.stage=31;stage.spaceFormationStage=-1;
+        stage.clock=stage.skyClock=6;stage.landBlend=1;stage.fullRoster=stage.runFullRoster=true;
+        SpaceLand.formation(stage,L);
+        for(GameCore.Enemy e:stage.enemies) {e.spaceArrival=.18f;SpaceLand.approach(e,.10f,L);}
+        shot(dir,"234-space-arrival",stage,L,w,h,ss);
+        for(int i=0;i<stage.enemies.size();i++) {
+            GameCore.Enemy e=stage.enemies.get(i);e.spaceArrival=0;e.baseX=e.spaceLane;e.enterT=1;
+            e.y=L.playTop+L.unit*(6+(i/3)*8);if(e.fastSingle)e.y+=L.unit*2;
+        }
+        shot(dir,"234-space-formation",stage,L,w,h,ss);
+        stage.spaceTurn=1;shot(dir,"234-space-upward",stage,L,w,h,ss);
+        for(int skin=0;skin<Skins.COUNT;skin++)for(int phase=0;phase<3;phase++) {
+            GameCore c=TestChaosCloud.fight(L);c.preferences.skin=skin;c.clock=c.skyClock=5;c.boss.cloud.phase=phase;
+            for(int n=0;n<65;n++)c.boss.update(1f/60,L,c.rnd);
+            shot(dir,"234-cloud-"+skin+"-phase-"+phase,c,L,w,h,ss);
+            c.boss.clearBolts();c.boss.cloud.vulnerable=true;
+            shot(dir,"234-cloud-"+skin+"-slash-"+phase,c,L,w,h,ss);
+        }
+        for(float at:new float[]{.14f,.30f,.48f,.78f}) {
+            GameCore c=TestChaosCloud.fight(L);c.boss.damage(c.boss.hp);c.boss.leaveT=Boss.LEAVE*(1-at);
+            shot(dir,"234-supernova-"+(int)(at*100),c,L,w,h,ss);
+        }
+        GameCore title=TestChaosCloud.fight(L);title.toTitle();title.collected=Collect.MASK;title.landChoice=Lands.SPACE;
+        title.clock=4;shot(dir,"234-space-title",title,L,w,h,ss);
+    }
     private static void rainbowFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wantedGroup("151-"))return;
         for(int skin=0;skin<Skins.COUNT;skin++) {
@@ -2015,6 +2042,7 @@ final class Preview {
             shot(dir,"206-retried-record",retry,L,w,h,ss);
         }
         if(wantedGroup("214-"))AccessoryPreview.frames(dir,L,w,h,ss);
+        spaceFrames(dir,L,w,h,ss);
         rainbowFrames(dir,L,w,h,ss);
         skinFrames(dir,L,w,h,ss);
         clearSpreadFrames(dir,L,w,h,ss);

@@ -212,12 +212,12 @@ final class TestHighScores extends Check {
             HighScores.Run run=c.highScores.runs.get(0);
             check("boss death blurb follows selected skin "+kind,
                     run.blurb(Skins.HALLOWEEN).startsWith(Skins.bossTitle(Skins.HALLOWEEN,kind)));
-            check("boss death names its form "+kind,run.ending==(kind==Boss.RAINBOW_CAT?12:kind==Boss.ALLIGATOR?11:kind+1) && run.blurb().equals(HighScores.BLURBS[kind==Boss.RAINBOW_CAT?12:kind==Boss.ALLIGATOR?11:kind+1]));
+            check("boss death names its form "+kind,run.ending==WorldCatalog.BOSSES[kind].ending && run.blurb().equals(HighScores.BLURBS[WorldCatalog.BOSSES[kind].ending]));
         }
         for(int land=0;land<Lands.COUNT;land++) {
             if(!Lands.playable(land))continue;
             c.startGame();c.stage=Lands.firstStage(land);c.lives=1;c.takeHit(L.w*.5f,L);
-            check("land death keeps cute scenery detail "+land,c.highScores.runs.get(0).ending==(land==Lands.RAINBOW?13:land+5));
+            check("land death keeps cute scenery detail "+land,c.highScores.runs.get(0).ending==WorldCatalog.LANDS[land].ending);
         }
         c.startGame();c.stage=35;c.lives=1;c.takeHit(L.w*.5f,L);
         check("later fifth stages without bosses use land blurb",c.highScores.runs.get(0).ending>=5);
