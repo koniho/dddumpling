@@ -271,16 +271,17 @@ final class Screens extends Draw {
         float gap = r * 3.4f;
         boolean rolling = c.bonusRolling();
         int[] keys = {c.bonusLeftKey(), c.bonusRightKey()};
-        // Both slots are lit while spinning: neither is wanted yet, and dimming one would
-        // imply an order the round has not settled on.
-        boolean[] next = rolling ? new boolean[] {true, true}
+        // Shuffling is an activity cue; only a settled key gets the playable caret.
+        boolean[] next = rolling ? new boolean[] {false, false}
                 : new boolean[] {c.steamer.expectLeft, !c.steamer.expectLeft};
 
         for (int i = 0; i < 2; i++) {
             float x = cx + (i == 0 ? -gap : gap) / 2f;
             int col = Glyph.COLOR[keys[i]];
-            float pulse = next[i] ? 1f + 0.10f * (float) Math.sin(c.clock * 8f) : 1f;
-            float rr = r * pulse;
+            float pulse = next[i] && !c.cloudUi.reduceMotion ? 1f + 0.10f * (float) Math.sin(c.clock * 8f) : 1f;
+            float rr = r * (rolling ? .88f : pulse);
+            boolean lit=rolling || next[i];
+            if(rolling)shuffleRing(p,x,cy,r*1.3f,c.clock,fade,c.cloudUi.reduceMotion);
 
             if (next[i]) {
                 // The one it wants: a bright ring so the eye lands on it without reading, and the
@@ -290,27 +291,35 @@ final class Screens extends Draw {
                 caret(p, x, cy, rr, fadeBy(Glyph.withAlpha(INK, 225), fade));
             }
             p.fillPoly(Glyph.hex(x, cy, rr),
-                    fadeBy(Glyph.withAlpha(col, next[i] ? 95 : 34), fade));
+                    fadeBy(Glyph.withAlpha(col, lit ? 95 : 34), fade));
             p.strokePoly(Glyph.hex(x, cy, rr),
-                    fadeBy(Glyph.withAlpha(col, next[i] ? 250 : 120), fade), rr * 0.085f);
+                    fadeBy(Glyph.withAlpha(col, lit ? 250 : 120), fade), rr * 0.085f);
             Kawaii.draw(p, keys[i], x, cy, rr * 0.58f,
-                    fadeBy(Glyph.withAlpha(col, next[i] ? 255 : 130), fade), 1f,
+                    fadeBy(Glyph.withAlpha(col, lit ? 255 : 130), fade), 1f,
                     next[i] ? 0.9f : 0.2f);
         }
 
         // Arrow between them, leaning whichever way the sequence is going. Suppressed while
         // spinning: there is no order to point out yet.
         if (rolling) {
-            p.fillCircle(cx,cy,s*.5f,fadeBy(GOLD,fade));
-            for(int i=-1;i<=1;i+=2)p.line(cx+i*s*.14f,cy-s*.23f,cx+i*s*.14f,cy+s*.23f,
-                    fadeBy(0xFF302440,fade),s*.12f);
+            float left=cx-s*3.5f,right=cx+s*3.5f,y=cy+s*1.85f;
+            p.line(left,y,right,y,fadeBy(Glyph.withAlpha(GOLD,65),fade),s*.12f);
+            p.line(left,y,left+(right-left)*c.rollProgress(),y,fadeBy(GOLD,fade),s*.12f);
+            p.text("SHUFFLING...",cx,cy+s*3f,type(s*.64f),fadeBy(GOLD,fade),Painter.CENTER,true);
         } else {
+            p.text("TAP IN TURN!",cx,cy+s*3f,type(s*.64f),fadeBy(INK,fade),Painter.CENTER,true);
             float dir = c.steamer.expectLeft ? -1f : 1f;
             int arrow = fadeBy(Glyph.withAlpha(INK_DIM, 200), fade);
             float ax = cx + dir * s * 0.18f;
             p.fillPoly(new float[] {ax - dir * s * 0.36f, cy - s * 0.26f,
                     ax + dir * s * 0.36f, cy, ax - dir * s * 0.36f, cy + s * 0.26f}, arrow);
         }
+    }
+
+    static void shuffleRing(Painter p,float x,float y,float radius,float clock,float fade,boolean still) {
+        float angle=still?0:clock*240f;
+        for(int i=0;i<2;i++)p.arc(x,y,radius,radius,angle+i*180f,112f,
+                fadeBy(GOLD,fade),radius*.065f);
     }
 
     /** How long the interlude heading takes to swell into place. */
@@ -424,8 +433,7 @@ final class Screens extends Draw {
                 type(s * (freed ? 1.5f : .90f) * introScale(c.time)),
                 fadeBy(GOLD, fade), Painter.CENTER, true);
         if (!freed && !c.steamer.swipeReady) {
-            // No label: the wanted letter wears the same caret the field puts over a head tile,
-            // and the arrow between the pair already says which way the sequence is going.
+            // Selection stays visibly busy until the playable caret and alternating arrow appear.
             alternator(p, c, L, cx, L.h * 0.235f + s * 3.0f, fade);
         }
 

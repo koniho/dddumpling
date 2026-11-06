@@ -1021,7 +1021,8 @@ final class Renderer extends Draw {
                     && (g == c.bonusLeftKey() || g == c.bonusRightKey())) {
                 boolean wanted = !c.bonusRolling() && g == c.steamer.wanted();
                 float pulse = 0.5f + 0.5f * (float) Math.sin(c.clock * 8f);
-                p.strokePoly(Glyph.hex(cx, cy, r * 1.16f),
+                if(c.bonusRolling())Screens.shuffleRing(p,cx,cy,r*1.16f,c.clock,.7f,c.cloudUi.reduceMotion);
+                else p.strokePoly(Glyph.hex(cx, cy, r * 1.16f),
                         Glyph.withAlpha(wanted ? INK : col,
                                 wanted ? (int) (110 + 145 * pulse) : 90), r * 0.075f);
             }
