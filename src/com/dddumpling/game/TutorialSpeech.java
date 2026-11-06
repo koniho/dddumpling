@@ -82,7 +82,7 @@ final class TutorialSpeech extends Draw {
         if(message==ALTERNATE)return "Tap the two keys in turn to fill the meter.";
         if(message==LIFT)return "Swipe the lid up to free the dumpling.";
         if(message==SUCCESS)return "Amazing! You did it! You freed a dumpling!";
-        if(message==CLOSED)return "Wait until "+Skins.bossTitle(skin,Boss.SLIME)+"'s face is visible. Tap the key that matches "+Skins.bossTitle(skin,Boss.SLIME)+"'s face. Wrong keys or hidden faces will get you slimed!";
+        if(message==CLOSED)return "Match "+Skins.bossTitle(skin,Boss.SLIME)+"'s face while it is visible. Wrong keys or hidden faces get you slimed! Keep matching until the red area appears.";
         if(message==CHAIN)return "Tap the matching key while "+Skins.bossTitle(skin,Boss.SLIME)+"'s face is visible. Keep matching to make "+Skins.bossTitle(skin,Boss.SLIME)+" vulnerable. Watch for the red area!";
         if(message==GLOB)return "Now "+Skins.bossTitle(skin,Boss.SLIME)+" is vulnerable! Touch and hold the red area. Drag it to either side of the screen. That damages "+Skins.bossTitle(skin,Boss.SLIME)+"! You've got this!";
         if(message==PINCH)return "Tap the matching key. Put two fingers on the cube. Spread them apart to split it.";

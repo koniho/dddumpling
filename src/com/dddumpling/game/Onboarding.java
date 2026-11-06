@@ -78,7 +78,7 @@ final class Onboarding extends Draw {
     private static int[] bossSteps(int kind) {
         if(kind==Boss.RAINBOW_CAT)return new int[]{TutorialSpeech.CAT_RUSH,TutorialSpeech.CAT_TAPS,TutorialSpeech.CAT_PROMPT};
         if(kind==Boss.ALLIGATOR)return new int[]{TutorialSpeech.ALLIGATOR};
-        if(kind==Boss.SLIME)return new int[]{TutorialSpeech.CLOSED,TutorialSpeech.CHAIN};
+        if(kind==Boss.SLIME)return new int[]{TutorialSpeech.CLOSED};
         if(kind==Boss.SPLITTER)return new int[]{TutorialSpeech.PINCH};
         if(kind==Boss.OCTOPUS)return new int[]{TutorialSpeech.DEFEND,TutorialSpeech.TEAR};
         return new int[]{TutorialSpeech.SHAKE};

@@ -856,8 +856,9 @@ Explicitly requested help includes all of that boss's introductory pages, even i
 **Next** advances a multi-part explanation;
 **Let's try!** resumes the same fight. Speech uses platform text-to-speech, follows effects volume,
 ducks music and stops on dismissal or backgrounding; text and demonstrations work without a voice.
-Super Slime's red-area drag is a separate contextual step: pause and explain it when the red patch
-appears, not during initial help. Matching visible faces makes Super Slime vulnerable; dragging the
+Super Slime has one introductory explanation covering visible-face matching, retaliation for
+wrong keys or hidden faces, and the red-area goal. Its red-area drag is a separate contextual
+step: pause and explain it when the red patch appears, not during initial help. Matching visible faces makes Super Slime vulnerable; dragging the
 red area to either side damages it. Successful dragging permanently skips this step; Skip All
 also suppresses it.
 `Onboarding` owns lesson state and `TutorialSpeech` owns bubbles and demonstrations.
