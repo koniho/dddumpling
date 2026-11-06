@@ -1177,7 +1177,12 @@ final class Preview {
             int page=0;
             while(c.onboarding.briefing && page<4) {
                 step(c,L,.6f);shot(dir,"114-boss-"+kind+"-help-"+(page++),c,L,w,h,ss);
-                TestOnboarding.acknowledge(c,L);
+                if(kind==Boss.SPLITTER) {
+                    if(c.onboarding.speechPage==0) {
+                        c.onboarding.age=2.21f;shot(dir,"114-boss-1-help-flashing",c,L,w,h,ss);
+                    }
+                    TestOnboarding.advancePage(c,L);
+                } else TestOnboarding.acknowledge(c,L);
             }
             if(kind==Boss.SLIME) {
                 c.stageBanner=0;

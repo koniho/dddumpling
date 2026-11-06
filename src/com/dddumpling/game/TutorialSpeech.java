@@ -25,7 +25,7 @@ final class TutorialSpeech extends Draw {
         {"MORE THAN ONE!", "TAP THE KEY AGAIN."},
         {"SWIPE THE BAR UP!", "ONCE PER STAGE!"},
         {"YOU DID IT!", "LET'S PLAY!"},
-        {"MATCH THE KEY!", "SPREAD TWO FINGERS."},
+        {"KEEP MATCHING KEYS!", "FLASHING? SPREAD FINGERS."},
         {"SAVE YOUR KEYS!", "TAP THE SHOWN KEY."},
         {"GRAB THE ARM TIP!", "PULL IT AWAY."},
         {"GRAB THE CAP!", "SHAKE SIDE TO SIDE."},
@@ -85,7 +85,7 @@ final class TutorialSpeech extends Draw {
         if(message==CLOSED)return "Match "+Skins.bossTitle(skin,Boss.SLIME)+"'s face while it is visible. Wrong keys or hidden faces get you slimed! Keep matching until the red area appears.";
         if(message==CHAIN)return "Tap the matching key while "+Skins.bossTitle(skin,Boss.SLIME)+"'s face is visible. Keep matching to make "+Skins.bossTitle(skin,Boss.SLIME)+" vulnerable. Watch for the red area!";
         if(message==GLOB)return "Now "+Skins.bossTitle(skin,Boss.SLIME)+" is vulnerable! Touch and hold the red area. Drag it to either side of the screen. That damages "+Skins.bossTitle(skin,Boss.SLIME)+"! You've got this!";
-        if(message==PINCH)return "Tap the matching key. Put two fingers on the cube. Spread them apart to split it.";
+        if(message==PINCH)return "Keep tapping matching keys until the cube flashes vulnerable. Then spread two fingers on the cube to split it.";
         if(message==DEFEND)return Skins.bossTitle(skin,Boss.OCTOPUS)+" reaches for your keys. Tap the matching key to defend it.";
         if(message==TEAR)return "Wait for an exposed arm tip. Grab it and drag it away from "+Skins.bossTitle(skin,Boss.OCTOPUS)+".";
         if(message==SHAKE)return "Grab "+Skins.bossTitle(skin,Boss.MUSHROOM)+"'s cap. Keep holding it and shake it from side to side.";
@@ -352,7 +352,19 @@ final class TutorialSpeech extends Draw {
             p.text("PICKING AT RANDOM",x,y+s*2.2f,type(s*.6f),ACCENT,Painter.CENTER,true);
             return; // No tapping hand until the random selection has settled.
         } else if(message==PINCH) {
-            face(p,key,x,y,s*1.7f);
+            boolean ready=o.speechPage>0 || age%3.6f>=2.2f;
+            int tint=Glyph.mix(0xFF7D70B4,YELLOW,ready?BossScreen.vulnerabilityPulse(age)*.78f:0);
+            p.fillRect(x-s*1.7f,y-s*1.7f,x+s*1.7f,y+s*1.7f,tint);
+            face(p,key,x,y,s*1.2f);
+            if(o.speechPage==0) {
+                if(ready)return;
+                handY=y+s*2.2f;
+                face(p,key,x,handY,s*.9f);
+                float tap=(age*3f)%1f;
+                p.strokeCircle(x,handY,s*(.9f+tap*.4f),Glyph.withAlpha(GOLD,(int)(220*(1-tap))),s*.12f);
+                Renderer.touchHint(p,x,handY,s*1.1f,1f,.95f,age);
+                return;
+            }
             float spread=s*(1+travel*3);
             arrow(p,x-s,y,-s*3,0,s*.6f);arrow(p,x+s,y,s*3,0,s*.6f);
             Renderer.touchHint(p,x-spread,y,s*1.1f,1f,.95f,age);
