@@ -69,7 +69,70 @@ final class TestSurvival extends Check {
         c.startGame();check("new run resets time and transient state",c.survival.active && c.survival.seconds==0 && !c.pushUsed && c.stage==1);
         c.toTitle();
         c.modes.back(c);c.startGame();check("Adventure still starts at its selected land",!c.survival.active && c.stage==6);
-        ducks(L);records(L);history(L);linkedAfterMinute(L);effects(L);powerRack(L);backgroundEntrance(L);backgroundCoverage();backgroundExit();endingTransition(L);bounded(L);fuzz(L);
+        milestoneCheers(L);ducks(L);records(L);history(L);linkedAfterMinute(L);effects(L);powerRack(L);backgroundEntrance(L);backgroundCoverage();backgroundExit();endingTransition(L);bounded(L);fuzz(L);
+    }
+    private static void milestoneCheers(Layout L) {
+        GameCore c=start(store(),235);
+        SurvivalCheer cheer=c.survival.cheer;
+        c.spawnTimer=100;
+        c.survival.update(c,29.75f);
+        check("no cheer before thirty active seconds",!cheer.visible(c));
+        Pause.open(c);c.update(1,1,L);
+        check("paused time cannot trigger a milestone",cheer.milestone==0);
+        Pause.resume(c);c.slowdown=1;c.update(.01f,.375f,L);
+        check("slow motion reaches the real active-time milestone",cheer.milestone==1
+                && cheer.visible(c) && cheer.cleared.equals("0:30") && Math.abs(cheer.age-.125f)<.001f);
+        float age=cheer.age;
+        Pause.open(c);c.update(1,1,L);Pause.resume(c);
+        PlayerSettings.open(c);c.update(1,1,L);c.closeSettings();
+        check("pause and settings hold the cheer",cheer.age==age);
+        c.survival.update(c,.125f);
+        check("resume continues rather than replays the cheer",cheer.milestone==1 && cheer.age>age);
+        c.survival.update(c,1.2f);
+        check("cheer expires quickly",!cheer.visible(c));
+        float previous=cheer.intensity();
+        for(int milestone=2;milestone<=30;milestone++) {
+            c.survival.seconds=milestone*30-.125;
+            c.survival.update(c,.25f);
+            check("each milestone increases bounded intensity "+milestone,cheer.milestone==milestone
+                    && cheer.intensity()>previous && cheer.intensity()<1 && cheer.visible(c)
+                    && cheer.cleared.equals(Survival.time(milestone*30000L)));
+            previous=cheer.intensity();
+        }
+        c.survival.update(c,60);
+        check("large clock step coalesces to the latest milestone",cheer.milestone==32
+                && cheer.cleared.equals("16:00"));
+        c.survival.update(c,5);
+        check("stale milestones are not queued",!cheer.visible(c));
+        c.survival.update(c,Float.NaN);c.survival.update(c,Float.POSITIVE_INFINITY);
+        check("invalid elapsed time cannot corrupt milestone state",cheer.milestone==32 && !Float.isNaN(cheer.age));
+        c.toTitle();
+        check("leaving clears milestone state",cheer.milestone==0 && !cheer.visible(c));
+        c.startGame();c.survival.update(c,30.125f);c.scoresSuppressed=true;c.lives=1;c.takeHit(L.w*.5f,L);
+        check("death clears cheers even when scores are suppressed",cheer.milestone==0 && !cheer.visible(c));
+        c.toTitle();c.startGame();
+        check("retry starts a fresh milestone sequence",cheer.milestone==0 && !cheer.visible(c));
+        c.survival.update(c,30.125f);
+        check("retry celebrates first milestone again",cheer.milestone==1 && cheer.visible(c));
+        GameCore cosmetic=start(store(),235),twin=start(store(),235);
+        cosmetic.survival.update(cosmetic,30.125f);
+        final int[] calls={0};
+        Painter painter=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),
+                new Class<?>[]{Painter.class},(proxy,method,args)-> {calls[0]++;return null;});
+        cosmetic.survival.cheer.draw(painter,cosmetic,L);
+        cosmetic.survival.cheer.pulse(painter,cosmetic,L);
+        check("cheer timing and drawing never consume gameplay RNG",cosmetic.rnd.nextLong()==twin.rnd.nextLong());
+        check("cheer leaves combat feedback and input untouched",cosmetic.flash==twin.flash
+                && cosmetic.shake==twin.shake && cosmetic.slowdown==twin.slowdown
+                && cosmetic.particles.size()==twin.particles.size() && cosmetic.shots.size()==twin.shots.size());
+        int earlyCalls=calls[0];calls[0]=0;
+        cosmetic.survival.update(cosmetic,3600);
+        cosmetic.survival.cheer.draw(painter,cosmetic,L);
+        cosmetic.survival.cheer.pulse(painter,cosmetic,L);
+        check("long-run cheer rendering is richer but bounded",calls[0]>earlyCalls && calls[0]<=48);
+        cosmetic.toTitle();cosmetic.modes.selected=ModeSelector.ADVENTURE;cosmetic.startGame();
+        cosmetic.survival.update(cosmetic,30.125f);
+        check("Adventure never triggers Survival cheers",!cosmetic.survival.cheer.visible(cosmetic));
     }
     private static java.util.ArrayList<float[]> stripes(GameCore c,Layout L) {
         java.util.ArrayList<float[]> bodies=new java.util.ArrayList<>();

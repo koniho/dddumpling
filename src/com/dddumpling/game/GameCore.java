@@ -372,6 +372,8 @@ final class GameCore {
         void gameOver();
         /** Rainbow transition at the end of Survival, after the fatal-hit sound. */
         default void survivalGameOver() { gameOver(); }
+        /** One group cheer for a newly reached active-time milestone. */
+        default void survivalCheer() {}
         /** The boss that ended the run begins its boss-specific victory taunt. */
         void bossTaunt(int kind);
         /** Switch the looping background track to {@link Music#NAMES}[choice]. */

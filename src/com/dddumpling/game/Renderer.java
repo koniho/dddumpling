@@ -73,6 +73,8 @@ final class Renderer extends Draw {
         Sky.cloudBand(p, c, L, 0, Sky.CLOUD_FRONT_LAYER, hurt);
 
         Lands.scenery(p, c, L);
+        c.survival.cheer.pulse(p,c,L);
+        c.survival.cheer.draw(p,c,L);
 
         p.save();p.translate(0,c.starter.keyOffset(L));
         dangerLine(p, c, L);

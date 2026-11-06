@@ -468,18 +468,31 @@
   XCTAssertEqualWithAccuracy(mixer.rate, 1.f, .0001f);
 }
 
+- (void)testSurvivalCheerUsesSharedRecordingAndGain {
+  DDClockedAudio *audio = [DDClockedAudio new];
+  DDCountingMixer *mixer = [DDCountingMixer new];
+  [audio setValue:mixer forKey:@"effectMixer"];
+  [audio setValue:@YES forKey:@"active"];
+  [audio setValue:@YES forKey:@"playbackAllowed"];
+  [audio survivalCheer];
+  dispatch_sync([audio valueForKey:@"effectsQueue"], ^{});
+  XCTAssertEqual(mixer.playCount, 1u);
+  XCTAssertEqualWithAccuracy(mixer.gain, DDSfx_SURVIVAL_CHEER_GAIN, .0001f);
+  XCTAssertEqualWithAccuracy(mixer.rate, 1.f, .0001f);
+}
+
 - (void)testWardrobeCuesUseSharedGainWithoutMeowDebounce {
   DDClockedAudio *audio = [DDClockedAudio new];
   DDCountingMixer *mixer = [DDCountingMixer new];
   [audio setValue:mixer forKey:@"effectMixer"];
   [audio setValue:@YES forKey:@"active"];
   [audio setValue:@YES forKey:@"playbackAllowed"];
-  for (int slot = 0; slot < (DDSfx_COUNT-DDSfx_ACCESSORY_0)/2; ++slot) {
+  for (int slot = 0; slot < (DDSfx_SURVIVAL_CHEER-DDSfx_ACCESSORY_0)/2; ++slot) {
     [audio accessoryChangeWithInt:slot withBoolean:NO];
     [audio accessoryChangeWithInt:slot withBoolean:YES];
   }
   dispatch_sync([audio valueForKey:@"effectsQueue"], ^{});
-  XCTAssertEqual(mixer.playCount, (NSUInteger)(DDSfx_COUNT-DDSfx_ACCESSORY_0));
+  XCTAssertEqual(mixer.playCount, (NSUInteger)(DDSfx_SURVIVAL_CHEER-DDSfx_ACCESSORY_0));
   XCTAssertEqualWithAccuracy(mixer.gain, DDSfx_ACCESSORY_GAIN, .0001f);
   XCTAssertEqualWithAccuracy(mixer.rate, 1.f, .0001f);
 }

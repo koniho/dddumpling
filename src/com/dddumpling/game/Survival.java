@@ -11,6 +11,7 @@ final class Survival extends Draw {
     Survival() {for(int i=0;i<histories.length;i++)histories[i]=new HighScores(true);}
     final java.util.Random blurbs=new java.util.Random(149);
     final DuckReward reward=new DuckReward();
+    final SurvivalCheer cheer=new SurvivalCheer();
     int ending;
     boolean active,finished,newBest;
     double seconds;
@@ -35,7 +36,7 @@ final class Survival extends Draw {
     String title(GameCore c) { return "BEST "+time(bestTime[titleProfile(c)])+" / "+bestScore[titleProfile(c)]; }
     void begin(GameCore c) {
         active=true;finished=newBest=false;seconds=0;rescueLeft=skyPhase=rescueReadyFlash=0;
-        usedPowers=0;
+        usedPowers=0;cheer.reset();
         effects.setSeed(149);
         profile=profile(c.kidsRun,c.runFullRoster);adventureLand=c.landChoice;
         history().start(c.runWho);
@@ -46,6 +47,9 @@ final class Survival extends Draw {
         if(elapsed<=0 || Float.isNaN(elapsed) || Float.isInfinite(elapsed))return;
         long previousMinute=(long)(seconds/60);
         seconds+=elapsed;
+        long previousMilestone=cheer.milestone;
+        cheer.update(seconds);
+        if(cheer.milestone>previousMilestone && cheer.visible(c) && c.sound!=null)c.sound.survivalCheer();
         if ((long)(seconds/60)>previousMinute) c.progress.survivalTime((long)(seconds/60)*60);
         skyPhase+=elapsed*(1f+3f*ramp());
         rescueReadyFlash=Math.max(0,rescueReadyFlash-elapsed/1.2f);
@@ -216,7 +220,7 @@ final class Survival extends Draw {
     }
     void finish(GameCore c) {
         if(!active || finished)return;
-        finished=true;usedPowers=0;rescueReadyFlash=0;
+        finished=true;usedPowers=0;rescueReadyFlash=0;cheer.reset();
         if(c.scoresSuppressed)return;
         long duration=millis();
         newBest=duration>bestTime[profile];

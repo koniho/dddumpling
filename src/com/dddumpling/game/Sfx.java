@@ -43,7 +43,8 @@ final class Sfx {
     static final int LEGACY_KEYS=6;
     static final int EXTRA_KEYS=EXTRA_BOSS_VOICES+Math.max(0,Boss.COUNT-LEGACY_BOSS_VOICES);
     static final int CAT_MEOW_0=EXTRA_KEYS+Math.max(0,Glyph.COUNT-LEGACY_KEYS);
-    static final int CAT_LASER=CAT_MEOW_0+CatMeowRecording.COUNT, CAT_FLURRY_0=CAT_LASER+1, ACCESSORY_0=CAT_FLURRY_0+12, COUNT=ACCESSORY_0+Accessories.SLOTS*2;
+    static final int CAT_LASER=CAT_MEOW_0+CatMeowRecording.COUNT, CAT_FLURRY_0=CAT_LASER+1, ACCESSORY_0=CAT_FLURRY_0+12, SURVIVAL_CHEER=ACCESSORY_0+Accessories.SLOTS*2, COUNT=SURVIVAL_CHEER+1;
+    static final float SURVIVAL_CHEER_GAIN=.44f;
     static final float ACCESSORY_GAIN=.62f;
     static int accessoryId(int slot,boolean removing) {return ACCESSORY_0+Math.max(0,Math.min(Accessories.SLOTS-1,slot))*2+(removing?1:0);}
     static final float CAT_FLURRY_GAIN=.48f;
@@ -102,7 +103,8 @@ final class Sfx {
     }
 
     private static short[] renderEffect(int id) {
-        if(id>=ACCESSORY_0)return render(AccessorySound.render((id-ACCESSORY_0)/2,(id-ACCESSORY_0)%2==1));
+        if(id==SURVIVAL_CHEER)return SurvivalCheerRecording.build();
+        if(id>=ACCESSORY_0 && id<SURVIVAL_CHEER)return render(AccessorySound.render((id-ACCESSORY_0)/2,(id-ACCESSORY_0)%2==1));
         if(id>=CAT_MEOW_0 && id<CAT_LASER)return CatMeowRecording.build(id-CAT_MEOW_0);
         if(id==bossTauntId(Boss.RAINBOW_CAT))return catTaunt();
         if(id>=CAT_FLURRY_0 && id<ACCESSORY_0)return render(pitchedMeow(6,catFlurryPitch(id-CAT_FLURRY_0)));

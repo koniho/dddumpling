@@ -3,6 +3,34 @@ package com.dddumpling.game;
 /** Effect normalisation and which sound fires on which event. */
 final class TestAudio extends Check {
 
+    private static void survivalMilestoneSound(Layout L) {
+        group("Survival milestone sound");
+        GameCore c=TestSurvival.start(TestSurvival.store(),235);Ear ear=new Ear();c.sound=ear;
+        c.spawnTimer=100;c.survival.update(c,29.875f);
+        check("cheer waits for the milestone",ear.survivalCheers==0);
+        Pause.open(c);c.update(1,1,L);Pause.resume(c);
+        check("paused milestone makes no cheer",ear.survivalCheers==0);
+        c.slowdown=1;c.update(.01f,.25f,L);
+        check("cheer starts with the active-time visual",ear.survivalCheers==1 && c.survival.cheer.visible(c));
+        c.survival.update(c,.25f);
+        Pause.open(c);c.update(1,1,L);Pause.resume(c);
+        PlayerSettings.open(c);c.update(1,1,L);c.closeSettings();
+        check("frames and resume do not replay the cheer",ear.survivalCheers==1);
+        c.survival.update(c,29.75f);
+        check("next milestone cheers once",ear.survivalCheers==2);
+        c.survival.update(c,65);
+        check("stale skipped milestones are silent",ear.survivalCheers==2);
+        c.toTitle();c.startGame();c.survival.update(c,30.125f);
+        check("restart restores the first cheer",ear.survivalCheers==3);
+        c.lives=1;c.takeHit(L.w*.5f,L);c.survival.update(c,30);
+        check("death cannot trigger a milestone sound",ear.survivalCheers==3);
+        short[] pcm=Sfx.build(Sfx.SURVIVAL_CHEER);
+        check("recorded cheer is short with clean edges",pcm.length>Sfx.RATE && pcm.length<Sfx.RATE*2
+                && pcm[0]==0 && pcm[pcm.length-1]==0);
+        check("cheer is a distinct appended sound",Sfx.SURVIVAL_CHEER==Sfx.accessoryId(Accessories.SLOTS-1,true)+1
+                && !Sfx.isCatMeow(Sfx.SURVIVAL_CHEER));
+    }
+
     private static void survivalEndingSound(Layout L) {
         group("Survival rainbow sound");
         short[] pcm=Sfx.build(Sfx.SURVIVAL_OVER);
@@ -116,6 +144,7 @@ final class TestAudio extends Check {
 
     /** What the two frenzy squish sounds are, and that they are the right shape for the job. */
     static void frenzySounds(Layout L) {
+        survivalMilestoneSound(L);
         survivalEndingSound(L);
         ninjaComboSound(L);
         runNameAnnouncement(L);
