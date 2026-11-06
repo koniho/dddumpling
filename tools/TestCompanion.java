@@ -2,6 +2,7 @@ package com.dddumpling.game;
 
 final class TestCompanion extends Check {
     static void all(Layout L) {
+        TestSteamerCompanion.all(L);
         group("run companion");
         Mem save=new Mem();save.collected=(1L<<11)|(1L<<4);save.caseIndex=11;
         GameCore c=new GameCore(save,118L);c.startGame();

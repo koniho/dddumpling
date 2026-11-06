@@ -10,11 +10,13 @@ final class RunCompanion extends Draw {
     private static final float[] HOME_SHAPE=roundedHex();
     int who=-1, reaction;
     float clock, left, age, strength, rescueT;
+    final SteamerCompanion steamer=new SteamerCompanion();
     final Softbody home=new Softbody(HOME_NODES,118);
     private boolean bossSeen, wonSeen, threatSeen, powered;
 
     void begin(int selection) { clear();who=selection; }
     void clear() {
+        steamer.clear();
         who=-1;reaction=IDLE;clock=left=age=strength=rescueT=0f;
         bossSeen=wonSeen=threatSeen=powered=false;
         home.reset(0,0,1f,1.25f);
@@ -33,6 +35,7 @@ final class RunCompanion extends Draw {
     void update(GameCore c,float dt) {
         boolean play=c.state==GameCore.PLAY,over=c.state==GameCore.OVER;
         if((!play && !over && c.state!=GameCore.BONUS) || c.paused || c.settingsOpen || who<0) return;
+        steamer.update(c,dt);
         clock+=dt;age+=dt;rescueT=Math.max(0f,rescueT-dt);
         if(!over) {
             left=Math.max(0f,left-dt);
@@ -179,6 +182,7 @@ final class RunCompanion extends Draw {
                 && !CaveInterlude.active(c);
         boolean over=c.state==GameCore.OVER;
         if((c.state!=GameCore.PLAY && !steamer && !over) || a.who<0 || !c.buddy.out()) return;
+        if(SteamerCompanion.travel(c)>0) {drawHomeOnly(p,c,L,1);return;}
         float x=x(L),y=y(L),w=halfWidth(L),h=halfHeight(L),r=radius(c,L);
         float rescueLift=a.rescueLift(L),damagePush=a.damagePush(L);
         p.save();p.translate(0,rescueLift+damagePush);

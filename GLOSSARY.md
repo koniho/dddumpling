@@ -132,6 +132,11 @@ geometry; `Kawaii` draws the creature.
 | **companions** | the already-collected ones that turn out for the parade | `Parade.companions` |
 | **movements** | the parade's three parts: in from the left, the join, off to the right | `Parade.IN_END`, `JOIN_END` |
 
+During Steamer, the run companion moves beneath the basket at its Star Path size and waves a
+folding fan. The fan idles slowly; a faster cadence of scored pips makes it work harder, with
+warmth and airflow under the basket. It returns home for the reward or time-up, and moves from
+its working position when it speaks a tutorial. `SteamerCompanion` owns this cosmetic motion.
+
 ## Star course
 
 The other interlude, offered after a steamer has been opened. Two thumbs steer, three keys a side.

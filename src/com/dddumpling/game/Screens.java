@@ -377,6 +377,8 @@ final class Screens extends Draw {
      * the rainbow dumpling inside. Progress carries across interludes, so the lid creeps up
      * over several stages.
      */
+    static float steamerBaseY(Layout L) {return L.h*.46f+L.unit*3.4f;}
+
     /** Vertical centre of the visible lid, including a live drag. */
     static float steamerLidY(GameCore c, Layout L) {
         float bw = Math.min(L.w * 0.26f, L.unit * 5.8f), bh = L.unit * 3.4f;
@@ -451,6 +453,7 @@ final class Screens extends Draw {
         }
 
         shufflePulse(p,c,L,fade);
+        SteamerCompanion.draw(p,c,L);
         float open = c.steamer.lidOpen();
         boolean freed = c.steamer.freedT > 0f;
 
@@ -479,7 +482,7 @@ final class Screens extends Draw {
         int body = Glyph.mix(BAMBOO, Glyph.cycle(c.clock * 6f), c.steamer.flash * 0.45f);
         if (bad > 0f) body = Glyph.mix(body, ROSE, bad * 0.75f);
         float rimY = cy + bh * 0.22f;
-        float baseY = rimY + bh * 0.78f;
+        float baseY = steamerBaseY(L);
         float rimRy = bw * 0.30f;
         float baseRx = bw * 0.90f;
         float steamY=rimY-rimRy*.65f;

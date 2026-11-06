@@ -90,6 +90,7 @@ src/com/dddumpling/game/PowerRush.java
 src/com/dddumpling/game/ModeSelector.java
 src/com/dddumpling/game/Starter.java
 src/com/dddumpling/game/RunCompanion.java
+src/com/dddumpling/game/SteamerCompanion.java
 src/com/dddumpling/game/Onboarding.java
 src/com/dddumpling/game/TitleTour.java
 src/com/dddumpling/game/EnemyTutorial.java
