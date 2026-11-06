@@ -22,13 +22,14 @@ final class StoreUpdate {
     }
     static long now(GameCore c) { return c.store==null?System.currentTimeMillis():c.store.updateTimeMillis(); }
     boolean beginCheck(GameCore c) {
+        if(!c.externalServices)return false;
         long time=now(c);
         if(checkedAt>0 && time>=checkedAt && time-checkedAt<CHECK_INTERVAL)return false;
         checkedAt=time;available="";save(c);return true;
     }
     void result(String version) { available=version==null?"":version; }
     boolean ready(GameCore c) {
-        if(shown || available.isEmpty())return false;
+        if(!c.externalServices || shown || available.isEmpty())return false;
         if(preview)return true;
         if(!ModeSelector.bossUnlocked(c,Boss.SLIME))return false;
         long time=now(c);

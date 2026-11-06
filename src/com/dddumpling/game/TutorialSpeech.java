@@ -93,6 +93,20 @@ final class TutorialSpeech extends Draw {
     }
     private static final int LINE_CHARS=22, PAGE_LINES=3;
     private static final String[][][][] PAGES=makeSkinPages();
+    private static final String[][] MOUSE_PINCH_PAGES={
+        {"Press the matching", "key."},
+        {"Drag the ready cube", "outward to split it."},
+        {"A mirrored finger", "helps you stretch."}
+    };
+    static String[] pageLines(int message,int page,int skin,boolean mouse) {
+        return mouse && message==PINCH?MOUSE_PINCH_PAGES[page]:pageLines(message,page,skin);
+    }
+    static int pageCount(int message,int skin,boolean mouse) {
+        return mouse && message==PINCH?MOUSE_PINCH_PAGES.length:pageCount(message,skin);
+    }
+    static String spokenPage(int message,int page,int skin,boolean mouse) {
+        return joinLines(pageLines(message,page,skin,mouse));
+    }
     static String[] pageLines(int message,int page) { return pageLines(message,page,Skins.DEFAULT); }
     static String[] pageLines(int message,int page,int skin) { return PAGES[Skins.valid(skin)][message][page]; }
     static int pageCount(int message) { return pageCount(message,Skins.DEFAULT); }
@@ -209,9 +223,9 @@ final class TutorialSpeech extends Draw {
         bubble(p,L.w*.05f,t,L.w*.95f,b,s*1.2f,3,
                 new float[]{tx,t,tx+s*.5f,t-s*1.1f,tx+s*2,t},growth,tx,L.topSafe+s*5.3f,TEXT_INK);
         if(growth<1)return;
-        String[] lines=pageLines(message,c.onboarding.speechPage,p.skin());
+        String[] lines=pageLines(message,c.onboarding.speechPage,p.skin(),c.mouseStretch);
         for(int i=0;i<lines.length;i++)speechText(p,lines[i],x,t+s*(1.7f+i*1.4f),type(s*.90f),0xFFFFF5DD);
-        if(pageCount(message,p.skin())>1)speechText(p,(c.onboarding.speechPage+1)+" / "+pageCount(message,p.skin()),
+        if(pageCount(message,p.skin(),c.mouseStretch)>1)speechText(p,(c.onboarding.speechPage+1)+" / "+pageCount(message,p.skin(),c.mouseStretch),
                 L.w*.88f,t+s*.75f,type(s*.4f),0xFFFFC1E6);
         demonstrate(p,c,L,message,x,t+s*8.4f,s,age);
         if(button) {
@@ -229,7 +243,7 @@ final class TutorialSpeech extends Draw {
         if(growth<1)return;
         float x=(l+L.w*.97f)*.5f;
         speechText(p,LINES[message][0],x,t+s*1.5f,type(s*.70f),0xFFFFF5DD);
-        speechText(p,LINES[message][1],x,t+s*3f,type(s*.70f),0xFFFFC1E6);
+        speechText(p,c.mouseStretch && message==PINCH?"DRAG TO STRETCH.":LINES[message][1],x,t+s*3f,type(s*.70f),0xFFFFC1E6);
         if(c.onboarding.powerGuide && message!=POWER_PICKUP) {
             float left=l+s,right=L.w*.97f-s,y=b-s*.45f;
             p.fillRect(left,y,right,y+s*.15f,0x44754070);
@@ -355,6 +369,12 @@ final class TutorialSpeech extends Draw {
             face(p,key,x,y,s*1.7f);
             float spread=s*(1+travel*3);
             arrow(p,x-s,y,-s*3,0,s*.6f);arrow(p,x+s,y,s*3,0,s*.6f);
+            if(c.mouseStretch) {
+                p.fillCircle(x-spread,y,s*.45f,0x704DDAFF);
+                p.strokeCircle(x-spread,y,s*.68f,0xDDF5F0FF,s*.1f);
+                p.fillPoly(new float[]{x+spread,y,x+spread+s*.7f,y+s*.9f,x+spread+s*.3f,y+s*.8f,x+spread,y+s*1.2f},0xFFF5F0FF);
+                return;
+            }
             Renderer.touchHint(p,x-spread,y,s*1.1f,1f,.95f,age);
             handX=x+spread;
         } else if(message==CAT_RUSH) {
