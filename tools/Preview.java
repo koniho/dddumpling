@@ -903,7 +903,7 @@ final class Preview {
 
     private static void steamerShuffleFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wantedGroup("steamer-shuffle-"))return;
-        for(float progress:new float[]{.1f,.5f,.95f,1f}) {
+        for(float progress:new float[]{.1f,.3f,.5f,.75f,.95f,1f}) {
             GameCore c=new GameCore(new Check.Mem(),241L);c.onboarding.saved=Onboarding.SKIPPED;
             c.startGame();c.landBlend=1;Interlude.enterBonus(c,L);
             c.time=1;c.clock=progress*2;c.bonusTimer=c.bonusRollEnd+GameCore.BONUS_ROLL*(1-progress);

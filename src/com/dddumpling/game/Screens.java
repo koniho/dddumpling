@@ -281,7 +281,7 @@ final class Screens extends Draw {
             float pulse = next[i] && !c.cloudUi.reduceMotion ? 1f + 0.10f * (float) Math.sin(c.clock * 8f) : 1f;
             float rr = r * (rolling ? .88f : pulse);
             boolean lit=rolling || next[i];
-            if(rolling)shuffleRing(p,x,cy,r*1.3f,c.clock,fade,c.cloudUi.reduceMotion);
+            if(rolling)shuffleRing(p,x,cy,r*1.3f,c.rollProgress(),col,fade,c.cloudUi.reduceMotion);
 
             if (next[i]) {
                 // The one it wants: a bright ring so the eye lands on it without reading, and the
@@ -301,11 +301,7 @@ final class Screens extends Draw {
 
         // Arrow between them, leaning whichever way the sequence is going. Suppressed while
         // spinning: there is no order to point out yet.
-        if (rolling) {
-            float left=cx-s*3.5f,right=cx+s*3.5f,y=cy+s*1.85f;
-            p.line(left,y,right,y,fadeBy(Glyph.withAlpha(GOLD,65),fade),s*.12f);
-            p.line(left,y,left+(right-left)*c.rollProgress(),y,fadeBy(GOLD,fade),s*.12f);
-        } else {
+        if (!rolling) {
             float dir = c.steamer.expectLeft ? -1f : 1f;
             int arrow = fadeBy(Glyph.withAlpha(INK_DIM, 200), fade);
             float ax = cx + dir * s * 0.18f;
@@ -314,10 +310,43 @@ final class Screens extends Draw {
         }
     }
 
-    static void shuffleRing(Painter p,float x,float y,float radius,float clock,float fade,boolean still) {
-        float angle=still?0:clock*240f;
-        for(int i=0;i<2;i++)p.arc(x,y,radius,radius,angle+i*180f,112f,
-                fadeBy(GOLD,fade),radius*.065f);
+    static void shuffleRing(Painter p,float x,float y,float radius,float progress,int color,float fade,boolean still) {
+        float t=Math.max(0,Math.min(1,progress));
+        // Five turns with steadily falling speed, ending exactly on the selection beat.
+        float angle=still?-90:-90+1800f*t*(2-t);
+        float settle=Math.max(0,(t-.8f)/.2f);
+        fade*=1-.8f*settle*settle*(3-2*settle);
+        p.strokeCircle(x,y,radius,fadeBy(Glyph.withAlpha(color,35),fade),radius*.10f);
+        for(int i=0;i<2;i++) {
+            for(int j=0;j<8;j++) {
+                float strength=(j+1)/8f,start=angle+i*180-104+j*13;
+                int ink=Glyph.mix(color,INK,strength*.6f);
+                p.arc(x,y,radius,radius,start,14,
+                        fadeBy(Glyph.withAlpha(ink,(int)(35+190*strength*strength)),fade),
+                        radius*(.025f+.055f*strength));
+            }
+            double head=(angle+i*180)*Math.PI/180;
+            float hx=x+radius*(float)Math.cos(head),hy=y+radius*(float)Math.sin(head);
+            p.fillCircle(hx,hy,radius*.14f,fadeBy(Glyph.withAlpha(color,50),fade));
+            p.fillCircle(hx,hy,radius*.065f,fadeBy(INK,fade));
+        }
+    }
+
+    private static void shufflePulse(Painter p,GameCore c,Layout L,float fade) {
+        if(!c.bonusRolling())return;
+        float t=Math.max(0,Math.min(1,c.rollProgress())),travel=t*t*(3-2*t);
+        float target=L.h*.235f+L.unit*3f;
+        float top=c.cloudUi.reduceMotion?target:L.deckTop-(L.deckTop-target)*travel;
+        float depth=c.cloudUi.reduceMotion?L.deckTop-target:L.h*.32f;
+        float strength=(float)Math.pow(Math.sin(Math.PI*t),.65)*fade*(c.cloudUi.reduceMotion?.08f:.24f);
+        int chosen=Glyph.mix(Glyph.COLOR[c.steamer.leftKey],Glyph.COLOR[c.steamer.rightKey],.5f);
+        int color=Glyph.mix(Glyph.cycle(t*1.5f),chosen,travel);
+        for(int band=0;band<48;band++) {
+            float u=band/48f,y=top+depth*u,bottom=Math.min(L.deckTop,top+depth*(band+1)/48f);
+            if(y>=bottom)continue;
+            float glow=(float)Math.sin(Math.PI*u)*(1-u);
+            p.fillRect(0,y,L.w,bottom,Glyph.withAlpha(color,(int)(255*strength*glow)));
+        }
     }
 
     /** How long the interlude heading takes to swell into place. */
@@ -417,6 +446,7 @@ final class Screens extends Draw {
             return;
         }
 
+        shufflePulse(p,c,L,fade);
         float open = c.steamer.lidOpen();
         boolean freed = c.steamer.freedT > 0f;
 
