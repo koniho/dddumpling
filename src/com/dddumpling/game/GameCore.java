@@ -2212,6 +2212,7 @@ final class GameCore {
     }
 
     void toTitle() {
+        steamer.selectionGlow=0;
         stopCombatSounds();
         slimeBubbles.reset();slimeBanks.reset();crystalField.reset();waterRipples.reset();
         bossRetry.finish(this);bossRetry.clear();
@@ -3227,8 +3228,10 @@ final class GameCore {
                 return;
             }
             // Keep the spinner finite, then hold the Kids mash until the lid is freed.
+            boolean selecting=bonusRolling();
             bonusTimer = kidsRun && !bonusPrizeWon()
                     ? Math.max(bonusRollEnd, bonusTimer-dt) : bonusTimer-dt;
+            if(selecting && bonusMashing())steamer.selectionGlow=1;
             if (bonusTimer <= MASH_END && steamer.swipeReady) steamer.missSwipe();
             // One tick per character the spinner steps past, so it sounds like a spin. Only
             // the left slot fires: both would double up on almost every step.

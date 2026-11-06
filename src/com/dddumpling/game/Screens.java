@@ -270,46 +270,86 @@ final class Screens extends Draw {
         // Centres 1.7r either side: enough clear space between them for the arrow.
         float gap = r * 3.4f;
         boolean rolling = c.bonusRolling();
+        float glow=rolling?c.rollProgress()*c.rollProgress():c.steamer.selectionGlow;
+        float reveal=rolling?0:1-c.steamer.selectionGlow;
         int[] keys = {c.bonusLeftKey(), c.bonusRightKey()};
-        // Both slots are lit while spinning: neither is wanted yet, and dimming one would
-        // imply an order the round has not settled on.
-        boolean[] next = rolling ? new boolean[] {true, true}
+        // Shuffling is an activity cue; only a settled key gets the playable caret.
+        boolean[] next = rolling ? new boolean[] {false, false}
                 : new boolean[] {c.steamer.expectLeft, !c.steamer.expectLeft};
 
         for (int i = 0; i < 2; i++) {
             float x = cx + (i == 0 ? -gap : gap) / 2f;
             int col = Glyph.COLOR[keys[i]];
-            float pulse = next[i] ? 1f + 0.10f * (float) Math.sin(c.clock * 8f) : 1f;
-            float rr = r * pulse;
+            float pulse = next[i] && !c.cloudUi.reduceMotion ? 1f + 0.10f * (float) Math.sin(c.clock * 8f) : 1f;
+            float rr = r * (.88f+(pulse-.88f)*reveal);
+            boolean lit=rolling || next[i];
+            if(rolling || glow>0)shuffleRing(p,x,cy,r*1.3f,c.rollProgress(),col,
+                    fade*(rolling?1:glow),c.cloudUi.reduceMotion);
+            int prompt=Glyph.mix(col,INK,glow*.92f);
 
             if (next[i]) {
                 // The one it wants: a bright ring so the eye lands on it without reading, and the
                 // field's own caret above it, which is the mark the player already knows.
                 p.strokePoly(Glyph.hex(x, cy, rr * 1.22f),
-                        fadeBy(Glyph.withAlpha(INK, 200), fade), rr * 0.09f);
-                caret(p, x, cy, rr, fadeBy(Glyph.withAlpha(INK, 225), fade));
+                        fadeBy(Glyph.withAlpha(INK, 200), fade*reveal), rr * 0.09f);
+                caret(p, x, cy, rr, fadeBy(Glyph.withAlpha(INK, 225), fade*reveal));
             }
             p.fillPoly(Glyph.hex(x, cy, rr),
-                    fadeBy(Glyph.withAlpha(col, next[i] ? 95 : 34), fade));
+                    fadeBy(Glyph.withAlpha(prompt,(int)((lit?95:34)*(1-glow)+225*glow)),fade));
             p.strokePoly(Glyph.hex(x, cy, rr),
-                    fadeBy(Glyph.withAlpha(col, next[i] ? 250 : 120), fade), rr * 0.085f);
+                    fadeBy(Glyph.withAlpha(prompt,(int)((lit?250:120)*(1-glow)+255*glow)),fade), rr * 0.085f);
             Kawaii.draw(p, keys[i], x, cy, rr * 0.58f,
-                    fadeBy(Glyph.withAlpha(col, next[i] ? 255 : 130), fade), 1f,
-                    next[i] ? 0.9f : 0.2f);
+                    fadeBy(Glyph.withAlpha(prompt,(int)((lit?255:130)*(1-glow)+255*glow)),fade),1f,
+                    .2f+(next[i]?.7f*reveal:0));
         }
 
         // Arrow between them, leaning whichever way the sequence is going. Suppressed while
         // spinning: there is no order to point out yet.
-        if (rolling) {
-            p.fillCircle(cx,cy,s*.5f,fadeBy(GOLD,fade));
-            for(int i=-1;i<=1;i+=2)p.line(cx+i*s*.14f,cy-s*.23f,cx+i*s*.14f,cy+s*.23f,
-                    fadeBy(0xFF302440,fade),s*.12f);
-        } else {
+        if (!rolling) {
             float dir = c.steamer.expectLeft ? -1f : 1f;
-            int arrow = fadeBy(Glyph.withAlpha(INK_DIM, 200), fade);
+            int arrow = fadeBy(Glyph.withAlpha(INK_DIM, 200), fade*reveal);
             float ax = cx + dir * s * 0.18f;
             p.fillPoly(new float[] {ax - dir * s * 0.36f, cy - s * 0.26f,
                     ax + dir * s * 0.36f, cy, ax - dir * s * 0.36f, cy + s * 0.26f}, arrow);
+        }
+    }
+
+    static void shuffleRing(Painter p,float x,float y,float radius,float progress,int color,float fade,boolean still) {
+        float t=Math.max(0,Math.min(1,progress));
+        // Five turns with steadily falling speed, ending exactly on the selection beat.
+        float angle=still?-90:-90+1800f*t*(2-t);
+        float settle=Math.max(0,(t-.8f)/.2f);
+        fade*=1-.8f*settle*settle*(3-2*settle);
+        p.strokeCircle(x,y,radius,fadeBy(Glyph.withAlpha(color,35),fade),radius*.18f);
+        for(int i=0;i<2;i++) {
+            for(int j=0;j<8;j++) {
+                float strength=(j+1)/8f,start=angle+i*180-104+j*13;
+                int ink=Glyph.mix(color,INK,strength*.6f);
+                p.arc(x,y,radius,radius,start,14,
+                        fadeBy(Glyph.withAlpha(ink,(int)(35+190*strength*strength)),fade),
+                        radius*(.05f+.11f*strength));
+            }
+            double head=(angle+i*180)*Math.PI/180;
+            float hx=x+radius*(float)Math.cos(head),hy=y+radius*(float)Math.sin(head);
+            p.fillCircle(hx,hy,radius*.19f,fadeBy(Glyph.withAlpha(color,50),fade));
+            p.fillCircle(hx,hy,radius*.095f,fadeBy(INK,fade));
+        }
+    }
+
+    private static void shufflePulse(Painter p,GameCore c,Layout L,float fade) {
+        if(!c.bonusRolling())return;
+        float t=Math.max(0,Math.min(1,c.rollProgress())),travel=t*t*(3-2*t);
+        float target=L.h*.235f+L.unit*3f;
+        float top=c.cloudUi.reduceMotion?target:L.deckTop-(L.deckTop-target)*travel;
+        float depth=c.cloudUi.reduceMotion?L.deckTop-target:L.h*.32f;
+        float strength=(float)Math.pow(Math.sin(Math.PI*t),.65)*fade*(c.cloudUi.reduceMotion?.08f:.24f);
+        int chosen=Glyph.mix(Glyph.COLOR[c.steamer.leftKey],Glyph.COLOR[c.steamer.rightKey],.5f);
+        int color=Glyph.mix(Glyph.cycle(t*1.5f),chosen,travel);
+        for(int band=0;band<48;band++) {
+            float u=band/48f,y=top+depth*u,bottom=Math.min(L.deckTop,top+depth*(band+1)/48f);
+            if(y>=bottom)continue;
+            float glow=(float)Math.sin(Math.PI*u)*(1-u);
+            p.fillRect(0,y,L.w,bottom,Glyph.withAlpha(color,(int)(255*strength*glow)));
         }
     }
 
@@ -410,6 +450,7 @@ final class Screens extends Draw {
             return;
         }
 
+        shufflePulse(p,c,L,fade);
         float open = c.steamer.lidOpen();
         boolean freed = c.steamer.freedT > 0f;
 
@@ -424,8 +465,7 @@ final class Screens extends Draw {
                 type(s * (freed ? 1.5f : .90f) * introScale(c.time)),
                 fadeBy(GOLD, fade), Painter.CENTER, true);
         if (!freed && !c.steamer.swipeReady) {
-            // No label: the wanted letter wears the same caret the field puts over a head tile,
-            // and the arrow between the pair already says which way the sequence is going.
+            // Selection stays visibly busy until the playable caret and alternating arrow appear.
             alternator(p, c, L, cx, L.h * 0.235f + s * 3.0f, fade);
         }
 

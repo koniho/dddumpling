@@ -901,6 +901,25 @@ final class Preview {
         }
     }
 
+    private static void steamerShuffleFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
+        if(!wantedGroup("steamer-shuffle-"))return;
+        for(float progress:new float[]{.1f,.3f,.5f,.75f,.95f,.999f,1f}) {
+            GameCore c=new GameCore(new Check.Mem(),241L);c.onboarding.saved=Onboarding.SKIPPED;
+            c.startGame();c.landBlend=1;Interlude.enterBonus(c,L);
+            c.time=1;c.clock=progress*2;c.bonusTimer=c.bonusRollEnd+GameCore.BONUS_ROLL*(1-progress);
+            if(progress==1)c.steamer.selectionGlow=1;
+            shot(dir,"steamer-shuffle-"+(progress==.999f?"before-settle":Math.round(progress*100)),c,L,w,h,ss);
+            if(progress==1) {
+                for(float age:new float[]{.06f,.12f,.24f}) {
+                    c.steamer.selectionGlow=Math.max(0,1-age/Steamer.SELECTION_FADE);
+                    shot(dir,"steamer-shuffle-fade-"+Math.round(age*1000),c,L,w,h,ss);
+                }
+                c.tapBonus(c.steamer.wanted());
+                shot(dir,"steamer-shuffle-alternating",c,L,w,h,ss);
+            }
+        }
+    }
+
     private static void steamerTutorialScenery(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wantedGroup("238-steamer-"))return;
         GameCore c=TestOnboarding.fresh(L,new Check.Mem());c.landBlend=1;c.skyClock=8;
@@ -2033,6 +2052,7 @@ final class Preview {
         survivalCheerFrames(dir,L,w,h,ss);
         survivalEntranceFrames(dir,L,w,h,ss);
         steamerTutorialScenery(dir,L,w,h,ss);
+        steamerShuffleFrames(dir,L,w,h,ss);
         versusFrames(dir,L,w,h,ss);
         timeAttackFrames(dir,L,w,h,ss);
         gatorSilhouetteFrames(dir,L,w,h,ss);

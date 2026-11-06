@@ -10,6 +10,10 @@ final class Steamer {
     /** Extra points required after each lifetime success, up to the target cap. */
     static final int GOAL_STEP = 2, MAX_GOAL = 20, KIDS_GOAL = 10;
     boolean kids;
+    static final float SELECTION_FADE=.24f;
+    float selectionGlow;
+
+    void fadeSelection(float dt) {selectionGlow=decay(selectionGlow,dt/SELECTION_FADE);}
 
     /** Presses landed, carried across interludes so the lid is chipped open over stages. */
     int hits;
@@ -53,6 +57,7 @@ final class Steamer {
     boolean fullRoster = true;
 
     void reset() {
+        selectionGlow=0;
         hits = 0;
         // opens is lifetime difficulty state and deliberately survives new playthroughs.
         swipeReady = false;
@@ -78,6 +83,7 @@ final class Steamer {
     void pick(java.util.Random rnd) { pick(rnd, true); }
 
     void pick(java.util.Random rnd, boolean fullRoster) {
+        selectionGlow=0;
         this.fullRoster = fullRoster;
         int half = Glyph.COUNT / 2;
         leftKey = fullRoster ? rnd.nextInt(half) : rnd.nextInt(2);
@@ -218,6 +224,7 @@ final class Steamer {
 
     /** True once the lid is off; the caller awards the prize. */
     void update(float dt) {
+        fadeSelection(dt);
         lidPulse = decay(lidPulse, dt * 4.5f);
         lidFlash = decay(lidFlash, dt * 4.8f);
         flash = decay(flash, dt * 3.0f);
