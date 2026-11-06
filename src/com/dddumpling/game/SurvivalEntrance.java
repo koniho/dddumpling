@@ -3,7 +3,7 @@ package com.dddumpling.game;
 /** Title send-off and rainbow share one launch clock; combat starts after the sweep. */
 final class SurvivalEntrance extends Draw {
     static final float SWEEP=Survival.ENTRANCE_SECONDS;
-    private static final String TITLE="SURVIVAL";
+    static final float RISE=.70f;
     private SurvivalEntrance() {}
 
     static boolean selected(GameCore c) {return c.modes.selected==ModeSelector.SURVIVAL;}
@@ -15,10 +15,13 @@ final class SurvivalEntrance extends Draw {
         float t=Math.max(0,Math.min(1,(Launch.elapsed(c)-Launch.TIME)/SWEEP));
         return t*t*(3-2*t);
     }
-    static float height(Layout L) {return (L.playRight-L.playLeft)*.92f/(TITLE.length()*1.1f);}
+    static float height(Layout L) {return type(L.unit*1.74f);}
     static float baseline(GameCore c,Layout L) {
         float top=Math.max(L.topSafe+height(L)*1.2f,L.h*.16f);
-        return top+(c.cloudUi.reduceMotion?0:L.h*1.15f*progress(c));
+        if(c.cloudUi.reduceMotion)return top;
+        float rise=Math.max(0,Math.min(1,Launch.elapsed(c)/RISE));
+        rise=rise*rise*(3-2*rise);
+        return top+(ModeSelector.y(L)-top)*(1-rise)+L.h*1.15f*progress(c);
     }
     static void scenery(Painter p,GameCore c,Layout L) {
         float entry=progress(c);
@@ -27,19 +30,13 @@ final class SurvivalEntrance extends Draw {
         else c.survival.entranceScenery(p,c,L,entry);
     }
     static void draw(Painter p,GameCore c,Layout L) {
-        if(!active(c) || c.startFade>0)return;
-        float elapsed=Launch.elapsed(c),entry=progress(c),h=height(L);
-        float fade=Math.min(1,Math.max(0,(elapsed-GameCore.START_FADE)/.18f))*(c.cloudUi.reduceMotion?1-entry:1);
-        float y=baseline(c,L),step=h*1.1f,x=L.w*.5f-step*(TITLE.length()-1)*.5f;
-        boolean still=c.cloudUi.reduceMotion;
+        if(!active(c))return;
+        float fade=c.cloudUi.reduceMotion?1-progress(c):1;
+        float bump=1f+.09f*(float)Math.sin(Math.PI*c.modes.confirmation);
+        int color=c.modes.confirmation>0 || c.modes.unavailable>0?GOLD:INK;
+        // Continue the selector's own lettering and rainbow accents without fading it out.
         p.save();p.clipRect(0,0,L.w,L.h);
-        for(int i=0;i<TITLE.length();i++) {
-            float phase=still?0:elapsed*4+i*.6f;
-            float bob=still?0:(float)Math.sin(phase)*h*.07f*(1-entry);
-            float stretch=still?1:1f+.035f*(float)Math.sin(phase+1)*(1-entry);
-            TitleBubbleFont.draw(p,TITLE.charAt(i),x+i*step,y+bob,h,Glyph.COLOR[i%Glyph.COUNT],
-                    fade,phase,stretch);
-        }
+        ModeSelector.titleLabel(p,c,L,ModeSelector.SURVIVAL,L.w*.5f,baseline(c,L),bump,color,fade);
         p.restore();
     }
 }

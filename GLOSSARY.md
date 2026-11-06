@@ -586,9 +586,9 @@ Replaying a saved run never rerolls its blurb. A dedicated rising, bubbly sound 
 the rainbow transition; the name announcement uses the existing effects-volume and mute controls.
 
 Its background uses downward-scrolling, round-ended rainbow bands, each one screen height long including the caps.
-On a title-screen start, large animated **SURVIVAL** letters wait near the top while the companion
-completes its greeting and travels home. The letters then descend off the bottom just ahead of
-the rounded rainbow tips during a two-second sweep, with the title sky and clouds fading underneath.
+On a title-screen start, the existing **SURVIVAL** selector label and its rainbow accents rise
+to the top, then wait while the companion completes its greeting and travels home. The letters
+then descend off the bottom just ahead of the rounded rainbow tips during a two-second sweep, with the title sky and clouds fading underneath.
 A spoken "Survival!" begins with the rainbow, after the companion name; it follows effects volume.
 Combat and the active-time clock begin after the sweep. Pausing holds the entrance, cancellation
 clears it, and another title start begins it anew. Reduced motion fades the title and rainbow in place.

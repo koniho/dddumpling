@@ -16,12 +16,19 @@ final class TestSurvivalEntrance extends Check {
         GameCore c=title();Ear ear=new Ear();c.sound=ear;
         check("selecting Survival does not launch its entrance",!SurvivalEntrance.active(c) && ear.survivalAnnouncements==0);
         c.beginStart();float firstY=SurvivalEntrance.baseline(c,L);
+        check("launch takes over the selector at its existing position",firstY==ModeSelector.y(L));
+        toAge(c,L,SurvivalEntrance.RISE*.5f);
+        float risingY=SurvivalEntrance.baseline(c,L);
+        check("selector title rises during companion greeting",risingY<firstY && SurvivalEntrance.progress(c)==0);
+        toAge(c,L,SurvivalEntrance.RISE);
+        float topY=SurvivalEntrance.baseline(c,L);
+        check("selector title arrives near top before rainbow",topY<risingY && topY<L.h*.2f);
         check("Survival adds a rainbow sweep after the companion",SurvivalEntrance.active(c)
                 && Math.abs(Launch.duration(c)-Launch.TIME-SurvivalEntrance.SWEEP)<.001f);
         toAge(c,L,Launch.TIME-.03f);
         check("companion name precedes rainbow announcement",ear.nameCalls==1 && ear.survivalAnnouncements==0
                 && SurvivalEntrance.progress(c)==0 && c.survival.seconds==0 && c.state==GameCore.TITLE);
-        check("title holds near top through companion send-off",SurvivalEntrance.baseline(c,L)==firstY);
+        check("title holds near top through companion send-off",SurvivalEntrance.baseline(c,L)==topY);
         toAge(c,L,Launch.TIME+.03f);
         check("rainbow onset announces Survival exactly once",ear.survivalAnnouncements==1
                 && SurvivalEntrance.progress(c)>0 && c.state==GameCore.TITLE && c.enemies.isEmpty());
@@ -32,7 +39,7 @@ final class TestSurvivalEntrance extends Check {
         toAge(c,L,Launch.TIME+SurvivalEntrance.SWEEP*.65f);
         check("resume cannot replay speech or grant survival time",ear.survivalAnnouncements==1
                 && c.survival.seconds==0 && !c.survival.active && c.enemies.isEmpty());
-        float previous=firstY;
+        float previous=topY;
         for(float t:new float[]{.1f,.3f,.5f,.75f,.95f}) {
             c.launchT=SurvivalEntrance.SWEEP*(1-t);
             float y=SurvivalEntrance.baseline(c,L),edge=L.h*1.15f*SurvivalEntrance.progress(c);
@@ -41,7 +48,7 @@ final class TestSurvivalEntrance extends Check {
         }
         check("title fully clears bottom before handoff",SurvivalEntrance.baseline(c,L)-SurvivalEntrance.height(L)>L.h);
         c.cloudUi.reduceMotion=true;
-        check("reduced motion holds title position while fading",SurvivalEntrance.baseline(c,L)==firstY);
+        check("reduced motion holds title position while fading",SurvivalEntrance.baseline(c,L)==topY);
         c.cloudUi.reduceMotion=false;
         c.update(.2f,.2f,L);
         check("combat begins with entrance complete and clock zero",c.state==GameCore.PLAY && c.survival.active
