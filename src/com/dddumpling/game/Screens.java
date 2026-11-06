@@ -316,19 +316,19 @@ final class Screens extends Draw {
         float angle=still?-90:-90+1800f*t*(2-t);
         float settle=Math.max(0,(t-.8f)/.2f);
         fade*=1-.8f*settle*settle*(3-2*settle);
-        p.strokeCircle(x,y,radius,fadeBy(Glyph.withAlpha(color,35),fade),radius*.10f);
+        p.strokeCircle(x,y,radius,fadeBy(Glyph.withAlpha(color,35),fade),radius*.18f);
         for(int i=0;i<2;i++) {
             for(int j=0;j<8;j++) {
                 float strength=(j+1)/8f,start=angle+i*180-104+j*13;
                 int ink=Glyph.mix(color,INK,strength*.6f);
                 p.arc(x,y,radius,radius,start,14,
                         fadeBy(Glyph.withAlpha(ink,(int)(35+190*strength*strength)),fade),
-                        radius*(.025f+.055f*strength));
+                        radius*(.05f+.11f*strength));
             }
             double head=(angle+i*180)*Math.PI/180;
             float hx=x+radius*(float)Math.cos(head),hy=y+radius*(float)Math.sin(head);
-            p.fillCircle(hx,hy,radius*.14f,fadeBy(Glyph.withAlpha(color,50),fade));
-            p.fillCircle(hx,hy,radius*.065f,fadeBy(INK,fade));
+            p.fillCircle(hx,hy,radius*.19f,fadeBy(Glyph.withAlpha(color,50),fade));
+            p.fillCircle(hx,hy,radius*.095f,fadeBy(INK,fade));
         }
     }
 

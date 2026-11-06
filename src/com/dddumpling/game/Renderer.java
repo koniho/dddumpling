@@ -1014,15 +1014,11 @@ final class Renderer extends Draw {
             }
             if (bad > 0) col = Glyph.mix(col, ROSE, bad);
 
-            // During the interlude only two keys matter; ring them, and mark the next one.
-            // The spinner rings too, off the same pair the alternator is showing, so the deck
-            // visibly runs through the candidates with it. Nothing is wanted until it lands.
-            if ((c.bonusMashing() || c.bonusRolling())
-                    && (g == c.bonusLeftKey() || g == c.bonusRightKey())) {
-                boolean wanted = !c.bonusRolling() && g == c.steamer.wanted();
+            // The deck highlights the playable pair only after selection settles.
+            if (c.bonusMashing() && (g == c.bonusLeftKey() || g == c.bonusRightKey())) {
+                boolean wanted = g == c.steamer.wanted();
                 float pulse = 0.5f + 0.5f * (float) Math.sin(c.clock * 8f);
-                if(c.bonusRolling())Screens.shuffleRing(p,cx,cy,r*1.16f,c.rollProgress(),col,.85f,c.cloudUi.reduceMotion);
-                else p.strokePoly(Glyph.hex(cx, cy, r * 1.16f),
+                p.strokePoly(Glyph.hex(cx, cy, r * 1.16f),
                         Glyph.withAlpha(wanted ? INK : col,
                                 wanted ? (int) (110 + 145 * pulse) : 90), r * 0.075f);
             }
