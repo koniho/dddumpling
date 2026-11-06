@@ -44,7 +44,7 @@ final class Sfx {
     static final int EXTRA_KEYS=EXTRA_BOSS_VOICES+Math.max(0,Boss.COUNT-LEGACY_BOSS_VOICES);
     static final int CAT_MEOW_0=EXTRA_KEYS+Math.max(0,Glyph.COUNT-LEGACY_KEYS);
     static final int CAT_LASER=CAT_MEOW_0+CatMeowRecording.COUNT, CAT_FLURRY_0=CAT_LASER+1, ACCESSORY_0=CAT_FLURRY_0+12, SURVIVAL_CHEER=ACCESSORY_0+Accessories.SLOTS*2, COUNT=SURVIVAL_CHEER+1;
-    static final float SURVIVAL_CHEER_GAIN=.55f;
+    static final float SURVIVAL_CHEER_GAIN=.44f;
     static final float ACCESSORY_GAIN=.62f;
     static int accessoryId(int slot,boolean removing) {return ACCESSORY_0+Math.max(0,Math.min(Accessories.SLOTS-1,slot))*2+(removing?1:0);}
     static final float CAT_FLURRY_GAIN=.48f;

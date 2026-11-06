@@ -305,6 +305,6 @@ Download the MP3 locally, then run `python3 tools/prepare-survival-cheer.py /pat
 The script verifies the source hash, uses FFmpeg to decode/resample to mono 22,050 Hz,
 applies 5 ms / 35 ms edge fades and normalizes the peak to 85%. It emits shared embedded
 PCM and an ignored audition WAV at `out/sfx/survival-cheer.wav`. Duration is 1.595 seconds;
-native playback uses 55% effects gain and follows mute. Original/downloaded audio stays
+native playback uses 44% effects gain and follows mute. Original/downloaded audio stays
 untracked. Each newly reached, still-visible milestone triggers once; stale milestones
 are not queued and rendering never triggers audio.

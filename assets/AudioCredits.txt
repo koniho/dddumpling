@@ -30,4 +30,4 @@ Library license: https://www.facecam.ai/sound-effects
 License: https://creativecommons.org/licenses/by/4.0/
 An AI-generated group-of-children cheer recreation, not an original TV/video sample.
 Changes: mono conversion, resampling to 22,050 Hz, 5 ms / 35 ms edge fades,
-and peak normalization; played at 55% effects gain. No endorsement implied.
+and peak normalization; played at 44% effects gain. No endorsement implied.
