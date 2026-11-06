@@ -287,3 +287,24 @@ each (+4 through -2), with short edge fades and a shared normalized peak.
 Flurry releases reuse take 07 in a whole-tone bank (-12 through +10 semitones);
 shorter volleys use the upper notes, and each shot plays its next note on release.
 Both platforms use the same resampled PCM. The original recordings remain unchanged.
+
+# Survival milestone cheer
+
+"Yay" by Facecam is an AI-generated group-of-children cheer recreation, licensed
+CC BY 4.0. This is not a verified match to any particular YouTube recording.
+
+- Source: https://www.facecam.ai/sound-effects/yay
+- Download: https://www.facecam.ai/samples/sounds/yay.mp3
+- Library license: https://www.facecam.ai/sound-effects (Free sound pack section)
+- License: https://creativecommons.org/licenses/by/4.0/
+- Retrieved 2026-11-06; MP3 SHA-256:
+  `6bfc349b66457855cd7f05cad5b897989d738e936103b5a19dffa08346ba7c43`.
+- Attribution/modification notice ships in `assets/AudioCredits.txt` on both platforms.
+
+Download the MP3 locally, then run `python3 tools/prepare-survival-cheer.py /path/to/yay.mp3`.
+The script verifies the source hash, uses FFmpeg to decode/resample to mono 22,050 Hz,
+applies 5 ms / 35 ms edge fades and normalizes the peak to 85%. It emits shared embedded
+PCM and an ignored audition WAV at `out/sfx/survival-cheer.wav`. Duration is 1.595 seconds;
+native playback uses 55% effects gain and follows mute. Original/downloaded audio stays
+untracked. Each newly reached, still-visible milestone triggers once; stale milestones
+are not queued and rendering never triggers audio.

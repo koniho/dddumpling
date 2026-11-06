@@ -23,3 +23,11 @@ Six impact-trimmed excerpts, mono conversion, seven-semitone pitch lift, edge fa
 Rainbow Cat meows: user-performed Oct 18 at 14_19.m4a, provided for DDDUMPLING.
 24 excerpts excluding spoken annotations; mono conversion, edge fades and resampling.
 Original pitch and relative levels preserved.
+
+Survival milestone cheer: "Yay" by Facecam, CC BY 4.0.
+Source: https://www.facecam.ai/sound-effects/yay
+Library license: https://www.facecam.ai/sound-effects
+License: https://creativecommons.org/licenses/by/4.0/
+An AI-generated group-of-children cheer recreation, not an original TV/video sample.
+Changes: mono conversion, resampling to 22,050 Hz, 5 ms / 35 ms edge fades,
+and peak normalization; played at 55% effects gain. No endorsement implied.

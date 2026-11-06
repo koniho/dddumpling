@@ -81,7 +81,7 @@ final class TestSurvival extends Check {
         check("paused time cannot trigger a milestone",cheer.milestone==0);
         Pause.resume(c);c.slowdown=1;c.update(.01f,.375f,L);
         check("slow motion reaches the real active-time milestone",cheer.milestone==1
-                && cheer.visible(c) && cheer.cleared.equals("0:30 SURVIVED") && Math.abs(cheer.age-.125f)<.001f);
+                && cheer.visible(c) && cheer.cleared.equals("0:30") && Math.abs(cheer.age-.125f)<.001f);
         float age=cheer.age;
         Pause.open(c);c.update(1,1,L);Pause.resume(c);
         PlayerSettings.open(c);c.update(1,1,L);c.closeSettings();
@@ -96,12 +96,12 @@ final class TestSurvival extends Check {
             c.survival.update(c,.25f);
             check("each milestone increases bounded intensity "+milestone,cheer.milestone==milestone
                     && cheer.intensity()>previous && cheer.intensity()<1 && cheer.visible(c)
-                    && cheer.cleared.equals(Survival.time(milestone*30000L)+" SURVIVED"));
+                    && cheer.cleared.equals(Survival.time(milestone*30000L)));
             previous=cheer.intensity();
         }
         c.survival.update(c,60);
         check("large clock step coalesces to the latest milestone",cheer.milestone==32
-                && cheer.cleared.equals("16:00 SURVIVED"));
+                && cheer.cleared.equals("16:00"));
         c.survival.update(c,5);
         check("stale milestones are not queued",!cheer.visible(c));
         c.survival.update(c,Float.NaN);c.survival.update(c,Float.POSITIVE_INFINITY);

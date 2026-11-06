@@ -547,7 +547,8 @@ Turtle completion collectibles are pending aesthetic approval and are tracked se
 
 Survival is continuous combat with no land selector, bosses or bonus games.
 Every 30 active seconds, a brief cartoon cheer shows the time survived, with growing starbursts
-and a background color pulse. These cosmetic milestones leave combat and input running;
+and a background color pulse. A short group "Yay!" follows the effects-volume control.
+These cosmetic milestones leave combat and input running;
 enemy prompts stay in front. The effect clears on death or exit and restarts with each run.
 Every death earns one rainbow duck from the final 45-second segment's two-duck pool.
 The ten regular ducks use pool offsets (0/1), (2/3), (4/5), (5/6), (6/7), (7/8), (8/9).

@@ -15,7 +15,7 @@ final class SurvivalCheer extends Draw {
         if(reached>milestone) {
             milestone=reached;
             cheer=CHEERS[(int)Math.min(CHEERS.length-1,reached-1)];
-            cleared=Survival.time(reached*30000)+" SURVIVED";
+            cleared=Survival.time(reached*30000);
         }
         age=milestone==0?DURATION:Math.min(DURATION,(float)(seconds-milestone*30));
     }

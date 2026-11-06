@@ -47,7 +47,9 @@ final class Survival extends Draw {
         if(elapsed<=0 || Float.isNaN(elapsed) || Float.isInfinite(elapsed))return;
         long previousMinute=(long)(seconds/60);
         seconds+=elapsed;
+        long previousMilestone=cheer.milestone;
         cheer.update(seconds);
+        if(cheer.milestone>previousMilestone && cheer.visible(c) && c.sound!=null)c.sound.survivalCheer();
         if ((long)(seconds/60)>previousMinute) c.progress.survivalTime((long)(seconds/60)*60);
         skyPhase+=elapsed*(1f+3f*ramp());
         rescueReadyFlash=Math.max(0,rescueReadyFlash-elapsed/1.2f);

@@ -428,6 +428,7 @@ static const jint DDStyleSwing = DDMusic_SWING_STYLE;
 - (void)paradeJoin { [self playEffect:DDSfx_JOIN rate:1 gain:1]; }
 - (void)rosterJoin { [self playEffect:DDSfx_ROSTER_JOIN rate:1 gain:1]; }
 - (void)gameOver { [self playEffect:DDSfx_OVER rate:1 gain:1]; }
+- (void)survivalCheer { [self playEffect:DDSfx_SURVIVAL_CHEER rate:1 gain:DDSfx_SURVIVAL_CHEER_GAIN]; }
 - (void)survivalGameOver { [self playEffect:DDSfx_SURVIVAL_OVER rate:1 gain:1]; }
 - (void)bossTauntWithInt:(jint)kind { if (kind >= 0 && kind < [DDBoss count]) [self playEffect:[DDSfx bossTauntIdWithInt:kind] rate:1 gain:.78f]; }
 - (void)gameStart { [self playEffect:DDSfx_START rate:1 gain:.72f]; }

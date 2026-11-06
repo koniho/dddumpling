@@ -186,6 +186,11 @@ public class TestAudioLifecycle {
   }
   a.volumes(.4f,0);a.accessoryChange(Accessories.FLAIR,false);
   check("muted flair and cheer stay silent",effectTrack(a,Sfx.accessoryId(Accessories.FLAIR,false)).volume==0);a.release();
+  a=fresh();a.volumes(.4f,.3f);a.survivalCheer();
+  AudioTrack yay=effectTrack(a,Sfx.SURVIVAL_CHEER);
+  check("milestone cheer follows effects volume",yay.plays==1 && Math.abs(yay.volume-.3f*Sfx.SURVIVAL_CHEER_GAIN)<.0001f);
+  a.volumes(.4f,0);a.survivalCheer();
+  check("milestone cheer respects mute",yay.volume==0);a.release();
   a=fresh();a.volumes(0,0);effect(a,0);a.selectMusic(0);ready(a);
   check("mute respected by recreated effects and music",effectTrack(a,0).volume==0 && bgm(a).volume==0);a.release();
   a=fresh();AudioTrack.failPlay=1;a.selectMusic(0);ready(a);check("music play failure retries",bgm(a).playing && AudioTrack.live==1);
