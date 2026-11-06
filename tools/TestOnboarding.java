@@ -343,6 +343,7 @@ final class TestOnboarding extends Check {
         speechPages(L);
         bossHelp(L);
         bossHelpPerRun(L);
+        slimeHelpOnce(L);
         slimeVulnerableHelp(L);
         companionHelp(L);
         steamerTutorialWin(L);
@@ -1034,7 +1035,7 @@ final class TestOnboarding extends Check {
                 check("opening help pauses boss arrival "+kind,c.onboarding.briefing && c.boss.intro==intro);
                 int guard=0;while(c.onboarding.briefing && guard++<5)acknowledge(c,L);
                 check("requested help repeats every learned introductory page "+kind,
-                        ear.explanations==(kind==Boss.RAINBOW_CAT?TutorialSpeech.pageCount(TutorialSpeech.CAT_RUSH)+TutorialSpeech.pageCount(TutorialSpeech.CAT_TAPS)+TutorialSpeech.pageCount(TutorialSpeech.CAT_PROMPT):kind==Boss.SLIME?TutorialSpeech.pageCount(TutorialSpeech.CLOSED)+TutorialSpeech.pageCount(TutorialSpeech.CHAIN):
+                        ear.explanations==(kind==Boss.RAINBOW_CAT?TutorialSpeech.pageCount(TutorialSpeech.CAT_RUSH)+TutorialSpeech.pageCount(TutorialSpeech.CAT_TAPS)+TutorialSpeech.pageCount(TutorialSpeech.CAT_PROMPT):kind==Boss.SLIME?TutorialSpeech.pageCount(TutorialSpeech.CLOSED):
                                 kind==Boss.OCTOPUS?TutorialSpeech.pageCount(TutorialSpeech.DEFEND)+TutorialSpeech.pageCount(TutorialSpeech.TEAR):
                                 TutorialSpeech.pageCount(kind==Boss.SPLITTER?TutorialSpeech.PINCH:
                                         kind==Boss.ALLIGATOR?TutorialSpeech.ALLIGATOR:TutorialSpeech.SHAKE)));
@@ -1054,6 +1055,24 @@ final class TestOnboarding extends Check {
             check("saved learning does not suppress new launch boss help "+kind+"/"+used,loaded.onboarding.offersBossHelp(loaded));
             loaded.onboarding.skip(loaded);
             check("Rainbow Cat help stays discoverable after Skip All "+kind+"/"+used,loaded.onboarding.offersBossHelp(loaded)==(kind==Boss.RAINBOW_CAT));
+        }
+    }
+    private static void slimeHelpOnce(Layout L) {
+        for(int skin=0;skin<Skins.COUNT;skin++) {
+            GameCore c=fresh(L,new Mem());c.preferences.skin=skin;Ear ear=new Ear();c.sound=ear;
+            c.stage=5;c.boss.begin(Boss.SLIME,5,c.rnd);c.boss.intro=0;c.update(DT,L);
+            float x=TutorialSpeech.helpX(L),y=TutorialSpeech.helpY(L),phase=c.boss.phase;
+            touch(c,L,0,x,y);touch(c,L,1,x,y);
+            check("Slime help has one introductory explanation "+skin,!c.onboarding.moreBossHelp(c));
+            acknowledge(c,L);
+            check("Slime first explanation resumes fight without duplicate matching lesson "+skin,
+                    !c.onboarding.briefing && c.boss.phase==phase
+                    && ear.explanations==TutorialSpeech.pageCount(TutorialSpeech.CLOSED,skin)
+                    && (c.onboarding.introduced&(1L<<TutorialSpeech.CHAIN))==0);
+            int spoken=ear.explanations;
+            touch(c,L,0,x,y);touch(c,L,1,x,y);c.update(.2f,L);
+            check("dismissed Slime introduction cannot replay in the same fight "+skin,
+                    !c.onboarding.briefing && !c.onboarding.offersBossHelp(c) && ear.explanations==spoken);
         }
     }
     private static void bossHelpPulse(Layout L) {
@@ -1097,7 +1116,7 @@ final class TestOnboarding extends Check {
             if(help==1) {
                 touch(c,L,0,TutorialSpeech.helpX(L),TutorialSpeech.helpY(L));
                 touch(c,L,1,TutorialSpeech.helpX(L),TutorialSpeech.helpY(L));
-                acknowledge(c,L);acknowledge(c,L);
+                acknowledge(c,L);
                 check("Slime initial help ends before red-area step",!c.onboarding.briefing
                         && (c.onboarding.introduced&(1<<TutorialSpeech.GLOB))==0);
             }
