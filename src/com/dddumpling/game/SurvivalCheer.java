@@ -38,18 +38,25 @@ final class SurvivalCheer extends Draw {
         if(!visible(c))return;
         boolean still=c.cloudUi.reduceMotion;
         float level=intensity(),alpha=opacity(),s=L.unit;
-        float cx=L.w*.5f,cy=L.playTop+s*4.6f;
+        float cx=(L.playLeft+L.playRight)*.5f,cy=(L.playTop+L.dangerY)*.5f;
         float pop=still?1:1f-(float)Math.exp(-age*15)*(float)Math.cos(age*23);
-        float size=type(s*(1.05f+.24f*level))*(.72f+.28f*pop);
+        float scale=Math.min(1,.72f+.28f*pop);
+        // The shared .73 advance allowance fits both native fonts and the wider harness font.
+        float width=L.playRight-L.playLeft-s*.5f;
+        float size=width/(cheer.length()*.73f)*scale;
+        float detailSize=width/(cleared.length()*.73f)*scale;
+        float gap=s*.42f,height=(size+detailSize)*.72f+gap;
+        float titleY=cy-height*.5f+size*.72f;
+        float detailY=cy+height*.5f;
         int tint=color(),a=(int)(255*alpha);
         float travel=still?.5f:Math.min(1,age/.65f);
         int count=6+(int)(12*level);
-        // Side bursts stay in a shallow strip, below the HUD and above the power rack.
+        // Bursts frame the centered lettering; enemies and controls still draw in front.
         for(int i=0;i<count;i++) {
             float angle=(i/(float)count)*(float)(Math.PI*2)+.25f;
             float dx=(float)Math.cos(angle),dy=(float)Math.sin(angle);
             float radius=L.w*(.28f+.13f*travel);
-            float x=cx+dx*radius,y=cy+dy*s*(1.2f+.6f*travel);
+            float x=cx+dx*radius,y=cy+dy*(height*.5f+s*(.6f+.6f*travel));
             if(Math.abs(dx)<.58f)continue;
             float r=s*(.13f+.12f*level)*(1-.35f*travel);
             int ink=Glyph.withAlpha(i%2==0?tint:INK,(int)(a*.85f));
@@ -58,8 +65,8 @@ final class SurvivalCheer extends Draw {
                     x+dx*s*(.45f+.35f*level),y+dy*s*.28f,ink,s*.08f);
         }
         float bounce=still?0:(float)Math.sin(age*18)* (float)Math.exp(-age*6)*s*.17f;
-        outlined(p,cheer,cx,cy+bounce,size,tint,a,s*.10f);
-        outlined(p,cleared,cx,cy+type(s*.92f),type(s*.58f),INK,a,s*.065f);
+        outlined(p,cheer,cx,titleY+bounce,size,tint,a,s*.16f);
+        outlined(p,cleared,cx,detailY+bounce,detailSize,INK,a,s*.10f);
     }
     private static void outlined(Painter p,String text,float x,float y,float size,int color,int alpha,float edge) {
         int outline=Glyph.withAlpha(BG,alpha);
