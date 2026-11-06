@@ -75,6 +75,7 @@ src/com/dddumpling/game/DuckBodies.java
 src/com/dddumpling/game/DuckReward.java
 src/com/dddumpling/game/Survival.java
 src/com/dddumpling/game/SurvivalCheer.java
+src/com/dddumpling/game/SurvivalEntrance.java
 src/com/dddumpling/game/SurvivalCheerRecording.java
 src/com/dddumpling/game/TimeAttack.java
 src/com/dddumpling/game/TimeAttackVersus.java

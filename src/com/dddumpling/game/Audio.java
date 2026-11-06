@@ -537,6 +537,11 @@ final class Audio implements GameCore.Sound {
         requestSpeech(entry, false);
     }
 
+    @Override public synchronized void announceSurvival() {
+        // A late speech-engine startup must not announce a transition that has already passed.
+        if(ttsReady)requestExplanation(Narration.survival(),true);
+    }
+
     @Override public synchronized void announceSquishy(int entry) {
         requestSpeech(entry, true);
     }

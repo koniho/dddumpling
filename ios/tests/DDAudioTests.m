@@ -88,6 +88,24 @@
 @end
 
 @implementation DDAudioTests
+- (void)testSurvivalAnnouncementUsesEffectsVolumeAndCanBeCancelled {
+  DDClockedAudio *audio = [DDClockedAudio new];
+  DDCountingSpeech *speech = [DDCountingSpeech new];
+  [audio setValue:speech forKey:@"speech"];
+  [audio setValue:@YES forKey:@"active"];
+  [audio setValue:@YES forKey:@"playbackAllowed"];
+  [audio volumesWithFloat:0 withFloat:.4f];
+  [audio announceSurvival];
+  XCTAssertEqual(speech.speakCount, 1);
+  XCTAssertEqualObjects(speech.utterance.speechString, [DDNarration survival]);
+  XCTAssertEqualWithAccuracy(speech.utterance.volume, .4f, .001f);
+  [audio hush];
+  XCTAssertGreaterThan(speech.stopCount, 0);
+  [audio volumesWithFloat:0 withFloat:0];
+  [audio announceSurvival];
+  XCTAssertEqual(speech.speakCount, 1);
+}
+
 - (void)testTutorialSpeechRespectsMuteAndStopsOnDismissal {
   DDClockedAudio *audio = [DDClockedAudio new];
   DDCountingSpeech *speech = [DDCountingSpeech new];

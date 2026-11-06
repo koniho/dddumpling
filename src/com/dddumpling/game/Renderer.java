@@ -184,6 +184,7 @@ final class Renderer extends Draw {
         // The send-off, over the dissolving title screen and the field it is uncovering. Last
         // thing before play: it is the only part of the title screen that outlives the fade.
         Launch.draw(p, c, L);
+        SurvivalEntrance.draw(p,c,L);
 
         if (c.state == GameCore.PLAY && c.perfectBanner > 0) Hud.perfectStage(p, c, L);
         // Over the title screen and its display case, under nothing: the story is modal.

@@ -69,7 +69,7 @@ final class TestSurvival extends Check {
         c.startGame();check("new run resets time and transient state",c.survival.active && c.survival.seconds==0 && !c.pushUsed && c.stage==1);
         c.toTitle();
         c.modes.back(c);c.startGame();check("Adventure still starts at its selected land",!c.survival.active && c.stage==6);
-        milestoneCheers(L);ducks(L);records(L);history(L);linkedAfterMinute(L);effects(L);powerRack(L);backgroundEntrance(L);backgroundCoverage();backgroundExit();endingTransition(L);bounded(L);fuzz(L);
+        TestSurvivalEntrance.all(L);milestoneCheers(L);ducks(L);records(L);history(L);linkedAfterMinute(L);effects(L);powerRack(L);backgroundEntrance(L);backgroundCoverage();backgroundExit();endingTransition(L);bounded(L);fuzz(L);
     }
     private static void milestoneCheers(Layout L) {
         GameCore c=start(store(),235);

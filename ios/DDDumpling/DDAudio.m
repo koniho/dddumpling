@@ -559,6 +559,10 @@ static const jint DDStyleSwing = DDMusic_SWING_STYLE;
 - (void)bossMusicWithBoolean:(jboolean)active { if (_boss == active && !_versus) return; _versus = NO; _boss = active; [self rebuildMusic]; }
 - (void)frenzyWithBoolean:(jboolean)on { if (_frenzy == on) return; _frenzy = on; [self rebuildMusic]; }
 
+- (void)announceSurvival {
+  [self speakText:[DDNarration survival] pitch:DDNarration_VERSUS_PITCH rate:DDNarration_VERSUS_RATE];
+}
+
 - (void)announceSquishyWithInt:(jint)entry {
   if (!_active || _interrupted || !_playbackAllowed || _effectsVolume <= 0) return;
   @try {
