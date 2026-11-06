@@ -374,6 +374,8 @@ final class GameCore {
         default void survivalGameOver() { gameOver(); }
         /** One group cheer for a newly reached active-time milestone. */
         default void survivalCheer() {}
+        /** Spoken mode title at the onset of the title-to-Survival rainbow. */
+        default void announceSurvival() { explain(Narration.survival()); }
         /** The boss that ended the run begins its boss-specific victory taunt. */
         void bossTaunt(int kind);
         /** Switch the looping background track to {@link Music#NAMES}[choice]. */
@@ -847,7 +849,7 @@ final class GameCore {
     float launchClock;
     /** How many of the send-off's impacts have sounded, so each one ticks once. */
     private int launchPips;
-    private boolean launchNameAnnounced;
+    private boolean launchNameAnnounced,launchSurvivalAnnounced;
 
     /** True while the title screen is on its way out and play has not begun. */
     boolean starting() {
@@ -2006,12 +2008,12 @@ final class GameCore {
         beginStart();
         // The chosen friend is already enlarged at center: continue from the greeting.
         launchFromStarter = true;
-        launchT = Launch.TIME - Launch.CENTER_TIME;
+        launchT = Launch.duration(this) - Launch.CENTER_TIME;
     }
 
     private void beginLaunch() {
         launchFromStarter = false;
-        launchNameAnnounced = false;
+        launchNameAnnounced = launchSurvivalAnnounced = false;
         launchWho = pendingRunWho;
         launchT = Launch.duration(this);
         launchPips = 0;
@@ -2019,7 +2021,7 @@ final class GameCore {
 
     private void stopLaunchVoice() {
         if (launchNameAnnounced && sound != null) sound.hush();
-        launchNameAnnounced = false;
+        launchNameAnnounced = launchSurvivalAnnounced = false;
     }
 
     void cancelStart() {
@@ -3064,9 +3066,14 @@ final class GameCore {
                 if (launchT > 0f) {
                     launchT = Math.max(0f, launchT - elapsed);
                     float u = Launch.progress(this);
-                    if (!Launch.versus(this) && !launchNameAnnounced && Launch.TIME-launchT >= Launch.NAME_START) {
+                    if (!Launch.versus(this) && !launchNameAnnounced && Launch.elapsed(this) >= Launch.NAME_START) {
                         launchNameAnnounced = true;
                         if (sound != null) sound.announceSquishy(launchWho);
+                    }
+                    if(SurvivalEntrance.selected(this) && !launchSurvivalAnnounced
+                            && Launch.elapsed(this)>=Launch.TIME) {
+                        launchSurvivalAnnounced=true;
+                        if(launchT>0 && sound!=null)sound.announceSurvival();
                     }
                     // The greeting landing and arrival home each get one soft punctuation.
                     if (!Launch.versus(this) && launchPips == 0 && u >= Launch.LAND) {

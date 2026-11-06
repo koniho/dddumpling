@@ -176,7 +176,7 @@ abstract class Check {
         int music = -1, musicCalls;
         int starts, stageClears, powerClears, frenzyCalls;
         /** Interlude punctuation: course launches, tallies read out, parade joins, runs ended. */
-        int courseFinishes, courseStarts, rocketCalls, tallies, joins, gameOvers, survivalGameOvers, survivalCheers, bossTaunts;
+        int courseFinishes, courseStarts, rocketCalls, tallies, joins, gameOvers, survivalGameOvers, survivalCheers, survivalAnnouncements, bossTaunts;
         int lastBossTaunt = -1;
         float rocketThrust, firstRocket = -1f, maxRocket;
         int rocketStops;
@@ -281,6 +281,7 @@ abstract class Check {
         public void gameOver() { gameOvers++; }
         public void survivalGameOver() { survivalGameOvers++; }
         public void survivalCheer() { survivalCheers++; }
+        public void announceSurvival() { survivalAnnouncements++; }
         public void bossTaunt(int kind) { bossTaunts++; lastBossTaunt = kind; }
         public void selectMusic(int choice) { music = choice; musicCalls++; }
         public void bossMusic(boolean active) { bossMusic = active; bossMusicCalls++; }

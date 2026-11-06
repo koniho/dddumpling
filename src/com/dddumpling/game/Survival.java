@@ -13,7 +13,7 @@ final class Survival extends Draw {
     final DuckReward reward=new DuckReward();
     final SurvivalCheer cheer=new SurvivalCheer();
     int ending;
-    boolean active,finished,newBest;
+    boolean active,finished,newBest,entranceComplete;
     double seconds;
     float rescueLeft,skyPhase,rescueReadyFlash;
     int profile,adventureLand;
@@ -35,6 +35,7 @@ final class Survival extends Draw {
     }
     String title(GameCore c) { return "BEST "+time(bestTime[titleProfile(c)])+" / "+bestScore[titleProfile(c)]; }
     void begin(GameCore c) {
+        entranceComplete=c.launchWho>=0 && c.launchT<=0;
         active=true;finished=newBest=false;seconds=0;rescueLeft=skyPhase=rescueReadyFlash=0;
         usedPowers=0;cheer.reset();
         effects.setSeed(149);
@@ -128,10 +129,11 @@ final class Survival extends Draw {
         }
     }
     float entrance() {
-        float t=Math.min(1f,(float)(seconds/ENTRANCE_SECONDS));
+        float t=entranceComplete?1f:Math.min(1f,(float)(seconds/ENTRANCE_SECONDS));
         return t*t*(3f-2f*t);
     }
-    int background() {return Glyph.mix(BG,Glyph.hsv(3.7f,.50f+.25f*ramp(),.18f),entrance());}
+    int background() {return background(entrance(),ramp());}
+    static int background(float entrance,float ramp) {return Glyph.mix(BG,Glyph.hsv(3.7f,.50f+.25f*ramp,.18f),entrance);}
     private static float scatter(int index,int salt) {
         int hash=(index+1)*0x45d9f3b+salt*0x119de1f3;
         hash=(hash^(hash>>>16))*0x45d9f3b;
@@ -157,10 +159,15 @@ final class Survival extends Draw {
         RainbowLand.clearColors(c,first);
     }
     void scenery(Painter p,GameCore c,Layout L) {
-        float intensity=ramp(),width=L.w/(3f+21f*intensity),radius=width*.5f;
+        scenery(p,L,ramp(),entrance(),skyPhase,c.state==GameCore.OVER?c.deathProgress():0);
+    }
+    void entranceScenery(Painter p,GameCore c,Layout L,float entry) {
+        scenery(p,L,0,entry,0,0);
+    }
+    private void scenery(Painter p,Layout L,float intensity,float entry,float phase,float exit) {
+        float width=L.w/(3f+21f*intensity),radius=width*.5f;
         float length=L.h,pitch=length-width;
         float saturation=.50f+.25f*intensity,value=.30f+.08f*intensity;
-        float exit=c.state==GameCore.OVER?c.deathProgress():0;
         float exitY=(L.deckTop+L.h)*exit*(.25f+.75f*exit);
         float x=0;
         int count=0;
@@ -180,8 +187,8 @@ final class Survival extends Draw {
         for(int layer=0;layer<count;layer++) {
             int column=bandOrder[layer];x=bandX[column];
             // The first cap starts above the title sky; later stripes follow continuously.
-            float travel=skyPhase*L.h*.08f*(.8f+.4f*scatter(column,2))
-                    +L.h*(1.15f*entrance()-.12f*scatter(column,3))-pitch*.5f-radius;
+            float travel=phase*L.h*.08f*(.8f+.4f*scatter(column,2))
+                    +L.h*(1.15f*entry-.12f*scatter(column,3))-pitch*.5f-radius;
             int cycle=(int)Math.floor(travel/pitch);
             float offset=travel-cycle*pitch;
             // Central rectangles touch vertically; adjacent columns overlap even between caps.
@@ -236,7 +243,7 @@ final class Survival extends Draw {
         if(!active)return;
         finish(c);c.landChoice=adventureLand;
         c.best=c.landChoice==LandPicker.TOWN?0:c.landBests[c.landChoice];
-        active=false;rescueLeft=rescueReadyFlash=0;
+        active=entranceComplete=false;rescueLeft=rescueReadyFlash=0;
     }
     void clearRecords() {
         java.util.Arrays.fill(bestTime,0);java.util.Arrays.fill(bestScore,0);newBest=false;

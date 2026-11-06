@@ -38,7 +38,9 @@ final class Launch extends Draw {
     static final float VERSUS_FADE=.5f,VERSUS_SILENCE=.5f;
 
     static boolean versus(GameCore c) {return c.modes.selected==ModeSelector.TIME_ATTACK;}
-    static float duration(GameCore c) {return versus(c)?VERSUS_FADE+VERSUS_SILENCE:TIME;}
+    static float duration(GameCore c) {return versus(c)?VERSUS_FADE+VERSUS_SILENCE:TIME+(SurvivalEntrance.selected(c)?SurvivalEntrance.SWEEP:0);}
+
+    static float elapsed(GameCore c) {return duration(c)-c.launchT;}
 
     /** Fade the title loop during departure, then leave a short breath before versus music. */
     static float musicGain(GameCore c) {
@@ -47,9 +49,9 @@ final class Launch extends Draw {
         return 1f-u*u*(3f-2f*u);
     }
 
-    /** 0..1 through the send-off. */
+    /** Companion reaches home at 1; its effects keep aging through the Survival sweep. */
     static float progress(GameCore c) {
-        return 1f - c.launchT / duration(c);
+        return elapsed(c)/(SurvivalEntrance.selected(c)?TIME:duration(c));
     }
 
     /** Arrive gently and stop before the name and voice begin. */
@@ -73,7 +75,7 @@ final class Launch extends Draw {
         }
         float homeX=RunCompanion.x(L),homeY=RunCompanion.y(L);
 
-        float across = slide(TIME-c.launchT);
+        float across = slide(elapsed(c));
         float x = x0 + (L.w / 2f - x0) * across;
         float centerY=L.h*.5f;
         float y = y0 + (centerY-y0)*across;
@@ -109,7 +111,7 @@ final class Launch extends Draw {
         stars(p, c, L, x, y, u - HOME, r * 2.4f, fade);
         if(u>=POP && u<LAND) wave(p,c.launchWho,x,y,r,(u-POP)/(LAND-POP),fade);
         Trinket.draw(p, c.launchWho, x, y, r, c.clock, true, fade);
-        float nameFade=Math.min(1f,Math.max(0f,(TIME-c.launchT-NAME_START)/.10f))
+        float nameFade=Math.min(1f,Math.max(0f,(elapsed(c)-NAME_START)/.10f))
                 *Math.min(1f,Math.max(0f,(LAND+.08f-u)/.10f));
         if(nameFade>0f) {
             float nameY=centerY+r0*GROWN*1.8f;
@@ -145,7 +147,7 @@ final class Launch extends Draw {
         String name=Collect.NAME[c.launchWho];
         float h=nameHeight(L,name),width=h*nameUnits(name);
         cx=Math.max(L.w*.08f+width*.5f,Math.min(L.w*.92f-width*.5f,cx));
-        float x=cx-width*.5f,elapsed=TIME-c.launchT;
+        float x=cx-width*.5f,elapsed=elapsed(c);
         int letter=0;
         for(int i=0;i<name.length();i++) {
             char ch=name.charAt(i);

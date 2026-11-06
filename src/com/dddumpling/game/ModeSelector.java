@@ -184,7 +184,7 @@ final class ModeSelector extends Draw {
             p.line(cx+r*.35f,cy,cx+r*.35f,cy+length,fadeBy(INK,alpha*.25f*(float)Math.sin(phase*Math.PI)),r*.45f);
         }
     }
-    private static void titleLabel(Painter p,GameCore c,Layout L,int mode,float x,float y,float bump,int color,float fade) {
+    static void titleLabel(Painter p,GameCore c,Layout L,int mode,float x,float y,float bump,int color,float fade) {
         float s=L.unit;
         if(mode==TIME_ATTACK) {TimeAttackTitle.draw(p,c,x,y,s,bump,color,fade);return;}
         if(mode==SURVIVAL) {

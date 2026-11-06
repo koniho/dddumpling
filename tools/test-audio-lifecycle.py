@@ -174,6 +174,16 @@ public class TestAudioLifecycle {
   a.volumes(.4f,0);a.companionExclaim(Narration.DOUBLE_RAINBOW);check("muted companion stays silent",speech.calls==2);
   a.volumes(.4f,.3f);a.explain("Ordinary tutorial");
   check("ordinary speech restores normal gain and ducking",Math.abs(speech.volume-.3f)<.0001f && field("ducked").getBoolean(a));a.release();
+  a=fresh();a.volumes(.4f,.3f);
+  speech=new android.speech.tts.TextToSpeech();
+  field("tts").set(a,speech);field("ttsBroken").setBoolean(a,false);
+  a.announceSurvival();
+  check("unready engine does not queue a late Survival announcement",speech.calls==0 && field("ttsPendingExplanation").get(a)==null);
+  field("ttsReady").setBoolean(a,true);a.announceSurvival();
+  check("Survival announcement speaks once at effects volume",speech.calls==1 && Narration.survival().equals(speech.text)
+    && Math.abs(speech.volume-.3f)<.0001f && field("ducked").getBoolean(a));
+  a.hush();check("cancel clears pending Survival speech",field("ttsPendingExplanation").get(a)==null && !field("ducked").getBoolean(a));
+  a.volumes(.4f,0);a.announceSurvival();check("Survival announcement respects mute",speech.calls==1);a.release();
   a=fresh();a.volumes(.4f,.3f);for(int i=0;i<12;i++)a.catLaser();
   check("every prompt laser plays without meow debounce",effectTrack(a,Sfx.CAT_LASER).plays==12);
   check("soft laser uses effects volume",Math.abs(effectTrack(a,Sfx.CAT_LASER).volume-.3f*Sfx.CAT_LASER_GAIN)<.0001f);

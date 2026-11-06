@@ -24,6 +24,7 @@ final class Lands extends Draw {
     static int visualStage(GameCore c) { return c.state == GameCore.TITLE ? firstStage(c.landChoice) : c.stage; }
     static int background(GameCore c) {
         if(c.survival.active)return c.survival.background();
+        if(SurvivalEntrance.active(c))return Survival.background(SurvivalEntrance.progress(c),0);
         return c.state == GameCore.TITLE ? Draw.BG
                 : Glyph.mix(c.landFromBg, BG[forStage(visualStage(c))], blend(c));
     }
@@ -66,6 +67,7 @@ final class Lands extends Draw {
 
     static void scenery(Painter p, GameCore c, Layout L) {
         if(c.survival.active) {c.survival.scenery(p,c,L);return;}
+        if(SurvivalEntrance.active(c)) {SurvivalEntrance.scenery(p,c,L);return;}
         if (c.state == GameCore.TITLE) return;
         p.save();
         float margin = Renderer.shakeMargin(c, L);
