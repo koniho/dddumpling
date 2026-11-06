@@ -305,9 +305,7 @@ final class Screens extends Draw {
             float left=cx-s*3.5f,right=cx+s*3.5f,y=cy+s*1.85f;
             p.line(left,y,right,y,fadeBy(Glyph.withAlpha(GOLD,65),fade),s*.12f);
             p.line(left,y,left+(right-left)*c.rollProgress(),y,fadeBy(GOLD,fade),s*.12f);
-            p.text("SHUFFLING...",cx,cy+s*3f,type(s*.64f),fadeBy(GOLD,fade),Painter.CENTER,true);
         } else {
-            p.text("TAP IN TURN!",cx,cy+s*3f,type(s*.64f),fadeBy(INK,fade),Painter.CENTER,true);
             float dir = c.steamer.expectLeft ? -1f : 1f;
             int arrow = fadeBy(Glyph.withAlpha(INK_DIM, 200), fade);
             float ax = cx + dir * s * 0.18f;
