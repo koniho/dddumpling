@@ -905,7 +905,7 @@ final class Preview {
         if(!wantedGroup("236-survival-"))return;
         GameCore title=TestSurvivalEntrance.title();title.modes.restore(ModeSelector.SURVIVAL);
         shot(dir,"236-survival-selector",title,L,w,h,ss);
-        for(float age:new float[]{0,.18f,.35f,.6f,.70f,1.35f,1.82f,1.95f,2.35f,2.85f,3.35f,3.75f,3.90f}) {
+        for(float age:new float[]{0,.18f,.35f,.6f,.70f,.91f,1.02f,1.35f,1.82f,1.95f,2.35f,2.85f,3.35f,3.75f,3.90f}) {
             GameCore c=TestSurvivalEntrance.title();c.beginStart();
             TestSurvivalEntrance.toAge(c,L,age);
             shot(dir,"236-survival-"+Math.round(age*1000),c,L,w,h,ss);

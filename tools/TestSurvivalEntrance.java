@@ -17,11 +17,21 @@ final class TestSurvivalEntrance extends Check {
         check("selecting Survival does not launch its entrance",!SurvivalEntrance.active(c) && ear.survivalAnnouncements==0);
         c.beginStart();float firstY=SurvivalEntrance.baseline(c,L);
         check("launch takes over the selector at its existing position",firstY==ModeSelector.y(L));
+        check("selector starts at original text size",SurvivalEntrance.scale(c,L)==1);
         toAge(c,L,SurvivalEntrance.RISE*.5f);
-        float risingY=SurvivalEntrance.baseline(c,L);
+        float risingY=SurvivalEntrance.baseline(c,L),risingScale=SurvivalEntrance.scale(c,L);
         check("selector title rises during companion greeting",risingY<firstY && SurvivalEntrance.progress(c)==0);
         toAge(c,L,SurvivalEntrance.RISE);
+        float peakY=SurvivalEntrance.baseline(c,L),fullScale=SurvivalEntrance.scale(c,L);
+        check("title grows continuously during ascent",risingScale>1 && fullScale>risingScale);
+        toAge(c,L,SurvivalEntrance.RISE+SurvivalEntrance.SETTLE*.65f);
+        float reboundY=SurvivalEntrance.baseline(c,L);
+        toAge(c,L,SurvivalEntrance.RISE+SurvivalEntrance.SETTLE);
         float topY=SurvivalEntrance.baseline(c,L);
+        check("arrival overshoots then rebounds and settles",peakY<topY && reboundY>topY);
+        float width=RasterPainter.textWidth("SURVIVAL",SurvivalEntrance.height(L)*fullScale);
+        check("full title fills width without clipping its breathing animation",width>L.w*.9f && width*1.018f<L.w);
+        check("title keeps full size after bounce",SurvivalEntrance.scale(c,L)==fullScale);
         check("selector title arrives near top before rainbow",topY<risingY && topY<L.h*.2f);
         check("Survival adds a rainbow sweep after the companion",SurvivalEntrance.active(c)
                 && Math.abs(Launch.duration(c)-Launch.TIME-SurvivalEntrance.SWEEP)<.001f);
@@ -43,10 +53,10 @@ final class TestSurvivalEntrance extends Check {
         for(float t:new float[]{.1f,.3f,.5f,.75f,.95f}) {
             c.launchT=SurvivalEntrance.SWEEP*(1-t);
             float y=SurvivalEntrance.baseline(c,L),edge=L.h*1.15f*SurvivalEntrance.progress(c);
-            check("title travels down just ahead of rainbow "+t,y>previous && y-SurvivalEntrance.height(L)>edge);
+            check("title travels down just ahead of rainbow "+t,y>previous && y-SurvivalEntrance.height(L)*fullScale>edge);
             previous=y;
         }
-        check("title fully clears bottom before handoff",SurvivalEntrance.baseline(c,L)-SurvivalEntrance.height(L)>L.h);
+        check("title fully clears bottom before handoff",SurvivalEntrance.baseline(c,L)-SurvivalEntrance.height(L)*fullScale>L.h);
         c.cloudUi.reduceMotion=true;
         check("reduced motion holds title position while fading",SurvivalEntrance.baseline(c,L)==topY);
         c.cloudUi.reduceMotion=false;

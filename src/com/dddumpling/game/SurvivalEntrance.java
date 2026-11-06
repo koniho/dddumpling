@@ -3,7 +3,7 @@ package com.dddumpling.game;
 /** Title send-off and rainbow share one launch clock; combat starts after the sweep. */
 final class SurvivalEntrance extends Draw {
     static final float SWEEP=Survival.ENTRANCE_SECONDS;
-    static final float RISE=.70f;
+    static final float RISE=.70f,SETTLE=.32f;
     private SurvivalEntrance() {}
 
     static boolean selected(GameCore c) {return c.modes.selected==ModeSelector.SURVIVAL;}
@@ -16,12 +16,21 @@ final class SurvivalEntrance extends Draw {
         return t*t*(3-2*t);
     }
     static float height(Layout L) {return type(L.unit*1.74f);}
+    private static float ease(float t) {
+        t=Math.max(0,Math.min(1,t));return t*t*(3-2*t);
+    }
+    static float scale(GameCore c,Layout L) {
+        // Leave a small edge margin for the selector's breathing animation on both native fonts.
+        float fit=L.w*.98f/(ModeSelector.NAMES[ModeSelector.SURVIVAL].length()*.73f*height(L));
+        return 1+(fit-1)*(c.cloudUi.reduceMotion?1:ease(Launch.elapsed(c)/RISE));
+    }
     static float baseline(GameCore c,Layout L) {
-        float top=Math.max(L.topSafe+height(L)*1.2f,L.h*.16f);
+        float top=Math.max(L.topSafe+height(L)*scale(c,L)*1.2f,L.h*.16f);
         if(c.cloudUi.reduceMotion)return top;
-        float rise=Math.max(0,Math.min(1,Launch.elapsed(c)/RISE));
-        rise=rise*rise*(3-2*rise);
-        return top+(ModeSelector.y(L)-top)*(1-rise)+L.h*1.15f*progress(c);
+        float age=Launch.elapsed(c),rise=ease(age/RISE);
+        float settle=Math.max(0,Math.min(1,(age-RISE)/SETTLE));
+        float bounce=-L.unit*rise*(1-ease(settle))*(float)Math.cos(settle*Math.PI*1.5f);
+        return top+(ModeSelector.y(L)-top)*(1-rise)+bounce+L.h*1.15f*progress(c);
     }
     static void scenery(Painter p,GameCore c,Layout L) {
         float entry=progress(c);
@@ -36,7 +45,7 @@ final class SurvivalEntrance extends Draw {
         int color=c.modes.confirmation>0 || c.modes.unavailable>0?GOLD:INK;
         // Continue the selector's own lettering and rainbow accents without fading it out.
         p.save();p.clipRect(0,0,L.w,L.h);
-        ModeSelector.titleLabel(p,c,L,ModeSelector.SURVIVAL,L.w*.5f,baseline(c,L),bump,color,fade);
+        ModeSelector.titleLabel(p,c,L,ModeSelector.SURVIVAL,L.w*.5f,baseline(c,L),bump*scale(c,L),color,fade);
         p.restore();
     }
 }
