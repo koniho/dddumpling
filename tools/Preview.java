@@ -901,6 +901,25 @@ final class Preview {
         }
     }
 
+    private static void survivalCheerFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
+        if(!wantedGroup("235-cheer-"))return;
+        for(int milestone:new int[]{1,2,6,10,120})for(float age:new float[]{.12f,.35f,1.05f}) {
+            GameCore c=TestSurvival.start(TestSurvival.store(),235);
+            c.survival.update(c,milestone*30+age);c.clock=3;c.score=milestone*2500;
+            for(int row=0;row<3;row++) {
+                GameCore.Enemy e=Check.add(c,L,new int[]{row%3,(row+1)%3},L.h*(.32f+row*.14f));
+                e.baseX=L.w*(.36f+row*.12f);
+            }
+            shot(dir,"235-cheer-"+milestone+"-"+Math.round(age*1000),c,L,w,h,ss);
+        }
+        GameCore busy=TestSurvival.start(TestSurvival.store(),235);
+        busy.startFrenzy(Power.NINJA,L);busy.flash=busy.shake=0;
+        busy.survival.update(busy,180.25f);
+        GameCore.Enemy e=Check.add(busy,L,new int[]{0,1,2},L.playTop+L.unit*4.6f);e.baseX=L.w*.5f;
+        shot(dir,"235-cheer-busy",busy,L,w,h,ss);
+        busy.cloudUi.reduceMotion=true;
+        shot(dir,"235-cheer-reduced",busy,L,w,h,ss);
+    }
     private static void survivalFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wantedGroup("149-survival-"))return;
         GameCore rack=TestSurvival.start(TestSurvival.store(),149);
@@ -1982,6 +2001,7 @@ final class Preview {
         modeFrames(dir,L,w,h,ss);
         duckFrames(dir,L,w,h,ss);
         survivalFrames(dir,L,w,h,ss);
+        survivalCheerFrames(dir,L,w,h,ss);
         versusFrames(dir,L,w,h,ss);
         timeAttackFrames(dir,L,w,h,ss);
         gatorSilhouetteFrames(dir,L,w,h,ss);
