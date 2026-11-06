@@ -611,6 +611,30 @@ final class TestStages extends Check {
         check("shownRight settles on the right key",
                 st.shownRight(1f) == Glyph.COUNT - 1);
         check("the spinner takes enough steps to read as one", Steamer.ROLL_STEPS >= 8);
+        for(boolean kids:new boolean[]{false,true}) {
+            GameCore c=new GameCore(new Mem(),244L);c.startGame();c.kidsRun=kids;
+            Interlude.enterBonus(c,L);c.bonusTimer=c.bonusRollEnd+.001f;c.update(DT,L);
+            check("selection flash bridges into playable keys "+kids,c.bonusMashing() && c.steamer.selectionGlow==1);
+            c.paused=true;c.update(.5f,L);c.paused=false;
+            check("paused selection flash holds "+kids,c.steamer.selectionGlow==1);
+            c.tapBonus(c.steamer.wanted());c.tapBonus(c.steamer.wanted());
+            check("selection flash never delays input "+kids,c.steamer.hits==1);
+            advance(c,L,Steamer.SELECTION_FADE+.05f);
+            check("selection flash fades even with held Kids timer "+kids,c.steamer.selectionGlow==0);
+            c.steamer.selectionGlow=1;c.steamer.pick(c.rnd);
+            check("another selection clears old flash "+kids,c.steamer.selectionGlow==0);
+            c.steamer.selectionGlow=1;c.toTitle();
+            check("leaving clears selection flash "+kids,c.steamer.selectionGlow==0);
+        }
+        GameCore tutorial=TestOnboarding.fresh(L,new Mem());
+        tutorial.onboarding.begin(tutorial,Onboarding.STEAMER,L);
+        GameCore practice=tutorial.onboarding.practice;
+        practice.bonusTimer=practice.bonusRollEnd+.001f;practice.update(DT,L);
+        tutorial.onboarding.sceneWait=0;tutorial.onboarding.briefing=true;
+        tutorial.onboarding.speech=TutorialSpeech.ALTERNATE;
+        advance(tutorial,L,Steamer.SELECTION_FADE+.05f);
+        check("prompt flash fades while tutorial explanation holds gameplay",practice.steamer.selectionGlow==0
+                && tutorial.onboarding.briefing);
     }
 
     /** The four interlude phases in order, and the crowd cap during a frenzy. */

@@ -354,7 +354,10 @@ final class Onboarding extends Draw {
                 || speech==TutorialSpeech.GLOB && !c.boss.hasGlob()))bossGuide=false;
         slimeGlobHint(c,elapsed);
         moveCompanion(c,elapsed);
-        if(briefing || rescueGuide) { age+=elapsed;return true; }
+        if(briefing || rescueGuide) {
+            if(practice!=null)practice.steamer.fadeSelection(elapsed);
+            age+=elapsed;return true;
+        }
         if(practice==null) {
             int next=0;
             if(c.state==GameCore.BONUS && !c.bossReward) {

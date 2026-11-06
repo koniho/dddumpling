@@ -270,6 +270,8 @@ final class Screens extends Draw {
         // Centres 1.7r either side: enough clear space between them for the arrow.
         float gap = r * 3.4f;
         boolean rolling = c.bonusRolling();
+        float glow=rolling?c.rollProgress()*c.rollProgress():c.steamer.selectionGlow;
+        float reveal=rolling?0:1-c.steamer.selectionGlow;
         int[] keys = {c.bonusLeftKey(), c.bonusRightKey()};
         // Shuffling is an activity cue; only a settled key gets the playable caret.
         boolean[] next = rolling ? new boolean[] {false, false}
@@ -279,31 +281,33 @@ final class Screens extends Draw {
             float x = cx + (i == 0 ? -gap : gap) / 2f;
             int col = Glyph.COLOR[keys[i]];
             float pulse = next[i] && !c.cloudUi.reduceMotion ? 1f + 0.10f * (float) Math.sin(c.clock * 8f) : 1f;
-            float rr = r * (rolling ? .88f : pulse);
+            float rr = r * (.88f+(pulse-.88f)*reveal);
             boolean lit=rolling || next[i];
-            if(rolling)shuffleRing(p,x,cy,r*1.3f,c.rollProgress(),col,fade,c.cloudUi.reduceMotion);
+            if(rolling || glow>0)shuffleRing(p,x,cy,r*1.3f,c.rollProgress(),col,
+                    fade*(rolling?1:glow),c.cloudUi.reduceMotion);
+            int prompt=Glyph.mix(col,INK,glow*.92f);
 
             if (next[i]) {
                 // The one it wants: a bright ring so the eye lands on it without reading, and the
                 // field's own caret above it, which is the mark the player already knows.
                 p.strokePoly(Glyph.hex(x, cy, rr * 1.22f),
-                        fadeBy(Glyph.withAlpha(INK, 200), fade), rr * 0.09f);
-                caret(p, x, cy, rr, fadeBy(Glyph.withAlpha(INK, 225), fade));
+                        fadeBy(Glyph.withAlpha(INK, 200), fade*reveal), rr * 0.09f);
+                caret(p, x, cy, rr, fadeBy(Glyph.withAlpha(INK, 225), fade*reveal));
             }
             p.fillPoly(Glyph.hex(x, cy, rr),
-                    fadeBy(Glyph.withAlpha(col, lit ? 95 : 34), fade));
+                    fadeBy(Glyph.withAlpha(prompt,(int)((lit?95:34)*(1-glow)+225*glow)),fade));
             p.strokePoly(Glyph.hex(x, cy, rr),
-                    fadeBy(Glyph.withAlpha(col, lit ? 250 : 120), fade), rr * 0.085f);
+                    fadeBy(Glyph.withAlpha(prompt,(int)((lit?250:120)*(1-glow)+255*glow)),fade), rr * 0.085f);
             Kawaii.draw(p, keys[i], x, cy, rr * 0.58f,
-                    fadeBy(Glyph.withAlpha(col, lit ? 255 : 130), fade), 1f,
-                    next[i] ? 0.9f : 0.2f);
+                    fadeBy(Glyph.withAlpha(prompt,(int)((lit?255:130)*(1-glow)+255*glow)),fade),1f,
+                    .2f+(next[i]?.7f*reveal:0));
         }
 
         // Arrow between them, leaning whichever way the sequence is going. Suppressed while
         // spinning: there is no order to point out yet.
         if (!rolling) {
             float dir = c.steamer.expectLeft ? -1f : 1f;
-            int arrow = fadeBy(Glyph.withAlpha(INK_DIM, 200), fade);
+            int arrow = fadeBy(Glyph.withAlpha(INK_DIM, 200), fade*reveal);
             float ax = cx + dir * s * 0.18f;
             p.fillPoly(new float[] {ax - dir * s * 0.36f, cy - s * 0.26f,
                     ax + dir * s * 0.36f, cy, ax - dir * s * 0.36f, cy + s * 0.26f}, arrow);
