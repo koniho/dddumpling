@@ -350,6 +350,7 @@ final class TestOnboarding extends Check {
         starTutorialRun(L);
         steamerSelection(L);
         steamerArrival(L);
+        TestTutorialPresentation.all(L);
         collectionGuidance(L);
         titleGuidanceOrder(L);
         titleTour(L);

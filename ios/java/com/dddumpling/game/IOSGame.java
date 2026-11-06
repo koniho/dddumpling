@@ -175,6 +175,7 @@ public final class IOSGame {
                 int i=ev.getActionIndex();
                 core.onboarding.touch(core,layout,action,ev.getPointerId(i),ev.getX(i),ev.getY(i));
             }
+            tutorialFeedback();
             return true;
         }
         if (core.onboarding.rescueGuide) {
@@ -781,6 +782,12 @@ public final class IOSGame {
         delayedHaptic = .072f;
     }
 
+    private void tutorialFeedback() {
+        int feedback=core.onboarding.takeFeedback(core);
+        if(feedback>1 && host!=null)host.impact();
+        else if(feedback>0)tick();
+    }
+
     private void tick() {
         if (host != null) host.tick();
     }
@@ -804,6 +811,7 @@ public final class IOSGame {
             else if(host!=null) host.openAppAction(external==PlayerSettings.SHARE);
             else externalFinished();
         }
+        tutorialFeedback();
         int caveFeedback=Math.max(core.cart.scene.takeFeedback(),Math.max(core.cave.effects.takeFeedback(),core.mining.scene.takeFeedback()));
         if(caveFeedback>0 && !core.paused && !core.settingsOpen)tick();
         int wardrobeFeedback=core.wardrobe.screen.takeFeedback();

@@ -290,6 +290,7 @@ public class GameView extends View implements InputManager.InputDeviceListener, 
                 int i=ev.getActionIndex();
                 core.onboarding.touch(core,layout,action,ev.getPointerId(i),ev.getX(i),ev.getY(i));
             }
+            tutorialFeedback();
             return true;
         }
         if (core.onboarding.rescueGuide) {
@@ -918,6 +919,12 @@ public class GameView extends View implements InputManager.InputDeviceListener, 
                 HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
     }
 
+    private void tutorialFeedback() {
+        int feedback=core.onboarding.takeFeedback(core);
+        if(feedback>1)bossImpactHaptic();
+        else if(feedback>0)tick();
+    }
+
     private void tick() {
         performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP,
                 HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
@@ -961,6 +968,7 @@ public class GameView extends View implements InputManager.InputDeviceListener, 
                 int external=core.preferences.takeExternal(core);
                 if(external!=0) ((MainActivity)getContext()).openAppAction(external);
                 if(core.cloudUi.takeAction()!=0) ((MainActivity)getContext()).signInPlayGames();
+                tutorialFeedback();
                 int caveFeedback=Math.max(core.cart.scene.takeFeedback(),Math.max(core.cave.effects.takeFeedback(),core.mining.scene.takeFeedback()));
                 if(caveFeedback>0 && !core.paused && !core.settingsOpen)
                     performHapticFeedback(caveFeedback>1?HapticFeedbackConstants.LONG_PRESS:HapticFeedbackConstants.KEYBOARD_TAP);

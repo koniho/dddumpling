@@ -168,6 +168,16 @@ final class Onboarding extends Draw {
     boolean companionAway(GameCore c) {
         return teacher==null?movingCompanion(c):teacher.onboarding.movingCompanion(teacher);
     }
+    private int feedback;
+    int takeFeedback(GameCore c) {
+        int result=feedback;feedback=0;
+        if(practice!=null) {
+            GameCore q=practice;
+            result=Math.max(result,Math.max(q.cart.scene.takeFeedback(),q.mining.scene.takeFeedback()));
+            result=Math.max(result,q.bossDeathHaptic);q.bossDeathHaptic=0;
+        }
+        return c.paused || c.settingsOpen || c.cloudUi.open?0:result;
+    }
     int companionSpeech;
     private void moveCompanion(GameCore c,float dt) {
         float target=speaking(c)?1:0;
@@ -194,7 +204,7 @@ final class Onboarding extends Draw {
         success=sceneWait=bubbleAge=slimeHintAge=0;briefing=bossHelp=bossGuide=powerGuide=starGuide=titleGuide=rescueGuide=false;
     }
     void cancelTouch() {
-        pointer=-1;ownsTouch=lid=false;
+        feedback=0;pointer=-1;ownsTouch=lid=false;
         speechPointer=-1;continueArmed=false;
         helpPointer=-1;helpArmed=false;
         if(practice!=null)Pause.release(practice);
@@ -228,6 +238,7 @@ final class Onboarding extends Draw {
             Interlude.enterBonus(q,L);
         }
         q.update(0,L);
+        if(which==STEAMER)inheritScenery(c,q);
         if(which==STEAMER && c.bonusMashing())q.bonusTimer=q.bonusRollEnd;
         // Recreate only the next unlearned action, never make a player repeat an earlier one.
         if(which==STEAMER && learned(TutorialSpeech.ALTERNATE)) {
@@ -246,6 +257,19 @@ final class Onboarding extends Draw {
         if(which==STEAMER)q.sound=c.sound;
         if(which==STEAMER) { sceneWait=SCENE_REVEAL;return; }
         introduce(c);
+    }
+    private static void inheritScenery(GameCore c,GameCore q) {
+        // Practice replaces the rendered run, so its reveal must not replay the title-to-land fade.
+        q.stage=c.stage;q.landChoice=c.landChoice;q.landBlend=c.landBlend;
+        q.landFrom=c.landFrom;q.landFromBg=c.landFromBg;q.landFromTint=c.landFromTint;
+        q.skyClock=c.skyClock;q.clock=c.clock;
+        System.arraycopy(c.landCloudFrom,0,q.landCloudFrom,0,c.landCloudFrom.length);
+        for(int layer=0;layer<GameCore.CLOUD_LAYERS;layer++) {
+            System.arraycopy(c.cloudX[layer],0,q.cloudX[layer],0,GameCore.CLOUDS_PER_LAYER);
+            System.arraycopy(c.cloudY[layer],0,q.cloudY[layer],0,GameCore.CLOUDS_PER_LAYER);
+            System.arraycopy(c.cloudW[layer],0,q.cloudW[layer],0,GameCore.CLOUDS_PER_LAYER);
+            System.arraycopy(c.cloudSeed[layer],0,q.cloudSeed[layer],0,GameCore.CLOUDS_PER_LAYER);
+        }
     }
     static int discoveredLand(GameCore c) {
         for(int land=1;land<Lands.COUNT;land++)
@@ -521,16 +545,17 @@ final class Onboarding extends Draw {
         GameCore q=practice;
         if(success>0) { if(action==1)ownsTouch=false;return true; }
         if(action==0 || action==5) {
-            if(lesson==CART)q.cart.input.down(q,L,id,x,y);
-            if(lesson==MINE)q.mining.input.down(q,L,id,x,y);
+            if(lesson==CART && q.cart.input.down(q,L,id,x,y))feedback=1;
+            if(lesson==MINE && q.mining.input.down(q,L,id,x,y))feedback=1;
             if(pointer<0 && lesson==STEAMER && q.bonusSwipeReady() && Screens.inSteamerLid(q,L,x,y)) {
                 pointer=id;lid=true;startY=y;
-            } else if(pointer<0 && lesson==SLIME && y<L.deckTop && q.grabBoss(x,y))pointer=id;
+            } else if(pointer<0 && lesson==SLIME && y<L.deckTop && q.grabBoss(x,y)) {pointer=id;feedback=1;}
             else {
                 int g=q.keyAt(x,y,L);
                 if(g>=0) {
                     if(q.state==GameCore.BONUS)q.tapBonus(g);
                     else q.tapKey(g,L);
+                    feedback=1;
                 }
             }
         } else if(action==2) {
@@ -539,7 +564,7 @@ final class Onboarding extends Draw {
                 if(lid) {
                     q.dragBonusLid(startY-y);
                     if(Screens.steamerLidY(q,L)<=Screens.steamerReleaseY(q,L))swipeSteamer(c,q);
-                } else q.dragBoss(x,y,L);
+                } else if(q.dragBoss(x,y,L))feedback=1;
             }
         } else if(action==1 || action==6) {
             q.cart.input.up(id);q.mining.input.up(id);
@@ -552,8 +577,10 @@ final class Onboarding extends Draw {
         GameCore.Sound sound=q.sound;
         // A live lesson hands its win to the waiting run, which plays the celebration once.
         if(c.bonusRolling() || c.bonusMashing())q.sound=null;
+        boolean won=q.bonusPrizeWon();
         try { q.swipeBonus(); }
         finally { q.sound=sound; }
+        if(!won && q.bonusPrizeWon())feedback=1;
     }
     private static boolean continueHit(Layout L,float x,float y) {
         return x>=L.playLeft && x<=L.playRight && y>=L.playTop && y<L.deckTop

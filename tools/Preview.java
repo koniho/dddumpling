@@ -901,6 +901,17 @@ final class Preview {
         }
     }
 
+    private static void steamerTutorialScenery(File dir,Layout L,int w,int h,int ss) throws Exception {
+        if(!wantedGroup("238-steamer-"))return;
+        GameCore c=TestOnboarding.fresh(L,new Check.Mem());c.landBlend=1;c.skyClock=8;
+        Interlude.enterBonus(c,L);
+        shot(dir,"238-steamer-before",c,L,w,h,ss);
+        c.update(DT,L);
+        shot(dir,"238-steamer-start",c,L,w,h,ss);
+        c.update(.4f,L);shot(dir,"238-steamer-reveal",c,L,w,h,ss);
+        c.update(.4f,L);shot(dir,"238-steamer-ready",c,L,w,h,ss);
+    }
+
     private static void survivalEntranceFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wantedGroup("236-survival-"))return;
         GameCore title=TestSurvivalEntrance.title();title.modes.restore(ModeSelector.SURVIVAL);
@@ -2021,6 +2032,7 @@ final class Preview {
         survivalFrames(dir,L,w,h,ss);
         survivalCheerFrames(dir,L,w,h,ss);
         survivalEntranceFrames(dir,L,w,h,ss);
+        steamerTutorialScenery(dir,L,w,h,ss);
         versusFrames(dir,L,w,h,ss);
         timeAttackFrames(dir,L,w,h,ss);
         gatorSilhouetteFrames(dir,L,w,h,ss);

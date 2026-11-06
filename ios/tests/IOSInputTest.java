@@ -1332,10 +1332,12 @@ public final class IOSInputTest extends Check {
         IOSGame game=new IOSGame(store,new Ear(),114);game.layout(393,852,0,59,0,34);
         GameCore c=game.core();Layout l=game.geometry();c.startGame();game.update(DT);
         check("native fresh run has no upfront tutorial",c.onboarding.practice==null);
+        Host tutorialHost=new Host();game.setHost(tutorialHost);
         c.onboarding.begin(c,Onboarding.CORE,l);
         GameCore q=c.onboarding.practice;
         tap(game,q.keyX(l,0),q.keyY(l,0));game.update(DT);
         check("native explanation blocks gameplay keys",c.onboarding.briefing && c.onboarding.word.pos==0);
+        check("blocked tutorial key is haptically quiet",tutorialHost.ticks==0);
         tap(game,l.w*.5f,TutorialSpeech.buttonY(l));
         check("native invisible continue cannot skip companion arrival",c.onboarding.briefing && c.onboarding.bubbleProgress()==0);
         tutorialAwaitBubble(game);
@@ -1344,7 +1346,11 @@ public final class IOSInputTest extends Check {
         game.touch(one(1,42,l.w*.5f,TutorialSpeech.buttonY(l)));
         check("background cancels explanation button press",c.onboarding.briefing);
         tutorialContinue(game);
+        int tutorialTicks=tutorialHost.ticks;
         tap(game,q.keyX(l,0),q.keyY(l,0));game.update(DT);
+        check("native tutorial key gives one haptic",tutorialHost.ticks==tutorialTicks+1);
+        game.update(DT);
+        check("tutorial release and frame do not repeat key haptic",tutorialHost.ticks==tutorialTicks+1);
         for(int i=0;i<60 && c.onboarding.step==0;i++)game.update(DT);
         check("native character key advances introduction",c.onboarding.step==1 && c.hits==0);
         game.background(true);float age=c.onboarding.age;game.update(60);
@@ -1354,6 +1360,7 @@ public final class IOSInputTest extends Check {
         for(int key:new int[]{1,4,0}) { tap(game,q.keyX(l,key),q.keyY(l,key));game.update(DT); }
         for(int i=0;i<120;i++)game.update(DT);
         check("native controls finish core lesson",(store.tutorials&Onboarding.CORE)!=0 && c.onboarding.practice==null);
+        steamerTutorialFeedback();
         bossGuidanceInput();
         starGuidanceInput();
         collectionGuidanceInput();
@@ -1403,6 +1410,35 @@ public final class IOSInputTest extends Check {
         tap(game,l.w*.5f,PlayerSettings.tutorialY(l));
         check("native Settings resets tutorials without clearing progress",store.tutorials==0 && !c.onboarding.learned(TutorialSpeech.RESCUE) && c.settingsOpen);
     }
+    private static void steamerTutorialFeedback() {
+        Mem save=new Mem();save.tutorials=save.powerTutorials=0;
+        IOSGame game=new IOSGame(save,new Ear(),238);game.layout(393,852,0,59,0,34);
+        Host host=new Host();game.setHost(host);
+        GameCore c=game.core();Layout l=game.geometry();c.startGame();
+        c.onboarding.begin(c,Onboarding.STEAMER,l);GameCore q=c.onboarding.practice;
+        tap(game,q.keyX(l,0),q.keyY(l,0));
+        check("Steamer reveal blocks key haptics",host.ticks==0);
+        for(int i=0;i<300 && (c.onboarding.sceneWait>0 || q.bonusRolling());i++)game.update(DT);
+        tap(game,q.keyX(l,q.steamer.wanted()),q.keyY(l,q.steamer.wanted()));
+        check("Steamer explanation blocks key haptics",host.ticks==0);
+        tutorialContinue(game);
+        int key=q.steamer.wanted();
+        tap(game,q.keyX(l,key),q.keyY(l,key));
+        check("Steamer tutorial tap vibrates immediately once",host.ticks==1 && q.keyPress[key]>0);
+        game.update(DT);game.background(true);game.background(false);game.back();game.update(DT);
+        check("Steamer haptic cannot replay on frame or resume",host.ticks==1);
+        for(int i=0;i<80 && !q.bonusSwipeReady();i++) {
+            key=q.steamer.wanted();tap(game,q.keyX(l,key),q.keyY(l,key));game.update(DT);
+        }
+        tutorialContinue(game);
+        int ticks=host.ticks;float y=Screens.steamerLidY(q,l);
+        game.touch(one(0,238,l.w*.5f,y));
+        game.touch(one(2,238,l.w*.5f,y-l.h*.6f));
+        game.touch(one(2,238,l.w*.5f,y-l.h*.65f));
+        game.touch(one(1,238,l.w*.5f,y-l.h*.65f));
+        check("Steamer lid win gives one haptic despite repeated move samples",q.bonusPrizeWon() && host.ticks==ticks+1);
+    }
+
     private static void tutorialContinue(IOSGame game) {
         int message=game.core().onboarding.speech;
         for(int i=0;i<12 && game.core().onboarding.briefing && game.core().onboarding.speech==message;i++) {
