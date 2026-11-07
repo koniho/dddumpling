@@ -606,7 +606,7 @@ public class GameView extends View implements InputManager.InputDeviceListener, 
         return true;
     }
 
-    private static final int CASE_IDLE = 0, CASE_TAP = 1, CASE_SHELF = 2;
+    private static final int CASE_IDLE = 0, CASE_TAP = 1, CASE_SHELF = 2, CASE_EDGE = 3;
     private int caseGesture;
     private float caseDownX, caseDownY;
     private int caseHit;
@@ -640,8 +640,8 @@ public class GameView extends View implements InputManager.InputDeviceListener, 
             // A drag can move freely on both axes.
             float dx = x - caseDownX;
             if (caseGesture == CASE_TAP && Math.max(Math.abs(dx), Math.abs(y - caseDownY)) > layout.unit * 0.7f) {
-                caseGesture = CASE_SHELF;
-                core.beginCaseDrag(caseDownX, caseDownY);
+                caseGesture = CaseUi.canStartDrag(caseDownX, layout) ? CASE_SHELF : CASE_EDGE;
+                if (caseGesture == CASE_SHELF) core.beginCaseDrag(caseDownX, caseDownY);
             }
             if (caseGesture == CASE_SHELF) {
                 int before = core.caseIndex;
