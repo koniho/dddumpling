@@ -6,7 +6,6 @@ final class PlayBridge {
     void showLeaderboard(int board) {core.preferences.externalFinished(core);}
     void requestReview() {}
     void showAchievements() {}
-    void showLeaderboard(int board) {}
     void signIn() {}
     PlayBridge(MainActivity activity, GameCore core) {this.core=core;core.leaderboards.account(null,false);}
     void resume() {}

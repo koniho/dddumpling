@@ -7,9 +7,8 @@ final class LeaderboardUi extends Draw {
     static int board(GameCore c) {
         if(c.modes.selected==ModeSelector.SURVIVAL)return c.survival.titleProfile(c);
         if(c.modes.selected==ModeSelector.TIME_ATTACK) {
-            if(Survival.profile(c.preferences.kids,c.fullRoster)!=Survival.FULL_PROFILE
-                    || c.timeAttack.selected<0 || c.timeAttack.selected>TimeAttack.ALL)return -1;
-            return LeaderboardCatalog.TIME_ATTACK_BASE+c.timeAttack.selected;
+            return LeaderboardCatalog.timeAttack(Survival.profile(c.preferences.kids,c.fullRoster),
+                    c.timeAttack.selected);
         }
         return c.modes.adventure() && !c.preferences.kids?LeaderboardCatalog.ADVENTURE:-1;
     }
