@@ -56,7 +56,6 @@ final class TitleTour extends Draw {
                     type(s*.64f),0xFFFFF5DD,Painter.CENTER,true);
         }
         TutorialSpeech.companion(p,c,L);
-        p.fillPoly(pill(L.w*.84f,skipY(L),L.w*.135f,L.unit*.95f,12),0xFF493953);
-        p.text("SKIP ALL",L.w*.84f,skipY(L)+L.unit*.3f,type(L.unit*.62f),INK,Painter.CENTER,true);
+        Onboarding.skipButton(p,L,skipY(L));
     }
 }

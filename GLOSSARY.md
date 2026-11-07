@@ -382,7 +382,7 @@ narrated companion lesson on their first visible encounter in Adventure or Survi
 enemy is highlighted while gameplay and Survival time pause. Lessons wait for the stage banner,
 other guidance and power-ups to finish, and for the whole enemy to fit below the header.
 Acknowledgement saves completion across runs and app opens; Reset Tutorials restores the lessons
-and Skip All suppresses them. Boss projectiles retain their separate boss guidance.
+and Skip dismisses only the active enemy lesson. Boss projectiles retain their separate boss guidance.
 
 ## Swampland word variants
 
@@ -650,7 +650,7 @@ the right as the list leaves left; Back reverses this without losing the list po
 
 The **What’s new steamer** (`ReleaseMascot`) has a cute face, no arms, rising steam, and a lid that lifts when tapped. For an unread build, a star turns behind it, the lid pops repeatedly, and extra steam rises while the normal title screen stays usable. Tapping it opens the release list and saves the build as read; until then, the animation returns on title visits. **RESET NEWS** in developer settings restores this unread state.
 
-The **land discovery tour** (`LandDiscovery`) uses the swipe traveler’s size and arc, sliding through newly unlocked lands in sequence. Each first arrival pulses that land’s color and persists its seen flag; later visits do not repeat the glow. Covered title scenes and unfinished display-case/story guidance pause the tour. Title tutorials keep the active lesson until its action is complete, with collection guidance taking priority. After the first discovery tour finishes, a single tutorial page explains swiping between lands to choose where the next run starts. Acknowledgement leaves a swipe reminder; changing lands with a swipe saves completion. Taps do not complete it. Reset Tutorials restores it and Skip All suppresses it.
+The **land discovery tour** (`LandDiscovery`) uses the swipe traveler’s size and arc, sliding through newly unlocked lands in sequence. Each first arrival pulses that land’s color and persists its seen flag; later visits do not repeat the glow. Covered title scenes and unfinished display-case/story guidance pause the tour. Title tutorials keep the active lesson until its action is complete, with collection guidance taking priority. After the first discovery tour finishes, a single tutorial page explains swiping between lands to choose where the next run starts. Acknowledgement leaves a swipe reminder; changing lands with a swipe saves completion. Taps do not complete it. Reset Tutorials restores it and Skip dismisses that land-selection lesson.
 
 The developer settings **ALL LANDS** chip enables every land for the current session without granting collectibles. **RESET LANDS** clears that override. The dotted walking trail is fixed relative to the lands and stops outside their silhouettes. The explorer crosses between the land centres and remains in front of their artwork.
 
@@ -853,7 +853,7 @@ Acknowledging an explanation alone does not mark the action learned.
 After collecting a first dumpling and returning to title, a two-step guide introduces opening
 the display case and tapping an owned dumpling to view its narrated story. It waits for the
 return animation, focuses an owned dumpling when needed, and learns each action independently
-(including discovery before the prompt). Skip All and Reset Tutorials include these steps.
+(including discovery before the prompt). Skip dismisses the active title-task set; Reset Tutorials restores these steps.
 
 Initial boss guidance is opt-in: a small **?** beside the companion offers help from boss-stage
 entry, including the arrival card. It is offered again each run even for learned mechanics.
@@ -867,10 +867,14 @@ ducks music and stops on dismissal or backgrounding; text and demonstrations wor
 Super Slime has one introductory explanation covering visible-face matching, retaliation for
 wrong keys or hidden faces, and the red-area goal. Its red-area drag is a separate contextual
 step: pause and explain it when the red patch appears, not during initial help. Matching visible faces makes Super Slime vulnerable; dragging the
-red area to either side damages it. Successful dragging permanently skips this step; Skip All
-also suppresses it.
+red area to either side damages it. Successful dragging permanently skips this step; skipping the Slime tutorial set
+also dismisses it.
 `Onboarding` owns lesson state and `TutorialSpeech` owns bubbles and demonstrations.
-**Skip All** suppresses remaining guidance and the desperation-swipe lesson across restarts.
+**Skip** dismisses only the active tutorial set across restarts: each minigame, each boss,
+collection/story guidance, the scores/modes tour, or the current standalone lesson. Skipping
+one set leaves unrelated guidance available. The outlined button uses the same styling in
+compact title guides and gameplay lessons. Older saved global Skip All choices remain in
+effect until Reset Tutorials; new skips never create that global flag.
 Player Settings → **Reset Tutorials** makes all steps eligible again without resetting any other
 progress or restoring the removed pre-stage intro.
 

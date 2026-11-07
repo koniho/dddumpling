@@ -74,7 +74,11 @@ final class TestPowerTutorials extends Check {
         }
         GameCore c=fresh(L,new Mem());c.onboarding.skip(c);
         c.startFrenzy(Power.FLURRY,L);c.update(DT,L);
-        check("Skip All suppresses power guidance",!c.onboarding.briefing);
+        check("skip without active set leaves power guidance available",c.onboarding.briefing);
+        c.onboarding.skip(c);c.update(DT,L);
+        check("skipping one power leaves other power tutorials available",!c.onboarding.briefing
+                && c.onboarding.learned(TutorialSpeech.POWER_FLURRY)
+                && !c.onboarding.learned(TutorialSpeech.POWER_NINJA));
         c=fresh(L,new Mem());c.startFrenzy(Power.FLURRY,L);c.update(DT,L);
         c.startFrenzy(Power.NINJA,L);c.update(DT,L);
         check("replaced power cannot leave stale explanation",c.onboarding.briefing && c.onboarding.speech==TutorialSpeech.POWER_NINJA);
@@ -131,7 +135,7 @@ final class TestPowerTutorials extends Check {
         TestPower.place(c,L,Power.NINJA,0);c.update(DT,L);
         check("missed pickup can be explained on next appearance",c.onboarding.briefing);
         c.onboarding.skip(c);c.update(DT,L);
-        check("Skip All suppresses pickup instruction",!c.onboarding.briefing);
+        check("Skip suppresses pickup instruction",!c.onboarding.briefing);
         for(int effect:new int[]{Power.INCOGNITO,Power.MONOCHROME}) {
             c=fresh(L,new Mem());TestPower.place(c,L,effect,0);c.update(DT,L);
             check("known debuff does not get pickup tutorial "+effect,!c.onboarding.briefing);
