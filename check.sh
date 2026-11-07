@@ -96,6 +96,7 @@ src/com/dddumpling/game/TitleTour.java
 src/com/dddumpling/game/EnemyTutorial.java
 src/com/dddumpling/game/TutorialSpeech.java
 src/com/dddumpling/game/ScoreReset.java
+src/com/dddumpling/game/LeaderboardCatalog.java
 src/com/dddumpling/game/HighScores.java
 src/com/dddumpling/game/BossRetry.java
 src/com/dddumpling/game/HighScoreScreen.java
