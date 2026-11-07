@@ -1,6 +1,62 @@
 {
   "releases": [
     {
+      "version": "0.1.41",
+      "changes": [
+        {
+          "icon": "leaderboard",
+          "title": "Climb the leaderboards",
+          "where": "In your high-score lists",
+          "why": "Compare new Survival, Boss Time Attack and clean Adventure runs worldwide. Get a rank alert after your best lands on the board.",
+          "autoReset": false
+        },
+        {
+          "icon": "survival_cheer",
+          "title": "Survival gets a cheer",
+          "where": "Starting and playing Survival",
+          "why": "Bounce into a rainbow entrance with a spoken welcome. Every 30 seconds, bigger cheers and colorful bursts celebrate your time!",
+          "autoReset": false
+        },
+        {
+          "icon": "steamer_fan",
+          "title": "A little steamer helper",
+          "where": "In the Steamer mini-game",
+          "why": "Your squishy fans harder as you score, then points when the lid is ready. Glowing prompts make the end of each shuffle clearer.",
+          "autoReset": false
+        },
+        {
+          "icon": "misc",
+          "title": "Little improvements",
+          "autoReset": false,
+          "improvements": [
+            {
+              "where": "During tutorials",
+              "why": "An outlined Skip button skips only the current lesson set."
+            },
+            {
+              "where": "Facing Dark Divide",
+              "why": "Keep hitting until the boss flashes vulnerable, then split!"
+            }
+          ]
+        },
+        {
+          "icon": "bugs",
+          "title": "Happy little fixes",
+          "autoReset": false,
+          "fixes": [
+            {
+              "where": "During tutorials",
+              "why": "Steamer scenery stays visible, practice has haptics, and the Slime lesson plays once."
+            },
+            {
+              "where": "In your display case",
+              "why": "Swiping back keeps your selected squishy in place."
+            }
+          ]
+        }
+      ]
+    },
+    {
       "version": "0.1.40",
       "changes": [
         {

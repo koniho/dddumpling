@@ -1,0 +1,1 @@
+New leaderboards and rank alerts for Survival, Boss Time Attack and clean Adventure runs. Survival gets a rainbow entrance and cheers every 30 seconds. Your Steamer companion fans as you score, with clearer shuffle cues. Tutorials have clearer guidance and scoped Skip controls. Fixed tutorial scenery, haptics, repeated Slime lessons and display-case back swipes.
