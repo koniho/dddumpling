@@ -18,7 +18,7 @@ final class TestSteamerCompanion extends Check {
         check("working helper matches Star Path size",Math.abs(SteamerCompanion.radius(c,L)-StarPath.flyerR(L))<.001f);
         check("helper sits under basket clear of the pip meter",SteamerCompanion.y(c,L)>Screens.steamerBaseY(L)
                 && SteamerCompanion.y(c,L)+StarPath.flyerR(L)<Screens.steamerProgressY(L));
-        check("helper is centered below the basket with airflow space",SteamerCompanion.x(c,L)==L.w*.5f
+        check("helper sits left of countdown with airflow space",SteamerCompanion.x(c,L)==L.w*.20f
                 && SteamerCompanion.y(c,L)-Screens.steamerBaseY(L)>StarPath.flyerR(L)*3);
         fan.update(c,.2f);
         check("idle fan keeps a slow motion",fan.phase>0 && fan.speed()==SteamerCompanion.IDLE_SPEED);

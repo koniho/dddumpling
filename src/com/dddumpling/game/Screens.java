@@ -573,7 +573,7 @@ final class Screens extends Draw {
                 p.fillPoly(arrow, fadeBy(Glyph.withAlpha(GOLD, 220), fade));
             }
 
-            // Keep the pip meter beneath the centered helper and its fan.
+            // Keep the pip meter beneath the helper and countdown.
             int goal = c.steamer.goal();
             int cols = Math.min(10, goal);
             float pr = s * 0.14f, gap = s * 0.54f;
@@ -606,7 +606,7 @@ final class Screens extends Draw {
     }
 
     /**
-     * The clock sits left of the helper. Seconds remaining while the mash runs,
+     * The clock stays centered under the basket. Seconds remaining while the mash runs,
      * then TIME! through the beat on zero.
      *
      * Ceiling rather than rounding, so it only reads 0 when the round is actually over — and
@@ -621,7 +621,7 @@ final class Screens extends Draw {
         // The fraction runs 1 down to 0 within each second, so this is biggest just after a
         // tick and settled by the time the next one comes.
         float pop = out ? 1f : 1f + 0.16f * (left - (float) Math.floor(left));
-        p.text(out ? "TIME!" : String.valueOf((int) Math.ceil(left)), L.w*.20f, SteamerCompanion.workY(L)+StarPath.flyerR(L)*.35f,
+        p.text(out ? "TIME!" : String.valueOf((int) Math.ceil(left)), cx, L.h*.625f,
                 type(s * (out ? 1.7f : 2.6f) * pop), fadeBy(col, fade), Painter.CENTER, true);
     }
 

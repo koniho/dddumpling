@@ -32,7 +32,7 @@ final class SteamerCompanion extends Draw {
         return ease(c.time/TRAVEL)*(1-back);
     }
     static float x(GameCore c,Layout L) {
-        return RunCompanion.x(L)+(L.w*.5f-RunCompanion.x(L))*travel(c);
+        return RunCompanion.x(L)+(L.w*.20f-RunCompanion.x(L))*travel(c);
     }
     static float workY(Layout L) {return Screens.steamerBaseY(L)+StarPath.flyerR(L)*3.1f;}
     static float y(GameCore c,Layout L) {
@@ -85,7 +85,7 @@ final class SteamerCompanion extends Draw {
     private static void rays(Painter p,Layout L,float sx,float sy,float r,float phase,float strength,int paper) {
         int air=Glyph.mix(paper,INK,.80f);
         for(int ray=0;ray<5;ray++) {
-            float ex=L.w*(.5f+(ray-2)*.032f),ey=Screens.steamerBaseY(L)+r*.30f;
+            float ex=L.w*(.34f+(ray-2)*.032f),ey=Screens.steamerBaseY(L)+r*.30f;
             float prevX=sx,prevY=sy;
             for(int j=1;j<=18;j++) {
                 float t=j/18f;
