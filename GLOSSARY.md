@@ -133,9 +133,10 @@ geometry; `Kawaii` draws the creature.
 | **movements** | the parade's three parts: in from the left, the join, off to the right | `Parade.IN_END`, `JOIN_END` |
 
 During Steamer, the run companion moves beneath the basket at its Star Path size and waves a
-folding fan. The fan idles slowly; a faster cadence of scored pips makes it work harder, with
-warmth and airflow under the basket. It returns home for the reward or time-up, and moves from
-its working position when it speaks a tutorial. `SteamerCompanion` owns this cosmetic motion.
+folding fan. The centered helper leaves space for wavy air trails from the fan to the basket,
+with the countdown on its left and pips below. Idle fanning is narrow and has no gusts; scored
+pips briefly widen the stroke and emit air trails, with faster scoring making it work harder.
+It returns home for the reward or time-up, and moves from its working position when it speaks a tutorial. `SteamerCompanion` owns this cosmetic motion.
 
 ## Star course
 

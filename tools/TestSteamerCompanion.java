@@ -17,17 +17,24 @@ final class TestSteamerCompanion extends Check {
         c.time=SteamerCompanion.TRAVEL;
         check("working helper matches Star Path size",Math.abs(SteamerCompanion.radius(c,L)-StarPath.flyerR(L))<.001f);
         check("helper sits under basket clear of the pip meter",SteamerCompanion.y(c,L)>Screens.steamerBaseY(L)
-                && SteamerCompanion.y(c,L)+StarPath.flyerR(L)<L.h*.695f);
+                && SteamerCompanion.y(c,L)+StarPath.flyerR(L)<Screens.steamerProgressY(L));
+        check("helper is centered below the basket with airflow space",SteamerCompanion.x(c,L)==L.w*.5f
+                && SteamerCompanion.y(c,L)-Screens.steamerBaseY(L)>StarPath.flyerR(L)*3);
         fan.update(c,.2f);
         check("idle fan keeps a slow motion",fan.phase>0 && fan.speed()==SteamerCompanion.IDLE_SPEED);
+        check("idle has a narrow stroke and no gusts",fan.sweep()<.15f && fan.gust==0);
         pair(c);check("shuffling cannot accelerate fan",fan.effort==0);
         c.bonusTimer=c.bonusRollEnd;
         int wrong=0;while(wrong==c.steamer.leftKey || wrong==c.steamer.rightKey)wrong++;
         c.tapBonus(wrong);check("wrong key cannot accelerate fan",fan.effort==0);
         c.tapBonus(c.steamer.wanted());check("half pair cannot accelerate fan",fan.effort==0);
         c.tapBonus(c.steamer.wanted());check("scored pip accelerates fan",c.steamer.hits==1 && fan.effort>0);
+        check("scored pip widens fan and emits gusts",fan.sweep()>.8f && fan.gust==1);
+        float gust=fan.gust;
         float phase=fan.phase,effort=fan.effort;c.paused=true;advance(c,L,.3f);c.paused=false;
-        check("pause freezes fan and effort",fan.phase==phase && fan.effort==effort);
+        check("pause freezes fan and effort",fan.phase==phase && fan.effort==effort && fan.gust==gust);
+        fan.update(c,.7f);
+        check("stopping scoring quickly removes gusts and narrows stroke",fan.gust==0 && fan.sweep()<.15f);
         GameCore fast=start(L),slow=start(L);fast.bonusTimer=fast.bonusRollEnd;slow.bonusTimer=slow.bonusRollEnd;
         for(int i=0;i<3;i++) {pair(fast);advance(fast,L,.1f);pair(slow);advance(slow,L,.6f);}
         check("faster scored-pip cadence drives faster fanning",fast.companion.steamer.speed()>slow.companion.steamer.speed());
@@ -36,7 +43,7 @@ final class TestSteamerCompanion extends Check {
         c.tapBonus(c.steamer.wanted());check("lid reminders do not accelerate fan",fan.effort==effort);
         c.swipeBonus();c.steamer.freedT=Steamer.FREE_TIME-SteamerCompanion.RETURN;
         check("reward sends helper home",SteamerCompanion.travel(c)==0);
-        c.toTitle();check("leaving clears fan state",fan.phase==0 && fan.effort==0);
+        c.toTitle();check("leaving clears fan state",fan.phase==0 && fan.effort==0 && fan.gust==0);
         c=start(L);c.cloudUi.reduceMotion=true;
         check("reduced motion places helper without travel",SteamerCompanion.travel(c)==1);
         c.onboarding.begin(c,Onboarding.STEAMER,L);

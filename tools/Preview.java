@@ -914,13 +914,20 @@ final class Preview {
             for(int frame=0;frame<3;frame++) {
                 c.companion.steamer.phase=frame==0?0:(float)Math.PI*(frame==1?.5f:1.5f);
                 c.companion.steamer.effort=frame==0?0:.75f;
+                c.companion.steamer.gust=frame==0?0:1;
                 c.steamer.hits=frame==0?0:6;
                 shot(dir,"241-steamer-fan-"+who+"-"+frame,c,L,w,h,ss);
             }
         }
         GameCore c=TestSteamerCompanion.start(L);c.time=2;c.bonusTimer=c.bonusRollEnd;
-        c.kidsRun=false;c.landBlend=1;c.companion.steamer.effort=.7f;
+        c.kidsRun=false;c.landBlend=1;c.companion.steamer.effort=.7f;c.companion.steamer.gust=1;
+        c.steamer.hits=2;
         shot(dir,"241-steamer-countdown",c,L,w,h,ss);
+        c.steamer.kids=false;c.steamer.opens=5;
+        shot(dir,"241-steamer-full-pip-meter",c,L,w,h,ss);
+        c.bonusTimer=GameCore.MASH_END;
+        shot(dir,"241-steamer-time-up",c,L,w,h,ss);
+        c.bonusTimer=c.bonusRollEnd;
         c.steamer.hits=c.steamer.goal();c.steamer.swipeReady=true;c.swipeBonus();
         for(float back:new float[]{.1f,.3f,.55f}) {
             c.steamer.freedT=Steamer.FREE_TIME-back;

@@ -378,6 +378,7 @@ final class Screens extends Draw {
      * over several stages.
      */
     static float steamerBaseY(Layout L) {return L.h*.46f+L.unit*3.4f;}
+    static float steamerProgressY(Layout L) {return SteamerCompanion.workY(L)+StarPath.flyerR(L)*1.5f;}
 
     /** Vertical centre of the visible lid, including a live drag. */
     static float steamerLidY(GameCore c, Layout L) {
@@ -572,13 +573,12 @@ final class Screens extends Draw {
                 p.fillPoly(arrow, fadeBy(Glyph.withAlpha(GOLD, 220), fade));
             }
 
-            // Progress: one pip per press needed. Below the countdown, which now owns the
-            // band directly under the steamer.
+            // Keep the pip meter beneath the centered helper and its fan.
             int goal = c.steamer.goal();
             int cols = Math.min(10, goal);
             float pr = s * 0.14f, gap = s * 0.54f;
             float x0 = cx - gap * (cols - 1) / 2f;
-            float rowY = L.h * 0.695f;
+            float rowY = steamerProgressY(L);
             for (int i = 0; i < goal; i++) {
                 float px = x0 + (i % cols) * gap;
                 float py = rowY + (i / cols) * gap * 1.15f;
@@ -606,7 +606,7 @@ final class Screens extends Draw {
     }
 
     /**
-     * The clock, large, in the band under the steamer. Seconds remaining while the mash runs,
+     * The clock sits left of the helper. Seconds remaining while the mash runs,
      * then TIME! through the beat on zero.
      *
      * Ceiling rather than rounding, so it only reads 0 when the round is actually over — and
@@ -621,7 +621,7 @@ final class Screens extends Draw {
         // The fraction runs 1 down to 0 within each second, so this is biggest just after a
         // tick and settled by the time the next one comes.
         float pop = out ? 1f : 1f + 0.16f * (left - (float) Math.floor(left));
-        p.text(out ? "TIME!" : String.valueOf((int) Math.ceil(left)), cx, L.h * 0.625f,
+        p.text(out ? "TIME!" : String.valueOf((int) Math.ceil(left)), L.w*.20f, SteamerCompanion.workY(L)+StarPath.flyerR(L)*.35f,
                 type(s * (out ? 1.7f : 2.6f) * pop), fadeBy(col, fade), Painter.CENTER, true);
     }
 
