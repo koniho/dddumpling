@@ -253,6 +253,8 @@ final class TutorialSpeech extends Draw {
         if(q.state==GameCore.BONUS && q.starBonus) {
             x=StarScreen.companionX(q,L,q.stars.flyerX(L));
             y=StarScreen.companionY(q,L,q.stars.flyerY(L));r=StarScreen.companionR(q,L);
+        } else if(SteamerCompanion.scene(q)) {
+            x=SteamerCompanion.x(q,L);y=SteamerCompanion.y(q,L);r=SteamerCompanion.radius(q,L);
         } else if(!q.buddy.out()) {
             x=q.buddy.x;y=q.buddy.y;r=q.buddy.radius(L)*.74f;
         }

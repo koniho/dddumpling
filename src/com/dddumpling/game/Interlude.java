@@ -67,6 +67,7 @@ final class Interlude {
         // Chosen up front, before the spinner has shown anything: the spinner animates toward
         // an answer that already exists rather than deciding when it stops.
         c.steamer.pick(c.rnd, c.playRosterFull());
+        c.companion.steamer.clear();
         c.rollTick = -1;
         c.target = null;
         c.caretOwner = null;
@@ -102,7 +103,10 @@ final class Interlude {
         // A completed pair is the steamer's scoring event. Let it land in the companion home with
         // the same brief grow-and-glow used for a cleared enemy; half-pairs and reminders to swipe
         // have not scored and deliberately leave the companion alone.
-        if (c.steamer.hits > hitsBefore) c.companion.react(RunCompanion.WORD, .7f);
+        if (c.steamer.hits > hitsBefore) {
+            c.companion.react(RunCompanion.WORD, .7f);
+            c.companion.steamer.scored();
+        }
         if (r == Steamer.READY) return;
         return;
 

@@ -222,7 +222,7 @@ final class Onboarding extends Draw {
             starGuide=true;speech=TutorialSpeech.STARS;sceneWait=SCENE_REVEAL;return;
         }
         GameCore q=practice=new GameCore(null,114L+which);
-        q.preferences.skin=c.preferences.skin;
+        q.preferences.skin=c.preferences.skin;q.cloudUi.reduceMotion=c.cloudUi.reduceMotion;
         q.startGame();q.runFullRoster=c.runFullRoster;q.runWho=c.runWho;
         q.stageBanner=0;q.spawnTimer=9999f;q.companion.begin(q.runWho);
         if(which==CORE) makeWord(L,new int[]{0});
@@ -355,7 +355,10 @@ final class Onboarding extends Draw {
         slimeGlobHint(c,elapsed);
         moveCompanion(c,elapsed);
         if(briefing || rescueGuide) {
-            if(practice!=null)practice.steamer.fadeSelection(elapsed);
+            if(practice!=null) {
+                practice.steamer.fadeSelection(elapsed);
+                practice.companion.steamer.update(practice,elapsed);
+            }
             age+=elapsed;return true;
         }
         if(practice==null) {
@@ -381,7 +384,8 @@ final class Onboarding extends Draw {
         GameCore q=practice;age+=elapsed;
         if(sceneWait>0) {
             // Only the presentation fades in. Selection, countdowns and rewards stay frozen.
-            q.time+=elapsed;q.clock+=elapsed;sceneWait=Math.max(0,sceneWait-elapsed);
+            q.time+=elapsed;q.clock+=elapsed;q.companion.update(q,elapsed);
+            sceneWait=Math.max(0,sceneWait-elapsed);
             if(sceneWait==0)introduce(c);
             return true;
         }

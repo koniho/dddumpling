@@ -116,7 +116,7 @@ final class GatorCompanion extends Draw {
         }
         if(glitter!=null)p=surface;
         float faceR=hw*1.03f,faceY=hy-hh*.08f;
-        Trinket.reactionFace(p,hx,faceY,faceR,clock,1,mood<0?0:mood,look*.25f);
+        Trinket.reactionFace(p,hx,faceY,faceR,mood==Trinket.WORKING?fallbackClock:clock,1,mood<0?0:mood,look*.25f);
         if(mood<=1 || mood==4 || mood==8 || mood==9) {
             float tx=hx+hw*.095f,ty=faceY+faceR*.35f;
             p.fillPoly(AlligatorArt.form(tx,ty,r*.045f,r*.060f,

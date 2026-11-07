@@ -901,6 +901,53 @@ final class Preview {
         }
     }
 
+    private static void steamerCompanionFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
+        if(!wantedGroup("241-steamer-"))return;
+        for(float age:new float[]{.02f,.2f,.45f,.72f}) {
+            GameCore c=TestSteamerCompanion.start(L);c.time=age;c.companion.clock=age;
+            c.companion.steamer.update(c,age);
+            shot(dir,"241-steamer-arrival-"+Math.round(age*1000),c,L,w,h,ss);
+        }
+        for(int who:new int[]{0,8,23,Collect.BOSS_FIRST,Collect.ALLIGATOR_FRIEND,Collect.DUCK_FIRST}) {
+            GameCore c=TestSteamerCompanion.start(L);c.companion.begin(who);c.runWho=who;c.time=1;
+            c.bonusTimer=c.bonusRollEnd;
+            for(int frame=0;frame<3;frame++) {
+                c.companion.steamer.phase=frame==0?0:(float)Math.PI*(frame==1?.5f:1.5f);
+                c.companion.steamer.effort=frame==0?0:.75f;
+                c.companion.steamer.gust=frame==0?0:1;
+                c.steamer.hits=frame==0?0:6;
+                shot(dir,"241-steamer-fan-"+who+"-"+frame,c,L,w,h,ss);
+                if(frame>0 && who==8) {
+                    c.companion.steamer.gust=c.companion.steamer.effort=0;
+                    shot(dir,"241-steamer-idle-"+frame,c,L,w,h,ss);
+                }
+            }
+        }
+        GameCore c=TestSteamerCompanion.start(L);c.time=2;c.bonusTimer=c.bonusRollEnd;
+        c.kidsRun=false;c.landBlend=1;c.companion.steamer.effort=.7f;c.companion.steamer.gust=1;
+        c.steamer.hits=2;
+        shot(dir,"241-steamer-countdown",c,L,w,h,ss);
+        c.steamer.kids=false;c.steamer.opens=5;
+        shot(dir,"241-steamer-full-pip-meter",c,L,w,h,ss);
+        c.bonusTimer=GameCore.MASH_END;
+        shot(dir,"241-steamer-time-up",c,L,w,h,ss);
+        c.bonusTimer=c.bonusRollEnd;
+        c.steamer.hits=c.steamer.goal();c.steamer.swipeReady=true;
+        for(int pose=0;pose<3;pose++) {
+            c.companion.clock=pose*.17f;
+            shot(dir,"241-steamer-point-"+pose,c,L,w,h,ss);
+        }
+        c.cloudUi.reduceMotion=true;
+        shot(dir,"241-steamer-point-reduced",c,L,w,h,ss);
+        c.cloudUi.reduceMotion=false;c.swipeBonus();
+        for(float back:new float[]{.1f,.3f,.55f}) {
+            c.steamer.freedT=Steamer.FREE_TIME-back;
+            shot(dir,"241-steamer-return-"+Math.round(back*1000),c,L,w,h,ss);
+        }
+        c=TestOnboarding.fresh(L,new Check.Mem());Interlude.enterBonus(c,L);step(c,L,.65f);
+        shot(dir,"241-steamer-tutorial-arrival",c,L,w,h,ss);
+    }
+
     private static void steamerShuffleFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wantedGroup("steamer-shuffle-"))return;
         for(float progress:new float[]{.1f,.3f,.5f,.75f,.95f,.999f,1f}) {
@@ -2053,6 +2100,7 @@ final class Preview {
         survivalEntranceFrames(dir,L,w,h,ss);
         steamerTutorialScenery(dir,L,w,h,ss);
         steamerShuffleFrames(dir,L,w,h,ss);
+        steamerCompanionFrames(dir,L,w,h,ss);
         versusFrames(dir,L,w,h,ss);
         timeAttackFrames(dir,L,w,h,ss);
         gatorSilhouetteFrames(dir,L,w,h,ss);
