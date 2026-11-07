@@ -4,6 +4,8 @@
     android:versionCode="40"
     android:versionName="0.1.38">
 
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <uses-feature android:name="android.hardware.touchscreen" android:required="true" />
 
     <!--

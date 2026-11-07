@@ -1,0 +1,108 @@
+{
+  "schema": 1,
+  "apple_app_id": "6811478003",
+  "google_project_id": "56613446939",
+  "development_configured": false,
+  "provisioning_snapshot": "2026-11-06; Apple PREPARE_FOR_SUBMISSION, Google drafts; not live-state verification",
+  "boards": [
+    {
+      "index": 0,
+      "name": "Survival — 4 Keys",
+      "apple_id": "com.dddumpling.game.survival_time_starter",
+      "google_id": "CgkIm8qy89IBEAIQgQE",
+      "order": "descending",
+      "apple_unit": "seconds",
+      "google_unit": "milliseconds"
+    },
+    {
+      "index": 1,
+      "name": "Survival — 6 Keys",
+      "apple_id": "com.dddumpling.game.survival_time_full",
+      "google_id": "CgkIm8qy89IBEAIQggE",
+      "order": "descending",
+      "apple_unit": "seconds",
+      "google_unit": "milliseconds"
+    },
+    {
+      "index": 2,
+      "name": "Survival — Kids",
+      "apple_id": "com.dddumpling.game.survival_time_kids",
+      "google_id": "CgkIm8qy89IBEAIQgwE",
+      "order": "descending",
+      "apple_unit": "seconds",
+      "google_unit": "milliseconds"
+    },
+    {
+      "index": 3,
+      "name": "Super Slime",
+      "apple_id": "com.dddumpling.game.time_attack_slime_full",
+      "google_id": "CgkIm8qy89IBEAIQhAE",
+      "order": "ascending",
+      "apple_unit": "centiseconds",
+      "google_unit": "milliseconds"
+    },
+    {
+      "index": 4,
+      "name": "Dark Divide",
+      "apple_id": "com.dddumpling.game.time_attack_dark_divide_full",
+      "google_id": "CgkIm8qy89IBEAIQhQE",
+      "order": "ascending",
+      "apple_unit": "centiseconds",
+      "google_unit": "milliseconds"
+    },
+    {
+      "index": 5,
+      "name": "Octopulse",
+      "apple_id": "com.dddumpling.game.time_attack_octopulse_full",
+      "google_id": "CgkIm8qy89IBEAIQhgE",
+      "order": "ascending",
+      "apple_unit": "centiseconds",
+      "google_unit": "milliseconds"
+    },
+    {
+      "index": 6,
+      "name": "Fly Agaric",
+      "apple_id": "com.dddumpling.game.time_attack_fly_agaric_full",
+      "google_id": "CgkIm8qy89IBEAIQhwE",
+      "order": "ascending",
+      "apple_unit": "centiseconds",
+      "google_unit": "milliseconds"
+    },
+    {
+      "index": 7,
+      "name": "Gummy Gator",
+      "apple_id": "com.dddumpling.game.time_attack_mossy_maw_full",
+      "google_id": "CgkIm8qy89IBEAIQiAE",
+      "order": "ascending",
+      "apple_unit": "centiseconds",
+      "google_unit": "milliseconds"
+    },
+    {
+      "index": 8,
+      "name": "Rainbow Cat",
+      "apple_id": "com.dddumpling.game.time_attack_rainbow_cat_full",
+      "google_id": "CgkIm8qy89IBEAIQiQE",
+      "order": "ascending",
+      "apple_unit": "centiseconds",
+      "google_unit": "milliseconds"
+    },
+    {
+      "index": 9,
+      "name": "All Bosses — six-boss roster",
+      "apple_id": "com.dddumpling.game.time_attack_all_6_full",
+      "google_id": "CgkIm8qy89IBEAIQigE",
+      "order": "ascending",
+      "apple_unit": "centiseconds",
+      "google_unit": "milliseconds"
+    },
+    {
+      "index": 10,
+      "name": "Adventure",
+      "apple_id": "com.dddumpling.game.adventure_score_normal",
+      "google_id": "CgkIm8qy89IBEAIQiwE",
+      "order": "descending",
+      "apple_unit": "points",
+      "google_unit": "points"
+    }
+  ]
+}

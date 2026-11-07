@@ -228,8 +228,9 @@ final class Survival extends Draw {
     void finish(GameCore c) {
         if(!active || finished)return;
         finished=true;usedPowers=0;rescueReadyFlash=0;cheer.reset();
-        if(c.scoresSuppressed)return;
+        if(c.scoresSuppressed) {c.leaderboards.cancel();return;}
         long duration=millis();
+        c.leaderboards.finish(c,LeaderboardCatalog.survival(profile),duration);
         newBest=duration>bestTime[profile];
         bestTime[profile]=Math.max(bestTime[profile],duration);
         bestScore[profile]=Math.max(bestScore[profile],c.score);

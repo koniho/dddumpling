@@ -134,6 +134,7 @@ final class HighScores {
         unread=true;
         latestRun=run;
         insert(run);
+        if(!survival)c.leaderboards.finish(c,LeaderboardCatalog.ADVENTURE,Math.max(0,c.score));
         if(!survival && c.store!=null) c.store.saveHighScores(encode());
     }
     private void insert(Run run) {

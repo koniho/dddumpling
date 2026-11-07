@@ -30,7 +30,32 @@ public final class IOSGame {
     public int takeReviewAction() { return core.reviewPrompt.takeRequest(core); }
     public boolean reviewSafe() { return ReviewPrompt.safe(core); }
     public static String storeCountry(String alpha3) { return StoreUpdate.country(alpha3); }
+    private int leaderboardAction=-1;
     public void externalFinished() { core.preferences.externalFinished(core); }
+    public void leaderboardsEnabled(boolean enabled) {core.leaderboardUi.enabled=enabled;}
+    public int takeLeaderboardAction() {int board=leaderboardAction;leaderboardAction=-1;return board;}
+    public String leaderboardID(int board) {return LeaderboardCatalog.appleId(board);}
+    public void leaderboardAccount(String owner,boolean enabled) {core.leaderboards.account(owner,enabled);}
+    public int takeLeaderboardNotice() {return core.leaderboardNotice.takeSystem(core);}
+    public boolean leaderboardNoticePreview() {return BuildFlags.DEVELOPER && core.leaderboardNotice.preview;}
+    public long leaderboardNoticeRank() {return core.leaderboardNotice.rank;}
+    public String leaderboardNoticeOwner() {return core.leaderboardNotice.owner;}
+    public String leaderboardTitle(int board) {return LeaderboardCatalog.title(board);}
+    public boolean leaderboardNoticeCurrent(String owner) {return core.leaderboardNotice.current(core,owner) && core.leaderboardNotice.ready(core);}
+    public void leaderboardNoticeResult(String owner,int board,long rank,boolean shown) {
+        core.leaderboardNotice.systemResult(core,owner,board,rank,shown);
+    }
+    public void openLeaderboardNotification(int board,String owner) {LeaderboardNotice.openNotification(core,board,owner);}
+    public int pendingLeaderboardRank() {return core.leaderboards.nextRank();}
+    public long pendingLeaderboardRankValue(int board) {return core.leaderboards.rankedValue(board);}
+    public void leaderboardRank(String owner,int board,long value,long score,long rank) {
+        core.leaderboards.confirmRank(owner,board,value,score,rank,true);
+    }
+    public int pendingLeaderboard() {return core.leaderboards.nextApple();}
+    public long pendingLeaderboardValue(int board) {return core.leaderboards.value(board);}
+    public void leaderboardSubmitted(String owner,int board,long value) {core.leaderboards.acknowledge(owner,board,value);}
+    public long leaderboardAppleScore(int board,long value) {return LeaderboardCatalog.appleScore(board,value);}
+
     public int achievementCount() { return Achievements.size(); }
     public void achievementsEnabled(boolean enabled) { core.preferences.achievementsEnabled=enabled; }
     public boolean takeAchievementAction() {
@@ -807,7 +832,9 @@ public final class IOSGame {
         if (!KeyboardInput.available(core)) keyboard.clear();
         int external=core.preferences.takeExternal(core);
         if(external!=0) {
-            if(external==PlayerSettings.ACHIEVEMENTS) core.preferences.achievementRequested=true;
+            if(external==PlayerSettings.LEADERBOARD) {
+                cancelPointers();leaderboardAction=core.leaderboardUi.take(core);
+            } else if(external==PlayerSettings.ACHIEVEMENTS) core.preferences.achievementRequested=true;
             else if(host!=null) host.openAppAction(external==PlayerSettings.SHARE);
             else externalFinished();
         }

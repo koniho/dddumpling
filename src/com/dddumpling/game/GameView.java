@@ -965,8 +965,12 @@ public class GameView extends View implements InputManager.InputDeviceListener, 
                 if(playLog!=null)((MainActivity)getContext()).exportPlaythroughs(playLog);
                 int review=core.reviewPrompt.takeRequest(core);
                 if(review!=0)((MainActivity)getContext()).requestReview(review==2);
+                ((MainActivity)getContext()).updateLeaderboardNotifications();
                 int external=core.preferences.takeExternal(core);
-                if(external!=0) ((MainActivity)getContext()).openAppAction(external);
+                if(external!=0) {
+                    if(external==PlayerSettings.LEADERBOARD)cancelPointers();
+                    ((MainActivity)getContext()).openAppAction(external);
+                }
                 if(core.cloudUi.takeAction()!=0) ((MainActivity)getContext()).signInPlayGames();
                 tutorialFeedback();
                 int caveFeedback=Math.max(core.cart.scene.takeFeedback(),Math.max(core.cave.effects.takeFeedback(),core.mining.scene.takeFeedback()));

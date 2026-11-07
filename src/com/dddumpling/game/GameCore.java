@@ -198,6 +198,8 @@ final class GameCore {
         default void saveCaseIndex(int value) {}
         default String loadSurvivalAward() { return ""; }
         default void saveSurvivalAward(String value) {}
+        default String loadLeaderboards() { return ""; }
+        default boolean saveLeaderboards(String value) { return false; }
         default String loadTimeAttack() { return ""; }
         default void saveTimeAttack(String value) {}
         default String loadSurvival() { return ""; }
@@ -660,6 +662,8 @@ final class GameCore {
     float warnLevel;
     /** Spent for this stage once the push-back has been used. */
     boolean pushUsed;
+    final LeaderboardNotice leaderboardNotice=new LeaderboardNotice();
+    final LeaderboardUi leaderboardUi = new LeaderboardUi();
     final Onboarding onboarding = new Onboarding();
     final Starter starter = new Starter();
     final TitleStart titleStart = new TitleStart();
@@ -1602,6 +1606,7 @@ final class GameCore {
     final Store store;
     final PlaythroughLog playthrough;
     final Progress progress;
+    final LeaderboardSubmissions leaderboards;
     final Wardrobe wardrobe=new Wardrobe();
 
     static final int START_LIVES = 3;
@@ -1667,6 +1672,7 @@ final class GameCore {
         onboarding.saved = store == null ? Onboarding.SKIPPED : store.loadTutorials();
         onboarding.savedPowers = store == null ? 0 : store.loadPowerTutorials();
         this.progress = new Progress(store, trackProgress);
+        this.leaderboards = new LeaderboardSubmissions(store,trackProgress);
         this.rnd = new Random(seed);
         boss.alligator.cueRandom.setSeed(seed^0x4741544f52L);
         survival.blurbs.setSeed(seed^0x5241494e424f57L);
@@ -2109,6 +2115,7 @@ final class GameCore {
         stars.difficultyCap = kidsRun ? StarPath.KIDS_DIFFICULTY : StarPath.MAX_DIFFICULTY;
         runFullRoster = !kidsRun && fullRoster;
         runDifficultyTier=difficultyTier;
+        leaderboards.begin(this);
         if(modes.selected==ModeSelector.SURVIVAL)survival.begin(this);
         time = 0;
         score = 0;
@@ -2903,6 +2910,8 @@ final class GameCore {
     void update(float dt, Layout L) { update(dt, dt, L); }
 
     void update(float dt, float elapsed, Layout L) {
+        leaderboardUi.update(this);
+        leaderboardNotice.update(this,elapsed);
         wardrobe.refresh(this);
         starPickups = 0;
         starBlastHaptic = 0;

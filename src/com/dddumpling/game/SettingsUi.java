@@ -9,14 +9,14 @@ final class SettingsUi {
     static final int HIT_NONE = 0, HIT_CLOSE = 2, HIT_OUTSIDE = 3,
             HIT_CLEAR = 4, HIT_ROSTER = 5, HIT_GAMEOVER = 6, HIT_RESET_DIFFICULTY = 7, HIT_RESET_LANDS = 8,
             HIT_GENERAL = 9, HIT_MINIGAMES = 10, HIT_EASIER = 11, HIT_HARDER = 12, HIT_RESET_NEWS = 13, HIT_ALL_LANDS = 14;
-    static final int GENERAL = 0, MINIGAMES = 1, POWERS = 2, PROGRESS = 3;
-    static final int HIT_POWERS = 15, HIT_PROGRESS = 16, HIT_COLLECT_ALL = 17, HIT_RESET_PROGRESS = 18;
+    static final int GENERAL = 0, MINIGAMES = 1, COLLECTION = 2, PROGRESS = 3;
+    static final int HIT_COLLECTION = 15, HIT_PROGRESS = 16, HIT_COLLECT_ALL = 17, HIT_RESET_PROGRESS = 18;
     static final int HIT_COMPLETE_BOSSES = 19, HIT_RESET_UPDATE_PROMPT = 20, HIT_INFINITE_LIVES = 21, HIT_TEST_UPDATE = 22, HIT_TEST_REVIEW = 23, HIT_RESET_REVIEW = 24;
     static final int HIT_ACCESSORY_GRANT=25,HIT_ACCESSORY_ALL=26,HIT_ACCESSORY_RESET=27;
-    static final int HIT_ACCESSORY_CATEGORY=28, HIT_EXPORT_PLAYTHROUGHS=40;
-    float accessoryY;
+    static final int HIT_ACCESSORY_CATEGORY=28, HIT_EXPORT_PLAYTHROUGHS=40, HIT_TEST_NOTIFICATION=41;
+    float accessoryY,notificationY;
     final float[] accessoryCategoryY=new float[(Accessories.SLOTS+1)/2];
-    static final String[] TABS = {"RUN", "MINIGAMES", "POWERS", "PROGRESS"};
+    static final String[] TABS = {"RUN", "MINIGAMES", "COLLECTION", "PROGRESS"};
     /** Power shortcuts and minigame shortcuts share action IDs, not a row. */
     static final int HIT_TEST = 200;
     static final int HIT_DEBUFF = 250;
@@ -83,10 +83,18 @@ final class SettingsUi {
             difficultyLabelY=panelT+s*16f;difficultyY=difficultyLabelY+s*.5f;
             updatePromptY=difficultyY+s*2.5f;
             reviewPromptY=updatePromptY+s*2.5f;
-            clearLabelY=panelT+s*25f;clearY=clearLabelY+s*.5f;
-            collectAllY=clearY+s*3f;resetProgressY=collectAllY+s*3f;
-            accessoryY=resetProgressY+s*3f;
+            notificationY=reviewPromptY+s*4f;
+            resetProgressY=notificationY+s*4f;
+        }
+        if(tab==COLLECTION) {
+            clearLabelY=panelT+s*9f;clearY=clearLabelY+s*.5f;
+            collectAllY=clearY+s*3f;
+            accessoryY=collectAllY+s*4f;
             for(int row=0;row<accessoryCategoryY.length;row++)accessoryCategoryY[row]=accessoryY+s*2.25f*(row+1);
+        }
+        if(tab==GENERAL) {
+            testLabelY=playthroughY+s*4f;testY=testLabelY+s*.5f;
+            debuffY=testY+s*4.5f;
         }
         if(tab==MINIGAMES) {
             testY=panelT+s*16f; testLabelY=testY-s*.6f; caveY=testY+s*3f;
@@ -120,7 +128,7 @@ final class SettingsUi {
         if (x<panelL || x>panelR || y<panelT || y>panelB) return HIT_OUTSIDE;
         if (Math.abs(x-closeCx)<closeR && Math.abs(y-closeCy)<closeR) return HIT_CLOSE;
         if(y>=tabY && y<=tabY+tabH) for(int i=0;i<4;i++)
-            if(x>=tabL(i) && x<=tabR(i)) return new int[]{HIT_GENERAL,HIT_MINIGAMES,HIT_POWERS,HIT_PROGRESS}[i];
+            if(x>=tabL(i) && x<=tabR(i)) return new int[]{HIT_GENERAL,HIT_MINIGAMES,HIT_COLLECTION,HIT_PROGRESS}[i];
         if(tab==MINIGAMES) {
             if(y>=difficultyStepY && y<=difficultyStepY+testH) {
                 if(inChip(x,0,3)) return HIT_EASIER;
@@ -135,16 +143,14 @@ final class SettingsUi {
                 if(inChip(x,1,2)) return HIT_TEST+TEST_MINE;
             }
             if(y>=difficultyY && y<=difficultyY+difficultyH) return HIT_RESET_DIFFICULTY;
-        } else if(tab==POWERS) {
-            if(y>=testY && y<=testY+testH) for(int i=0;i<Power.OFFERED.length;i++)
-                if(inChip(x,i,Power.OFFERED.length)) return HIT_TEST+i;
-            if(y>=debuffY && y<=debuffY+testH) for(int i=0;i<2;i++)
-                if(inChip(x,i,2)) return HIT_DEBUFF+i;
-        } else if(tab==PROGRESS) {
+        } else if(tab==COLLECTION) {
             for(int category=0;category<Accessories.SLOTS;category++)
                 if(y>=accessoryCategoryY[category/2] && y<=accessoryCategoryY[category/2]+testH
                         && inChip(x,category%2,accessoryColumns(category/2)))return HIT_ACCESSORY_CATEGORY+category;
             if(y>=accessoryY && y<=accessoryY+testH)for(int i=0;i<3;i++)if(inChip(x,i,3))return HIT_ACCESSORY_GRANT+i;
+            if(y>=clearY && y<=clearY+clearH) return HIT_CLEAR;
+            if(y>=collectAllY && y<=collectAllY+testH && inChip(x,0,1)) return HIT_COLLECT_ALL;
+        } else if(tab==PROGRESS) {
             if(y>=debuffY && y<=debuffY+testH) {
                 if(inChip(x,0,2)) return HIT_ALL_LANDS;
                 if(inChip(x,1,2)) return HIT_RESET_LANDS;
@@ -159,10 +165,13 @@ final class SettingsUi {
                 if(inChip(x,1,2))return HIT_RESET_REVIEW;
             }
             if(y>=completeBossesY && y<=completeBossesY+testH && inChip(x,0,1)) return HIT_COMPLETE_BOSSES;
-            if(y>=clearY && y<=clearY+clearH) return HIT_CLEAR;
+            if(y>=notificationY && y<=notificationY+testH && inChip(x,0,1)) return HIT_TEST_NOTIFICATION;
             if(y>=resetProgressY && y<=resetProgressY+testH && inChip(x,0,1)) return HIT_RESET_PROGRESS;
-            if(y>=collectAllY && y<=collectAllY+testH && inChip(x,0,1)) return HIT_COLLECT_ALL;
         } else {
+            if(y>=testY && y<=testY+testH) for(int i=0;i<Power.OFFERED.length;i++)
+                if(inChip(x,i,Power.OFFERED.length)) return HIT_TEST+i;
+            if(y>=debuffY && y<=debuffY+testH) for(int i=0;i<2;i++)
+                if(inChip(x,i,2)) return HIT_DEBUFF+i;
             if(y>=playthroughY && y<=playthroughY+testH && inChip(x,0,1))return HIT_EXPORT_PLAYTHROUGHS;
             if(y>=infiniteLivesY && y<=infiniteLivesY+testH && inChip(x,0,1))return HIT_INFINITE_LIVES;
             if(y>=stageY && y<=stageY+stageH) for(int i=0;i<STAGE_STEP.length;i++)

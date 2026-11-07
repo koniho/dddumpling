@@ -6,7 +6,7 @@ final class PlayerSettings extends Draw {
     static final int MUSIC = 1, EFFECTS = 2, MUSIC_MUTE = 3, EFFECTS_MUTE = 4,
             KIDS = 5, PRIVACY = 6, CLOSE = 7, PLAYER = 8, DEVELOPER = 9, SHARE = 10, RATE = 11, TUTORIALS = 15, CLOUD = 20;
     float tutorialResetUntil;
-    static final int ACHIEVEMENTS = 21, SERVICES = 22, SERVICES_PAGE = 2;
+    static final int ACHIEVEMENTS = 21, SERVICES = 22, LEADERBOARD = 23, SERVICES_PAGE = 2;
     boolean achievementsEnabled;
     boolean achievementRequested;
     // Future settings features own setting and clearing this attention flag.

@@ -118,7 +118,7 @@ final class SettingsInput {
         if(h==SettingsUi.HIT_CLOSE || h==SettingsUi.HIT_OUTSIDE) PlayerSettings.close(c);
         else if(h==SettingsUi.HIT_GENERAL) c.settingsTab=SettingsUi.GENERAL;
         else if(h==SettingsUi.HIT_MINIGAMES) c.settingsTab=SettingsUi.MINIGAMES;
-        else if(h==SettingsUi.HIT_POWERS) c.settingsTab=SettingsUi.POWERS;
+        else if(h==SettingsUi.HIT_COLLECTION) c.settingsTab=SettingsUi.COLLECTION;
         else if(h==SettingsUi.HIT_PROGRESS) c.settingsTab=SettingsUi.PROGRESS;
         else if(h==SettingsUi.HIT_EASIER || h==SettingsUi.HIT_HARDER) c.setStarDifficulty(c.stars.wins+(h==SettingsUi.HIT_EASIER?-1:1));
         else if(h==SettingsUi.HIT_CLEAR) c.tapClearCase();
@@ -136,6 +136,7 @@ final class SettingsInput {
         else if(h>=SettingsUi.HIT_ACCESSORY_GRANT && h<=SettingsUi.HIT_ACCESSORY_RESET) c.wardrobe.developer(c,h-SettingsUi.HIT_ACCESSORY_GRANT);
         else if(h>=SettingsUi.HIT_ACCESSORY_CATEGORY && h<SettingsUi.HIT_ACCESSORY_CATEGORY+Accessories.SLOTS)
             c.wardrobe.developer(c,3+h-SettingsUi.HIT_ACCESSORY_CATEGORY);
+        else if(h==SettingsUi.HIT_TEST_NOTIFICATION) c.leaderboardNotice.test(c);
         else if(h==SettingsUi.HIT_TEST_REVIEW) c.reviewPrompt.test();
         else if(h==SettingsUi.HIT_RESET_REVIEW) c.reviewPrompt.reset(c);
         else if(h==SettingsUi.HIT_TEST_UPDATE) c.storeUpdate.preview();

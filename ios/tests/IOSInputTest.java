@@ -169,6 +169,57 @@ public final class IOSInputTest extends Check {
         check("duplicate native identities are rejected", rejected);
     }
 
+    private static void notificationPreview() {
+        IOSGame game=game();GameCore c=game.core();Layout l=game.geometry();
+        c.openSettings();c.settingsPage=1;c.settingsTab=SettingsUi.PROGRESS;game.update(PlayerSettings.PANEL_TIME);
+        SettingsUi ui=new SettingsUi();ui.compute(l,SettingsUi.PROGRESS);
+        tap(game,l.w*.5f,ui.notificationY+ui.testH*.5f);
+        check("native developer chip dispatches offline preview",game.takeLeaderboardNotice()==10 && game.leaderboardNoticePreview()
+                && game.leaderboardNoticeCurrent(game.leaderboardNoticeOwner()));
+        game.leaderboardNoticeResult(LeaderboardNotice.PREVIEW_OWNER,10,12,true);
+        game.openLeaderboardNotification(10,LeaderboardNotice.PREVIEW_OWNER);
+        check("native preview tap returns to progress tab",c.settingsPage==1 && c.settingsTab==SettingsUi.PROGRESS
+                && c.leaderboards.next()==-1 && game.takeLeaderboardAction()==-1);
+    }
+
+    private static void leaderboardNotifications() {
+        IOSGame game=game();GameCore c=game.core();
+        game.leaderboardAccount("a",true);game.leaderboardsEnabled(true);
+        c.startGame();c.score=100;c.highScores.finish(c);game.leaderboardSubmitted("a",10,100);
+        check("native notification waits for rank",game.pendingLeaderboardRank()==10);
+        game.leaderboardRank("a",10,100,100,12);
+        check("native notification waits until run ends",game.takeLeaderboardNotice()==-1);
+        c.toTitle();c.returnFade=0;c.rosterSceneT=0;c.landSeen=-1;c.onboarding.clear();game.update(DT);
+        check("native system notification receives rank and owner",game.takeLeaderboardNotice()==10
+                && game.leaderboardNoticeRank()==12 && game.leaderboardNoticeOwner().equals("a"));
+        game.leaderboardNoticeResult("a",10,12,true);
+        check("native posted result removes fallback",c.leaderboardNotice.board==-1);
+        game.openLeaderboardNotification(10,"a");
+        for(int i=0;i<20;i++)game.update(DT);
+        check("native notification tap opens captured board",game.takeLeaderboardAction()==10);
+        game.externalFinished();game.leaderboardAccount("b",true);
+        check("delayed permission response cannot post previous owner's score",!game.leaderboardNoticeCurrent("a"));
+    }
+
+    private static void leaderboardNavigation() {
+        IOSGame game=game();GameCore c=game.core();Layout l=game.geometry();
+        game.leaderboardsEnabled(true);
+        c.highScoreScreen.show(c);c.highScoreScreen.update(HighScoreScreen.ENTRY_TIME);
+        tap(game,l.w*.5f,LeaderboardUi.y(l));
+        for(int i=0;i<20;i++)game.update(DT);
+        int board=game.takeLeaderboardAction();
+        check("native leaderboard dispatch uses captured board once",board==LeaderboardCatalog.ADVENTURE
+                && game.takeLeaderboardAction()==-1);
+        check("native leaderboard ID matches catalog",game.leaderboardID(board).equals(LeaderboardCatalog.appleId(board)));
+        game.background(true);game.background(false);game.externalFinished();
+        check("native leaderboard dismissal preserves records panel",c.highScoreScreen.open && !c.preferences.externalBusy);
+        game.leaderboardsEnabled(false);
+        for(int i=0;i<40;i++)game.update(DT);
+        tap(game,l.w*.5f,LeaderboardUi.y(l));
+        for(int i=0;i<20;i++)game.update(DT);
+        check("native unavailable service cannot dispatch",game.takeLeaderboardAction()==-1 && !c.preferences.externalBusy);
+    }
+
     private static void highScores() {
         IOSGame game=game();GameCore c=game.core();Layout l=game.geometry();
         c.startGame();c.score=500;c.highScores.finish(c);c.toTitle();c.returnFade=0;
@@ -864,7 +915,7 @@ public final class IOSInputTest extends Check {
 
         c.settingsOpen=false;
         for(int i=0;i<2;i++) {
-            c.settingsOpen=true;c.settingsTab=SettingsUi.POWERS;ui.compute(l,c.settingsTab);
+            c.settingsOpen=true;c.settingsTab=SettingsUi.GENERAL;ui.compute(l,c.settingsTab);
             tap(game,(ui.testChipL(i,2)+ui.testChipR(i,2))/2,ui.debuffY+ui.testH/2);
             check("native debuff chip activates correct effect " + i,!c.settingsOpen
                     && c.debuff==Power.INCOGNITO+i && c.debuffLeft>0f && !c.powerActive());
@@ -1232,7 +1283,7 @@ public final class IOSInputTest extends Check {
         playerSettings();
         bossRetryInput();gameOverDismissal();
         cave();
-        highScores();
+        highScores();leaderboardNavigation();leaderboardNotifications();notificationPreview();
         updatePrompt(); releaseAttention(); releaseNotes(); releaseFeedback(); packets(); titleAndLifecycle(); starsAndLand(); starFeedback(); starCompletionStorm(); bossOwnership(); ninjaHistory();
         steamerAndPanic(); forgivingRescue(); caseBackSwipes(); caseAndSettings(); storyDumplingInput(); outfitDragOff(); outfitFeedback(); outfitShake(); firstTitleEntry(); modeSelector(); survival();
         debugScenes(); linkedChord();

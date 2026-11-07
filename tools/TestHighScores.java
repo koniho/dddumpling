@@ -2,6 +2,7 @@ package com.dddumpling.game;
 
 final class TestHighScores extends Check {
     static void all(Layout L) {
+        TestLeaderboardUi.all(L);
         portraits();
         group("high-score history");
         Mem mem=new Mem();mem.best=9000;

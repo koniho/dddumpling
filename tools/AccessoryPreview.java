@@ -47,7 +47,7 @@ final class AccessoryPreview {
             Png.write(new File(dir,"214-earned-only-"+category+".png"),earned.resolve(),w,h);
         }
         GameCore c=TestAccessories.ready();TestAccessories.grant(c);c.clock=1.2f;
-        c.settingsOpen=true;c.settingsPage=1;c.settingsTab=SettingsUi.PROGRESS;
+        c.settingsOpen=true;c.settingsPage=1;c.settingsTab=SettingsUi.COLLECTION;
         RasterPainter settings=new RasterPainter(w,h,ss);settings.clear(Draw.BG);
         PlayerSettings.draw(settings,c,L);
         Png.write(new File(dir,"214-developer-accessories.png"),settings.resolve(),w,h);

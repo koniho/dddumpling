@@ -23,6 +23,17 @@ final class PlayBridge implements Progress.Sink {
     private final Runnable scheduled = () -> sync();
     private boolean foreground, closed, authenticated, merging, dirty = true, notified, blocked;
     private int generation, busy = -1;
+    private String leaderboardPlayer="";
+    private boolean leaderboardBusy;
+    private int leaderboardRequest;
+    private android.content.Intent pendingLeaderboardIntent;
+    private int pendingLeaderboardRequest;
+    private final Runnable leaderboardPoll=new Runnable() {
+        public void run() {
+            if(!foreground || closed || leaderboardPlayer.isEmpty())return;
+            reportLeaderboard();handler.postDelayed(this,10000);
+        }
+    };
     private final int[] achievementSent = new int[Achievements.size()];
     private final boolean[] achievementBusy = new boolean[Achievements.size()];
     private final Runnable achievementPoll = new Runnable() {
@@ -35,6 +46,8 @@ final class PlayBridge implements Progress.Sink {
     PlayBridge(MainActivity activity, GameCore core) {
         this.activity = activity; this.core = core;
         core.reviewPrompt.available=!BuildFlags.DEVELOPER;
+        core.leaderboardUi.enabled=leaderboardsAllowed();
+        core.leaderboards.account(null,leaderboardsAllowed());
         core.preferences.achievementsEnabled = BuildFlags.PLAY_GAMES;
         core.cloudUi.playGames = true;
         core.cloudUi.status(BuildFlags.PLAY_GAMES ? CloudSaveUi.SIGN_IN : CloudSaveUi.OFF);
@@ -64,10 +77,15 @@ final class PlayBridge implements Progress.Sink {
                 });
         } catch(RuntimeException ignored) { /* Store unavailable: play normally. */ }
     }
+    private boolean leaderboardsAllowed() {return BuildFlags.PLAY_GAMES && !BuildFlags.DEVELOPER;}
     void resume() {
         checkUpdate();
-        if (closed || !BuildFlags.PLAY_GAMES || !core.progress.available()) return;
-        foreground = true; authenticated = false; blocked = false; dirty = true;
+        if (closed || !BuildFlags.PLAY_GAMES) return;
+        foreground = true; authenticated = false;
+        leaderboardPlayer="";leaderboardBusy=false;
+        core.leaderboards.account(null,leaderboardsAllowed());
+        handler.removeCallbacks(leaderboardPoll);
+        launchPendingLeaderboard(); blocked = false; dirty = true;
         handler.removeCallbacks(achievementPoll);
         java.util.Arrays.fill(achievementSent, 0);
         java.util.Arrays.fill(achievementBusy, false);
@@ -85,6 +103,10 @@ final class PlayBridge implements Progress.Sink {
                     if (!player.isSuccessful() || player.getResult() == null) {
                         core.cloudUi.status(CloudSaveUi.FAILED); return;
                     }
+                    leaderboardPlayer=player.getResult().getPlayerId();
+                    core.leaderboards.account(leaderboardPlayer,leaderboardsAllowed());
+                    leaderboardPoll.run();
+                    if(!core.progress.available())return;
                     if (!activity.bindProgressOwner(player.getResult().getPlayerId())) {
                         core.cloudUi.status(CloudSaveUi.ACCOUNT);
                         notice("Local progress belongs to a different Play Games profile. Cloud sync is paused.");
@@ -115,6 +137,7 @@ final class PlayBridge implements Progress.Sink {
     }
 
     void pause() {
+        handler.removeCallbacks(leaderboardPoll);
         handler.removeCallbacks(achievementPoll);
         handler.removeCallbacks(scheduled);
         // Last checkpoint is already local. Let an authenticated in-flight save finish in background.
@@ -123,6 +146,8 @@ final class PlayBridge implements Progress.Sink {
         core.progress.attach(null);
     }
     void close() {
+        handler.removeCallbacks(leaderboardPoll);
+        leaderboardRequest++;
         handler.removeCallbacks(achievementPoll);
         closed = true; generation++;
         core.progress.attach(null); handler.removeCallbacks(scheduled); io.shutdown();
@@ -163,6 +188,91 @@ final class PlayBridge implements Progress.Sink {
                 core.preferences.externalFinished(core);
             });
         } catch (RuntimeException e) { core.preferences.externalFinished(core); }
+    }
+    private void reportLeaderboard() {
+        if(!leaderboardsAllowed() || leaderboardBusy || !foreground)return;
+        final int board=core.leaderboards.next();
+        if(board<0) {readLeaderboardRank();return;}
+        final long value=core.leaderboards.value(board);
+        final String owner=leaderboardPlayer;
+        final int token=generation;
+        leaderboardBusy=true;
+        try {
+            PlayGames.getLeaderboardsClient(activity)
+                .submitScoreImmediate(LeaderboardCatalog.googleId(board),LeaderboardCatalog.googleScore(board,value))
+                .addOnCompleteListener(done -> {
+                    if(closed || token!=generation || !owner.equals(leaderboardPlayer))return;
+                    leaderboardBusy=false;
+                    if(done.isSuccessful()) {
+                        core.leaderboards.acknowledge(owner,board,value);
+                        reportLeaderboard();
+                    }
+                });
+        }catch(RuntimeException unavailable){leaderboardBusy=false;}
+    }
+    private void readLeaderboardRank() {
+        final int board=core.leaderboards.nextRank();if(board<0)return;
+        final long value=core.leaderboards.rankedValue(board);
+        final String owner=leaderboardPlayer;final int token=generation;
+        leaderboardBusy=true;
+        try {
+            PlayGames.getLeaderboardsClient(activity).loadCurrentPlayerLeaderboardScore(
+                LeaderboardCatalog.googleId(board),
+                com.google.android.gms.games.leaderboard.LeaderboardVariant.TIME_SPAN_ALL_TIME,
+                com.google.android.gms.games.leaderboard.LeaderboardVariant.COLLECTION_PUBLIC)
+                .addOnCompleteListener(done -> {
+                    if(closed || token!=generation || !owner.equals(leaderboardPlayer))return;
+                    leaderboardBusy=false;
+                    if(!done.isSuccessful() || done.getResult()==null || done.getResult().isStale())return;
+                    com.google.android.gms.games.leaderboard.LeaderboardScore score=done.getResult().get();
+                    if(score!=null && score.getScoreHolder()!=null && owner.equals(score.getScoreHolder().getPlayerId()))
+                        core.leaderboards.confirmRank(owner,board,value,score.getRawScore(),score.getRank(),false);
+                });
+        }catch(RuntimeException unavailable){leaderboardBusy=false;}
+    }
+    void showLeaderboard(int board) {
+        final int request=++leaderboardRequest;
+        pendingLeaderboardIntent=null;
+        if(!leaderboardsAllowed() || !LeaderboardCatalog.valid(board)) {leaderboardFailed(request);return;}
+        try {
+            PlayGames.getGamesSignInClient(activity).signIn().addOnCompleteListener(auth -> {
+                if(closed || request!=leaderboardRequest)return;
+                if(!auth.isSuccessful() || !auth.getResult().isAuthenticated()) {leaderboardFailed(request);return;}
+                PlayGames.getPlayersClient(activity).getCurrentPlayer().addOnCompleteListener(player -> {
+                    if(closed || request!=leaderboardRequest)return;
+                    if(!player.isSuccessful() || player.getResult()==null) {leaderboardFailed(request);return;}
+                    leaderboardPlayer=player.getResult().getPlayerId();
+                    core.leaderboards.account(leaderboardPlayer,true);
+                    leaderboardBusy=false;
+                    handler.removeCallbacks(leaderboardPoll);leaderboardPoll.run();
+                    openLeaderboard(board,request);
+                });
+            });
+        }catch(RuntimeException unavailable){leaderboardFailed(request);}
+    }
+    private void openLeaderboard(int board,int request) {
+        try {
+            PlayGames.getLeaderboardsClient(activity).getLeaderboardIntent(LeaderboardCatalog.googleId(board))
+                .addOnCompleteListener(task -> {
+                    if(closed || request!=leaderboardRequest)return;
+                    if(!task.isSuccessful()) {leaderboardFailed(request);return;}
+                    pendingLeaderboardIntent=task.getResult();pendingLeaderboardRequest=request;
+                    launchPendingLeaderboard();
+                });
+        }catch(RuntimeException unavailable){leaderboardFailed(request);}
+    }
+    private void launchPendingLeaderboard() {
+        if(!foreground || closed || pendingLeaderboardIntent==null)return;
+        android.content.Intent intent=pendingLeaderboardIntent;
+        pendingLeaderboardIntent=null;
+        if(pendingLeaderboardRequest!=leaderboardRequest)return;
+        try {activity.startActivityForResult(intent,110);}
+        catch(RuntimeException unavailable){leaderboardFailed(leaderboardRequest);}
+    }
+    private void leaderboardFailed(int request) {
+        if(request!=leaderboardRequest)return;
+        Toast.makeText(activity,"Leaderboard unavailable. Sign in to Play Games and try again.",Toast.LENGTH_LONG).show();
+        core.preferences.externalFinished(core);
     }
     private void schedule(long delay) {
         handler.removeCallbacks(scheduled);

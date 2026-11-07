@@ -50,7 +50,8 @@ final class ReviewPrompt {
     void milestone(GameCore c) { if(eligible(c))pending=true; }
     static boolean safe(GameCore c) {
         return UpdatePrompt.suitable(c) && !c.updatePrompt.open && !c.updatePrompt.pending && !c.cloudUi.open
-                && !c.preferences.externalBusy && !c.bossRetry.pending;
+                && !c.preferences.externalBusy && !c.bossRetry.pending
+                && c.leaderboardNotice.board<0 && c.leaderboards.nextNotice()<0;
     }
     int takeRequest(GameCore c) {
         if(!safe(c))return 0;

@@ -1,6 +1,33 @@
 package com.dddumpling.game;
 
 final class TestSettings extends Check {
+    private static void developerTabs(Layout L) {
+        group("developer tab organization");
+        for(int[] dims:new int[][]{{320,568},{393,852},{768,1024}}) {
+            Layout l=new Layout();l.compute(dims[0],dims[1],0,24,0,24);
+            SettingsUi u=new SettingsUi();u.compute(l,SettingsUi.GENERAL);
+            check("run powers follow run controls "+dims[0],u.testLabelY>u.playthroughY+u.testH && u.debuffY+u.testH<u.panelB);
+            check("run frenzy has correct hit "+dims[0],u.hit((u.testChipL(0,Power.OFFERED.length)+u.testChipR(0,Power.OFFERED.length))*.5f,
+                    u.testY+u.testH*.5f)==SettingsUi.HIT_TEST);
+            check("run debuff has correct hit "+dims[0],u.hit((u.testChipL(0,2)+u.testChipR(0,2))*.5f,u.debuffY+u.testH*.5f)==SettingsUi.HIT_DEBUFF);
+            u.compute(l,SettingsUi.COLLECTION);
+            check("collection grant is in collection tab "+dims[0],u.hit(l.w*.5f,u.collectAllY+u.testH*.5f)==SettingsUi.HIT_COLLECT_ALL);
+            check("accessory controls fit collection tab "+dims[0],u.accessoryCategoryY[u.accessoryCategoryY.length-1]+u.testH<u.panelB);
+            u.compute(l,SettingsUi.PROGRESS);
+            check("notification chip has separate target "+dims[0],u.hit(l.w*.5f,u.notificationY+u.testH*.5f)==SettingsUi.HIT_TEST_NOTIFICATION
+                    && u.notificationY>u.reviewPromptY+u.testH && u.notificationY+u.testH<u.resetProgressY);
+        }
+        Mem save=new Mem();GameCore c=new GameCore(save,237L);
+        c.openSettings();c.settingsPage=1;c.settingsTab=SettingsUi.PROGRESS;
+        String queue=save.leaderboardSubmissions;
+        SettingsInput.action(c,L,SettingsUi.HIT_TEST_NOTIFICATION);
+        check("developer chip previews without service authentication",c.leaderboardNotice.preview && c.leaderboardNotice.takeSystem(c)==10
+                && c.leaderboardNotice.current(c,LeaderboardNotice.PREVIEW_OWNER));
+        c.leaderboardNotice.systemResult(c,LeaderboardNotice.PREVIEW_OWNER,10,12,true);
+        check("preview leaves submission history untouched",queue.equals(save.leaderboardSubmissions) && c.leaderboards.next()==-1);
+        LeaderboardNotice.openNotification(c,10,LeaderboardNotice.PREVIEW_OWNER);
+        check("preview tap opens developer progress tab",c.settingsOpen && c.settingsPage==1 && c.settingsTab==SettingsUi.PROGRESS);
+    }
     private static void kidsTiming(Layout L) {
         group("kids timing boundaries");
         GameCore c=new GameCore(new Mem(),901L);c.preferences.kids=true;c.startGame();
@@ -582,6 +609,7 @@ final class TestSettings extends Check {
         check("services stay inside panel",PlayerSettings.serviceY(L,1)+PlayerSettings.unit(L)*5.5f<PlayerSettings.bottom(L));
     }
     static void all(Layout L) {
+        developerTabs(L);
         servicesTab(L);
         seasonalSkins(L);
         stolenSkinKeys();

@@ -1823,6 +1823,33 @@ final class Preview {
             shot(dir,"132-ninja-fading",c,L,w,h,ss);
         }
 
+        if(wanted("237-notice")) {
+            GameCore c=TestLeaderboardSubmissions.game(new Check.Mem(),"preview");
+            TestLeaderboardSubmissions.adventure(c,100);c.leaderboards.acknowledge("preview",10,100);
+            c.leaderboards.confirmRank("preview",10,100,100,12,false);
+            c.toTitle();c.returnFade=0;c.rosterSceneT=0;c.landSeen=-1;c.onboarding.clear();
+            c.leaderboardNotice.update(c,.1f);c.leaderboardNotice.takeSystem(c);
+            c.leaderboardNotice.systemResult(c,"preview",10,12,false);c.leaderboardNotice.age=.6f;
+            shot(dir,"237-notice-title",c,L,w,h,ss);
+            c.leaderboardNotice.board=LeaderboardCatalog.TIME_ATTACK_BASE+Boss.OCTOPUS;
+            c.leaderboardNotice.rank=123456789;
+            shot(dir,"237-notice-long",c,L,w,h,ss);
+        }
+
+        if(wanted("237")) {
+            GameCore c=new GameCore(new Mem(),237L);
+            c.highScoreScreen.show(c);c.highScoreScreen.update(HighScoreScreen.ENTRY_TIME);
+            shot(dir,"237-leaderboard-unavailable",c,L,w,h,ss);
+            c.leaderboardUi.enabled=true;
+            shot(dir,"237-leaderboard-adventure",c,L,w,h,ss);
+            c.modes.selected=ModeSelector.SURVIVAL;
+            shot(dir,"237-leaderboard-survival",c,L,w,h,ss);
+            c.modes.selected=ModeSelector.TIME_ATTACK;c.fullRoster=true;
+            shot(dir,"237-leaderboard-time-attack",c,L,w,h,ss);
+            c.preferences.kids=true;
+            shot(dir,"237-leaderboard-ineligible",c,L,w,h,ss);
+        }
+
         if(wanted("130")) {
             GameCore scores=new GameCore(new Mem(),101L);
             shot(dir,"130-high-scores-title",scores,L,w,h,ss);

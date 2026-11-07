@@ -2484,7 +2484,7 @@ final class TestBoss extends Check {
             if (ui.hit(cx, ui.stageY + ui.stageH / 2f) != SettingsUi.HIT_STAGE + i) hits = false;
         }
         check("every stage chip hit-tests to itself", hits);
-        ui.compute(L,SettingsUi.POWERS);
+        ui.compute(L,SettingsUi.GENERAL);
         check("powers tab routes its own row",
                 ui.hit((ui.testChipL(0, n) + ui.testChipR(0, n)) / 2f,
                         ui.testY + ui.testH / 2f) < SettingsUi.HIT_STAGE);

@@ -24,6 +24,7 @@ public class MainActivity extends Activity implements GameCore.Store {
     private Audio audio;
     private GameView game;
     private PlayBridge play;
+    private LeaderboardNotifications leaderboardNotifications;
     private BackRegistration backRegistration;
     private boolean resumed;
     private boolean musicPaused;
@@ -76,6 +77,8 @@ public class MainActivity extends Activity implements GameCore.Store {
             game.navigationChanged(this::navigationChanged);
             setContentView(game);
             play = new PlayBridge(this, game.core());
+            leaderboardNotifications=new LeaderboardNotifications(this,game.core(),prefs);
+            leaderboardNotifications.open(getIntent());
             navigationChanged();
             goFullscreen();
             if(BuildFlags.DEVELOPER && getIntent().getBooleanExtra("diagnostics",false))
@@ -126,6 +129,7 @@ public class MainActivity extends Activity implements GameCore.Store {
     @Override protected void onNewIntent(android.content.Intent intent) {
         super.onNewIntent(intent);
         diagnostic("activity-new-intent");
+        if(leaderboardNotifications!=null)leaderboardNotifications.open(intent);
         if(BuildFlags.DEVELOPER && intent.hasExtra("gator_profile"))
             game.gatorProfile(intent.getStringExtra("gator_profile"),intent.getStringExtra("gator_profile_token"));
         if(BuildFlags.DEVELOPER && intent.getBooleanExtra("diagnostics",false)) {
@@ -151,8 +155,19 @@ public class MainActivity extends Activity implements GameCore.Store {
                     },250)).show();
         } else if(play!=null)play.requestReview();
     }
+    void updateLeaderboardNotifications() {if(leaderboardNotifications!=null)leaderboardNotifications.update();}
+    @Override public void onRequestPermissionsResult(int request,String[] permissions,int[] grants) {
+        super.onRequestPermissionsResult(request,permissions,grants);
+        if(leaderboardNotifications!=null)leaderboardNotifications.permissionResult(request);
+    }
     void signInPlayGames() {if(play!=null)play.signIn();}
     void openAppAction(int action) {
+        if(action==PlayerSettings.LEADERBOARD) {
+            int board=game.core().leaderboardUi.take(game.core());
+            if(board>=0 && play!=null)play.showLeaderboard(board);
+            else game.core().preferences.externalFinished(game.core());
+            return;
+        }
         if (action == PlayerSettings.ACHIEVEMENTS) {
             if (play != null) play.showAchievements();
             else game.core().preferences.externalFinished(game.core());
@@ -302,6 +317,10 @@ public class MainActivity extends Activity implements GameCore.Store {
     @Override public void saveTimeAttack(String value) { prefs.edit().putString("time_attack_records", value).apply(); }
     @Override public String loadSurvival() { return prefs.getString("survival_records", ""); }
     @Override public void saveSurvival(String value) { prefs.edit().putString("survival_records", value).apply(); }
+    @Override public String loadLeaderboards() { return prefs.getString("leaderboard_submissions", ""); }
+    @Override public boolean saveLeaderboards(String value) {
+        return prefs.edit().putString("leaderboard_submissions", value).commit();
+    }
     @Override public String loadHighScores() { return prefs.getString("high_scores", ""); }
     @Override public void saveHighScores(String value) { prefs.edit().putString("high_scores", value).apply(); }
 

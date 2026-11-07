@@ -24,6 +24,7 @@ final class CoreTest {
 
         group("Playthrough", () -> TestPlaythroughLog.all(L));
         group("Companion", () -> TestCompanion.all(L));
+        group("Leaderboard submissions", () -> TestLeaderboardSubmissions.all(L));
         group("HighScores", () -> TestHighScores.all(L));
         group("BossRetry", () -> TestBossRetry.all(L));
         group("Settings", () -> TestSettings.all(L));
