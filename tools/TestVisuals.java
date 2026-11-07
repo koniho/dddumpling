@@ -37,10 +37,30 @@ final class TestVisuals extends Check {
 
     private static void releaseBook(Layout L) {
         TestUpdatePrompt.run(L);TestReviewPrompt.run(L);
-        releaseHistory();releaseEntryBounds();releaseHomes(L);releaseMascots(L);releaseWardrobe(L);
+        releaseHistory();releaseEntryBounds();releaseHomes(L);releaseMascots(L);releaseWardrobe(L);releaseCelebrations(L);
         releaseOutside(L);
         releaseFeedback(L);
         try(ReleaseExamples examples=new ReleaseExamples()) { releaseNavigation(L);releaseDetailOutside(L);releaseBookExamples(L); }
+    }
+    private static void releaseCelebrations(Layout L) {
+        int item=ReleaseContent.ITEMS[0][0],saved=ReleaseContent.ICONS[item];
+        boolean reset=ReleaseContent.AUTO_RESET[item];
+        try {
+            for(int icon:new int[]{ReleaseChange.LEADERBOARD,ReleaseChange.SURVIVAL_CHEER}) {
+                ReleaseContent.ICONS[item]=icon;ReleaseContent.AUTO_RESET[item]=false;
+                GameCore c=new GameCore(new Mem(),214);ReleaseNotes n=c.releaseNotes;
+                n.show(c,L);n.update(ReleaseTransition.DURATION,L);n.select(0,0,L);n.update(ReleaseNotes.PAGE_TIME,L);
+                long revision=c.progress.revision;
+                n.update(5f,L);
+                n.touch(c,L,L.w*.5f,(n.demoTop(L)+n.demoBottom(L))*.5f);
+                check("celebration tap replays from start "+icon,n.celebration==0);
+                n.update(2.2f,L);
+                check("celebration stays past reset delay "+icon,n.celebration>2 && !n.listing);
+                n.update(3f,L);
+                check("celebration stays on the selected card "+icon,n.feature==0 && n.demo==null && !n.listing);
+                check("release celebration leaves progress alone "+icon,c.progress.revision==revision);
+            }
+        } finally {ReleaseContent.ICONS[item]=saved;ReleaseContent.AUTO_RESET[item]=reset;}
     }
     private static void releaseWardrobe(Layout L) {
         int item=ReleaseContent.ITEMS[0][0],saved=ReleaseContent.ICONS[item];

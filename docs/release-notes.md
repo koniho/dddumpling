@@ -107,6 +107,8 @@ Keep a separate entry only when it communicates a distinct change the player nee
 | `swamp` | Swampland and Gummy Gator | Gator among lily pads, cattails and fireflies |
 | `rush` | Fast single-key enemies | Glowing shooting-star enemy with a star trail |
 | `fog` | Fog-hidden enemy prompts | Readable lead key and silhouettes inside the game's animated fog |
+| `leaderboard` | Global leaderboards and rank alerts | Highlighted score climbs from third to first |
+| `survival_cheer` | Survival milestones | Dumpling raises its arms and jumps with a 30-second burst |
 | `scores` | Saved high-score runs | Glowing score rows and a gold star |
 | `octopulse` | Octopulse battle changes | Waving Octopulse portrait |
 | `companion` | Starter choice and run companions | Bouncing Melon Wedge collectible |
