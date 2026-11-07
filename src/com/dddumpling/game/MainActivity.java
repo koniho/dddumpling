@@ -308,6 +308,10 @@ public class MainActivity extends Activity implements GameCore.Store {
     @Override public void saveTimeAttack(String value) { prefs.edit().putString("time_attack_records", value).apply(); }
     @Override public String loadSurvival() { return prefs.getString("survival_records", ""); }
     @Override public void saveSurvival(String value) { prefs.edit().putString("survival_records", value).apply(); }
+    @Override public String loadLeaderboards() { return prefs.getString("leaderboard_submissions", ""); }
+    @Override public boolean saveLeaderboards(String value) {
+        return prefs.edit().putString("leaderboard_submissions", value).commit();
+    }
     @Override public String loadHighScores() { return prefs.getString("high_scores", ""); }
     @Override public void saveHighScores(String value) { prefs.edit().putString("high_scores", value).apply(); }
 

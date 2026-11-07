@@ -35,6 +35,12 @@ public final class IOSGame {
     public void leaderboardsEnabled(boolean enabled) {core.leaderboardUi.enabled=enabled;}
     public int takeLeaderboardAction() {int board=leaderboardAction;leaderboardAction=-1;return board;}
     public String leaderboardID(int board) {return LeaderboardCatalog.appleId(board);}
+    public void leaderboardAccount(String owner,boolean enabled) {core.leaderboards.account(owner,enabled);}
+    public int pendingLeaderboard() {return core.leaderboards.nextApple();}
+    public long pendingLeaderboardValue(int board) {return core.leaderboards.value(board);}
+    public void leaderboardSubmitted(String owner,int board,long value) {core.leaderboards.acknowledge(owner,board,value);}
+    public long leaderboardAppleScore(int board,long value) {return LeaderboardCatalog.appleScore(board,value);}
+
     public int achievementCount() { return Achievements.size(); }
     public void achievementsEnabled(boolean enabled) { core.preferences.achievementsEnabled=enabled; }
     public boolean takeAchievementAction() {
