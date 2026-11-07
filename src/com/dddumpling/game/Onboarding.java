@@ -212,8 +212,37 @@ final class Onboarding extends Draw {
     void skip(GameCore c) {
         c.diagnostic("tutorial-skip");
         if(c.sound!=null)c.sound.hush();
-        clear();saved|=SKIPPED;
-        save(c);
+        if(speech==TutorialSpeech.COMPANION)savedPowers&=~Starter.INTRO_PENDING;
+        if(bossHelp || bossGuide || lesson==SLIME) {
+            int kind=lesson==SLIME?Boss.SLIME:c.boss.kind;
+            if(kind>=0) {
+                bossHelpUsed|=1<<kind;
+                for(int message:bossSteps(kind))learn(c,message);
+                if(kind==Boss.SLIME) {
+                    saved|=SLIME;learn(c,TutorialSpeech.CHAIN);learn(c,TutorialSpeech.GLOB);
+                }
+            }
+        } else {
+            for(int message:skipMessages())learn(c,message);
+            saved|=lesson;
+        }
+        clear();save(c);
+    }
+    /** A set covers one encounter or title task, never unrelated guidance. */
+    private int[] skipMessages() {
+        if(lesson==STEAMER || speech==TutorialSpeech.WAIT || speech==TutorialSpeech.ALTERNATE || speech==TutorialSpeech.LIFT)
+            return new int[]{TutorialSpeech.WAIT,TutorialSpeech.ALTERNATE,TutorialSpeech.LIFT};
+        if(starGuide || lesson==STARS)return new int[]{TutorialSpeech.STARS};
+        if(lesson==MINE)return new int[]{TutorialSpeech.DIG,TutorialSpeech.CART};
+        if(lesson==CART)return new int[]{TutorialSpeech.LEAN};
+        if(lesson==CORE || speech==TutorialSpeech.MATCH || speech==TutorialSpeech.WORD
+                || speech==TutorialSpeech.DANGER || speech==TutorialSpeech.RETRY)
+            return new int[]{TutorialSpeech.MATCH,TutorialSpeech.WORD,TutorialSpeech.DANGER,TutorialSpeech.RETRY};
+        if(speech==TutorialSpeech.DISPLAY_CASE || speech==TutorialSpeech.STORIES)
+            return new int[]{TutorialSpeech.DISPLAY_CASE,TutorialSpeech.STORIES};
+        if(speech>=TutorialSpeech.SCORES && speech<=TutorialSpeech.MODES)
+            return new int[]{TutorialSpeech.SCORES,TutorialSpeech.SCORE_DETAILS,TutorialSpeech.MODES};
+        return speech==0?new int[0]:new int[]{speech};
     }
     void begin(GameCore c,int which,Layout L) {
         Pause.release(c);clear();lesson=which;age=globAge=0;
@@ -493,7 +522,7 @@ final class Onboarding extends Draw {
         }
         if(bit!=0) { hintKind=bit;briefing=true;age=0;Pause.release(c);narrate(c); }
     }
-    static float skipY(Layout L) { return L.topSafe+L.unit*1.2f; }
+    static float skipY(Layout L) { return L.topSafe+L.unit*2.7f; }
     static boolean skipHit(Layout L,float x,float y) {
         return x>=L.w*.70f && x<=L.w*.98f && Math.abs(y-skipY(L))<L.unit*1.2f;
     }
@@ -650,9 +679,15 @@ final class Onboarding extends Draw {
         }
         if(o.movingCompanion(c))TutorialSpeech.companion(p,c,L);
         if(o.practice!=null || o.briefing || o.hintKind!=0 || o.bossGuide || o.powerGuide || o.starGuide || o.titleGuide || o.rescueGuide) {
-            p.fillPoly(pill(L.w*.84f,skipY(L),L.w*.135f,L.unit*.95f,12),0xFF493953);
-            p.text("SKIP ALL",L.w*.84f,skipY(L)+L.unit*.3f,type(L.unit*.62f),INK,Painter.CENTER,true);
+            skipButton(p,L,skipY(L));
         }
+    }
+    static void skipButton(Painter p,Layout L,float y) {
+        float[] shape=pill(L.w*.84f,y,L.w*.135f,L.unit*.95f,12);
+        p.strokePoly(shape,0xFF201729,L.unit*.24f);
+        p.fillPoly(shape,0xFF493953);
+        p.strokePoly(shape,GOLD,L.unit*.10f);
+        p.text("SKIP",L.w*.84f,y+L.unit*.3f,type(L.unit*.62f),INK,Painter.CENTER,true);
     }
     private void gesture(Painter p,Layout L) {
         GameCore q=practice;

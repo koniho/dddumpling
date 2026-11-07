@@ -1424,7 +1424,7 @@ public final class IOSInputTest extends Check {
         c.onboarding.begin(c,Onboarding.CART,l);
         tap(game,l.w*.84f,Onboarding.skipY(l));
         check("native Skip consumes whole gesture",c.onboarding.practice==null && !c.onboarding.ownsTouch
-                && (store.tutorials&Onboarding.SKIPPED)!=0 && c.score==0);
+                && (store.tutorials&Onboarding.CART)!=0 && (store.tutorials&Onboarding.SKIPPED)==0 && c.score==0);
         PlayerSettings.open(c);game.update(PlayerSettings.PANEL_TIME);
         tap(game,(PlayerSettings.tabEdge(l,1)+PlayerSettings.tabEdge(l,2))*.5f,
                 PlayerSettings.top(l)+PlayerSettings.unit(l)*4f);

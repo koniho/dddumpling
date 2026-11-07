@@ -154,11 +154,11 @@ final class TestOnboarding extends Check {
         c.onboarding.saved=0;c.onboarding.savedPowers=1;c.beginStart();
         check("learned extra tutorials exclude starter",!c.starter.open && c.starting());c.cancelStart();
         c.onboarding.reset(c);c.onboarding.skip(c);c.beginStart();
-        check("skip all excludes starter",!c.starter.open && c.starting());c.cancelStart();
+        check("skip without an active lesson leaves starter available",c.starter.open && !c.starting());c.cancelStart();
         c.onboarding.reset(c);c.beginStart();c.update(Starter.READY,L);c.starter.choose(c,0);
         c.update(Starter.FOCUS,L);c.starter.confirm(c);c.update(Starter.EXIT,L);
         c.startGame();c.onboarding.skip(c);c.toTitle();c.beginStart();c.startGame();
-        check("skip all also retires companion introduction",!c.onboarding.briefing);
+        check("skip retires only active companion introduction",!c.onboarding.briefing);
     }
     private static void starterWaves(Layout L) {
         Mem store=new Mem();store.tutorials=store.powerTutorials=0;
@@ -333,7 +333,7 @@ final class TestOnboarding extends Check {
             finish(c,L);
             check("encounter completion survives reload "+lesson,!new GameCore(store,4).onboarding.eligible(lesson));
         }
-        skipResetAndHints(L);
+        scopedSkip(L);skipResetAndHints(L);
         encounters(L);
         briefingInput(L);
         learnedActions(L);
@@ -422,7 +422,7 @@ final class TestOnboarding extends Check {
         check("reset makes collection guidance available without losing dumpling",c.onboarding.titleGuide
                 && c.collected==(1L<<3));
         c.onboarding.skip(c);c.update(DT,L);
-        check("Skip All suppresses collection sequence",!c.onboarding.titleGuide);
+        check("Skip suppresses collection sequence",!c.onboarding.titleGuide);
         c=fresh(L,new Mem());c.collected=1;c.toTitle();c.openCase();c.openStory();c.closeStory();c.closeCase();
         c.update(2,L);c.update(DT,L);
         check("discovering case and story early skips their instructions",!c.onboarding.titleGuide
@@ -514,7 +514,7 @@ final class TestOnboarding extends Check {
         c.onboarding.reset(c);c.update(DT,L);
         check("reset restores collection priority before new tour",c.onboarding.speech==TutorialSpeech.DISPLAY_CASE);
         c.onboarding.skip(c);c.update(DT,L);
-        check("Skip All suppresses first-run tour",!TitleTour.ready(c) && !TitleTour.active(c));
+        check("skipping collection keeps separate title tour available",!c.onboarding.collectionPending(c) && TitleTour.ready(c));
         c=titleTourFixture(L,new Mem());c.onboarding.clear();c.settingsOpen=true;c.update(DT,L);
         check("settings delays title tour",!TitleTour.active(c));
         c.settingsOpen=false;c.update(DT,L);
@@ -568,7 +568,7 @@ final class TestOnboarding extends Check {
             c.onboarding.reset(c);c.onboarding.learn(c,TutorialSpeech.RESCUE);c.onboarding.clear();EnemyTutorial.introduce(c,L);
             check("reset restores enemy lesson "+message,c.onboarding.enemyLesson==e);
             c.onboarding.skip(c);EnemyTutorial.introduce(c,L);
-            check("Skip All suppresses enemy lesson "+message,c.onboarding.enemyLesson==null);
+            check("Skip suppresses enemy lesson "+message,c.onboarding.enemyLesson==null);
         }
         GameCore c=enemyFixture(L,new Mem(),TutorialSpeech.FOG);GameCore.Enemy e=c.enemies.get(0);
         e.y=-L.enemyR;EnemyTutorial.introduce(c,L);
@@ -625,7 +625,7 @@ final class TestOnboarding extends Check {
         c.settingsOpen=false;c.update(DT,L);
         check("reset reintroduces discovered lands",c.onboarding.briefing && c.onboarding.speech==TutorialSpeech.LANDS);
         c.onboarding.skip(c);c.update(DT,L);
-        check("skip all suppresses land intro",!c.onboarding.titleGuide && !c.onboarding.briefing);
+        check("skip suppresses land intro",!c.onboarding.titleGuide && !c.onboarding.briefing);
         c.onboarding.reset(c);c.onboarding.savedPowers=Starter.INTRO_PENDING;
         check("existing companion pending bit does not count as learned lands",!c.onboarding.learned(TutorialSpeech.LANDS));
         c.onboarding.learn(c,TutorialSpeech.LANDS);
@@ -784,9 +784,37 @@ final class TestOnboarding extends Check {
             c.onboarding.skip(c);c.update(0,L);
             check("skip preserves actual encounter "+lesson,c.bonusTimer==timer && c.boss.hp==hp
                     && c.onboarding.practice==null && c.onboarding.sceneWait==0 && c.score==0);
-            c.update(DT,L);check("global Skip prevents encounter restart "+lesson,c.onboarding.practice==null);
+            c.update(DT,L);check("Skip prevents encounter restart "+lesson,c.onboarding.practice==null);
         }
     }
+    private static void scopedSkip(Layout L) {
+        Mem store=new Mem();GameCore c=titleTourFixture(L,store);
+        TitleTour.begin(c,TutorialSpeech.MODES);
+        touch(c,L,0,L.w*.84f,TitleTour.skipY(L));touch(c,L,1,L.w*.84f,TitleTour.skipY(L));
+        check("skipping title tour preserves Steamer and other guidance",!TitleTour.ready(c)
+                && c.onboarding.eligible(Onboarding.STEAMER) && !c.onboarding.learned(TutorialSpeech.RESCUE)
+                && !c.onboarding.learned(TutorialSpeech.POWER_NINJA));
+        c=new GameCore(store,243);c.startGame();Interlude.enterBonus(c,L);
+        for(int i=0;i<300 && !c.onboarding.briefing;i++)c.update(DT,L);
+        check("Steamer still explains alternating keys after title skip and restart",c.onboarding.lesson==Onboarding.STEAMER
+                && c.onboarding.briefing && c.onboarding.speech==TutorialSpeech.ALTERNATE);
+        for(int lesson:new int[]{Onboarding.STEAMER,Onboarding.MINE,Onboarding.CART}) {
+            store=new Mem();c=fresh(L,store);c.onboarding.begin(c,lesson,L);c.onboarding.skip(c);
+            GameCore loaded=new GameCore(store,243);
+            check("skip persists only active minigame set "+lesson,!loaded.onboarding.eligible(lesson)
+                    && loaded.onboarding.eligible(Onboarding.STARS) && !loaded.onboarding.learned(TutorialSpeech.RESCUE)
+                    && !loaded.onboarding.learned(TutorialSpeech.POWER_FLURRY));
+            check("all Steamer steps skip together "+lesson,lesson!=Onboarding.STEAMER
+                    || loaded.onboarding.learned(TutorialSpeech.WAIT) && loaded.onboarding.learned(TutorialSpeech.ALTERNATE)
+                    && loaded.onboarding.learned(TutorialSpeech.LIFT));
+            check("all Mine steps skip together "+lesson,lesson!=Onboarding.MINE
+                    || loaded.onboarding.learned(TutorialSpeech.DIG) && loaded.onboarding.learned(TutorialSpeech.CART));
+        }
+        c=fresh(L,new Mem());c.onboarding.rescue(c);c.onboarding.skip(c);
+        check("rescue skip leaves minigames and other hints available",c.onboarding.learned(TutorialSpeech.RESCUE)
+                && c.onboarding.eligible(Onboarding.STEAMER) && !c.onboarding.learned(TutorialSpeech.STACK));
+    }
+
     private static void skipResetAndHints(Layout L) {
         Mem store=new Mem();GameCore c=fresh(L,store);
         c.onboarding.begin(c,Onboarding.CORE,L);
@@ -798,11 +826,11 @@ final class TestOnboarding extends Check {
         touch(c,L,1,L.w*.84f,Onboarding.skipY(L));
         check("skip consumes gesture and returns to normal play",c.onboarding.practice==null && !c.onboarding.ownsTouch && q!=null);
         GameCore loaded=new GameCore(store,4);loaded.startGame();loaded.update(DT,L);
-        check("global skip survives restart and suppresses every encounter",loaded.onboarding.practice==null
-                && !loaded.onboarding.eligible(Onboarding.MINE) && !loaded.onboarding.eligible(Onboarding.SLIME));
+        check("core skip persists without suppressing other encounters",loaded.onboarding.practice==null
+                && loaded.onboarding.eligible(Onboarding.MINE) && loaded.onboarding.eligible(Onboarding.SLIME));
         loaded.lives=1;
         add(loaded,L,new int[]{0},Onboarding.rescueTriggerY(L));loaded.update(DT,L);
-        check("global skip suppresses rescue-swipe lesson",!loaded.onboarding.rescueGuide);
+        check("core skip leaves rescue-swipe lesson available",loaded.onboarding.rescueGuide);
         store.best=721;store.collected=4;store.steamerOpens=3;store.starWins=4;store.cartTrack=8;store.mineCarts=2;
         loaded.preferences.kids=true;
         SettingsInput.action(loaded,L,1000+PlayerSettings.TUTORIALS);
@@ -1054,8 +1082,9 @@ final class TestOnboarding extends Check {
             GameCore loaded=new GameCore(store,115);loaded.startGame();loaded.stage=(kind+1)*5;
             loaded.boss.begin(kind,loaded.stage,loaded.rnd);
             check("saved learning does not suppress new launch boss help "+kind+"/"+used,loaded.onboarding.offersBossHelp(loaded));
-            loaded.onboarding.skip(loaded);
-            check("Rainbow Cat help stays discoverable after Skip All "+kind+"/"+used,loaded.onboarding.offersBossHelp(loaded)==(kind==Boss.RAINBOW_CAT));
+            touch(loaded,L,0,x,y);touch(loaded,L,1,x,y);loaded.onboarding.skip(loaded);
+            check("skipping requested boss help dismisses only this boss "+kind+"/"+used,
+                    !loaded.onboarding.offersBossHelp(loaded) && loaded.onboarding.eligible(Onboarding.STEAMER));
         }
     }
     private static void slimeHelpOnce(Layout L) {
@@ -1147,7 +1176,7 @@ final class TestOnboarding extends Check {
         }
         GameCore c=fresh(L,new Mem());c.stage=5;c.boss.begin(Boss.SLIME,5,c.rnd);c.boss.intro=0;c.update(DT,L);
         c.onboarding.skip(c);makeSlimeVulnerable(c,L);c.update(DT,L);
-        check("skip all suppresses contextual Slime drag step",!c.onboarding.briefing);
+        check("skip suppresses contextual Slime drag step",!c.onboarding.briefing);
         c.onboarding.reset(c);c.update(Onboarding.SLIME_HINT_DELAY+.01f,L);acknowledge(c,L);
         for(int i=0;i<Boss.ELEMS;i++)if(c.boss.etype[i]==Boss.E_GLOB)c.boss.elife[i]=.001f;
         c.update(DT,L);c.update(DT,L);
