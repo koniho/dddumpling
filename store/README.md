@@ -13,3 +13,6 @@ publishing service account does not configure the in-game SDK.
 The listing, preview HTML and privacy-policy draft in this directory are historical preparation
 material. Use app-store/ and docs/privacy.html for current published copy. Update the published
 privacy policy and Data safety answers before enabling network reporting in a distributed build.
+
+For leaderboard eligibility, durable score submission and the Game Center/Play Games
+publication handoff, see [leaderboards.md](leaderboards.md).
