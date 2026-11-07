@@ -100,6 +100,11 @@ final class CaseUi {
         if(c.storyOpen() && !focused)c.storyFromScale=.67f*.82f;
     }
 
+    /** Leave edge-origin swipes to native Back navigation before the shelf can move. */
+    static boolean canStartDrag(float x, Layout L) {
+        return x >= L.w*.06f && x <= L.w*.94f;
+    }
+
     static void beginDrag(GameCore c, float x, float y) {
         if (!c.caseOpen || c.storyOpen()) return;
         c.caseDragging = c.caseFreePan = true;

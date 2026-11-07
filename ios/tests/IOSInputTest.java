@@ -796,6 +796,28 @@ public final class IOSInputTest extends Check {
         }
     }
 
+    private static void caseBackSwipes() {
+        for(float edge:new float[]{.01f,.04f,.96f,.99f})for(int end:new int[]{1,3}) {
+            IOSGame game=game();GameCore c=game.core();Layout l=game.geometry();
+            c.onboarding.saved=Onboarding.SKIPPED;c.openCase();c.caseT=1;c.caseTo(3);
+            float x=l.w*edge,y=Showcase.focusCy(l),direction=edge<.5f?1:-1;
+            int selected=c.caseIndex;
+            game.touch(one(0,7,x,y));
+            game.touch(one(2,7,x+direction*l.w*.12f,y));
+            game.touch(one(2,7,x+direction*l.w*.30f,y));
+            check("back swipe does not move case before system interception "+edge+"/"+end,
+                    c.caseIndex==selected && c.caseSlide==0 && c.caseSlideY==0 && !c.caseDragging);
+            game.touch(one(end,7,x+direction*l.w*.30f,y));
+            check("back swipe release/cancel preserves selection and shelf "+edge+"/"+end,
+                    c.caseIndex==selected && c.caseSlide==0 && !c.storyOpen() && !c.caseDragging);
+            game.touch(one(0,8,l.w*.5f,y));
+            game.touch(one(2,8,l.w*.3f,y));
+            check("interior browsing works after edge gesture "+edge+"/"+end,
+                    c.caseDragging && c.caseSlide!=0);
+            game.touch(one(1,8,l.w*.3f,y));
+        }
+    }
+
     private static void caseAndSettings() {
         IOSGame game = game(); GameCore c = game.core(); Layout l = game.geometry();
         tap(game,Showcase.iconCx(l,c.clock),Showcase.iconCy(c, l,c.clock));
@@ -1212,7 +1234,7 @@ public final class IOSInputTest extends Check {
         cave();
         highScores();
         updatePrompt(); releaseAttention(); releaseNotes(); releaseFeedback(); packets(); titleAndLifecycle(); starsAndLand(); starFeedback(); starCompletionStorm(); bossOwnership(); ninjaHistory();
-        steamerAndPanic(); forgivingRescue(); caseAndSettings(); storyDumplingInput(); outfitDragOff(); outfitFeedback(); outfitShake(); firstTitleEntry(); modeSelector(); survival();
+        steamerAndPanic(); forgivingRescue(); caseBackSwipes(); caseAndSettings(); storyDumplingInput(); outfitDragOff(); outfitFeedback(); outfitShake(); firstTitleEntry(); modeSelector(); survival();
         debugScenes(); linkedChord();
         System.out.println("iOS input: " + pass + " passed, " + fail + " failed");
         if (fail != 0) throw new AssertionError("iOS input regressions");
