@@ -39,13 +39,21 @@ final class TestSteamerCompanion extends Check {
         for(int i=0;i<3;i++) {pair(fast);advance(fast,L,.1f);pair(slow);advance(slow,L,.6f);}
         check("faster scored-pip cadence drives faster fanning",fast.companion.steamer.speed()>slow.companion.steamer.speed());
         advance(fast,L,3f);check("no new pips returns fan to idle",fast.companion.steamer.speed()==SteamerCompanion.IDLE_SPEED);
+        check("incomplete pips do not cue lid pointing",!SteamerCompanion.pointing(c));
         c.steamer.hits=c.steamer.goal();c.steamer.swipeReady=true;effort=fan.effort;
+        check("cleared pips cue excited lid pointing",SteamerCompanion.pointing(c));
         c.tapBonus(c.steamer.wanted());check("lid reminders do not accelerate fan",fan.effort==effort);
         c.swipeBonus();c.steamer.freedT=Steamer.FREE_TIME-SteamerCompanion.RETURN;
+        check("swiping lid ends pointing",!SteamerCompanion.pointing(c));
         check("reward sends helper home",SteamerCompanion.travel(c)==0);
         c.toTitle();check("leaving clears fan state",fan.phase==0 && fan.effort==0 && fan.gust==0);
         c=start(L);c.cloudUi.reduceMotion=true;
         check("reduced motion places helper without travel",SteamerCompanion.travel(c)==1);
+        c.time=1;c.bonusTimer=c.bonusRollEnd;c.steamer.hits=c.steamer.goal();c.steamer.swipeReady=true;
+        float stillX=SteamerCompanion.x(c,L),stillY=SteamerCompanion.y(c,L);
+        c.companion.clock+=1;
+        check("reduced motion keeps pointing position steady",SteamerCompanion.pointing(c)
+                && SteamerCompanion.x(c,L)==stillX && SteamerCompanion.y(c,L)==stillY);
         c.onboarding.begin(c,Onboarding.STEAMER,L);
         check("tutorial inherits reduced motion",c.onboarding.practice.cloudUi.reduceMotion);
         c.onboarding.practice.companion.steamer.effort=1;c.onboarding.sceneWait=0;

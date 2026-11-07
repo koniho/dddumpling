@@ -917,6 +917,10 @@ final class Preview {
                 c.companion.steamer.gust=frame==0?0:1;
                 c.steamer.hits=frame==0?0:6;
                 shot(dir,"241-steamer-fan-"+who+"-"+frame,c,L,w,h,ss);
+                if(frame>0 && who==8) {
+                    c.companion.steamer.gust=c.companion.steamer.effort=0;
+                    shot(dir,"241-steamer-idle-"+frame,c,L,w,h,ss);
+                }
             }
         }
         GameCore c=TestSteamerCompanion.start(L);c.time=2;c.bonusTimer=c.bonusRollEnd;
@@ -928,7 +932,14 @@ final class Preview {
         c.bonusTimer=GameCore.MASH_END;
         shot(dir,"241-steamer-time-up",c,L,w,h,ss);
         c.bonusTimer=c.bonusRollEnd;
-        c.steamer.hits=c.steamer.goal();c.steamer.swipeReady=true;c.swipeBonus();
+        c.steamer.hits=c.steamer.goal();c.steamer.swipeReady=true;
+        for(int pose=0;pose<3;pose++) {
+            c.companion.clock=pose*.17f;
+            shot(dir,"241-steamer-point-"+pose,c,L,w,h,ss);
+        }
+        c.cloudUi.reduceMotion=true;
+        shot(dir,"241-steamer-point-reduced",c,L,w,h,ss);
+        c.cloudUi.reduceMotion=false;c.swipeBonus();
         for(float back:new float[]{.1f,.3f,.55f}) {
             c.steamer.freedT=Steamer.FREE_TIME-back;
             shot(dir,"241-steamer-return-"+Math.round(back*1000),c,L,w,h,ss);
