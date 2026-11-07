@@ -35,7 +35,7 @@
     NSDictionary *tap = self.leaderboardTap; self.leaderboardTap = nil; return tap;
 }
 - (void)notifyLeaderboard:(NSInteger)board rank:(long long)rank title:(NSString *)title owner:(NSString *)owner
-                   valid:(BOOL (^)(void))valid completion:(void (^)(BOOL))completion {
+                 preview:(BOOL)preview valid:(BOOL (^)(void))valid completion:(void (^)(BOOL))completion {
     UNUserNotificationCenter *center = UNUserNotificationCenter.currentNotificationCenter;
     [center getNotificationSettingsWithCompletionHandler:^(UNNotificationSettings *settings) {
         if (settings.authorizationStatus == UNAuthorizationStatusNotDetermined) {
@@ -43,7 +43,7 @@
                 if (!valid()) { completion(NO); return; }
                 [center requestAuthorizationWithOptions:UNAuthorizationOptionAlert | UNAuthorizationOptionSound
                     completionHandler:^(BOOL granted, NSError *error) {
-                    if (granted && !error) [self notifyLeaderboard:board rank:rank title:title owner:owner valid:valid completion:completion];
+                    if (granted && !error) [self notifyLeaderboard:board rank:rank title:title owner:owner preview:preview valid:valid completion:completion];
                     else dispatch_async(dispatch_get_main_queue(), ^{ completion(NO); });
                 }];
             });
@@ -57,12 +57,12 @@
         dispatch_async(dispatch_get_main_queue(), ^{
             if (!valid()) { completion(NO); return; }
             UNMutableNotificationContent *content = [UNMutableNotificationContent new];
-            content.title = @"You're on the leaderboard!";
-            content.body = [NSString stringWithFormat:@"#%lld global · %@", rank, title];
+            content.title = preview ? @"Leaderboard notification preview" : @"You're on the leaderboard!";
+            content.body = [NSString stringWithFormat:@"%@#%lld global · %@", preview ? @"Sample: " : @"", rank, title];
             content.sound = UNNotificationSound.defaultSound;
             content.userInfo = @{@"leaderboard_board":@(board), @"leaderboard_owner":owner};
             UNNotificationRequest *request = [UNNotificationRequest requestWithIdentifier:
-                [NSString stringWithFormat:@"leaderboard.%ld", (long)board] content:content trigger:nil];
+                (preview ? @"leaderboard.preview" : [NSString stringWithFormat:@"leaderboard.%ld", (long)board]) content:content trigger:nil];
             [center addNotificationRequest:request withCompletionHandler:^(NSError *error) {
                 dispatch_async(dispatch_get_main_queue(), ^{ completion(error == nil); });
             }];

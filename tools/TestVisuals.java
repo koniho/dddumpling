@@ -1422,7 +1422,7 @@ final class TestVisuals extends Check {
                 ui.hit((ui.optionL() * 3f + ui.optionR()) / 4f,
                         ui.difficultyY + ui.difficultyH / 2f)
                         == SettingsUi.HIT_RESET_DIFFICULTY);
-        ui.compute(L,SettingsUi.PROGRESS);
+        ui.compute(L,SettingsUi.COLLECTION);
         check("the collection-reset chip remains hit",
                 ui.hit((ui.optionL() + ui.optionR() * 3f) / 4f,
                         ui.clearY + ui.clearH / 2f) == SettingsUi.HIT_CLEAR);

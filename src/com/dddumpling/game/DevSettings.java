@@ -20,7 +20,7 @@ final class DevSettings extends Draw {
         }
         boolean running=c.state==GameCore.PLAY && !c.pendingBonus;
         Painter actions=running?p:new OpacityPainter(p,.3f);
-        if(!running && c.settingsTab!=SettingsUi.PROGRESS) p.text(c.state==GameCore.BONUS?"FINISH THE MINIGAME FIRST":"START A RUN TO PLAYTEST",
+        if(!running && (c.settingsTab==SettingsUi.GENERAL || c.settingsTab==SettingsUi.MINIGAMES)) p.text(c.state==GameCore.BONUS?"FINISH THE MINIGAME FIRST":"START A RUN TO PLAYTEST",
                 L.w*.5f,u.panelT+s*8.2f,s*.50f,INK_DIM,Painter.CENTER,false);
         if(c.settingsTab==SettingsUi.MINIGAMES) {
             label(p,u,u.difficultyStepLabelY,"STAR PATH DIFFICULTY",s);
@@ -38,13 +38,6 @@ final class DevSettings extends Draw {
             label(p,u,u.clearLabelY,"STEAMER TARGET: "+c.steamer.goal(),s);
             return;
         }
-        if(c.settingsTab==SettingsUi.POWERS) {
-            label(p,u,u.testLabelY,"PLAY FRENZY",s);
-            for(int i=0;i<Power.OFFERED.length;i++) chip(actions,u,u.testY,i,Power.OFFERED.length,Power.CHIP[Power.offeredAt(i)],s,false);
-            label(p,u,u.debuffY-s*.6f,"PLAY DEBUFF",s);
-            for(int i=0;i<2;i++) chip(actions,u,u.debuffY,i,2,Power.NAMES[Power.INCOGNITO+i],s,false);
-            return;
-        }
         if(c.settingsTab==SettingsUi.PROGRESS) {
             label(p,u,u.debuffY-s*.6f,"LAND DISCOVERY",s);
             chip(p,u,u.debuffY,0,2,"ALL LANDS",s,false);
@@ -56,16 +49,22 @@ final class DevSettings extends Draw {
             chip(p,u,u.updatePromptY,1,2,"TEST UPDATE",s,c.storeUpdate.preview && !c.storeUpdate.shown);
             chip(p,u,u.reviewPromptY,0,2,"TEST REVIEW",s,c.reviewPrompt.preview);
             chip(p,u,u.reviewPromptY,1,2,"RESET REVIEW",s,false);
+            label(p,u,u.notificationY-s*.6f,"NOTIFICATIONS",s);
+            chip(p,u,u.notificationY,0,1,"TEST NOTIFICATION",s,c.leaderboardNotice.preview);
+            chip(p,u,u.resetProgressY,0,1,c.resetProgressArmed?"TAP AGAIN: START FRESH":"CLEAR ALL PROGRESS",s,c.resetProgressArmed);
+            return;
+        }
+        if(c.settingsTab==SettingsUi.COLLECTION) {
             label(p,u,u.clearLabelY,"COLLECTION: "+Collect.owned(c.collected)+" / "+Collect.COUNT,s);
             chip(p,u,u.clearY,0,1,c.clearArmed?"TAP AGAIN TO EMPTY":"EMPTY COLLECTION",s,c.clearArmed);
             chip(p,u,u.collectAllY,0,1,"COLLECT ALL",s,Collect.complete(c.collected));
+            label(p,u,u.accessoryY-s*.6f,"ACCESSORIES",s);
             chip(p,u,u.accessoryY,0,3,"GIFT ACCESSORY",s,false);
             chip(p,u,u.accessoryY,1,3,"ALL ACCESSORIES",s,false);
             chip(p,u,u.accessoryY,2,3,"RESET OUTFITS",s,false);
             for(int category=0;category<Accessories.SLOTS;category++)
                 chip(p,u,u.accessoryCategoryY[category/2],category%2,u.accessoryColumns(category/2),"ALL "+Accessories.SLOT[category],s,
                         c.wardrobe.categoryOwned(category));
-            chip(p,u,u.resetProgressY,0,1,c.resetProgressArmed?"TAP AGAIN: START FRESH":"CLEAR ALL PROGRESS",s,c.resetProgressArmed);
             return;
         }
         label(p,u,u.stageLabelY,"STAGE "+c.stage,s);
@@ -79,6 +78,10 @@ final class DevSettings extends Draw {
         chip(p,u,u.infiniteLivesY,0,1,"INFINITE LIVES: "+(c.devInfiniteLives?"ON":"OFF"),s,c.devInfiniteLives);
         label(p,u,u.playthroughY-s*.6f,c.playthrough.saveFailed?"LOG SAVE FAILED":"LOCAL PLAYTHROUGH LOG",s);
         chip(p,u,u.playthroughY,0,1,"EXPORT PLAYTHROUGHS",s,false);
+        label(p,u,u.testLabelY,"PLAY FRENZY",s);
+        for(int i=0;i<Power.OFFERED.length;i++) chip(actions,u,u.testY,i,Power.OFFERED.length,Power.CHIP[Power.offeredAt(i)],s,false);
+        label(p,u,u.debuffY-s*.6f,"PLAY DEBUFF",s);
+        for(int i=0;i<2;i++) chip(actions,u,u.debuffY,i,2,Power.NAMES[Power.INCOGNITO+i],s,false);
     }
     static void completeBosses(GameCore c) {
         if(!BuildFlags.DEVELOPER)return;

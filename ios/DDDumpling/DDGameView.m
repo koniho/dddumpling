@@ -388,20 +388,6 @@
     [self.gameCenter refreshActive:!self.storeAlertVisible];
     [self.gameCloud updateActive:YES elapsed:elapsed];
     [self.gameCenter updateAchievements:self.game store:self.store elapsed:elapsed];
-    DDAppDelegate *app = (DDAppDelegate *)UIApplication.sharedApplication.delegate;
-    NSDictionary *tap = [app takeLeaderboardTap];
-    if (tap) [self.game openLeaderboardNotificationWithInt:[tap[@"leaderboard_board"] intValue]
-                                            withNSString:tap[@"leaderboard_owner"]];
-    jint notice = [self.game takeLeaderboardNotice];
-    if (notice >= 0) {
-        jlong rank = [self.game leaderboardNoticeRank];
-        NSString *owner = [self.game leaderboardNoticeOwner];
-        [app notifyLeaderboard:notice rank:rank title:[self.game leaderboardTitleWithInt:notice] owner:owner
-                    valid:^BOOL { return [self.game leaderboardNoticeCurrentWithNSString:owner]; }
-                    completion:^(BOOL shown) {
-            [self.game leaderboardNoticeResultWithNSString:owner withInt:notice withLong:rank withBoolean:shown];
-        }];
-    }
     jint leaderboard=[self.game takeLeaderboardAction];
     if(leaderboard>=0) {
         [self.gameCenter showLeaderboard:[self.game leaderboardIDWithInt:leaderboard]];
@@ -414,6 +400,20 @@
     [self.game cloudReduceMotionWithBoolean:UIAccessibilityIsReduceMotionEnabled()];
     if ([self.game takeCloudAction] == 1) [self.gameCenter requestSignIn];
 #endif
+    DDAppDelegate *app = (DDAppDelegate *)UIApplication.sharedApplication.delegate;
+    NSDictionary *tap = [app takeLeaderboardTap];
+    if (tap) [self.game openLeaderboardNotificationWithInt:[tap[@"leaderboard_board"] intValue]
+                                            withNSString:tap[@"leaderboard_owner"]];
+    jint notice = [self.game takeLeaderboardNotice];
+    if (notice >= 0) {
+        jlong rank = [self.game leaderboardNoticeRank];
+        NSString *owner = [self.game leaderboardNoticeOwner];
+        [app notifyLeaderboard:notice rank:rank title:[self.game leaderboardTitleWithInt:notice] owner:owner
+                    preview:[self.game leaderboardNoticePreview] valid:^BOOL { return [self.game leaderboardNoticeCurrentWithNSString:owner]; }
+                    completion:^(BOOL shown) {
+            [self.game leaderboardNoticeResultWithNSString:owner withInt:notice withLong:rank withBoolean:shown];
+        }];
+    }
     CFTimeInterval start = CACurrentMediaTime();
     [self.game updateWithFloat:elapsed];
     if([self.game takeUpdateAction])[self.appUpdate openListing];

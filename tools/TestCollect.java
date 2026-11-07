@@ -906,7 +906,7 @@ final class TestCollect extends Check {
         all.collectTotal = 3;
         all.clearArmed = true;
         SettingsUi ui = new SettingsUi();
-        ui.compute(L, SettingsUi.PROGRESS);
+        ui.compute(L, SettingsUi.COLLECTION);
         int hit = ui.hit((ui.optionL()+ui.optionR())*.5f, ui.collectAllY+ui.testH*.5f);
         check("collect all chip fits the panel", hit == SettingsUi.HIT_COLLECT_ALL
                 && ui.collectAllY+ui.testH < ui.panelB);

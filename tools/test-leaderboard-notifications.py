@@ -97,6 +97,12 @@ public class NotificationCheck extends Check {
   check("permission return retains pending alert during reauthentication",a.manager.posts==0 && c.leaderboardNotice.board==10);
   c.leaderboards.account("a",true);n.update();
   check("same account resumes pending system notification",a.manager.posts==1);
+  a=new MainActivity();a.permission=0;c=new GameCore(new Mem(),237);c.openSettings();c.settingsPage=1;
+  c.leaderboardNotice.test(c);n=new LeaderboardNotifications(a,c,new android.content.SharedPreferences());n.update();
+  check("developer preview posts without service login",a.manager.posts==1 && c.leaderboards.owner().isEmpty());
+  check("developer preview is labeled as a sample",a.manager.posted.title.contains("preview") && a.manager.posted.body.startsWith("Sample:"));
+  n.open(android.app.PendingIntent.last);
+  check("preview tap opens developer settings without requesting a board",c.settingsPage==1 && c.settingsTab==SettingsUi.PROGRESS && !c.preferences.externalBusy);
   android.os.Build.VERSION.SDK_INT=25;a=new MainActivity();c=ready();n=new LeaderboardNotifications(a,c,new android.content.SharedPreferences());n.update();
   check("pre-channel Android posts without runtime permission",a.manager.posts==1 && a.requests==0);
   System.out.println("Android leaderboard notifications: "+pass+" passed, "+fail+" failed");

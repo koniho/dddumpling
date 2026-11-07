@@ -37,14 +37,15 @@ public final class IOSGame {
     public String leaderboardID(int board) {return LeaderboardCatalog.appleId(board);}
     public void leaderboardAccount(String owner,boolean enabled) {core.leaderboards.account(owner,enabled);}
     public int takeLeaderboardNotice() {return core.leaderboardNotice.takeSystem(core);}
+    public boolean leaderboardNoticePreview() {return BuildFlags.DEVELOPER && core.leaderboardNotice.preview;}
     public long leaderboardNoticeRank() {return core.leaderboardNotice.rank;}
     public String leaderboardNoticeOwner() {return core.leaderboardNotice.owner;}
     public String leaderboardTitle(int board) {return LeaderboardCatalog.title(board);}
-    public boolean leaderboardNoticeCurrent(String owner) {return owner!=null && owner.equals(core.leaderboards.owner()) && LeaderboardNotice.safe(core);}
+    public boolean leaderboardNoticeCurrent(String owner) {return core.leaderboardNotice.current(core,owner) && core.leaderboardNotice.ready(core);}
     public void leaderboardNoticeResult(String owner,int board,long rank,boolean shown) {
         core.leaderboardNotice.systemResult(core,owner,board,rank,shown);
     }
-    public void openLeaderboardNotification(int board,String owner) {core.leaderboardUi.notification(board,owner);}
+    public void openLeaderboardNotification(int board,String owner) {LeaderboardNotice.openNotification(core,board,owner);}
     public int pendingLeaderboardRank() {return core.leaderboards.nextRank();}
     public long pendingLeaderboardRankValue(int board) {return core.leaderboards.rankedValue(board);}
     public void leaderboardRank(String owner,int board,long value,long score,long rank) {

@@ -10,6 +10,9 @@ final class TestProduction extends Check {
         Layout L = new Layout();
         L.compute(640, 1400, 0, 0, 0, 0);
         TestReviewPrompt.run(L);
+        GameCore preview=new GameCore(new Mem(),237L);
+        preview.leaderboardNotice.test(preview);
+        check("production cannot create notification preview",!preview.leaderboardNotice.preview && preview.leaderboardNotice.board<0);
         GameCore reader=new GameCore(new Mem(),7190L);
         reader.releaseNotes.show(reader,L);
         check("release notes are available in production",reader.releaseNotes.open);

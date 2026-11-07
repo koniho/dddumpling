@@ -20,6 +20,11 @@ notification opens its captured board once that account is authenticated and gam
 The OS controls banner/sound delivery. These are local notifications following an app-confirmed
 score, not remote monitoring while the app is closed. They need no APNs/FCM server.
 
+Developer builds can exercise the local notification without a service account: open
+**Settings → Developer → Progress → Test Notification**. It posts a clearly labeled sample
+rank through the same OS permission/channel path; tapping it returns to that developer tab.
+The preview never queues or submits a leaderboard score and does not change saved rank history.
+
 ## Eligible runs
 
 Only newly completed runs enter the queue. Local high-score history, archived Time Attack

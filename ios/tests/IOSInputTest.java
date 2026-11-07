@@ -169,6 +169,19 @@ public final class IOSInputTest extends Check {
         check("duplicate native identities are rejected", rejected);
     }
 
+    private static void notificationPreview() {
+        IOSGame game=game();GameCore c=game.core();Layout l=game.geometry();
+        c.openSettings();c.settingsPage=1;c.settingsTab=SettingsUi.PROGRESS;game.update(PlayerSettings.PANEL_TIME);
+        SettingsUi ui=new SettingsUi();ui.compute(l,SettingsUi.PROGRESS);
+        tap(game,l.w*.5f,ui.notificationY+ui.testH*.5f);
+        check("native developer chip dispatches offline preview",game.takeLeaderboardNotice()==10 && game.leaderboardNoticePreview()
+                && game.leaderboardNoticeCurrent(game.leaderboardNoticeOwner()));
+        game.leaderboardNoticeResult(LeaderboardNotice.PREVIEW_OWNER,10,12,true);
+        game.openLeaderboardNotification(10,LeaderboardNotice.PREVIEW_OWNER);
+        check("native preview tap returns to progress tab",c.settingsPage==1 && c.settingsTab==SettingsUi.PROGRESS
+                && c.leaderboards.next()==-1 && game.takeLeaderboardAction()==-1);
+    }
+
     private static void leaderboardNotifications() {
         IOSGame game=game();GameCore c=game.core();
         game.leaderboardAccount("a",true);game.leaderboardsEnabled(true);
@@ -902,7 +915,7 @@ public final class IOSInputTest extends Check {
 
         c.settingsOpen=false;
         for(int i=0;i<2;i++) {
-            c.settingsOpen=true;c.settingsTab=SettingsUi.POWERS;ui.compute(l,c.settingsTab);
+            c.settingsOpen=true;c.settingsTab=SettingsUi.GENERAL;ui.compute(l,c.settingsTab);
             tap(game,(ui.testChipL(i,2)+ui.testChipR(i,2))/2,ui.debuffY+ui.testH/2);
             check("native debuff chip activates correct effect " + i,!c.settingsOpen
                     && c.debuff==Power.INCOGNITO+i && c.debuffLeft>0f && !c.powerActive());
@@ -1270,7 +1283,7 @@ public final class IOSInputTest extends Check {
         playerSettings();
         bossRetryInput();gameOverDismissal();
         cave();
-        highScores();leaderboardNavigation();leaderboardNotifications();
+        highScores();leaderboardNavigation();leaderboardNotifications();notificationPreview();
         updatePrompt(); releaseAttention(); releaseNotes(); releaseFeedback(); packets(); titleAndLifecycle(); starsAndLand(); starFeedback(); starCompletionStorm(); bossOwnership(); ninjaHistory();
         steamerAndPanic(); forgivingRescue(); caseBackSwipes(); caseAndSettings(); storyDumplingInput(); outfitDragOff(); outfitFeedback(); outfitShake(); firstTitleEntry(); modeSelector(); survival();
         debugScenes(); linkedChord();

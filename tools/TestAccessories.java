@@ -318,7 +318,7 @@ final class TestAccessories extends Check {
         }
         for(int[] size:new int[][]{{320,568},{640,1400},{1080,2340}}) {
             Layout small=new Layout();small.compute(size[0],size[1],0,20,0,24);
-            SettingsUi u=new SettingsUi();u.compute(small,SettingsUi.PROGRESS);
+            SettingsUi u=new SettingsUi();u.compute(small,SettingsUi.COLLECTION);
             for(int slot=0;slot<Accessories.SLOTS;slot++) {
                 float x=(u.testChipL(slot%2,u.accessoryColumns(slot/2))+u.testChipR(slot%2,u.accessoryColumns(slot/2)))*.5f,y=u.accessoryCategoryY[slot/2]+u.testH*.5f;
                 check("category chip routes to matching grant",u.hit(x,y)==SettingsUi.HIT_ACCESSORY_CATEGORY+slot);
@@ -582,7 +582,7 @@ final class TestAccessories extends Check {
         check("reward never interrupts tutorial",!ui.open);
         for(int[] size:new int[][]{{320,568},{640,1400},{1080,2340}}) {
             Layout small=new Layout();small.compute(size[0],size[1],0,20,0,24);
-            SettingsUi settings=new SettingsUi();settings.compute(small,SettingsUi.PROGRESS);
+            SettingsUi settings=new SettingsUi();settings.compute(small,SettingsUi.COLLECTION);
             check("developer accessory chips stay in panel",settings.accessoryY+settings.testH<settings.panelB);
             check("editor buttons fit portrait",WardrobeScreen.y(small,.89f)<small.h-small.padB);
             float topGap=WardrobeScreen.trayY(small,.09f)-WardrobeScreen.safeTop(small);
