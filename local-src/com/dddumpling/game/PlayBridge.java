@@ -4,6 +4,7 @@ package com.dddumpling.game;
 final class PlayBridge {
     void requestReview() {}
     void showAchievements() {}
+    void showLeaderboard(int board) {}
     void signIn() {}
     PlayBridge(MainActivity activity, GameCore core) {}
     void resume() {}

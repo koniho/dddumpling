@@ -169,6 +169,25 @@ public final class IOSInputTest extends Check {
         check("duplicate native identities are rejected", rejected);
     }
 
+    private static void leaderboardNavigation() {
+        IOSGame game=game();GameCore c=game.core();Layout l=game.geometry();
+        game.leaderboardsEnabled(true);
+        c.highScoreScreen.show(c);c.highScoreScreen.update(HighScoreScreen.ENTRY_TIME);
+        tap(game,l.w*.5f,LeaderboardUi.y(l));
+        for(int i=0;i<20;i++)game.update(DT);
+        int board=game.takeLeaderboardAction();
+        check("native leaderboard dispatch uses captured board once",board==LeaderboardCatalog.ADVENTURE
+                && game.takeLeaderboardAction()==-1);
+        check("native leaderboard ID matches catalog",game.leaderboardID(board).equals(LeaderboardCatalog.appleId(board)));
+        game.background(true);game.background(false);game.externalFinished();
+        check("native leaderboard dismissal preserves records panel",c.highScoreScreen.open && !c.preferences.externalBusy);
+        game.leaderboardsEnabled(false);
+        for(int i=0;i<40;i++)game.update(DT);
+        tap(game,l.w*.5f,LeaderboardUi.y(l));
+        for(int i=0;i<20;i++)game.update(DT);
+        check("native unavailable service cannot dispatch",game.takeLeaderboardAction()==-1 && !c.preferences.externalBusy);
+    }
+
     private static void highScores() {
         IOSGame game=game();GameCore c=game.core();Layout l=game.geometry();
         c.startGame();c.score=500;c.highScores.finish(c);c.toTitle();c.returnFade=0;
@@ -1232,7 +1251,7 @@ public final class IOSInputTest extends Check {
         playerSettings();
         bossRetryInput();gameOverDismissal();
         cave();
-        highScores();
+        highScores();leaderboardNavigation();
         updatePrompt(); releaseAttention(); releaseNotes(); releaseFeedback(); packets(); titleAndLifecycle(); starsAndLand(); starFeedback(); starCompletionStorm(); bossOwnership(); ninjaHistory();
         steamerAndPanic(); forgivingRescue(); caseBackSwipes(); caseAndSettings(); storyDumplingInput(); outfitDragOff(); outfitFeedback(); outfitShake(); firstTitleEntry(); modeSelector(); survival();
         debugScenes(); linkedChord();

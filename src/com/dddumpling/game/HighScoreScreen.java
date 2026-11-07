@@ -2,7 +2,7 @@ package com.dddumpling.game;
 
 /** Saved runs in the release-notes glass, using the Settings gesture and back routes. */
 final class HighScoreScreen extends Draw {
-    static final int CLOSE=-1, BACK=-2, ROW=2000;
+    static final int CLOSE=-1, BACK=-2, LEADERBOARD=-3, ROW=2000;
     static final float ENTRY_TIME=PANEL_SLIDE_TIME;
     static float titleY(Layout L) { return L.h*.292f; }
     boolean open,closing;
@@ -25,7 +25,7 @@ final class HighScoreScreen extends Draw {
     static float top(Layout L) { return L.topSafe+size(L); }
     static float bottom(Layout L) { return L.h-L.padB-size(L); }
     static float listTop(Layout L) { return top(L)+size(L)*3.5f; }
-    static float listBottom(Layout L) { return bottom(L)-size(L); }
+    static float listBottom(Layout L) { return bottom(L)-size(L)*4.1f; }
     static HighScores records(GameCore c) {
         return c.modes.selected==ModeSelector.SURVIVAL?c.survival.titleHistory(c):c.highScores;
     }
@@ -90,10 +90,11 @@ final class HighScoreScreen extends Draw {
         if(selected>=0) { selected=-1;scroll=0;feedback(c); } else close(c);
     }
     int hit(GameCore c,Layout L,float x,float y) {
-        if(moving()) return 0;
+        if(moving() || c.preferences.externalBusy) return 0;
         float s=size(L),t=top(L);
         if(x<L.w*.04f || x>L.w*.96f || y<t || y>bottom(L)) return CLOSE;
         if(x>L.w*.82f && y<t+2.5f*s) return CLOSE;
+        if(c.leaderboardUi.canOpen(c) && LeaderboardUi.hit(L,x,y))return LEADERBOARD;
         if(selected>=0) return x<L.w*.21f && y<t+2.5f*s?BACK:0;
         if(y<listTop(L) || y>listBottom(L)) return 0;
         int row=(int)((y-listTop(L))/rowHeight(c,L));
@@ -103,6 +104,7 @@ final class HighScoreScreen extends Draw {
         if(moving()) return;
         if(hit==CLOSE) close(c);
         else if(hit==BACK) back(c);
+        else if(hit==LEADERBOARD)c.leaderboardUi.request(c);
         else if(hit>=ROW && hit<ROW+displayCount(c)) { selected=hit-ROW;scroll=0;feedback(c);TitleTour.openedDetails(c); }
     }
     float maxScroll(GameCore c,Layout L) {
@@ -128,6 +130,7 @@ final class HighScoreScreen extends Draw {
                 L.w*.5f,t+s*2.9f,type(s*.48f),INK_DIM,Painter.CENTER,true);
         else if(records(c).survival)p.text("SURVIVAL / "+Survival.profileName(c.survival.titleProfile(c)),
                 L.w*.5f,t+s*2.9f,type(s*.48f),INK_DIM,Painter.CENTER,true);
+        LeaderboardUi.draw(p,c,L);
         p.save();p.clipRect(L.w*.07f,listTop(L),L.w*.93f,listBottom(L));
         if(timeAttack(c))TimeAttackScores.content(p,c,L,selected);
         else if(selected>=0 && selected<records(c).displayCount()) summary(p,c,L,records(c).displayRun(selected));

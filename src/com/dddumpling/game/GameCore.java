@@ -660,6 +660,7 @@ final class GameCore {
     float warnLevel;
     /** Spent for this stage once the push-back has been used. */
     boolean pushUsed;
+    final LeaderboardUi leaderboardUi = new LeaderboardUi();
     final Onboarding onboarding = new Onboarding();
     final Starter starter = new Starter();
     final TitleStart titleStart = new TitleStart();

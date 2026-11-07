@@ -387,6 +387,11 @@
     [self.gameCenter refreshActive:!self.storeAlertVisible];
     [self.gameCloud updateActive:YES elapsed:elapsed];
     [self.gameCenter updateAchievements:self.game store:self.store elapsed:elapsed];
+    jint leaderboard=[self.game takeLeaderboardAction];
+    if(leaderboard>=0) {
+        [self.gameCenter showLeaderboard:[self.game leaderboardIDWithInt:leaderboard]];
+        [self.game externalFinished];
+    }
     if ([self.game takeAchievementAction]) {
         [self.gameCenter showAchievements]; [self.game externalFinished];
     }

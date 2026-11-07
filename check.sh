@@ -100,6 +100,7 @@ src/com/dddumpling/game/LeaderboardCatalog.java
 src/com/dddumpling/game/HighScores.java
 src/com/dddumpling/game/BossRetry.java
 src/com/dddumpling/game/HighScoreScreen.java
+src/com/dddumpling/game/LeaderboardUi.java
 src/com/dddumpling/game/OctoWaveRecording.java
 src/com/dddumpling/game/SlimeSquishRecording.java
 src/com/dddumpling/game/GatorParryRecording.java

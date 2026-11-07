@@ -1823,6 +1823,20 @@ final class Preview {
             shot(dir,"132-ninja-fading",c,L,w,h,ss);
         }
 
+        if(wanted("237")) {
+            GameCore c=new GameCore(new Mem(),237L);
+            c.highScoreScreen.show(c);c.highScoreScreen.update(HighScoreScreen.ENTRY_TIME);
+            shot(dir,"237-leaderboard-unavailable",c,L,w,h,ss);
+            c.leaderboardUi.enabled=true;
+            shot(dir,"237-leaderboard-adventure",c,L,w,h,ss);
+            c.modes.selected=ModeSelector.SURVIVAL;
+            shot(dir,"237-leaderboard-survival",c,L,w,h,ss);
+            c.modes.selected=ModeSelector.TIME_ATTACK;c.fullRoster=true;
+            shot(dir,"237-leaderboard-time-attack",c,L,w,h,ss);
+            c.preferences.kids=true;
+            shot(dir,"237-leaderboard-ineligible",c,L,w,h,ss);
+        }
+
         if(wanted("130")) {
             GameCore scores=new GameCore(new Mem(),101L);
             shot(dir,"130-high-scores-title",scores,L,w,h,ss);

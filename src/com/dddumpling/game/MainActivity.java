@@ -153,6 +153,12 @@ public class MainActivity extends Activity implements GameCore.Store {
     }
     void signInPlayGames() {if(play!=null)play.signIn();}
     void openAppAction(int action) {
+        if(action==PlayerSettings.LEADERBOARD) {
+            int board=game.core().leaderboardUi.take(game.core());
+            if(board>=0 && play!=null)play.showLeaderboard(board);
+            else game.core().preferences.externalFinished(game.core());
+            return;
+        }
         if (action == PlayerSettings.ACHIEVEMENTS) {
             if (play != null) play.showAchievements();
             else game.core().preferences.externalFinished(game.core());
