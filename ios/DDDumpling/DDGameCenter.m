@@ -29,6 +29,8 @@
 @property(nonatomic) BOOL enabled, started, active, presenting, promptRequested;
 @property(nonatomic) double achievementClock;
 @property(nonatomic) BOOL achievementBusy;
+@property(nonatomic) double leaderboardClock;
+@property(nonatomic, copy) NSString *leaderboardOwner, *leaderboardRequest, *pendingLeaderboard, *leaderboardMessage;
 @property(nonatomic, copy) NSString *achievementOwner;
 @property(nonatomic, strong) NSMutableDictionary *achievementSent;
 @end
@@ -80,10 +82,16 @@
             if (error) service.status = @"Playing locally";
             NSLog(@"Game Center: %@%@", service.status,
                 service.lastError ? [@" — " stringByAppendingString:service.lastError] : @"");
+            if (!player.length && !controller && service.pendingLeaderboard.length) {
+                service.pendingLeaderboard = nil;
+                service.leaderboardMessage = @"Sign in to Game Center to view leaderboards.";
+            }
             [service presentIfReady];
+            [service presentLeaderboardIfReady];
         }];
     }
     [self presentIfReady];
+    [self presentLeaderboardIfReady];
 }
 - (void)requestSignIn {
     self.promptRequested = YES;
@@ -92,6 +100,7 @@
 }
 - (void)updateAchievements:(DDIOSGame *)game store:(DDIOSStore *)store elapsed:(double)elapsed {
     [game achievementsEnabledWithBoolean:self.enabled];
+    [self updateLeaderboards:game elapsed:elapsed];
 #if DDDUMPLING_GAME_CENTER
     NSString *owner = self.playerID;
     if (!self.enabled || !self.active || !owner.length || store.error
@@ -130,6 +139,82 @@
                 sent[report.identifier] = @(report.percentComplete);
         });
     }];
+#endif
+}
+- (BOOL)leaderboardsAllowed {
+    return self.enabled && ![NSBundle.mainBundle.bundleIdentifier hasSuffix:@".dev"];
+}
+- (void)updateLeaderboards:(DDIOSGame *)game elapsed:(double)elapsed {
+    BOOL allowed = [self leaderboardsAllowed];
+    [game leaderboardsEnabledWithBoolean:allowed];
+    [game leaderboardAccountWithNSString:self.playerID withBoolean:allowed];
+#if DDDUMPLING_GAME_CENTER
+    NSString *owner = self.playerID;
+    if (![self.leaderboardOwner isEqual:owner]) {
+        self.leaderboardOwner = owner; self.leaderboardRequest = nil; self.leaderboardClock = 10;
+    }
+    if (!allowed || !self.active || !owner.length || !GKLocalPlayer.localPlayer.isAuthenticated
+            || ![GKLocalPlayer.localPlayer.gamePlayerID isEqual:owner]) return;
+    self.leaderboardClock += MAX(0, MIN(elapsed, 1));
+    if (self.leaderboardRequest || self.leaderboardClock < 10) return;
+    self.leaderboardClock = 0;
+    int board = [game pendingLeaderboard];
+    if (board < 0) return;
+    jlong value = [game pendingLeaderboardValueWithInt:board];
+    jlong score = [game leaderboardAppleScoreWithInt:board withLong:value];
+    if (score <= 0) return;
+    NSString *identifier = [game leaderboardIDWithInt:board];
+    NSString *request = NSUUID.UUID.UUIDString;
+    self.leaderboardRequest = request;
+    __weak DDGameCenter *weakSelf = self;
+    [GKLeaderboard submitScore:(NSInteger)score context:0 player:GKLocalPlayer.localPlayer
+        leaderboardIDs:@[identifier] completionHandler:^(NSError *error) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            DDGameCenter *service = weakSelf;
+            if (![service.leaderboardRequest isEqual:request]) return;
+            service.leaderboardRequest = nil;
+            if (!error && [service.playerID isEqual:owner])
+                [game leaderboardSubmittedWithNSString:owner withInt:board withLong:value];
+        });
+    }];
+#endif
+}
+- (void)showLeaderboard:(NSString *)identifier {
+    if (![self leaderboardsAllowed] || !identifier.length) {
+        self.leaderboardMessage = @"Leaderboards are unavailable in this build.";
+        [self presentLeaderboardIfReady]; return;
+    }
+    self.pendingLeaderboard = identifier;
+    if (!self.playerID.length) [self requestSignIn];
+    [self presentLeaderboardIfReady];
+}
+- (void)presentLeaderboardIfReady {
+    UIViewController *host = self.presenter;
+    if (!self.active || !host.view.window || host.presentedViewController || self.presented
+            || host.isBeingDismissed || host.isBeingPresented) return;
+    if (self.leaderboardMessage.length) {
+        UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Leaderboard unavailable"
+            message:self.leaderboardMessage preferredStyle:UIAlertControllerStyleAlert];
+        self.leaderboardMessage = nil;
+        __weak DDGameCenter *weakSelf = self;
+        [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+            DDGameCenter *service = weakSelf;
+            if (service.presentationChanged) service.presentationChanged(NO);
+        }]];
+        if (self.presentationChanged) self.presentationChanged(YES);
+        [host presentViewController:alert animated:YES completion:nil];
+        return;
+    }
+#if DDDUMPLING_GAME_CENTER
+    if (!self.pendingLeaderboard.length || !self.playerID.length) return;
+    GKGameCenterViewController *controller = [[GKGameCenterViewController alloc]
+        initWithLeaderboardID:self.pendingLeaderboard playerScope:GKLeaderboardPlayerScopeGlobal
+        timeScope:GKLeaderboardTimeScopeAllTime];
+    self.pendingLeaderboard = nil;
+    self.promptRequested = NO;
+    controller.gameCenterDelegate = (id<GKGameCenterControllerDelegate>)self;
+    if (self.presentationChanged) self.presentationChanged(YES);
+    [host presentViewController:controller animated:YES completion:nil];
 #endif
 }
 - (void)showAchievements {

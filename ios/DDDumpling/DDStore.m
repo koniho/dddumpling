@@ -244,6 +244,14 @@ static NSString *const DDStoreWriterKey = @"progressWriter";
 }
 - (NSString *)loadSurvivalAward { return [self stringForKey:@"survivalAward" validWriter:NO] ?: @""; }
 - (void)saveSurvivalAwardWithNSString:(NSString *)value { [self setValue:value forKey:@"survivalAward"]; }
+- (NSString *)loadLeaderboards { return [self stringForKey:@"leaderboardSubmissions" validWriter:NO] ?: @""; }
+- (jboolean)saveLeaderboardsWithNSString:(NSString *)value {
+  [_lock lock];
+  _values[@"leaderboardSubmissions"] = value;
+  BOOL saved = [self persist];
+  [_lock unlock];
+  return saved;
+}
 - (NSString *)loadTimeAttack { return [self stringForKey:@"timeAttack" validWriter:NO] ?: @""; }
 - (void)saveTimeAttackWithNSString:(NSString *)value { [self setValue:value forKey:@"timeAttack"]; }
 - (NSString *)loadSurvival { return [self stringForKey:@"survival" validWriter:NO] ?: @""; }

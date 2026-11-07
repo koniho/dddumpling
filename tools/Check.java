@@ -59,6 +59,10 @@ abstract class Check {
         int caseIndex;
         public int loadCaseIndex() { return caseIndex; }
         public void saveCaseIndex(int value) { caseIndex=value; }
+        String leaderboardSubmissions="";
+        boolean leaderboardSaveFails;
+        public String loadLeaderboards() {return leaderboardSubmissions;}
+        public boolean saveLeaderboards(String value) {if(leaderboardSaveFails)return false;leaderboardSubmissions=value;return true;}
         String survivalAward="";
         public String loadSurvivalAward() {return survivalAward;}
         public void saveSurvivalAward(String value) {survivalAward=value;}

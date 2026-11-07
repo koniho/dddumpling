@@ -124,7 +124,9 @@ final class TimeAttack extends Draw {
         TimeAttackHistory history=histories[profile][challenge];
         result=new TimeAttackHistory.Run(history.sequence+1,duration,c.runWho,cleared,success,
                 c.hits,c.misses,defended,damage,firstDamage,firstBossHit,encounters.toArray(new TimeAttackHistory.Encounter[0]));
-        if(c.scoresSuppressed)return;
+        if(c.scoresSuppressed) {c.leaderboards.cancel();return;}
+        c.leaderboards.finish(c,LeaderboardCatalog.timeAttack(profile,challenge),
+                success && seconds>0 && Double.isFinite(seconds) && (challenge!=ALL || cleared==Boss.COUNT)?duration:0);
         newBest=success && (best[profile][challenge]==0 || duration<best[profile][challenge]);
         if(newBest)best[profile][challenge]=duration;
         history.add(result);

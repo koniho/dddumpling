@@ -26,9 +26,15 @@
 - (UIViewController *)presentedViewController { return self.modal; }
 - (void)presentViewController:(UIViewController *)controller animated:(BOOL)animated completion:(void (^)(void))completion {
     self.presentations++; self.modal = controller;
-    ((DDTestPresentation *)controller).host = self;
+    if ([controller isKindOfClass:DDTestPresentation.class]) ((DDTestPresentation *)controller).host = self;
     if (completion) completion();
 }
+@end
+
+@interface DDTestLeaderboardCenter : DDGameCenter
+@end
+@implementation DDTestLeaderboardCenter
+- (BOOL)leaderboardsAllowed { return YES; }
 @end
 
 @interface DDGameCenterTests : XCTestCase
@@ -57,6 +63,28 @@
 #endif
 }
 #if DDDUMPLING_GAME_CENTER
+- (void)testLeaderboardSignInCancellationClearsPendingBoard {
+    DDTestPlayer *player = [DDTestPlayer new];
+    DDGameCenter *service = [[DDTestLeaderboardCenter alloc] initWithPresenter:[UIViewController new] player:player enabled:YES];
+    [service showLeaderboard:@"com.dddumpling.game.survival_time_full"];
+    XCTAssertEqual(player.calls, 1u);
+    XCTAssertNotNil([service valueForKey:@"pendingLeaderboard"]);
+    player.callback(nil, nil, nil);
+    XCTAssertNil([service valueForKey:@"pendingLeaderboard"]);
+    XCTAssertNotNil([service valueForKey:@"leaderboardMessage"]);
+}
+- (void)testLeaderboardSignInContinuesToCapturedBoard {
+    UIWindow *window = [[UIWindow alloc] initWithFrame:CGRectMake(0, 0, 393, 852)];
+    DDTestPresenter *host = [DDTestPresenter new];window.rootViewController = host;
+    [window addSubview:host.view];
+    DDTestPlayer *player = [DDTestPlayer new];
+    DDGameCenter *service = [[DDTestLeaderboardCenter alloc] initWithPresenter:host player:player enabled:YES];
+    [service showLeaderboard:@"com.dddumpling.game.survival_time_full"];
+    XCTAssertEqual(host.presentations, 0u);
+    player.callback(nil, @"player-a", nil);
+    XCTAssertEqual(host.presentations, 1u);
+    XCTAssertNil([service valueForKey:@"pendingLeaderboard"]);
+}
 - (void)testExplicitSignInRetriesAfterCancellation {
     DDTestPlayer *player = [DDTestPlayer new];
     DDGameCenter *service = [[DDGameCenter alloc] initWithPresenter:[UIViewController new] player:player enabled:YES];

@@ -19,4 +19,5 @@ typedef void (^DDGameCenterAuthentication)(UIViewController *, NSString *, NSErr
 - (void)requestSignIn;
 - (void)updateAchievements:(DDIOSGame *)game store:(DDIOSStore *)store elapsed:(double)elapsed;
 - (void)showAchievements;
+- (void)showLeaderboard:(NSString *)identifier;
 @end
