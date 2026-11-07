@@ -65,21 +65,21 @@ final class SteamerCompanion extends Draw {
         if(travel>.95f && !c.bonusPrizeWon()) {
             int heat=Glyph.withAlpha(0xFFFFAC62,(int)(18+65*f.effort));
             p.fillEllipse(L.w*.49f,Screens.steamerBaseY(L)+L.unit*.1f,L.w*.16f,L.unit*.24f,heat);
-            if(!still)for(int i=0;i<3;i++) {
-                float t=(phase/Softbody.TAU+i/3f)%1f;
+            if(!still)for(int i=0;i<5;i++) {
+                float t=(phase/Softbody.TAU+i/5f)%1f;
                 float sx=gripX+r*.35f,sy=gripY+r*.18f;
-                float ex=L.w*.42f,ey=Screens.steamerBaseY(L)+r*.22f;
+                float ex=L.w*.36f,ey=Screens.steamerBaseY(L)+r*.22f;
                 float px=sx+(ex-sx)*t,py=sy+(ey-sy)*t;
-                float rx=r*(.38f+.65f*t),ry=r*(.15f+.27f*t);
-                int alpha=(int)(110*Math.sin(Math.PI*t)*(.45f+.55f*f.effort));
+                float rx=r*(.55f+.70f*t),ry=r*(.24f+.40f*t);
+                int alpha=(int)(205*Math.sin(Math.PI*t)*(.65f+.35f*f.effort));
                 int air=Glyph.mix(paper,INK,.78f);
-                p.arc(px,py,rx,ry,200,140,Glyph.withAlpha(air,alpha/3),r*.19f);
-                p.arc(px,py,rx,ry,200,140,Glyph.withAlpha(air,alpha),r*.075f);
+                p.arc(px,py,rx,ry,200,140,Glyph.withAlpha(air,alpha/3),r*.32f);
+                p.arc(px,py,rx,ry,200,140,Glyph.withAlpha(air,alpha),r*.14f);
             }
         }
-        fan(p,gripX,gripY,r*1.16f,-1.15f+.88f*swing,prop,paper);
         Trinket.drawReacting(p,c.companion.who,x,y+bob,r,c.companion.clock,1f,
                 c.bonusPrizeWon()?4:f.effort>.1f?1:0,.22f*swing*travel);
+        fan(p,gripX,gripY,r*1.16f,-1.15f+.88f*swing,prop,paper);
         p.fillEllipse(gripX-r*.1f,gripY+r*.08f,r*.16f*prop,r*.12f*prop,body);
     }
     private static void fan(Painter p,float x,float y,float r,float angle,float fade,int color) {
