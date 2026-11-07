@@ -72,6 +72,10 @@
     player.callback(nil, nil, nil);
     XCTAssertNil([service valueForKey:@"pendingLeaderboard"]);
     XCTAssertNotNil([service valueForKey:@"leaderboardMessage"]);
+    [service showLeaderboard:@"com.dddumpling.game.survival_time_full"];
+    player.callback(nil, @"untrusted-player", [NSError errorWithDomain:@"test" code:1 userInfo:nil]);
+    XCTAssertNil([service valueForKey:@"pendingLeaderboard"]);
+    XCTAssertNil(service.playerID);
 }
 - (void)testLeaderboardSignInContinuesToCapturedBoard {
     UIWindow *window = [[UIWindow alloc] initWithFrame:CGRectMake(0, 0, 393, 852)];

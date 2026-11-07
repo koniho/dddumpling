@@ -22,7 +22,9 @@ final class LeaderboardCatalog {
     static String googleId(int board) {return valid(board)?GOOGLE[board]:null;}
     static int survival(int profile) {return profile>=0 && profile<3?profile:-1;}
     static int timeAttack(int profile,int challenge) {
-        return profile==Survival.FULL_PROFILE && challenge>=0 && challenge<=6?BOSS_FIRST+challenge:-1;
+        if(profile!=Survival.FULL_PROFILE)return -1;
+        if(challenge>=0 && challenge<6)return BOSS_FIRST+challenge;
+        return Boss.COUNT==6 && challenge==TimeAttack.ALL?ALL_BOSSES:-1;
     }
     // Match displayed whole seconds/centiseconds without rounding a result into a better rank.
     static long appleScore(int board,long value) {

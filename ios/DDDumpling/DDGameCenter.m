@@ -82,7 +82,7 @@
             if (error) service.status = @"Playing locally";
             NSLog(@"Game Center: %@%@", service.status,
                 service.lastError ? [@" — " stringByAppendingString:service.lastError] : @"");
-            if (!player.length && !controller && service.pendingLeaderboard.length) {
+            if (!service.playerID.length && !controller && service.pendingLeaderboard.length) {
                 service.pendingLeaderboard = nil;
                 service.leaderboardMessage = @"Sign in to Game Center to view leaderboards.";
             }
