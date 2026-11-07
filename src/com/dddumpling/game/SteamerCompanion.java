@@ -144,9 +144,12 @@ final class SteamerCompanion extends Draw {
 
     /** Long air trails follow the fan tip up to the basket, fading at both ends. */
     private static void rays(Painter p,Layout L,float sx,float sy,float r,float phase,float strength,int paper) {
+        rays(p,L.w*.34f,Screens.steamerBaseY(L)+r*.30f,L.w*.032f,sx,sy,r,phase,strength,paper);
+    }
+    private static void rays(Painter p,float tx,float ty,float spread,float sx,float sy,float r,float phase,float strength,int paper) {
         int air=Glyph.mix(paper,INK,.80f);
         for(int ray=0;ray<5;ray++) {
-            float ex=L.w*(.34f+(ray-2)*.032f),ey=Screens.steamerBaseY(L)+r*.30f;
+            float ex=tx+(ray-2)*spread,ey=ty;
             float prevX=sx,prevY=sy;
             for(int j=1;j<=18;j++) {
                 float t=j/18f;
@@ -159,6 +162,28 @@ final class SteamerCompanion extends Draw {
                 prevX=px;prevY=py;
             }
         }
+    }
+    /** The release-book miniature uses the live fan, working face, glow and gust artwork. */
+    static void releaseIcon(Painter p,float x,float y,float r,float time) {
+        float t=time%4f,energy=ease((t-.45f)/.4f)*(1-ease((t-2.7f)/.6f));
+        float phase=time*Softbody.TAU*1.8f,swing=(float)Math.sin(phase);
+        float br=r*.43f,cx=x-r*.38f+br*.15f*swing,cy=y+r*.49f-br*.16f*energy*Math.abs(swing);
+        int who=14,body=Collect.BODY[who],paper=fanColor(body);
+        float bx=x+r*.26f,by=y-r*.65f,bw=r*.63f,baseY=by+r*.38f;
+        Basket.back(p,bx,by,baseY,bw,r*.16f,bw*.90f,BAMBOO,0,1);
+        Basket.front(p,bx,by,baseY,bw,r*.16f,bw*.90f,BAMBOO,0,1);
+        Basket.lid(p,bx,by-r*.13f,bw,r*.15f,BAMBOO,1);
+        float gx=cx+br*(.85f+.20f*energy*swing),gy=cy+br*.14f;
+        float angle=-1.15f+(.12f+.76f*energy)*swing,fanR=br*1.16f;
+        glow(p,cx,cy,br,energy,phase,paper,false);
+        if(energy>0)rays(p,bx-r*.10f,baseY,r*.07f,
+                gx+(float)Math.cos(angle)*fanR,gy+(float)Math.sin(angle)*fanR,
+                br,phase,energy,paper);
+        Painter sprite=new RunCompanion.Squash(p,cx,cy,1+(.035f+.085f*energy)*swing);
+        Trinket.drawReacting(sprite,who,cx,cy,br,phase/9f,1,
+                energy>.08f?Trinket.WORKING:0,(.035f+.185f*energy)*swing);
+        fan(p,gx,gy,fanR,angle,1,paper);
+        p.fillEllipse(gx-br*.1f,gy+br*.08f,br*.16f,br*.12f,body);
     }
     private static void fan(Painter p,float x,float y,float r,float angle,float fade,int color) {
         if(fade<=0)return;

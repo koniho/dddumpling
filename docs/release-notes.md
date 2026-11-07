@@ -111,6 +111,7 @@ Keep a separate entry only when it communicates a distinct change the player nee
 | `survival_cheer` | Survival milestones | Dumpling raises its arms and jumps with a 30-second burst |
 | `scores` | Saved high-score runs | Glowing score rows and a gold star |
 | `octopulse` | Octopulse battle changes | Waving Octopulse portrait |
+| `steamer_fan` | Steamer helper | Companion fans a bamboo steamer with the live working face, fan, glow and gusts |
 | `companion` | Starter choice and run companions | Bouncing Melon Wedge collectible |
 | `tutorial` | Companion guidance | Melon Wedge with a speech bubble |
 | `professor` | Guided introductions and lessons | Lavender cat in a mortarboard, round glasses and bow tie |

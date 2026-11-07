@@ -339,7 +339,7 @@ final class ReleaseNotes extends Draw {
         }
         if(demo==null) {
             if(!ReleaseMascots.active(change()))age=0f;
-            if(change()==ReleaseChange.ACHIEVEMENTS || change()==ReleaseChange.WARDROBE || change()==ReleaseChange.DIFFICULTY || ReleaseCelebrations.active(change())) { celebration=0f;feedback(); }
+            if(change()==ReleaseChange.ACHIEVEMENTS || change()==ReleaseChange.WARDROBE || change()==ReleaseChange.DIFFICULTY || ReleaseCelebrations.active(change()) || change()==ReleaseChange.STEAMER_FAN) { celebration=0f;feedback(); }
             else if(ReleaseMascots.active(change())) { celebrateMascot();feedback(); }
             activated();return true;
         }
@@ -422,7 +422,7 @@ final class ReleaseNotes extends Draw {
             homes.draw(p,0,0,L.w*.72f,artH,homeTime(),true);
         } else if(demo==null) {
             float bounce=(float)Math.sin(Math.min(1f,age/.5f)*Math.PI)*s*.35f;
-            ReleaseChange.icon(p,change(),L.w*.36f,artH*.5f-bounce,s*(change()==ReleaseChange.WARDROBE?2.4f:1.7f),ReleaseCelebrations.active(change())?Math.min(age,3.4f):(change()==ReleaseChange.WARDROBE || change()==ReleaseChange.DIFFICULTY)?age:c.clock+age,celebration);
+            ReleaseChange.icon(p,change(),L.w*.36f,artH*.5f-bounce,s*(change()==ReleaseChange.WARDROBE?2.4f:1.7f),ReleaseCelebrations.active(change())?Math.min(age,3.4f):(change()==ReleaseChange.WARDROBE || change()==ReleaseChange.DIFFICULTY || change()==ReleaseChange.STEAMER_FAN)?age:c.clock+age,celebration);
         } else if(change()==ReleaseChange.TRAVEL) {
             p.translate(0,artH*.5f-LandPicker.cardY(mini));LandPicker.draw(p,demo,mini);
         } else if(change()==ReleaseChange.SHUFFLE) {
