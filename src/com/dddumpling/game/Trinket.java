@@ -13,7 +13,7 @@ package com.dddumpling.game;
  * than a generic placeholder.
  */
 final class Trinket {
-    static final int FIGHT=15;
+    static final int FIGHT=15, WORKING=16;
 
     private static final int INK = 0xFF3A2E4F;        // face lines
     private static final int BLUSH = 0x66FF7C9E;
@@ -131,12 +131,18 @@ final class Trinket {
         p.fillCircle(x-side*r*.035f,y-r*.025f,r*.043f,Draw.fadeBy(0xFFFFF5E8,fade));
         p.line(x-side*r*.17f,y-r*.15f+brow,x+side*r*.17f,y-r*.31f+brow,ink,r*.085f);
     }
+    static void workingSweat(Painter p,float x,float y,float r,float clock,float fade) {
+        float stroke=.5f+.5f*(float)Math.sin(clock*9f);
+        p.fillEllipse(x-r*.80f,y-r*(.34f-.18f*stroke),r*.075f,r*(.12f+.035f*stroke),
+                Draw.fadeBy(0xAA79DDEB,fade));
+    }
     static void reactionFace(Painter p,float x,float y,float r,float clock,float fade,int mood,float look) {
         int ink=Draw.fadeBy(INK,fade);
+        if(mood==WORKING) workingSweat(p,x,y,r,clock,fade);
         boolean blink=Math.sin(clock*1.7f)>.985f;
         for(int side=-1;side<=1;side+=2) {
             float ex=x+side*r*.35f+look*r;
-            if(mood==FIGHT) {
+            if(mood==FIGHT || mood==WORKING) {
                 fightingEyes(p,ex,y,r,side,clock,fade);
             } else if(mood==6) {
                 p.polyline(new float[]{ex-side*r*.20f,y-r*.26f,ex+side*r*.16f,y-r*.12f},ink,r*.09f);
@@ -169,7 +175,7 @@ final class Trinket {
             }
             p.fillEllipse(x+side*r*.60f,y+r*.18f,r*.16f,r*.09f,Draw.fadeBy(BLUSH,fade));
         }
-        if(mood==FIGHT) {
+        if(mood==FIGHT || mood==WORKING) {
             float h=r*(.065f+.05f*(.5f+.5f*(float)Math.sin(clock*9)));
             p.fillEllipse(x,y+r*.32f,r*.17f,h,ink);
             p.fillEllipse(x,y+r*.35f,r*.08f,h*.32f,Draw.fadeBy(0xFFFFA6BD,fade));

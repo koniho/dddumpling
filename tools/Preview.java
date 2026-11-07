@@ -908,7 +908,7 @@ final class Preview {
             c.companion.steamer.update(c,age);
             shot(dir,"241-steamer-arrival-"+Math.round(age*1000),c,L,w,h,ss);
         }
-        for(int who:new int[]{0,8,23,Collect.BOSS_FIRST,Collect.ALLIGATOR_FRIEND}) {
+        for(int who:new int[]{0,8,23,Collect.BOSS_FIRST,Collect.ALLIGATOR_FRIEND,Collect.DUCK_FIRST}) {
             GameCore c=TestSteamerCompanion.start(L);c.companion.begin(who);c.runWho=who;c.time=1;
             c.bonusTimer=c.bonusRollEnd;
             for(int frame=0;frame<3;frame++) {

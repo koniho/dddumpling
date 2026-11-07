@@ -77,8 +77,8 @@ final class SteamerCompanion extends Draw {
                 p.arc(px,py,rx,ry,200,140,Glyph.withAlpha(air,alpha),r*.14f);
             }
         }
-        Trinket.drawReacting(p,c.companion.who,x,y+bob,r,c.companion.clock,1f,
-                c.bonusPrizeWon()?4:f.effort>.1f?1:0,.22f*swing*travel);
+        Trinket.drawReacting(p,c.companion.who,x,y+bob,r,c.bonusPrizeWon()?c.companion.clock:phase/9f,1f,
+                c.bonusPrizeWon()?4:Trinket.WORKING,.22f*swing*travel);
         fan(p,gripX,gripY,r*1.16f,-1.15f+.88f*swing,prop,paper);
         p.fillEllipse(gripX-r*.1f,gripY+r*.08f,r*.16f*prop,r*.12f*prop,body);
     }
