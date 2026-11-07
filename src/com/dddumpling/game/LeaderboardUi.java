@@ -3,7 +3,24 @@ package com.dddumpling.game;
 /** Browsing native rankings from local records; this never submits a score. */
 final class LeaderboardUi extends Draw {
     boolean enabled;
-    private int requested=-1;
+    private int requested=-1,notificationBoard=-1;
+    private String notificationOwner="",requestedOwner="";
+    private boolean fromNotification;
+    void notification(int board,String owner) {
+        if(!LeaderboardCatalog.valid(board) || owner==null || owner.isEmpty())return;
+        notificationBoard=board;notificationOwner=owner;
+    }
+    void update(GameCore c) {
+        if(notificationBoard<0 || !enabled)return;
+        String owner=c.leaderboards.owner();
+        if(!owner.isEmpty() && !owner.equals(notificationOwner)) {notificationBoard=-1;return;}
+        boolean safe=LeaderboardNotice.safe(c) || (c.state==GameCore.TITLE && c.highScoreScreen.open
+                && !c.highScoreScreen.moving() && !c.paused && !c.preferences.externalBusy && !c.cloudUi.open);
+        if(!owner.equals(notificationOwner) || !safe)return;
+        c.preferences.requestExternal(c,PlayerSettings.LEADERBOARD);
+        if(c.preferences.externalAction!=PlayerSettings.LEADERBOARD)return;
+        requested=notificationBoard;requestedOwner=owner;fromNotification=true;notificationBoard=-1;
+    }
     static int board(GameCore c) {
         if(c.modes.selected==ModeSelector.SURVIVAL)return c.survival.titleProfile(c);
         if(c.modes.selected==ModeSelector.TIME_ATTACK) {
@@ -25,12 +42,16 @@ final class LeaderboardUi extends Draw {
     void request(GameCore c) {
         if(!canOpen(c))return;
         c.preferences.requestExternal(c,PlayerSettings.LEADERBOARD);
-        if(c.preferences.externalAction==PlayerSettings.LEADERBOARD)requested=board(c);
+        if(c.preferences.externalAction==PlayerSettings.LEADERBOARD) {requested=board(c);fromNotification=false;}
     }
     int take(GameCore c) {
         int result=requested;requested=-1;
         if(result<0)return -1;
-        if(!enabled || c.state!=GameCore.TITLE || !c.highScoreScreen.open || c.highScoreScreen.closing)result=-1;
+        if(fromNotification) {
+            if(!enabled || !requestedOwner.equals(c.leaderboards.owner()) || c.starting() || c.paused
+                    || c.settingsOpen || c.cloudUi.open || (c.state!=GameCore.TITLE && c.state!=GameCore.OVER))result=-1;
+            fromNotification=false;
+        } else if(!enabled || c.state!=GameCore.TITLE || !c.highScoreScreen.open || c.highScoreScreen.closing)result=-1;
         if(result<0)c.preferences.externalFinished(c);
         return result;
     }

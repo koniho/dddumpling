@@ -662,6 +662,7 @@ final class GameCore {
     float warnLevel;
     /** Spent for this stage once the push-back has been used. */
     boolean pushUsed;
+    final LeaderboardNotice leaderboardNotice=new LeaderboardNotice();
     final LeaderboardUi leaderboardUi = new LeaderboardUi();
     final Onboarding onboarding = new Onboarding();
     final Starter starter = new Starter();
@@ -2909,6 +2910,8 @@ final class GameCore {
     void update(float dt, Layout L) { update(dt, dt, L); }
 
     void update(float dt, float elapsed, Layout L) {
+        leaderboardUi.update(this);
+        leaderboardNotice.update(this,elapsed);
         wardrobe.refresh(this);
         starPickups = 0;
         starBlastHaptic = 0;

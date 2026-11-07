@@ -169,6 +169,25 @@ public final class IOSInputTest extends Check {
         check("duplicate native identities are rejected", rejected);
     }
 
+    private static void leaderboardNotifications() {
+        IOSGame game=game();GameCore c=game.core();
+        game.leaderboardAccount("a",true);game.leaderboardsEnabled(true);
+        c.startGame();c.score=100;c.highScores.finish(c);game.leaderboardSubmitted("a",10,100);
+        check("native notification waits for rank",game.pendingLeaderboardRank()==10);
+        game.leaderboardRank("a",10,100,100,12);
+        check("native notification waits until run ends",game.takeLeaderboardNotice()==-1);
+        c.toTitle();c.returnFade=0;c.rosterSceneT=0;c.landSeen=-1;c.onboarding.clear();game.update(DT);
+        check("native system notification receives rank and owner",game.takeLeaderboardNotice()==10
+                && game.leaderboardNoticeRank()==12 && game.leaderboardNoticeOwner().equals("a"));
+        game.leaderboardNoticeResult("a",10,12,true);
+        check("native posted result removes fallback",c.leaderboardNotice.board==-1);
+        game.openLeaderboardNotification(10,"a");
+        for(int i=0;i<20;i++)game.update(DT);
+        check("native notification tap opens captured board",game.takeLeaderboardAction()==10);
+        game.externalFinished();game.leaderboardAccount("b",true);
+        check("delayed permission response cannot post previous owner's score",!game.leaderboardNoticeCurrent("a"));
+    }
+
     private static void leaderboardNavigation() {
         IOSGame game=game();GameCore c=game.core();Layout l=game.geometry();
         game.leaderboardsEnabled(true);
@@ -1251,7 +1270,7 @@ public final class IOSInputTest extends Check {
         playerSettings();
         bossRetryInput();gameOverDismissal();
         cave();
-        highScores();leaderboardNavigation();
+        highScores();leaderboardNavigation();leaderboardNotifications();
         updatePrompt(); releaseAttention(); releaseNotes(); releaseFeedback(); packets(); titleAndLifecycle(); starsAndLand(); starFeedback(); starCompletionStorm(); bossOwnership(); ninjaHistory();
         steamerAndPanic(); forgivingRescue(); caseBackSwipes(); caseAndSettings(); storyDumplingInput(); outfitDragOff(); outfitFeedback(); outfitShake(); firstTitleEntry(); modeSelector(); survival();
         debugScenes(); linkedChord();

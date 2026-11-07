@@ -6,6 +6,7 @@ final class TestLeaderboardSubmissions extends Check {
     }
     static void adventure(GameCore c,int score) {c.startGame();c.score=score;c.highScores.finish(c);}
     static void all(Layout L) {
+        TestLeaderboardNotices.all(L);
         group("leaderboard catalog and completed runs");
         java.util.Set<String> apple=new java.util.HashSet<>(),google=new java.util.HashSet<>();
         for(int b=0;b<11;b++) {apple.add(LeaderboardCatalog.appleId(b));google.add(LeaderboardCatalog.googleId(b));}

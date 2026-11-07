@@ -192,7 +192,7 @@ final class PlayBridge implements Progress.Sink {
     private void reportLeaderboard() {
         if(!leaderboardsAllowed() || leaderboardBusy || !foreground)return;
         final int board=core.leaderboards.next();
-        if(board<0)return;
+        if(board<0) {readLeaderboardRank();return;}
         final long value=core.leaderboards.value(board);
         final String owner=leaderboardPlayer;
         final int token=generation;
@@ -203,7 +203,30 @@ final class PlayBridge implements Progress.Sink {
                 .addOnCompleteListener(done -> {
                     if(closed || token!=generation || !owner.equals(leaderboardPlayer))return;
                     leaderboardBusy=false;
-                    if(done.isSuccessful())core.leaderboards.acknowledge(owner,board,value);
+                    if(done.isSuccessful()) {
+                        core.leaderboards.acknowledge(owner,board,value);
+                        reportLeaderboard();
+                    }
+                });
+        }catch(RuntimeException unavailable){leaderboardBusy=false;}
+    }
+    private void readLeaderboardRank() {
+        final int board=core.leaderboards.nextRank();if(board<0)return;
+        final long value=core.leaderboards.rankedValue(board);
+        final String owner=leaderboardPlayer;final int token=generation;
+        leaderboardBusy=true;
+        try {
+            PlayGames.getLeaderboardsClient(activity).loadCurrentPlayerLeaderboardScore(
+                LeaderboardCatalog.googleId(board),
+                com.google.android.gms.games.leaderboard.LeaderboardVariant.TIME_SPAN_ALL_TIME,
+                com.google.android.gms.games.leaderboard.LeaderboardVariant.COLLECTION_PUBLIC)
+                .addOnCompleteListener(done -> {
+                    if(closed || token!=generation || !owner.equals(leaderboardPlayer))return;
+                    leaderboardBusy=false;
+                    if(!done.isSuccessful() || done.getResult()==null || done.getResult().isStale())return;
+                    com.google.android.gms.games.leaderboard.LeaderboardScore score=done.getResult().get();
+                    if(score!=null && score.getScoreHolder()!=null && owner.equals(score.getScoreHolder().getPlayerId()))
+                        core.leaderboards.confirmRank(owner,board,value,score.getRawScore(),score.getRank(),false);
                 });
         }catch(RuntimeException unavailable){leaderboardBusy=false;}
     }

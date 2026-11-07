@@ -1823,6 +1823,19 @@ final class Preview {
             shot(dir,"132-ninja-fading",c,L,w,h,ss);
         }
 
+        if(wanted("237-notice")) {
+            GameCore c=TestLeaderboardSubmissions.game(new Check.Mem(),"preview");
+            TestLeaderboardSubmissions.adventure(c,100);c.leaderboards.acknowledge("preview",10,100);
+            c.leaderboards.confirmRank("preview",10,100,100,12,false);
+            c.toTitle();c.returnFade=0;c.rosterSceneT=0;c.landSeen=-1;c.onboarding.clear();
+            c.leaderboardNotice.update(c,.1f);c.leaderboardNotice.takeSystem(c);
+            c.leaderboardNotice.systemResult(c,"preview",10,12,false);c.leaderboardNotice.age=.6f;
+            shot(dir,"237-notice-title",c,L,w,h,ss);
+            c.leaderboardNotice.board=LeaderboardCatalog.TIME_ATTACK_BASE+Boss.OCTOPUS;
+            c.leaderboardNotice.rank=123456789;
+            shot(dir,"237-notice-long",c,L,w,h,ss);
+        }
+
         if(wanted("237")) {
             GameCore c=new GameCore(new Mem(),237L);
             c.highScoreScreen.show(c);c.highScoreScreen.update(HighScoreScreen.ENTRY_TIME);

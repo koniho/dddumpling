@@ -34,5 +34,11 @@ final class LeaderboardCatalog {
     static boolean better(int board,long value,long old) {
         return valid(board) && value>0 && (old<=0 || (timedClear(board)?value<old:value>old));
     }
+    static String title(int board) {
+        if(board<0 || board>=COUNT)return "";
+        if(board<3)return "SURVIVAL / "+new String[]{"4 KEYS","6 KEYS","KIDS"}[board];
+        if(board==ADVENTURE)return "ADVENTURE";
+        return "TIME ATTACK / "+(board==ALL_BOSSES?"ALL BOSSES":Skins.bossName(0,board-BOSS_FIRST));
+    }
     private LeaderboardCatalog() {}
 }

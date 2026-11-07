@@ -5,6 +5,21 @@ Their non-secret IDs and units are in [leaderboards.json](leaderboards.json). Ch
 inventory against runtime code with `python3 tools/leaderboards.py check`; `plan` prints
 all IDs and the publication handoff. Neither command calls a store or submits scores.
 
+## Rank notifications
+
+After a new best is accepted, the native service reads the player's global all-time rank.
+The rank must be positive, belong to the authenticated owner, and contain the submitted score
+(or a better one). Failed, stale, or not-yet-ranked responses retry; upload success alone never
+produces a rank alert. Pending rank reads survive restart and shown alerts are deduplicated.
+Existing acknowledged scores from the older queue format are not announced on upgrade.
+
+At a safe title/results screen, Android posts through the **Leaderboard results** notification
+channel and iOS uses User Notifications. Both request system permission when first needed;
+permission refusal or disabled alerts uses a short in-game banner instead. Tapping a system
+notification opens its captured board once that account is authenticated and gameplay is idle.
+The OS controls banner/sound delivery. These are local notifications following an app-confirmed
+score, not remote monitoring while the app is closed. They need no APNs/FCM server.
+
 ## Eligible runs
 
 Only newly completed runs enter the queue. Local high-score history, archived Time Attack

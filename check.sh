@@ -101,6 +101,7 @@ src/com/dddumpling/game/LeaderboardCatalog.java
 src/com/dddumpling/game/HighScores.java
 src/com/dddumpling/game/BossRetry.java
 src/com/dddumpling/game/HighScoreScreen.java
+src/com/dddumpling/game/LeaderboardNotice.java
 src/com/dddumpling/game/LeaderboardUi.java
 src/com/dddumpling/game/OctoWaveRecording.java
 src/com/dddumpling/game/SlimeSquishRecording.java
@@ -293,6 +294,7 @@ if [ -z "$SUITE" ] || [[ "CaveBand Audio" == *"$SUITE"* ]]; then python3 tools/t
 
 if [ -z "$SUITE" ] || [ "$SUITE" = Progress ]; then python3 tools/test-prepare-play.py; fi
 if [ -z "$SUITE" ] || [ "$SUITE" = Audio ]; then python3 tools/test-audio-lifecycle.py; fi
+if [ -z "$SUITE" ] || [ "$SUITE" = Leaderboard ]; then python3 tools/test-leaderboard-notifications.py | filter; fi
 
 if [ "$RULES_ONLY" = 1 ]; then exit 0; fi
 

@@ -24,6 +24,7 @@ public class MainActivity extends Activity implements GameCore.Store {
     private Audio audio;
     private GameView game;
     private PlayBridge play;
+    private LeaderboardNotifications leaderboardNotifications;
     private BackRegistration backRegistration;
     private boolean resumed;
     private boolean musicPaused;
@@ -76,6 +77,8 @@ public class MainActivity extends Activity implements GameCore.Store {
             game.navigationChanged(this::navigationChanged);
             setContentView(game);
             play = new PlayBridge(this, game.core());
+            leaderboardNotifications=new LeaderboardNotifications(this,game.core(),prefs);
+            leaderboardNotifications.open(getIntent());
             navigationChanged();
             goFullscreen();
             if(BuildFlags.DEVELOPER && getIntent().getBooleanExtra("diagnostics",false))
@@ -126,6 +129,7 @@ public class MainActivity extends Activity implements GameCore.Store {
     @Override protected void onNewIntent(android.content.Intent intent) {
         super.onNewIntent(intent);
         diagnostic("activity-new-intent");
+        if(leaderboardNotifications!=null)leaderboardNotifications.open(intent);
         if(BuildFlags.DEVELOPER && intent.hasExtra("gator_profile"))
             game.gatorProfile(intent.getStringExtra("gator_profile"),intent.getStringExtra("gator_profile_token"));
         if(BuildFlags.DEVELOPER && intent.getBooleanExtra("diagnostics",false)) {
@@ -150,6 +154,11 @@ public class MainActivity extends Activity implements GameCore.Store {
                         if(play!=null)play.requestReview();
                     },250)).show();
         } else if(play!=null)play.requestReview();
+    }
+    void updateLeaderboardNotifications() {if(leaderboardNotifications!=null)leaderboardNotifications.update();}
+    @Override public void onRequestPermissionsResult(int request,String[] permissions,int[] grants) {
+        super.onRequestPermissionsResult(request,permissions,grants);
+        if(leaderboardNotifications!=null)leaderboardNotifications.permissionResult(request);
     }
     void signInPlayGames() {if(play!=null)play.signIn();}
     void openAppAction(int action) {

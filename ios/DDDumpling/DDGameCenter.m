@@ -159,7 +159,7 @@
     if (self.leaderboardRequest || self.leaderboardClock < 10) return;
     self.leaderboardClock = 0;
     int board = [game pendingLeaderboard];
-    if (board < 0) return;
+    if (board < 0) { [self readLeaderboardRank:game owner:owner]; return; }
     jlong value = [game pendingLeaderboardValueWithInt:board];
     jlong score = [game leaderboardAppleScoreWithInt:board withLong:value];
     if (score <= 0) return;
@@ -173,8 +173,42 @@
             DDGameCenter *service = weakSelf;
             if (![service.leaderboardRequest isEqual:request]) return;
             service.leaderboardRequest = nil;
-            if (!error && [service.playerID isEqual:owner])
+            if (!error && [service.playerID isEqual:owner]) {
                 [game leaderboardSubmittedWithNSString:owner withInt:board withLong:value];
+                service.leaderboardClock = 10;
+            }
+        });
+    }];
+#endif
+}
+- (void)readLeaderboardRank:(DDIOSGame *)game owner:(NSString *)owner {
+#if DDDUMPLING_GAME_CENTER
+    int board = [game pendingLeaderboardRank];
+    if (board < 0) return;
+    jlong value = [game pendingLeaderboardRankValueWithInt:board];
+    NSString *identifier = [game leaderboardIDWithInt:board];
+    NSString *request = NSUUID.UUID.UUIDString;
+    self.leaderboardRequest = request;
+    __weak DDGameCenter *weakSelf = self;
+    [GKLeaderboard loadLeaderboardsWithIDs:@[identifier] completionHandler:^(NSArray<GKLeaderboard *> *boards, NSError *error) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            DDGameCenter *service = weakSelf;
+            if (![service.leaderboardRequest isEqual:request]) return;
+            if (error || ![service.playerID isEqual:owner] || !boards.count) {
+                service.leaderboardRequest = nil; return;
+            }
+            GKLeaderboard *leaderboard = boards.firstObject;
+            [leaderboard loadEntriesForPlayerScope:GKLeaderboardPlayerScopeGlobal timeScope:GKLeaderboardTimeScopeAllTime
+                range:NSMakeRange(1, 1) completionHandler:^(GKLeaderboardEntry *entry, NSArray<GKLeaderboardEntry *> *entries,
+                                                         NSInteger count, NSError *rankError) {
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    DDGameCenter *current = weakSelf;
+                    if (![current.leaderboardRequest isEqual:request]) return;
+                    current.leaderboardRequest = nil;
+                    if (!rankError && [current.playerID isEqual:owner] && [entry.player.gamePlayerID isEqual:owner])
+                        [game leaderboardRankWithNSString:owner withInt:board withLong:value withLong:entry.score withLong:entry.rank];
+                });
+            }];
         });
     }];
 #endif
