@@ -912,7 +912,9 @@ final class Preview {
             GameCore c=TestSteamerCompanion.start(L);c.companion.begin(who);c.runWho=who;c.time=1;
             c.bonusTimer=c.bonusRollEnd;
             for(int frame=0;frame<3;frame++) {
-                c.companion.steamer.phase=frame*1.8f;c.companion.steamer.effort=frame==0?0:.75f;
+                c.companion.steamer.phase=frame==0?0:(float)Math.PI*(frame==1?.5f:1.5f);
+                c.companion.steamer.effort=frame==0?0:.75f;
+                c.steamer.hits=frame==0?0:6;
                 shot(dir,"241-steamer-fan-"+who+"-"+frame,c,L,w,h,ss);
             }
         }

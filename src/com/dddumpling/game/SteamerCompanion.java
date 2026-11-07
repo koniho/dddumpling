@@ -3,6 +3,7 @@ package com.dddumpling.game;
 /** A cosmetic helper at the stove; only scored pips feed its recent-effort meter. */
 final class SteamerCompanion extends Draw {
     static final float TRAVEL=.72f,RETURN=.55f,IDLE_SPEED=.45f;
+    private static final int[] FAN_COLORS={0xFF457AE6,0xFFFFA54D,0xFFEE6480,0xFF8E55D9,0xFF42CAB0};
     float phase,effort;
 
     void clear() {phase=effort=0;}
@@ -39,6 +40,16 @@ final class SteamerCompanion extends Draw {
         float home=RunCompanion.radius(c,L);
         return home+(StarPath.flyerR(L)-home)*travel(c);
     }
+    private static int fanColor(int body) {
+        int chosen=FAN_COLORS[0],best=-1;
+        for(int color:FAN_COLORS) {
+            int r=((body>>16)&255)-((color>>16)&255);
+            int g=((body>>8)&255)-((color>>8)&255),b=(body&255)-(color&255);
+            int contrast=r*r+g*g+b*b;
+            if(contrast>best) {best=contrast;chosen=color;}
+        }
+        return chosen;
+    }
     static void draw(Painter p,GameCore c,Layout L) {
         float travel=travel(c);
         if(travel<=0 || c.companion.who<0 || !c.buddy.out() || c.onboarding.companionAway(c))return;
@@ -46,37 +57,41 @@ final class SteamerCompanion extends Draw {
         boolean still=c.cloudUi.reduceMotion;
         float x=x(c,L),y=y(c,L),r=radius(c,L),phase=still?0:f.phase;
         float swing=(float)Math.sin(phase),prop=travel*travel;
-        float bob=still?0:r*.035f*swing*travel;
-        int body=Collect.BODY[c.companion.who];
+        float bob=still?0:r*.075f*swing*travel;
+        int body=Collect.BODY[c.companion.who],paper=fanColor(body);
+        float gripX=x+r*(.85f+.18f*swing),gripY=y+r*.14f+bob;
+        if(!still)gripY-=r*.12f*(float)Math.cos(phase);
         p.fillEllipse(x,y+r*.88f,r*.75f,r*.11f,Glyph.withAlpha(0xFF302045,65));
         if(travel>.95f && !c.bonusPrizeWon()) {
             int heat=Glyph.withAlpha(0xFFFFAC62,(int)(18+65*f.effort));
             p.fillEllipse(L.w*.49f,Screens.steamerBaseY(L)+L.unit*.1f,L.w*.16f,L.unit*.24f,heat);
             if(!still)for(int i=0;i<3;i++) {
                 float t=(phase/Softbody.TAU+i/3f)%1f;
-                float sx=x+r*(1.1f+.1f*i),sy=y-r*.65f;
-                float ex=L.w*(.36f+.025f*i),ey=Screens.steamerBaseY(L)+L.unit*.15f;
+                float sx=gripX+r*.35f,sy=gripY+r*.18f;
+                float ex=L.w*.42f,ey=Screens.steamerBaseY(L)+r*.22f;
                 float px=sx+(ex-sx)*t,py=sy+(ey-sy)*t;
-                int ink=Glyph.withAlpha(GOLD,(int)(100*Math.sin(Math.PI*t)*(.35f+.65f*f.effort)));
-                p.polyline(new float[]{px,py,px+r*.09f,py-r*.15f,px+r*.04f,py-r*.3f},ink,r*.045f);
+                float rx=r*(.38f+.65f*t),ry=r*(.15f+.27f*t);
+                int alpha=(int)(110*Math.sin(Math.PI*t)*(.45f+.55f*f.effort));
+                int air=Glyph.mix(paper,INK,.78f);
+                p.arc(px,py,rx,ry,200,140,Glyph.withAlpha(air,alpha/3),r*.19f);
+                p.arc(px,py,rx,ry,200,140,Glyph.withAlpha(air,alpha),r*.075f);
             }
         }
-        float gripX=x+r*.75f,gripY=y+r*.18f+bob;
-        fan(p,gripX,gripY,r*1.03f,-1.15f+.38f*swing,prop);
+        fan(p,gripX,gripY,r*1.16f,-1.15f+.88f*swing,prop,paper);
         Trinket.drawReacting(p,c.companion.who,x,y+bob,r,c.companion.clock,1f,
-                c.bonusPrizeWon()?4:f.effort>.1f?1:0,.10f*swing*travel);
+                c.bonusPrizeWon()?4:f.effort>.1f?1:0,.22f*swing*travel);
         p.fillEllipse(gripX-r*.1f,gripY+r*.08f,r*.16f*prop,r*.12f*prop,body);
     }
-    private static void fan(Painter p,float x,float y,float r,float angle,float fade) {
+    private static void fan(Painter p,float x,float y,float r,float angle,float fade,int color) {
         if(fade<=0)return;
         float start=angle-.95f,step=1.9f/8f;
         for(int i=0;i<8;i++) {
             float a=start+i*step,b=a+step;
             float ax=x+(float)Math.cos(a)*r,ay=y+(float)Math.sin(a)*r;
             float bx=x+(float)Math.cos(b)*r,by=y+(float)Math.sin(b)*r;
-            int paper=Glyph.mix(0xFF72D8C2,0xFFFFF0C2,i%2==0?.15f:.42f);
+            int paper=Glyph.mix(color,INK,i%2==0?.06f:.24f);
             p.fillPoly(new float[]{x,y,ax,ay,bx,by},fadeBy(paper,fade));
-            p.line(ax,ay,bx,by,fadeBy(0xFFFF9F7D,fade),r*.075f);
+            p.line(ax,ay,bx,by,fadeBy(Glyph.mix(color,0xFF302440,.40f),fade),r*.075f);
             p.line(x,y,ax,ay,fadeBy(0xFF8A603E,fade*.75f),r*.025f);
         }
         p.line(x,y,x-r*.24f,y+r*.28f,fadeBy(0xFFDBAF72,fade),r*.10f);
