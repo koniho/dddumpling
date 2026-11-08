@@ -289,8 +289,8 @@ final class LandBonusArt extends Draw {
             p.polyline(forestShape(x,y,r,xx,yy,xx+.25f,yy+.035f,xx+.55f,yy+.01f,xx+.86f,yy-.045f),
                     i%2==0?MushroomForest.WOOD:0xFF4B493A,r*(i%2==0?.024f:.035f));
         }
-        p.fillEllipse(x-r*.66f,y+r*.33f,r*.31f,r*.50f,0xFF88754F);
-        p.fillEllipse(x-r*.68f,y+r*.32f,r*.225f,r*.405f,0xFF303B32);
+        p.fillEllipse(x-r*.66f,y+r*.33f,r*.40f,r*.50f,0xFF88754F);
+        p.fillEllipse(x-r*.68f,y+r*.32f,r*.33f,r*.405f,0xFF172922);
         p.fillPoly(forestShape(x,y,r,-.91f,.16f,-.65f,.24f,-.79f,.29f),MushroomForest.WOOD_DARK);
         p.fillPoly(forestShape(x,y,r,-.78f,.77f,-.38f,.65f,-.27f,.70f,-.64f,.84f),MushroomForest.WOOD_LIGHT);
 
@@ -299,18 +299,16 @@ final class LandBonusArt extends Draw {
         float u=collected?Math.min(1,elapsed/.38f):0;
         float raise=collected?(still?1:u*u*(3-2*u)):0;
         float bounce=collected && !still?Math.abs((float)Math.sin(elapsed*Math.PI/.40f))*settle(elapsed):0;
-        float cx=x-logR*.58f,cy=y+logR*.13f-r*(.02f+raise*.18f+bounce*.40f);
+        float cx=x-logR*.68f,cy=y+logR*.25f-r*(.02f+raise*.26f+bounce*.48f);
         if(!still && !collected)cy+=r*.035f*(float)Math.sin(time*2.3f);
         int fur=MushroomForest.WOOD,light=MushroomForest.WOOD_LIGHT,cream=0xFFC1C6A4,ink=MushroomForest.WOOD_DARK;
-        // A broad plume curls behind the head, like the reference squirrel's tail.
-        forestOval(p,cx+r*.48f,cy+r*.02f,r*.39f,r*.59f,fur);
-        forestOval(p,cx+r*.57f,cy-r*.28f,r*.37f,r*.36f,light);
-        p.fillEllipse(cx+r*.58f,cy-r*.22f,r*.25f,r*.24f,cream);
-        p.arc(cx+r*.59f,cy-r*.20f,r*.15f,r*.16f,5,300,ink,r*.035f);
+        // A compact curl peeks over the far side, clear of the log's branch.
+        forestOval(p,cx+r*.40f,cy-r*.23f,r*.25f,r*.32f,fur);
+        p.fillEllipse(cx+r*.46f,cy-r*.30f,r*.16f,r*.17f,cream);
+        p.arc(cx+r*.47f,cy-r*.29f,r*.09f,r*.10f,5,300,ink,r*.03f);
         forestOval(p,cx,cy+r*.30f,r*.32f,r*.39f,fur);
         p.fillEllipse(cx,cy+r*.35f,r*.23f,r*.29f,cream);
         for(int side=-1;side<=1;side+=2) {
-            forestOval(p,cx+side*r*.21f,cy+r*.60f,r*.14f,r*.075f,fur);
             forestOval(p,cx+side*r*.29f,cy-r*.49f,r*.14f,r*.23f,fur);
             p.fillEllipse(cx+side*r*.29f,cy-r*.50f,r*.082f,r*.16f,0xFFAB8C7C);
         }
@@ -330,6 +328,14 @@ final class LandBonusArt extends Draw {
         p.fillEllipse(cx,cy+r*.10f,r*.17f,r*.095f,cream);
         p.fillEllipse(cx,cy+r*.015f,r*.045f,r*.032f,0xFF30382F);
         for(int side=-1;side<=1;side+=2)p.arc(cx+side*r*.055f,cy+r*.04f,r*.055f,r*.045f,0,180,ink,r*.022f);
+        // The solid front lip occludes the lower body; paws and acorn rest in front.
+        float[] lip=forestShape(x,y,logR,-1.04f,.39f,-.90f,.46f,-.68f,.49f,-.46f,.46f,-.28f,.39f,
+                -.31f,.59f,-.45f,.76f,-.66f,.83f,-.89f,.74f,-1.03f,.57f);
+        p.fillPoly(lip,MushroomForest.WOOD_DARK);
+        p.polyline(forestShape(x,y,logR,-1.04f,.39f,-.90f,.46f,-.68f,.49f,-.46f,.46f,-.28f,.39f),
+                0xFF88754F,logR*.065f);
+        p.polyline(forestShape(x,y,logR,-.93f,.57f,-.76f,.63f,-.52f,.61f),0xFF88754F,logR*.026f);
+        p.line(x-logR*.43f,y+logR*.57f,x-logR*.48f,y+logR*.72f,0xFF3C3E32,logR*.025f);
         // Both hands stay attached to the acorn as it rises above the ears.
         float acornY=cy+r*(.31f-raise*1.23f);
         for(int side=-1;side<=1;side+=2) {
@@ -344,8 +350,6 @@ final class LandBonusArt extends Draw {
         forestOval(p,cx,acornY-r*.065f,r*.165f,r*.11f,MushroomForest.WOOD_DARK);
         for(int side=-1;side<=1;side+=2)
             forestOval(p,cx+side*r*.19f,acornY+r*.025f,r*.11f,r*.10f,light);
-        // The lower rim hides the feet inside the hollow while the log remains planted.
-        p.arc(x-logR*.66f,y+logR*.33f,logR*.26f,logR*.45f,15,150,0xFF88754F,logR*.075f);
     }
     private static void forestArm(Painter p,float ax,float ay,float bx,float by,float cx,float cy,float r,int fur) {
         // A plump curved sleeve with rounded ends, instead of a hinged elbow.
@@ -459,16 +463,22 @@ final class LandBonusArt extends Draw {
     }
     private static void coin(Painter p,float x,float y,float r,float time,float hit,boolean still) {
         float reveal=hit<0?0:Math.min(1,hit/.22f);
-        p=new OpacityPainter(p,.58f+.42f*reveal);
+        p=new OpacityPainter(p,.27f+.73f*reveal);
         float spin=still?1:Math.abs((float)Math.cos(time*2.6f+(hit<0?0:hit*13)));
         float rx=r*(.16f+.57f*spin),cy=y;
         p.fillEllipse(x,y+r*.87f,r*.60f,r*.08f,0x35372B5B);
-        p.strokeCircle(x,cy,r*.94f,0x36E8A9FF,r*.07f);
-        p.fillEllipse(x+r*.06f,cy,rx,r*.76f,0xFFCA813A);
+        p.strokeCircle(x,cy,r*.94f,Glyph.withAlpha(0xFFE8A9FF,(int)(54*reveal)),r*.07f);
+        // Feather the idle silhouette and mute fine detail; collection restores crisp edges.
+        for(int i=3;i>0;i--) {
+            float feather=r*.035f*i*(1-reveal);
+            p.fillEllipse(x,cy,rx+feather,r*.76f+feather,Glyph.withAlpha(0xFFFFDC67,(int)(18*(1-reveal))));
+        }
+        Painter detail=new OpacityPainter(p,.38f+.62f*reveal);
+        detail.fillEllipse(x+r*.06f,cy,rx,r*.76f,0xFFCA813A);
         p.fillEllipse(x,cy,rx,r*.76f,0xFFFFDC67);
-        p.arc(x,cy,rx*.78f,r*.61f,0,360,0xFFFFF1AC,r*.035f);
-        if(spin>.20f)p.fillPoly(star(x,cy,r*.34f*spin,r*.15f*spin,5,0),0xFFD99837);
-        p.arc(x,cy,rx*.88f,r*.66f,210,80,0xFFFFF6CF,r*.065f);
+        detail.arc(x,cy,rx*.78f,r*.61f,0,360,0xFFFFF1AC,r*.035f);
+        if(spin>.20f)detail.fillPoly(star(x,cy,r*.34f*spin,r*.15f*spin,5,0),0xFFD99837);
+        detail.arc(x,cy,rx*.88f,r*.66f,210,80,0xFFFFF6CF,r*.065f);
         float phase=still?.3f:time*(hit<0?1.8f:3.5f)+Math.max(0,hit)*6;
         float sweep=(float)Math.sin(phase)*1.3f;
         float[] face=new float[48];

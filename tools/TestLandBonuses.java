@@ -142,12 +142,13 @@ final class TestLandBonuses extends Check {
     }
     private static final class ArtProbe extends OpacityPainter {
         boolean face,coinShimmer;int coinAlpha;float coinRadius;float[] body;float clamX,clamY,clamR,acornY,squirrelY,logY;
-        int order,squirrelOrder,leafOrder,squirrelDraws,rippleCount;float rippleY,legEndY;
+        int order,squirrelOrder,leafOrder,squirrelDraws,rippleCount,lipOrder,acornOrder,pawOrder;float lipY,pawY;float rippleY,legEndY;
         final float forestRadius,squirrelRadius;
         ArtProbe(Layout L){super(new RasterPainter(1,1,1),1);forestRadius=LandBonus.radius(L);squirrelRadius=forestRadius*LandBonusArt.SQUIRREL_SCALE;}
         public void fillPoly(float[] xy,int color) {
             int rgb=color&0xffffff;order++;
             if(xy.length==66 && (rgb==0x71917a || rgb==0x91a486 || rgb==0x587d70 || rgb==0xacb394))leafOrder=order;
+            if(xy.length==20 && Math.abs((xy[8]-xy[0])/forestRadius-.76f)<.001f){lipOrder=order;lipY=xy[5];}
             if(rgb==0xffd879)face=true;
             if(rgb==0xfff8d9)coinShimmer=true;
             if(rgb==0x69a13d && xy.length==68 || rgb==(CrystalField.edgeColor(0)&0xffffff) && xy.length==12)body=xy.clone();
@@ -164,11 +165,12 @@ final class TestLandBonuses extends Check {
             order++;
             if((color&0xffffff)==0xffdc67){coinRadius=ry/.76f;coinAlpha=color>>>24;}
             if((color&0xffffff)==0xb57ad0){clamX=x;clamY=y;clamR=rx;}
-            if(Math.abs(rx/squirrelRadius-.135f)<.001f && Math.abs(ry/squirrelRadius-.19f)<.001f)acornY=y;
+            if(Math.abs(rx/squirrelRadius-.135f)<.001f && Math.abs(ry/squirrelRadius-.19f)<.001f){acornY=y;acornOrder=order;}
+            if(Math.abs(rx/squirrelRadius-.11f)<.001f && Math.abs(ry/squirrelRadius-.10f)<.001f){pawY=y;pawOrder=order;}
             if(Math.abs(rx/squirrelRadius-.32f)<.001f && Math.abs(ry/squirrelRadius-.39f)<.001f) {
                 squirrelY=y;squirrelOrder=order;squirrelDraws++;
             }
-            if(Math.abs(rx/forestRadius-.31f)<.001f && Math.abs(ry/forestRadius-.50f)<.001f)logY=y;
+            if(Math.abs(rx/forestRadius-.40f)<.001f && Math.abs(ry/forestRadius-.50f)<.001f)logY=y;
         }
     }
     private static ArtProbe art(GameCore c,Layout L) {
@@ -181,7 +183,7 @@ final class TestLandBonuses extends Check {
     private static void collectionArt(Layout L) {
         GameCore coin=start(L,Lands.firstStage(Lands.RAINBOW),true,244);
         float full=LandBonus.radius(L);ArtProbe small=art(coin,L);
-        check("idle coin is three-quarter size and translucent",Math.abs(small.coinRadius-full*.75f)<.01f && small.coinAlpha<128);
+        check("idle coin is three-quarter size and translucent",Math.abs(small.coinRadius-full*.75f)<.01f && small.coinAlpha<64);
         check("idle coin shimmers",small.coinShimmer);
         coin.cloudUi.reduceMotion=true;float anchorX=LandBonus.x(coin,L),anchorY=LandBonus.y(coin,L);
         coin.cloudUi.reduceMotion=false;
@@ -237,6 +239,8 @@ final class TestLandBonuses extends Check {
         }
         c=start(L,16,true,244);ArtProbe idle=art(c,L);
         check("forest squirrel holds an acorn before collection",idle.acornY>0 && idle.squirrelY>0);
+        check("log front lip covers the body but sits behind paws and acorn",idle.lipOrder>idle.squirrelOrder && idle.pawOrder>idle.lipOrder && idle.acornOrder>idle.lipOrder);
+        check("idle squirrel paws rest on the hollow lip",Math.abs(idle.pawY-idle.lipY)<LandBonus.radius(L)*.1f);
         c.landBonus.tap(c,L,LandBonus.x(c,L),LandBonus.y(c,L));
         c.landBonus.burst=.12f;ArtProbe hopping=art(c,L);
         c.landBonus.burst=.4f;ArtProbe raised=art(c,L);
