@@ -9,17 +9,20 @@ final class LandBonusArt extends Draw {
         if(!LandBonus.scene(c) || !b.visible(c) && b.burst<0)return;
         int land=Lands.forStage(c.stage),color=COLORS[land];
         boolean still=c.cloudUi.reduceMotion;
-        float x=LandBonus.x(c,L),y=LandBonus.y(L),r=LandBonus.radius(L);
+        float x=LandBonus.x(c,L),y=LandBonus.y(c,L),r=LandBonus.radius(L);
         float t=still?0:b.age,hit=b.burst;
         float fade=hit<0?Math.min(1,(b.age-LandBonus.REVEAL)/.28f):Math.min(1,(LandBonus.BURST-hit)/.35f);
-        Painter q=new OpacityPainter(p,fade);
-        float glow=hit<0?.55f+.15f*(float)Math.sin(t*3):1;
+        fade*=Math.max(0,Math.min(1,(L.deckTop+r-y)/(r*2)));
+        if(fade<=0)return;
+        p.save();p.clipRect(0,L.playTop,L.w,L.deckTop);
+        Painter q=new OpacityPainter(p,fade*(hit<0?.68f:1));
+        float glow=hit<0?.08f:1;
         for(int i=3;i>0;i--)q.fillCircle(x,y,r*(1+i*.12f),Glyph.withAlpha(color,(int)(8*glow)));
         float pop=hit<0 || still?0:(float)(Math.sin(hit*18)*Math.exp(-hit*4));
-        float entry=still?1:1-(float)(Math.exp(-Math.max(0,b.age-LandBonus.REVEAL)*14)*Math.cos(Math.max(0,b.age-LandBonus.REVEAL)*20));
+        float entry=still || land!=0?1:.45f+.55f*b.entrance();
         float scale=(1+pop*.22f)*entry;
         float reaction=hit<0?0:Math.min(1,hit/.2f);
-        if(hit<0)ambient(q,land,x,y,r,t,still);
+        if(hit<0)ambient(new OpacityPainter(q,.25f),land,x,y,r,t,still);
         float lift=hit<0 || still?0:r*.55f*(float)Math.sin(Math.min(1,hit/.85f)*Math.PI);
         y-=lift;
         switch(land) {
@@ -32,8 +35,9 @@ final class LandBonusArt extends Draw {
         }
         if(hit<0) {
             float twinkle=still?.8f:.55f+.45f*(float)Math.sin(t*4);
-            q.fillPoly(star(x+r*.84f,y-r*.72f,r*(.08f+.06f*twinkle),r*.035f,4,0),0xFFFFF3C9);
+            q.fillPoly(star(x+r*.84f,y-r*.72f,r*(.045f+.025f*twinkle),r*.02f,4,0),0x99FFF3C9);
         } else celebrate(p,L,land,x,y+lift,r,color,hit,still);
+        p.restore();
     }
     private static void celebrate(Painter p,Layout L,int land,float x,float y,float r,int color,float t,boolean still) {
         float u=t/LandBonus.BURST,fade=1-u;

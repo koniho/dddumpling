@@ -346,6 +346,8 @@ final class GameCore {
          * @param nth 0-based position in the haul, so the chime can climb as the shelf fills
          */
         void collect(int nth);
+        /** A scenery discovery, voiced for its land. */
+        default void landBonus(int land) {}
         /**
          * A star taken on the course. Fires up to thirty times in a few seconds, so it is the
          * shortest effect there is.

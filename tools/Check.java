@@ -169,7 +169,7 @@ abstract class Check {
         float lastDivideBoingWeight = -1f;
         int accessoryChanges,lastAccessorySlot=-1;boolean accessoryRemoved;
         public void accessoryChange(int slot,boolean removing) {accessoryChanges++;lastAccessorySlot=slot;accessoryRemoved=removing;}
-        int collects;
+        int collects,landBonuses,lastBonusLand=-1;
         /** Stars taken, and the count the last one announced. */
         int stars;
         int lastStar = -1;
@@ -268,6 +268,7 @@ abstract class Check {
         public void ninjaCombo() { ninjaChimes++; }
         public void ninjaSwish(int variant) { swishes++; lastSwish = variant; }
         public void zap(int hop) { zaps++; lastZapHop = hop; }
+        public void landBonus(int land) {landBonuses++;lastBonusLand=land;}
         public void collect(int nth) { collects++; shelved.add(nth); }
         public void star(int nth) { stars++; lastStar = nth; }
         public void courseStart() { courseStarts++; }

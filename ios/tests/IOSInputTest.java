@@ -1269,8 +1269,13 @@ public final class IOSInputTest extends Check {
         c.stageBanner=c.stageGap=c.startFade=0;c.enemies.clear();
         c.devLandBonuses=true;c.landBonus.update(c,1);
         GameCore.Enemy word=add(c,l,new int[]{0,0},l.dangerY-l.enemyR*2);
-        float x=LandBonus.x(c,l),y=LandBonus.y(l),kx=c.keyX(l,0),ky=c.keyY(l,0);
+        float x=LandBonus.x(c,l),y=LandBonus.y(c,l),kx=c.keyX(l,0),ky=c.keyY(l,0);
         int score=c.score;
+        c.landBonus.age=LandBonus.REVEAL+LandBonus.ENTRANCE;
+        y=LandBonus.y(c,l);c.skyClock+=6;
+        tap(game,x,y);
+        check("native old bonus position cannot collect after scrolling",c.score==score);
+        y=LandBonus.y(c,l);
         game.touch(one(0,7,x,y));
         check("native bonus tap awards points and haptic",c.score==score+LandBonus.POINTS && host.ticks==1);
         game.touch(two(5,1,7,x,y,19,kx,ky));

@@ -132,7 +132,10 @@ final class SettingsInput {
             c.devInfiniteLives=!c.devInfiniteLives;
             if(c.devInfiniteLives && c.state==GameCore.PLAY)c.lives=GameCore.START_LIVES;
         }
-        else if(h==SettingsUi.HIT_LAND_BONUSES) c.devLandBonuses=!c.devLandBonuses;
+        else if(h==SettingsUi.HIT_LAND_BONUSES) {
+            c.devLandBonuses=!c.devLandBonuses;
+            if(c.devLandBonuses)c.landBonus.restartEntrance(c);
+        }
         else if(h==SettingsUi.HIT_RESET_NEWS) c.releaseMascot.reset(c);
         else if(h>=SettingsUi.HIT_ACCESSORY_GRANT && h<=SettingsUi.HIT_ACCESSORY_RESET) c.wardrobe.developer(c,h-SettingsUi.HIT_ACCESSORY_GRANT);
         else if(h>=SettingsUi.HIT_ACCESSORY_CATEGORY && h<SettingsUi.HIT_ACCESSORY_CATEGORY+Accessories.SLOTS)

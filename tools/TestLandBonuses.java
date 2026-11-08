@@ -30,12 +30,12 @@ final class TestLandBonuses extends Check {
         GameCore c=start(L,1,true,244);
         Ear sound=new Ear();c.sound=sound;
         int score=c.score;
-        float x=LandBonus.x(c,L),y=LandBonus.y(L);
+        float x=LandBonus.x(c,L),y=LandBonus.y(c,L);
         check("forced bonus appears immediately in current stage",c.landBonus.visible(c));
         check("target stays clear of keys",L.keyAt(x,y)<0 && y+LandBonus.radius(L)*1.18f<L.deckTop);
         check("one tap grants points",c.landBonus.tap(c,L,x,y) && c.score==score+LandBonus.POINTS);
         check("repeated tap cannot pay twice",!c.landBonus.tap(c,L,x,y) && c.score==score+LandBonus.POINTS);
-        check("one cheerful chime per reward",sound.collects==1);
+        check("one cheerful chime per reward",sound.landBonuses==1 && sound.lastBonusLand==0);
         c.devLandBonuses=false;c.devLandBonuses=true;
         check("toggling override cannot replay reward",!c.landBonus.offered(c));
         c.enterStage(2);c.landBonus.update(c,1);
@@ -52,7 +52,7 @@ final class TestLandBonuses extends Check {
         check("paused touch cannot collect",!c.landBonus.tap(c,L,LandBonus.x(c,L),y));
         c.paused=false;c.settingsOpen=true;c.update(1,L);
         check("settings preserve clocks and block collection",c.landBonus.age==age && !c.landBonus.tap(c,L,LandBonus.x(c,L),y));
-        c.settingsOpen=false;c.landBonus.tap(c,L,LandBonus.x(c,L),y);
+        c.settingsOpen=false;check("collection starts before interlude",c.landBonus.tap(c,L,LandBonus.x(c,L),LandBonus.y(c,L)));
         c.state=GameCore.BONUS;c.update(0,L);
         check("interlude clears collection effect",c.landBonus.burst<0);
         c.toTitle();check("title clears owned stage",c.landBonus.stage<0 && c.landBonus.burst<0);
@@ -67,6 +67,32 @@ final class TestLandBonuses extends Check {
         GameCore a=start(L,1,true,299),b=start(L,1,true,299);
         a.landBonus.enter(a);a.landBonus.tap(a,L,LandBonus.x(a,L),y);
         check("selection and collection preserve combat RNG",a.rnd.nextLong()==b.rnd.nextLong());
+        for(int land:new int[]{0,1,2,3,Lands.SWAMP,Lands.RAINBOW}) {
+            c=start(L,Lands.firstStage(land),true,244);c.landBonus.age=LandBonus.REVEAL;
+            float entrance=LandBonus.y(c,L);c.landBonus.age+=LandBonus.ENTRANCE;
+            float settled=LandBonus.y(c,L);
+            check("themed entrance direction "+land,land==0?settled<entrance:settled>entrance);
+            c.skyClock+=4;float moved=LandBonus.y(c,L);
+            check("bonus shares scenery travel "+land,Math.abs(moved-settled-4*LandBonus.scrollSpeed(c,L))<.01f);
+            c.paused=true;c.update(.1f,L);
+            check("pause holds world position "+land,LandBonus.y(c,L)==moved);
+            c.paused=false;c.settingsOpen=true;c.update(.1f,L);
+            check("settings hold world position "+land,LandBonus.y(c,L)==moved);
+            c.settingsOpen=false;
+            check("old fixed target does not collect moving scenery "+land,!c.landBonus.tap(c,L,LandBonus.x(c,L),settled));
+            c.skyClock+=L.h/LandBonus.scrollSpeed(c,L);
+            check("bonus cannot collect below deck "+land,!c.landBonus.tap(c,L,LandBonus.x(c,L),LandBonus.y(c,L)));
+            c.landBonus.restartEntrance(c);c.landBonus.age=LandBonus.REVEAL+LandBonus.ENTRANCE;
+            Ear cue=new Ear();c.sound=cue;
+            check("moving target collects at displayed position "+land,c.landBonus.tap(c,L,LandBonus.x(c,L),LandBonus.y(c,L))
+                    && cue.landBonuses==1 && cue.lastBonusLand==land);
+        }
+        java.util.HashSet<Integer> sounds=new java.util.HashSet<>();
+        for(int land:new int[]{0,1,2,3,Lands.SWAMP,Lands.RAINBOW}) {
+            short[] pcm=Sfx.build(Sfx.landBonusId(land));sounds.add(java.util.Arrays.hashCode(pcm));
+            check("themed cue is short and click-free "+land,pcm.length<Sfx.RATE && pcm[0]==0 && Math.abs(pcm[pcm.length-1])<8);
+        }
+        check("all six lands have distinct tap sounds",sounds.size()==6);
         SettingsUi ui=new SettingsUi();ui.compute(L,SettingsUi.GENERAL);
         check("developer chip has its own target",ui.hit(L.w*.5f,ui.landBonusY+ui.testH*.5f)==SettingsUi.HIT_LAND_BONUSES);
         check("developer Run controls fit",ui.debuffY+ui.testH<ui.panelB);

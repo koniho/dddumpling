@@ -12,14 +12,17 @@ final class Preview {
         if(!wantedGroup("244-"))return;
         for(int land:new int[]{0,1,2,3,Lands.SWAMP,Lands.RAINBOW}) {
             GameCore c=TestLandBonuses.start(L,Lands.firstStage(land),true,244);
-            c.skyClock=3;c.landBonus.age=2;
+            c.skyClock=3;c.landBonus.restartEntrance(c);c.landBonus.age=2;
             Check.add(c,L,new int[]{0,1,4},L.playTop+L.h*.18f);
             Check.add(c,L,new int[]{5,4},L.playTop+L.h*.35f);
-            for(float beat:new float[]{1.1f,2f,2.9f}) {
+            for(float beat:new float[]{.7f,1.1f,2f,2.9f}) {
                 c.landBonus.age=beat;
                 shot(dir,"244-bonus-"+land+"-idle-"+(int)(beat*10),c,L,w,h,ss);
             }
-            c.landBonus.tap(c,L,LandBonus.x(c,L),LandBonus.y(L));
+            c.skyClock+=8;
+            shot(dir,"244-bonus-"+land+"-scrolled",c,L,w,h,ss);
+            if(wanted("244-sound-"+land))Wav.write(new File(dir,"244-sound-"+land+".wav"),Sfx.build(Sfx.landBonusId(land)),Sfx.RATE);
+            c.landBonus.tap(c,L,LandBonus.x(c,L),LandBonus.y(c,L));
             for(float beat:new float[]{.10f,.35f,.8f}) {
                 c.landBonus.burst=beat;
                 shot(dir,"244-bonus-"+land+"-tap-"+(int)(beat*100),c,L,w,h,ss);
