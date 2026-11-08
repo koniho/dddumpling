@@ -142,7 +142,8 @@ final class TestLandBonuses extends Check {
     }
     private static final class ArtProbe extends OpacityPainter {
         boolean face;float[] body;float clamX,clamY,clamR,acornY,squirrelY,logY;
-        ArtProbe(){super(new RasterPainter(1,1,1),1);}
+        final float forestRadius;
+        ArtProbe(Layout L){super(new RasterPainter(1,1,1),1);forestRadius=LandBonus.radius(L);}
         public void fillPoly(float[] xy,int color) {
             int rgb=color&0xffffff;
             if(rgb==0xffd879)face=true;
@@ -150,13 +151,13 @@ final class TestLandBonuses extends Check {
         }
         public void fillEllipse(float x,float y,float rx,float ry,int color) {
             if((color&0xffffff)==0xb57ad0){clamX=x;clamY=y;clamR=rx;}
-            if((color&0xffffff)==0xca8748)acornY=y;
-            if((color&0xffffff)==0xf4b456 && Math.abs(rx/ry-.32f/.39f)<.01f)squirrelY=y;
-            if((color&0xffffff)==0xbd864a)logY=y;
+            if(Math.abs(rx/forestRadius-.135f)<.001f && Math.abs(ry/forestRadius-.19f)<.001f)acornY=y;
+            if(Math.abs(rx/forestRadius-.32f)<.001f && Math.abs(ry/forestRadius-.39f)<.001f)squirrelY=y;
+            if(Math.abs(rx/forestRadius-.31f)<.001f && Math.abs(ry/forestRadius-.50f)<.001f)logY=y;
         }
     }
     private static ArtProbe art(GameCore c,Layout L) {
-        ArtProbe p=new ArtProbe();LandBonusArt.beneathCrystal(p,c,L);LandBonusArt.draw(p,c,L);return p;
+        ArtProbe p=new ArtProbe(L);LandBonusArt.beneathCrystal(p,c,L);LandBonusArt.draw(p,c,L);return p;
     }
     private static float turn(float[] a,float[] b) {
         int j=(a.length/4)*2;

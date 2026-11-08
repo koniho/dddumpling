@@ -3,6 +3,7 @@ package com.dddumpling.game;
 /** Muted undergrowth and an overhead canopy; all motion follows the scenery clock. */
 final class MushroomForest extends Draw {
     static final int LAND=3;
+    static final int WOOD_DARK=0xFF604D3C,WOOD=0xFF8A7050,WOOD_LIGHT=0xFFB29770;
     static final float REVEAL_TIME=.9f, LEAF_TIME=4.5f;
     private static final int[] GREENS={0xFF71917A,0xFF91A486,0xFF587D70,0xFFACB394};
     private MushroomForest() {}
@@ -128,9 +129,9 @@ final class MushroomForest extends Draw {
             int a=(int)(fade*(layer==0?60:135));
             p.fillPoly(new float[]{x-w*1.8f,base,x-w*.68f,base-L.h*.14f,
                     x-w*.48f+lean,top,x+w*.47f+lean,top,x+w*.76f,base-L.h*.17f,x+w*1.9f,base},
-                    Glyph.withAlpha(lit(layer==0?0xFF655F50:0xFF604D3C,c.boss),a));
+                    Glyph.withAlpha(lit(layer==0?0xFF655F50:WOOD_DARK,c.boss),a));
             p.fillPoly(new float[]{x-w*.60f,base-L.h*.07f,x-w*.18f+lean,top,
-                    x+w*.13f+lean,top,x+w*.20f,base-L.h*.13f},Glyph.withAlpha(lit(0xFFB29770,c.boss),a/3));
+                    x+w*.13f+lean,top,x+w*.20f,base-L.h*.13f},Glyph.withAlpha(lit(WOOD_LIGHT,c.boss),a/3));
             for(int root=0;root<3;root++) {
                 float reach=-side*L.w*(.11f+root*.065f);
                 p.polyline(new float[]{x,base-L.h*.16f,x+reach*.24f,base-L.h*.025f,
@@ -141,7 +142,7 @@ final class MushroomForest extends Draw {
                         +(float)Math.sin(c.clock*1.8f+branch)*.055f;
                 float by=L.playTop+L.h*(.04f+branch*.12f),reach=-side*L.w*(.26f-branch*.055f)*(1+wind*.3f);
                 p.polyline(new float[]{x,by+L.h*.12f,x+reach*.38f,by+L.h*.035f,x+reach,by-L.h*.035f},
-                        Glyph.withAlpha(lit(0xFF8A7050,c.boss),a*2/3),w*.23f);
+                        Glyph.withAlpha(lit(WOOD,c.boss),a*2/3),w*.23f);
                 sprig(p,shape,x+reach*.55f,by+L.h*.02f,L.w*(.17f-branch*.025f),-side*(.8f+wind),1,a/2,lit(GREENS[(branch+layer)%4],c.boss));
             }
             sprig(p,shape,x,base,L.w*.18f,-side*(.65f+.23f*(float)Math.sin(c.clock*1.1f+side+layer)),0,a/2,lit(GREENS[1],c.boss));
