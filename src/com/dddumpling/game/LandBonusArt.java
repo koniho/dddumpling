@@ -133,28 +133,48 @@ final class LandBonusArt extends Draw {
         }
     }
     private static void zucchini(Painter p,float x,float y,float r,float time,float hit) {
-        float lean=.10f+(float)Math.sin(time*2.4f)*.035f;
-        float[] skin=new float[48];
-        for(int i=0;i<24;i++) {
-            float a=i*Softbody.TAU/24,yy=(float)Math.sin(a);
-            skin[i*2]=x+(float)Math.cos(a)*r*(.28f-.025f*yy)-yy*r*lean;
-            skin[i*2+1]=y+yy*r*.63f;
-        }
-        p.fillPoly(skin,0xFF3E6A35);p.strokePoly(skin,0xFF31582D,r*.025f);
-        for(int side=-1;side<=1;side++) {
-            float[] stripe=new float[14];
-            for(int i=0;i<7;i++) {
-                float v=-.85f+i*1.7f/6;
-                stripe[i*2]=x-v*r*lean+side*r*.14f*(float)Math.sqrt(1-v*v);
-                stripe[i*2+1]=y+v*r*.63f;
+        // Rounded blossom end left; the curved neck and fluted stem rise on the right.
+        float bow=.36f+.025f*(float)Math.sin(time*2.4f),tipY=y+r*(.16f-bow);
+        float[] stem={x+r*.47f,tipY+r*.04f,x+r*.55f,tipY-r*.16f,
+                x+r*.60f,tipY-r*.37f,x+r*.72f,tipY-r*.31f,
+                x+r*.70f,tipY-r*.10f,x+r*.70f,tipY+r*.08f};
+        p.fillPoly(stem,0xFF83A744);p.strokePoly(stem,0xFF243D20,r*.042f);
+        p.polyline(new float[]{x+r*.54f,tipY,x+r*.63f,tipY-r*.17f,x+r*.64f,tipY-r*.30f},0xFFD0D982,r*.045f);
+        p.line(x+r*.66f,tipY-r*.02f,x+r*.68f,tipY-r*.25f,0xFF496B2C,r*.028f);
+        float[] skin=zucchiniBand(x,y,r,bow,-1,1);
+        p.fillPoly(skin,0xFF69A13D);
+        p.fillPoly(zucchiniBand(x,y,r,bow,.35f,1),0xFF497A30);
+        p.fillPoly(zucchiniBand(x,y,r,bow,-.90f,-.28f),0xFF8ABB53);
+        for(float rib:new float[]{-.65f,-.05f,.52f}) {
+            float[] stripe=new float[34];
+            for(int i=0;i<17;i++) {
+                float u=i/16f,half=(.30f-.09f*u)*(float)Math.sqrt(Math.max(0,1-(2*u-1)*(2*u-1)));
+                stripe[i*2]=x+r*(-.72f+1.30f*u);
+                stripe[i*2+1]=y+r*(.22f-.06f*u-bow*u*u*u+rib*half);
             }
-            p.polyline(stripe,side==0?0xFF8AA65A:0xFF64894A,r*.04f);
+            p.polyline(stripe,rib<0?0xFF628E37:0xFF365F2B,r*.026f);
         }
-        float sx=x+r*lean,sy=y-r*.62f;
-        p.fillPoly(new float[]{sx-r*.10f,sy+r*.04f,sx-r*.07f,sy-r*.12f,
-                sx+r*.04f,sy-r*.17f,sx+r*.10f,sy-r*.10f,sx+r*.08f,sy+r*.03f},0xFF829157);
-        for(int i=0;i<6;i++)p.fillCircle(x+r*((i%2==0?-.15f:.15f)),y+r*(-.38f+i*.14f),r*.014f,0xFFB1BB72);
-        eyes(p,x,y+r*.03f,r*.58f,hit>0 || time%4>3.8f);
+        for(int i=0;i<30;i++) {
+            float u=.07f+.86f*hash(251+i*19),v=-.80f+1.60f*hash(433+i*31);
+            float half=(.30f-.09f*u)*(float)Math.sqrt(1-(2*u-1)*(2*u-1));
+            float xx=x+r*(-.72f+1.30f*u),yy=y+r*(.22f-.06f*u-bow*u*u*u+v*half);
+            p.fillEllipse(xx,yy,r*(.012f+.009f*hash(719+i)),r*.018f,0xB6B6D66B);
+        }
+        p.strokePoly(skin,0xFF243D20,r*.042f);
+        p.fillEllipse(x-r*.70f,y+r*.22f,r*.035f,r*.066f,0xFF263D20);
+        p.fillEllipse(x-r*.704f,y+r*.21f,r*.015f,r*.037f,0xFFE4BA69);
+        p.fillEllipse(x-r*.46f,y-r*.015f,r*.05f,r*.019f,0xD5F2F4CC);
+        p.fillEllipse(x-r*.34f,y-r*.035f,r*.026f,r*.014f,0xC2F2F4CC);
+    }
+    private static float[] zucchiniBand(float x,float y,float r,float bow,float top,float bottom) {
+        float[] shape=new float[68];
+        for(int i=0;i<17;i++) {
+            float u=i/16f,half=(.30f-.09f*u)*(float)Math.sqrt(Math.max(0,1-(2*u-1)*(2*u-1)));
+            float xx=x+r*(-.72f+1.30f*u),cy=y+r*(.22f-.06f*u-bow*u*u*u);
+            shape[i*2]=xx;shape[i*2+1]=cy+r*half*top;
+            shape[(33-i)*2]=xx;shape[(33-i)*2+1]=cy+r*half*bottom;
+        }
+        return shape;
     }
     private static void jewel(Painter p,float x,float y,float r,float time,float hit,boolean still) {
         float cy=y-(still?0:hit*r*.65f),pulse=still?.5f:.5f+.5f*(float)Math.sin(time*1.7f);
