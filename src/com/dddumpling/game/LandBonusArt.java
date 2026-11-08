@@ -377,7 +377,7 @@ final class LandBonusArt extends Draw {
         p.fillEllipse(x,y,rx+line,ry+line,MushroomForest.WOOD_DARK);p.fillEllipse(x,y,rx,ry,color);
     }
     private static void flamingo(Painter p,float x,float y,float r,float time,float hit,boolean still,float waterY,float groundR) {
-        float flap=(float)Math.sin(time*(hit>0?14:3)),hop=still?0:hit*r*.13f;
+        float flap=(float)Math.sin(time*(hit>0?14:1.65f)),hop=still?0:hit*r*.13f;
         final float haze=.32f-hit*.26f;
         p=new OpacityPainter(p,.88f+hit*.12f) {
             int color(int color) {return super.color(Glyph.mix(color,Lands.BG[Lands.SWAMP],haze));}
@@ -392,6 +392,12 @@ final class LandBonusArt extends Draw {
         }
         float footY=waterY-lift*.70f;
         float leftFoot=leftWater-groundR*.05f*extension,rightFoot=rightWater+groundR*.07f*extension;
+        float idle=still?0:1-hit;
+        // Slow weight shifts and breathing flex the legs without lifting either foot.
+        x+=idle*r*.022f*(float)Math.sin(time*.8f+.4f);
+        y+=idle*r*.025f*(float)Math.sin(time*1.65f);
+        float headDX=idle*r*(.075f*(float)Math.sin(time*.75f)+.025f*(float)Math.sin(time*1.7f));
+        float headDY=idle*r*.04f*(float)Math.sin(time*.75f+.6f);
         p.line(x-r*.11f,y+r*.26f,leftFoot,footY,0xFFE7A0A9,r*.055f);
         p.polyline(new float[]{x+r*.10f,y+r*.25f,x+groundR*(.30f-.13f*extension),
                 (y+r*.25f+footY)*.5f,rightFoot,footY},0xFFF6A6B6,r*.055f);
@@ -407,23 +413,27 @@ final class LandBonusArt extends Draw {
         float[] neck=new float[50];
         for(int i=0;i<=24;i++) {
             float t=i/24f,u=1-t;
-            neck[i*2]=x+r*(u*u*u*.18f+3*u*u*t*.65f-3*u*t*t*.05f+t*t*t*.43f);
-            neck[i*2+1]=y+r*(u*u*u*.03f-3*u*u*t*.20f-3*u*t*t*.67f-t*t*t*.64f);
+            neck[i*2]=x+r*(u*u*u*.18f+3*u*u*t*.65f-3*u*t*t*.05f+t*t*t*.43f)+headDX*t*t;
+            neck[i*2+1]=y+r*(u*u*u*.03f-3*u*u*t*.20f-3*u*t*t*.67f-t*t*t*.64f)+headDY*t*t;
         }
         p.polyline(neck,0xFFC5789D,r*.20f);
         p.polyline(neck,0xFFF58AB5,r*.15f);
         for(int i=0;i<neck.length;i+=2)neck[i]-=r*.035f;
         p.polyline(neck,0x66FFD4DF,r*.045f);
-        p.fillCircle(x+r*.40f,y-r*.65f,r*.20f,0xFFFFABD0);
-        p.fillEllipse(x+r*.42f,y-r*.57f,r*.15f,r*.09f,0x44BA739C);
-        p.fillEllipse(x+r*.34f,y-r*.74f,r*.075f,r*.035f,0x77FFE4EA);
-        p.fillPoly(new float[]{x+r*.55f,y-r*.65f,x+r*.79f,y-r*.58f,x+r*.68f,y-r*.38f,
-                x+r*.52f,y-r*.51f},0xFFFFE6CB);
-        p.fillPoly(new float[]{x+r*.73f,y-r*.54f,x+r*.79f,y-r*.58f,x+r*.68f,y-r*.38f,
-                x+r*.62f,y-r*.44f},0xFF514050);
-        if(hit>0)p.arc(x+r*.44f,y-r*.69f,r*.06f,r*.04f,190,160,0xFF49344F,r*.035f);
-        else p.fillCircle(x+r*.44f,y-r*.69f,r*.038f,0xFF49344F);
-        p.fillCircle(x+r*.43f,y-r*.70f,r*.013f,0xFFFFFFFF);
+        float hx=x+headDX,hy=y+headDY;
+        p.fillCircle(hx+r*.40f,hy-r*.65f,r*.20f,0xFFFFABD0);
+        p.fillEllipse(hx+r*.42f,hy-r*.57f,r*.15f,r*.09f,0x44BA739C);
+        p.fillEllipse(hx+r*.34f,hy-r*.74f,r*.075f,r*.035f,0x77FFE4EA);
+        p.fillPoly(new float[]{hx+r*.55f,hy-r*.65f,hx+r*.79f,hy-r*.58f,hx+r*.68f,hy-r*.38f,
+                hx+r*.52f,hy-r*.51f},0xFFFFE6CB);
+        p.fillPoly(new float[]{hx+r*.73f,hy-r*.54f,hx+r*.79f,hy-r*.58f,hx+r*.68f,hy-r*.38f,
+                hx+r*.62f,hy-r*.44f},0xFF514050);
+        boolean blink=!still && hit==0 && time%5.6f>5.44f;
+        if(hit>0 || blink)p.arc(hx+r*.44f,hy-r*.69f,r*.06f,r*.04f,190,160,0xFF49344F,r*.035f);
+        else {
+            p.fillCircle(hx+r*.44f,hy-r*.69f,r*.038f,0xFF49344F);
+            p.fillCircle(hx+r*.43f,hy-r*.70f,r*.013f,0xFFFFFFFF);
+        }
         if(hit>0) {
             for(int side=-1;side<=1;side+=2) {
                 float angle=side==1?-.35f-.65f*flap:(float)Math.PI+.35f+.65f*flap;

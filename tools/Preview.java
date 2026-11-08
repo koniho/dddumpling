@@ -30,6 +30,16 @@ final class Preview {
             }
             c.skyClock=3+(land==0?4:10);c.landBonus.age=c.landBonus.delay+10;
             shot(dir,"244-bonus-"+land+"-scrolled",c,L,w,h,ss);
+            if(land==Lands.SWAMP) {
+                float age=c.landBonus.age;
+                for(float beat:new float[]{10,11.12f,12.2f}) {
+                    c.landBonus.age=beat;
+                    shot(dir,"244-flamingo-idle-"+(int)(beat*100),c,L,w,h,ss);
+                }
+                c.cloudUi.reduceMotion=true;
+                shot(dir,"244-flamingo-idle-still",c,L,w,h,ss);
+                c.cloudUi.reduceMotion=false;c.landBonus.age=age;
+            }
             if(wanted("244-sound-"+land))Wav.write(new File(dir,"244-sound-"+land+".wav"),Sfx.build(Sfx.landBonusId(land)),Sfx.RATE);
             c.landBonus.tap(c,L,LandBonus.x(c,L),LandBonus.y(c,L));
             for(float beat:new float[]{0,.12f,.36f,.60f,.95f}) {

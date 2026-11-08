@@ -142,7 +142,7 @@ final class TestLandBonuses extends Check {
     }
     private static final class ArtProbe extends OpacityPainter {
         boolean face,coinShimmer;int coinAlpha;float coinRadius;float[] body;float clamX,clamY,clamR,acornY,squirrelY,logY;
-        int order,squirrelOrder,leafOrder,squirrelDraws,rippleCount,lipOrder,acornOrder,pawOrder;float lipY,pawY;float rippleY,legEndY;
+        int order,squirrelOrder,leafOrder,squirrelDraws,rippleCount,lipOrder,acornOrder,pawOrder;float lipY,pawY,flamingoX,flamingoY,headX,headY;boolean closedEye;float rippleY,legEndY;
         final float forestRadius,squirrelRadius;
         ArtProbe(Layout L){super(new RasterPainter(1,1,1),1);forestRadius=LandBonus.radius(L);squirrelRadius=forestRadius*LandBonusArt.SQUIRREL_SCALE;}
         public void fillPoly(float[] xy,int color) {
@@ -153,7 +153,11 @@ final class TestLandBonuses extends Check {
             if(rgb==0xfff8d9)coinShimmer=true;
             if(rgb==0x69a13d && xy.length==68 || rgb==(CrystalField.edgeColor(0)&0xffffff) && xy.length==12)body=xy.clone();
         }
+        public void fillCircle(float x,float y,float radius,int color) {
+            if(Math.abs(radius/forestRadius-.20f)<.001f){headX=x;headY=y;}
+        }
         public void arc(float x,float y,float rx,float ry,float start,float sweep,int color,float width) {
+            if(Math.abs(rx/forestRadius-.06f)<.001f && Math.abs(ry/forestRadius-.04f)<.001f && start==190)closedEye=true;
             if(Math.abs(rx/forestRadius-.14f)<.001f && Math.abs(ry/forestRadius-.04f)<.001f && start==0) {
                 rippleY=y;rippleCount++;
             }
@@ -163,6 +167,7 @@ final class TestLandBonuses extends Check {
         }
         public void fillEllipse(float x,float y,float rx,float ry,int color) {
             order++;
+            if(Math.abs(rx/forestRadius-.51f)<.001f && Math.abs(ry/forestRadius-.32f)<.001f){flamingoX=x;flamingoY=y;}
             if((color&0xffffff)==0xffdc67){coinRadius=ry/.76f;coinAlpha=color>>>24;}
             if((color&0xffffff)==0xb57ad0){clamX=x;clamY=y;clamR=rx;}
             if(Math.abs(rx/squirrelRadius-.135f)<.001f && Math.abs(ry/squirrelRadius-.19f)<.001f){acornY=y;acornOrder=order;}
@@ -202,6 +207,14 @@ final class TestLandBonuses extends Check {
         check("reduced motion keeps coin position steady",LandBonus.x(coin,L)==stillX && LandBonus.y(coin,L)==stillY);
         GameCore flamingo=start(L,Lands.firstStage(Lands.SWAMP),true,244);
         ArtProbe resting=art(flamingo,L);
+        flamingo.landBonus.age+=1.1f;ArtProbe breathing=art(flamingo,L);
+        check("idle flamingo breathes and gently shifts its head",Math.abs(breathing.flamingoY-resting.flamingoY)>.01f && Math.abs(breathing.headX-resting.headX)+Math.abs(breathing.headY-resting.headY)>full*.01f);
+        check("idle flamingo keeps feet and ripples grounded",breathing.rippleY==resting.rippleY && Math.abs(breathing.legEndY-resting.legEndY)<.01f);
+        flamingo.landBonus.age=11.12f;check("idle flamingo occasionally blinks",art(flamingo,L).closedEye);
+        flamingo.cloudUi.reduceMotion=true;ArtProbe quiet=art(flamingo,L);
+        flamingo.landBonus.age+=1.1f;ArtProbe quietLater=art(flamingo,L);
+        check("reduced motion holds flamingo idle pose",quiet.flamingoY==quietLater.flamingoY && quiet.headX==quietLater.headX && quiet.headY==quietLater.headY && !quietLater.closedEye);
+        flamingo.cloudUi.reduceMotion=false;
         flamingo.landBonus.tap(flamingo,L,LandBonus.x(flamingo,L),LandBonus.y(flamingo,L));
         flamingo.landBonus.burst=.36f;ArtProbe jumping=art(flamingo,L);
         check("flamingo has one small ripple per leg",resting.rippleCount==2 && jumping.rippleCount==2);
