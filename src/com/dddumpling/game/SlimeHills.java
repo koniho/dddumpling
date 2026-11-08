@@ -35,11 +35,11 @@ final class SlimeHills extends Draw {
         fade*=1-c.drained();
         if(fade<=.001f)return;
         float[] bank=new float[70],edge=new float[66],blob=new float[66];
-        float span=L.deckTop-L.playTop,clock=c.skyClock;
+        float span=L.deckTop,clock=c.skyClock;
         // Continuous banks have no tile seams; the inner contour travels down the valley.
         for(int layer=0;layer<3;layer++)for(int side=0;side<2;side++) {
             for(int j=0;j<=32;j++) {
-                float y=L.playTop-span*.12f+j*span*1.24f/32;
+                float y=-span*.12f+j*span*1.24f/32;
                 float phase=y/L.w*4-clock*(.19f+layer*.10f)+side*3.7f+layer*1.3f;
                 float inset=L.w*(.25f-layer*.064f+.047f*(float)Math.sin(phase)
                         +.023f*(float)Math.sin(phase*1.71f+1.4f));
@@ -55,7 +55,7 @@ final class SlimeHills extends Draw {
         int stream=Glyph.mix(Lands.BG[0],GREEN,.35f),glint=Glyph.mix(Lands.BG[0],MINT,.23f);
         for(int channel=0;channel<5;channel++) {
             for(int j=0;j<=32;j++) {
-                float y=L.playTop+span*j/32;
+                float y=span*j/32;
                 edge[j*2]=L.w*(.29f+channel*.105f+(.026f+channel*.003f)*(float)Math.sin(y/L.w*(4.3f+channel*.27f)-clock*(.20f+channel*.018f)+channel*2));
                 edge[j*2+1]=y;
             }
@@ -66,7 +66,7 @@ final class SlimeHills extends Draw {
         for(int i=0;i<8;i++) {
             int seed=733+i*71,side=i%2;
             float r=L.w*(.14f+hash(seed)*.09f),travel=span+r*4;
-            float y=L.playTop-r*2+(hash(seed+1)*travel+clock*L.h*(SCROLL_RATE+(i%3-1)*.004f))%travel;
+            float y=-r*2+(hash(seed+1)*travel+clock*L.h*(SCROLL_RATE+(i%3-1)*.004f))%travel;
             float x=L.w*(.04f+hash(seed+2)*.075f);if(side==1)x=L.w-x;
             float wobble=(float)Math.sin(c.clock*1.4f+i*2)*.035f;
             jelly(p,blob,x,y,r*(1+wobble),r*(1.10f-wobble),i,Glyph.withAlpha(DEEP,(int)(fade*135)));

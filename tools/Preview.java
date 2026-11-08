@@ -32,9 +32,19 @@ final class Preview {
             shot(dir,"244-bonus-"+land+"-scrolled",c,L,w,h,ss);
             if(wanted("244-sound-"+land))Wav.write(new File(dir,"244-sound-"+land+".wav"),Sfx.build(Sfx.landBonusId(land)),Sfx.RATE);
             c.landBonus.tap(c,L,LandBonus.x(c,L),LandBonus.y(c,L));
-            for(float beat:new float[]{.10f,.35f,.8f}) {
+            for(float beat:new float[]{0,.12f,.36f,.60f,.95f}) {
                 c.landBonus.burst=beat;
                 shot(dir,"244-bonus-"+land+"-tap-"+(int)(beat*100),c,L,w,h,ss);
+            }
+            if(land<=2) {
+                c.cloudUi.reduceMotion=true;
+                shot(dir,"244-collected-still-"+land,c,L,w,h,ss);
+                c.cloudUi.reduceMotion=false;
+            }
+            if(land==CrystalField.LAND) {
+                GameCore header=TestLandBonuses.start(L,6,true,244);
+                header.skyClock=header.landBonus.skyAt+(LandBonus.radius(L)*header.landBonus.entryDepth-2)/LandBonus.scrollSpeed(header,L);
+                shot(dir,"244-crystal-header",header,L,w,h,ss);
             }
             if(land==0) {
                 c.cloudUi.reduceMotion=true;

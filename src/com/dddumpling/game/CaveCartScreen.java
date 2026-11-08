@@ -15,7 +15,7 @@ final class CaveCartScreen extends Draw {
     static void draw(Painter p,GameCore c,Layout L){
         CaveCart m=c.cart;float w=L.w,top=L.playTop,h=field(L),s=L.unit,t=m.scene.clock;
         p.fillRect(0,0,w,L.h,0xFF100F1D);
-        p.save();p.clipRect(0,top,w,L.deckTop);
+        p.save();p.clipRect(0,0,w,L.deckTop);
         p.translate((float)Math.sin(t*91)*w*.008f*m.scene.rumble,(float)Math.sin(t*113)*w*.006f*m.scene.rumble);
         float vy=top+h*.18f;
         p.fillEllipse(w*.5f,vy,w*.42f,h*.72f,0xFF262536);

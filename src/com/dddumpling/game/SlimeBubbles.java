@@ -112,7 +112,7 @@ final class SlimeBubbles extends Draw {
             float show=Math.min(1,b.age/.35f)*fade;
             p.save();
             // The waterline clips the soft shell as it emerges, keeping the same material after lift-off.
-            if(b.age<b.riseTime)p.clipRect(0,L.playTop,L.w,b.surfaceY);
+            if(b.age<b.riseTime)p.clipRect(0,0,L.w,b.surfaceY);
             bubbleShell(p,b,x,y,show);
             p.restore();
             if(b.age<b.riseTime) {

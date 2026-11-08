@@ -12,7 +12,7 @@ final class CaveMiningScreen extends Draw {
     static void draw(Painter p,GameCore c,Layout L) {
         CaveMining m=c.mining;float w=L.w,top=L.playTop,h=field(L),s=L.unit,light=light(m);
         p.fillRect(0,0,w,L.h,0xFF141321);
-        p.save();p.clipRect(0,top,w,L.deckTop);
+        p.save();p.clipRect(0,0,w,L.deckTop);
         float shake=m.scene.shake;
         p.translate((float)Math.sin(m.scene.clock*91)*w*.008f*shake,(float)Math.sin(m.scene.clock*113)*w*.005f*shake);
         m.scene.draw(p,c,L);

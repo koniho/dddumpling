@@ -14,6 +14,7 @@ final class TestLandBonuses extends Check {
     }
     static void all(Layout L) {
         group("land scenery bonuses");
+        collectionArt(L);
         int seen=0;
         for(int seed=0;seed<40;seed++) {
             GameCore c=start(L,1,false,seed);
@@ -138,5 +139,69 @@ final class TestLandBonuses extends Check {
         SettingsUi ui=new SettingsUi();ui.compute(L,SettingsUi.GENERAL);
         check("developer chip has its own target",ui.hit(L.w*.5f,ui.landBonusY+ui.testH*.5f)==SettingsUi.HIT_LAND_BONUSES);
         check("developer Run controls fit",ui.debuffY+ui.testH<ui.panelB);
+    }
+    private static final class ArtProbe extends OpacityPainter {
+        boolean face;float[] body;float clamX,clamY,clamR;
+        ArtProbe(){super(new RasterPainter(1,1,1),1);}
+        public void fillPoly(float[] xy,int color) {
+            int rgb=color&0xffffff;
+            if(rgb==0xffd879)face=true;
+            if(rgb==0x69a13d && xy.length==68 || rgb==(CrystalField.edgeColor(0)&0xffffff) && xy.length==12)body=xy.clone();
+        }
+        public void fillEllipse(float x,float y,float rx,float ry,int color) {
+            if((color&0xffffff)==0xb57ad0){clamX=x;clamY=y;clamR=rx;}
+        }
+    }
+    private static ArtProbe art(GameCore c,Layout L) {
+        ArtProbe p=new ArtProbe();LandBonusArt.beneathCrystal(p,c,L);LandBonusArt.draw(p,c,L);return p;
+    }
+    private static float turn(float[] a,float[] b) {
+        int j=(a.length/4)*2;
+        return (a[j]-a[0])*(b[j+1]-b[1])-(a[j+1]-a[1])*(b[j]-b[0]);
+    }
+    private static void collectionArt(Layout L) {
+        GameCore c=start(L,6,true,244);
+        check("crystal is faceless before collection",!art(c,L).face);
+        c.landBonus.tap(c,L,LandBonus.x(c,L),LandBonus.y(c,L));
+        check("crystal face appears on the tap frame",art(c,L).face);
+        for(int stage:new int[]{1,6}) {
+            c=start(L,stage,true,244);float[] idle=art(c,L).body;
+            c.landBonus.tap(c,L,LandBonus.x(c,L),LandBonus.y(c,L));
+            c.landBonus.burst=.12f;float[] left=art(c,L).body;
+            c.landBonus.burst=.36f;float[] right=art(c,L).body;
+            check("collected bonus sways in both directions "+stage,turn(idle,left)*turn(idle,right)<0);
+            check("collected bonus bounces upward "+stage,left[1]<idle[1] && right[1]<idle[1]);
+            c.cloudUi.reduceMotion=true;c.landBonus.burst=.12f;left=art(c,L).body;
+            c.landBonus.burst=.36f;right=art(c,L).body;
+            check("reduced motion holds collection pose "+stage,java.util.Arrays.equals(left,right));
+        }
+        c=start(L,11,true,244);c.landBonus.tap(c,L,LandBonus.x(c,L),LandBonus.y(c,L));
+        ArtProbe far=art(c,L);c.landBonus.burst=.6f;ArtProbe near=art(c,L);
+        check("clam grows into foreground",near.clamR>far.clamR*2);
+        check("clam collection centers on playfield",Math.abs(near.clamX-L.w*.5f)<.01f);
+        c.cloudUi.reduceMotion=true;c.landBonus.burst=0;far=art(c,L);c.landBonus.burst=.6f;near=art(c,L);
+        check("reduced motion avoids clam zoom",far.clamR==near.clamR && far.clamY==near.clamY);
+        c=start(L,6,true,244);
+        c.skyClock=c.landBonus.skyAt+(LandBonus.radius(L)*c.landBonus.entryDepth-2)/LandBonus.scrollSpeed(c,L);
+        RasterPainter raster=new RasterPainter((int)L.w,(int)L.h,1);
+        LandBonusArt.beneathCrystal(raster,c,L);
+        int above=0;int[] pixels=raster.resolve();
+        for(int y=0;y<(int)L.playTop;y++)for(int x=0;x<(int)L.w;x++)if((pixels[y*(int)L.w+x]>>>24)>0)above++;
+        check("crystal crosses header without clipping",above>0);
+        for(int side=0;side<2;side++)for(int layer=0;layer<SlimeBasinArt.LAYERS;layer++) {
+            float top=SlimeBasin.layerTop(2,side,layer,L);
+            check("slime banks extend past screen top",top<0);
+            check("slime banks still cover scene bottom",top+SlimeBasin.bankHeight(2,side,L)>L.deckTop);
+        }
+        // Every scenery layer must be free to paint behind the HUD.
+        for(int land:new int[]{0,1,2,3,Lands.SWAMP,Lands.RAINBOW}) {
+            c=start(L,Lands.firstStage(land),true,244);
+            final float[] top={0};
+            Painter probe=new OpacityPainter(new RasterPainter(1,1,1),1) {
+                public void clipRect(float l,float t,float r,float b){top[0]=Math.max(top[0],t);}
+            };
+            Lands.backdrop(probe,c,L);Lands.scenery(probe,c,L);MushroomForest.canopy(probe,c,L);
+            check("land scenery never clips at header "+land,top[0]<=0);
+        }
     }
 }

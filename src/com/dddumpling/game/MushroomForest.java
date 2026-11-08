@@ -110,7 +110,7 @@ final class MushroomForest extends Draw {
         float floor=groveFloor(b,L);
         float lift=-(1-progress)*L.h*.72f;
         float[] shape=new float[66];
-        p.save();p.clipRect(0,L.playTop,L.w,L.deckTop);p.translate(0,lift);
+        p.save();p.clipRect(0,0,L.w,L.deckTop);p.translate(0,lift);
         // A softly lit clearing joins the boss's own living roots, without a hard horizon.
         for(int i=3;i>=0;i--)p.fillEllipse(L.w*.5f,floor,L.w*(.38f+i*.055f),L.h*(.035f+i*.018f),
                 Glyph.withAlpha(0xFF9BAE86,(int)(fade*9)));
@@ -245,7 +245,7 @@ final class MushroomForest extends Draw {
             float x=side>0?L.w*(-.03f+hash(seed+1)*.11f):L.w*(1.03f-hash(seed+1)*.11f);
             float span=L.deckTop+r*5;
             float y=((i+hash(seed+2))*.1f*span+c.skyClock*L.h*(.012f+layer*.008f)+scroll(c,L))%span-r*2.5f;
-            if(y<L.playTop-r*.6f || y-r*2.1f>L.deckTop)continue;
+            if(y<-r*2.1f || y-r*2.1f>L.deckTop)continue;
             float sway=(float)Math.sin(c.clock*.43f+i)*r*.10f;
             int alpha=(int)(fade*(layer==0?38:66));
             // Ferns alternate with rounded broad leaves and slim willow sprays.
@@ -258,7 +258,7 @@ final class MushroomForest extends Draw {
         if(forest<=.001f)return;
         float fade=forest*(retained(c)?1:1-c.drained());
         p.save();
-        p.clipRect(0,L.playTop,L.w,L.deckTop);
+        p.clipRect(0,0,L.w,L.deckTop);
         float[] shape=new float[66];
         // The travelling canopy leaves the scene; anchored branches take over at the grove.
         if(grove<1)for(int i=0;i<6;i++) {
@@ -266,7 +266,7 @@ final class MushroomForest extends Draw {
             float side=i%2==0?1:-1,r=L.w*(.42f+hash(seed)*.17f);
             float span=L.deckTop+r*4;
             float y=((i+hash(seed+3))/6f*span+c.skyClock*L.h*.034f+scroll(c,L)*1.35f)%span-r*2;
-            if(y<L.playTop-r*.6f || y-r*2.1f>L.deckTop)continue;
+            if(y<-r*2.1f || y-r*2.1f>L.deckTop)continue;
             float x=side>0?-r*.12f:L.w+r*.12f;
             float sway=(float)Math.sin(c.clock*.65f+i*2.3f)*.23f;
             sprig(p,shape,x,y,r,side*(1.05f+sway),1,(int)(fade*(1-grove)*20),GREENS[i%4]);

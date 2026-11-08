@@ -7,7 +7,7 @@ final class CaveScreen extends Draw {
         Cave v=c.cave;
         p.fillRect(0,0,L.w,L.deckTop,CaveArt.DARK);p.fillRect(0,L.deckTop,L.w,L.h,CaveArt.ROCK);
         if(v.phase==Cave.CHOOSE){v.selection.draw(p,c,L);return;}
-        p.save();p.clipRect(0,L.playTop,L.w,L.deckTop);
+        p.save();p.clipRect(0,0,L.w,L.deckTop);
         float rumble=shakeStrength(v);
         p.translate((float)Math.sin(v.effects.clock*83)*L.w*.006f*rumble,
                 (float)Math.sin(v.effects.clock*107)*L.w*.004f*rumble);
@@ -21,7 +21,7 @@ final class CaveScreen extends Draw {
         float sink=sand?sink(v):0;
         float shake=sand?(float)Math.sin(v.traps.age*52)*r*.045f:0;
         p.fillEllipse(px,py+r*.75f,r*1.3f,r*.36f,Glyph.withAlpha(0xFF000000,115));
-        p.save();if(sand)p.clipRect(0,L.playTop,L.w,py+r*.88f);
+        p.save();if(sand)p.clipRect(0,0,L.w,py+r*.88f);
         float bodyY=py+bounce+sink*r*.95f;
         CaveDumpling.draw(p,c.caveChoice,px+shake,bodyY,r,v.walker.squash(),c.clock,sand);
         p.fillPoly(pill(px+shake,bodyY-r*.76f,r*.67f,r*.35f,8),CaveArt.MID);

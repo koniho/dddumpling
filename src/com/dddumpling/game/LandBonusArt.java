@@ -20,10 +20,17 @@ final class LandBonusArt extends Draw {
         boolean still=c.cloudUi.reduceMotion;
         float x=LandBonus.x(c,L),y=LandBonus.y(c,L),r=LandBonus.size(c,L);
         float t=still?0:b.age,hit=b.burst;
+        if(land==Underwater.LAND && hit>=0 && !still) {
+            float u=Math.min(1,hit/.55f),ease=1-(1-u)*(1-u)*(1-u);
+            x+=(L.w*.5f-x)*ease;
+            y+=(L.playTop+(L.deckTop-L.playTop)*.58f-y)*ease;
+            r+=(L.w*.13f-r)*ease;
+        }
+        float rewardX=x,rewardY=y;
         float fade=hit<0?Math.min(1,(b.age-b.delay)/.28f):Math.min(1,(LandBonus.BURST-hit)/.35f);
         fade*=Math.max(0,Math.min(1,(L.deckTop+r-y)/(r*2)));
         if(fade<=0)return;
-        p.save();p.clipRect(0,L.playTop,L.w,L.deckTop);
+        p.save();p.clipRect(0,0,L.w,L.deckTop);
         Painter q=new OpacityPainter(p,fade*(hit<0 && land!=0?.68f:1));
         if(land==Underwater.LAND && hit<0) {
             final float clarity=.25f+.75f*Math.min(1,UnderwaterVista.depth(LandBonus.clamTravel(c))*2.8f);
@@ -36,10 +43,17 @@ final class LandBonusArt extends Draw {
         float reaction=hit<0?0:Math.min(1,hit/.2f);
         if(hit<0 && land>2)ambient(new OpacityPainter(q,.25f),land,x,y,r,t,still);
         float lift=hit<0 || still?0:r*.55f*(float)Math.sin(Math.min(1,hit/.85f)*Math.PI);
+        if(land<=1 && hit>=0 && !still) {
+            lift=r*1.2f*Math.abs((float)Math.sin(hit*Math.PI/.42f))*settle(hit);
+            x+=r*sway(hit);
+        }
         y-=lift;
         switch(land) {
             case 0:bubble(q,c,L,x,y,r*scale,t,reaction);break;
-            case 1:jewel(q,x,y,r*scale,t,reaction,still);break;
+            case 1:
+                if(hit>=0 && !still)jewel(new LinkedPairArt.TurnPainter(q,x,y,sway(hit)),0,0,r*scale,t,reaction,still,true);
+                else jewel(q,x,y,r*scale,t,reaction,still,hit>=0);
+                break;
             case 2:clam(q,x,y,r*scale,t,reaction,still);break;
             case 3:squirrel(q,x,y,r*scale,t,reaction,still);break;
             case Lands.SWAMP:flamingo(q,x,y,r*scale,t,reaction,still);break;
@@ -48,12 +62,16 @@ final class LandBonusArt extends Draw {
         if(hit<0 && land>2) {
             float twinkle=still?.8f:.55f+.45f*(float)Math.sin(t*4);
             q.fillPoly(star(x+r*.84f,y-r*.72f,r*(.045f+.025f*twinkle),r*.02f,4,0),0x99FFF3C9);
-        } else if(hit>=0)celebrate(p,L,land,x,y+lift,Math.max(r,LandBonus.radius(L)*.72f),color,hit,still);
+        } else if(hit>=0)celebrate(p,L,land,rewardX,rewardY,Math.max(r,LandBonus.radius(L)*.72f),color,hit,still);
         p.restore();
     }
+    private static float settle(float hit) {
+        return (float)Math.exp(-hit*1.8f)*Math.max(0,1-hit/LandBonus.BURST);
+    }
+    private static float sway(float hit) {return .30f*(float)Math.sin(hit*13)*settle(hit);}
     private static void celebrate(Painter p,Layout L,int land,float x,float y,float r,int color,float t,boolean still) {
         float u=t/LandBonus.BURST,fade=1-u;
-        if(t<.2f)p.fillRect(0,L.playTop,L.w,L.deckTop,
+        if(t<.2f)p.fillRect(0,0,L.w,L.deckTop,
                 Glyph.withAlpha(color,(int)((still?14:38)*(1-t/.2f))));
         float spread=still?1.2f:.5f+2.4f*(float)Math.sqrt(u);
         p.strokeCircle(x,y,r*spread,Glyph.withAlpha(color,(int)(180*fade)),r*.09f*fade);
@@ -114,8 +132,10 @@ final class LandBonusArt extends Draw {
         boolean emerging=hit==0 && rise<1;
         if(!emerging)p.fillEllipse(x,surface,r*.75f,r*.12f,0x25213B26);
         p.save();
-        if(emerging)p.clipRect(0,L.playTop,L.w,surface);
-        zucchini(p,x,y,r,time,hit);
+        if(emerging)p.clipRect(0,0,L.w,surface);
+        if(bonus.burst>=0 && !c.cloudUi.reduceMotion)
+            zucchini(new LinkedPairArt.TurnPainter(p,x,y,sway(bonus.burst)),0,0,r,time,hit);
+        else zucchini(p,x,y,r,time,hit);
         if(hit<.8f) {
             SlimeBubbles.Bubble shell=new SlimeBubbles.Bubble();
             shell.age=c.cloudUi.reduceMotion?0:Math.max(0,bonus.age-bonus.delay);
@@ -176,8 +196,8 @@ final class LandBonusArt extends Draw {
         }
         return shape;
     }
-    private static void jewel(Painter p,float x,float y,float r,float time,float hit,boolean still) {
-        float cy=y-(still?0:hit*r*.65f),pulse=still?.5f:.5f+.5f*(float)Math.sin(time*1.7f);
+    private static void jewel(Painter p,float x,float y,float r,float time,float hit,boolean still,boolean collected) {
+        float cy=y,pulse=still?.5f:.5f+.5f*(float)Math.sin(time*1.7f);
         int shade=CrystalField.edgeColor(0),mid=CrystalField.edgeColor(1),light=CrystalField.edgeColor(2);
         int ink=Glyph.mix(shade,Lands.BG[CrystalField.LAND],.80f);
         float[] outline={0,-.82f,.62f,-.10f,.40f,.59f,0,.80f,-.40f,.59f,-.62f,-.10f};
@@ -205,16 +225,13 @@ final class LandBonusArt extends Draw {
         q.strokePoly(face,ink,r*.025f);q.strokePoly(outline,ink,r*.058f);
         q.fillPoly(new float[]{x,cy-r*.78f,x+r*.49f,cy-r*.13f,x+r*.26f,cy-r*.25f},Glyph.withAlpha(Glyph.mix(light,0xFFFFFFFF,.4f),108));
         q.fillPoly(new float[]{x-r*.56f,cy-r*.10f,x-r*.02f,cy-r*.76f,x-r*.24f,cy-r*.22f},Glyph.withAlpha(light,69));
-        boolean blink=!still && hit==0 && time%4.8f>4.6f;
+        if(!collected)return;
         for(int side=-1;side<=1;side+=2) {
             float ex=x+side*r*.21f,ey=cy+r*.13f;
-            if(blink)q.arc(ex,ey,r*.085f,r*.045f,190,160,ink,r*.035f);
-            else {
-                q.fillCircle(ex,ey,r*(.105f+hit*.008f),ink);
-                q.fillCircle(ex+r*.014f,ey+r*.020f,r*.065f,Glyph.mix(shade,ink,.45f));
-                q.fillCircle(ex-r*.024f,ey-r*.029f,r*.043f,0xFFF4FFFF);
-                q.fillCircle(ex+r*.038f,ey+r*.043f,r*.016f,light);
-            }
+            q.fillCircle(ex,ey,r*(.105f+hit*.008f),ink);
+            q.fillCircle(ex+r*.014f,ey+r*.020f,r*.065f,Glyph.mix(shade,ink,.45f));
+            q.fillCircle(ex-r*.024f,ey-r*.029f,r*.043f,0xFFF4FFFF);
+            q.fillCircle(ex+r*.038f,ey+r*.043f,r*.016f,light);
             q.fillEllipse(x+side*r*.31f,cy+r*.28f,r*.058f,r*.027f,0xFFF0B8D0);
         }
         float[] smile=new float[18];
