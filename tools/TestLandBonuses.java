@@ -141,7 +141,7 @@ final class TestLandBonuses extends Check {
         check("developer Run controls fit",ui.debuffY+ui.testH<ui.panelB);
     }
     private static final class ArtProbe extends OpacityPainter {
-        boolean face;float[] body;float clamX,clamY,clamR;
+        boolean face;float[] body;float clamX,clamY,clamR,acornY,squirrelY,logY;
         ArtProbe(){super(new RasterPainter(1,1,1),1);}
         public void fillPoly(float[] xy,int color) {
             int rgb=color&0xffffff;
@@ -150,6 +150,9 @@ final class TestLandBonuses extends Check {
         }
         public void fillEllipse(float x,float y,float rx,float ry,int color) {
             if((color&0xffffff)==0xb57ad0){clamX=x;clamY=y;clamR=rx;}
+            if((color&0xffffff)==0xca8748)acornY=y;
+            if((color&0xffffff)==0xf4b456 && Math.abs(rx/ry-.32f/.39f)<.01f)squirrelY=y;
+            if((color&0xffffff)==0xbd864a)logY=y;
         }
     }
     private static ArtProbe art(GameCore c,Layout L) {
@@ -181,6 +184,17 @@ final class TestLandBonuses extends Check {
         check("clam collection centers on playfield",Math.abs(near.clamX-L.w*.5f)<.01f);
         c.cloudUi.reduceMotion=true;c.landBonus.burst=0;far=art(c,L);c.landBonus.burst=.6f;near=art(c,L);
         check("reduced motion avoids clam zoom",far.clamR==near.clamR && far.clamY==near.clamY);
+        c=start(L,16,true,244);ArtProbe idle=art(c,L);
+        check("forest squirrel holds an acorn before collection",idle.acornY>0 && idle.squirrelY>0);
+        c.landBonus.tap(c,L,LandBonus.x(c,L),LandBonus.y(c,L));
+        c.landBonus.burst=.12f;ArtProbe hopping=art(c,L);
+        c.landBonus.burst=.4f;ArtProbe raised=art(c,L);
+        check("squirrel raises acorn above its body",raised.acornY-raised.squirrelY<idle.acornY-idle.squirrelY-LandBonus.radius(L));
+        check("squirrel bounces during the lift",hopping.squirrelY<raised.squirrelY);
+        check("forest log stays grounded during collection",idle.logY==hopping.logY && idle.logY==raised.logY);
+        c.cloudUi.reduceMotion=true;c.landBonus.burst=.12f;hopping=art(c,L);
+        c.landBonus.burst=.6f;raised=art(c,L);
+        check("reduced motion holds squirrel and raised acorn steady",hopping.squirrelY==raised.squirrelY && hopping.acornY==raised.acornY && raised.acornY<raised.squirrelY);
         c=start(L,6,true,244);
         c.skyClock=c.landBonus.skyAt+(LandBonus.radius(L)*c.landBonus.entryDepth-2)/LandBonus.scrollSpeed(c,L);
         RasterPainter raster=new RasterPainter((int)L.w,(int)L.h,1);

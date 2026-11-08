@@ -47,6 +47,7 @@ final class LandBonusArt extends Draw {
             lift=r*1.2f*Math.abs((float)Math.sin(hit*Math.PI/.42f))*settle(hit);
             x+=r*sway(hit);
         }
+        if(land==MushroomForest.LAND)lift=0;
         y-=lift;
         switch(land) {
             case 0:bubble(q,c,L,x,y,r*scale,t,reaction);break;
@@ -55,7 +56,7 @@ final class LandBonusArt extends Draw {
                 else jewel(q,x,y,r*scale,t,reaction,still,hit>=0);
                 break;
             case 2:clam(q,x,y,r*scale,t,reaction,still);break;
-            case 3:squirrel(q,x,y,r*scale,t,reaction,still);break;
+            case 3:squirrel(q,x,y,r,t,hit,still);break;
             case Lands.SWAMP:flamingo(q,x,y,r*scale,t,reaction,still);break;
             case Lands.RAINBOW:coin(q,x,y,r*scale,t,hit,still);break;
         }
@@ -261,28 +262,96 @@ final class LandBonusArt extends Draw {
         p.fillCircle(x-r*.12f,py-r*.14f,r*.075f,0xFFFFFFFF);
         eyes(p,x,y+r*.46f,r*.45f,hit>0 || time%4>3.8f);
     }
-    private static void squirrel(Painter p,float x,float y,float r,float time,float hit,boolean still) {
-        p.fillPoly(pill(x,y+r*.43f,r*.93f,r*.35f,12),0xFF80513B);
-        p.fillEllipse(x+r*.82f,y+r*.43f,r*.23f,r*.35f,0xFFBF8A59);
-        p.strokeCircle(x+r*.82f,y+r*.43f,r*.13f,0xFF92603F,r*.035f);
-        p.line(x-r*.76f,y+r*.31f,x+r*.55f,y+r*.27f,0xFFAD7750,r*.055f);
-        p.line(x-r*.70f,y+r*.63f,x+r*.53f,y+r*.61f,0xFF593C36,r*.05f);
-        p.fillEllipse(x-r*.13f,y+r*.34f,r*.50f,r*.32f,0xFF392E39);
-        float cy=y-r*.06f-(still?0:hit*r*.44f)+r*.13f*(float)Math.sin(time*2.3f);
-        p.strokeCircle(x+r*.41f,cy+r*.12f,r*.36f,0xFFD2943B,r*.24f);
-        p.arc(x+r*.41f,cy+r*.12f,r*.27f,r*.27f,10,250,0xFFFFD977,r*.13f);
-        p.fillEllipse(x-r*.14f,cy+r*.27f,r*.34f,r*.38f,0xFFF1BA54);
-        for(int side=-1;side<=1;side+=2) {
-            float ex=x-r*.14f+side*r*.25f;
-            p.fillEllipse(ex,cy-r*.39f,r*.13f,r*.22f,0xFFE4A845);
-            p.fillEllipse(ex,cy-r*.39f,r*.065f,r*.13f,0xFFFFE4A1);
+    private static void squirrel(Painter p,float x,float y,float r,float time,float elapsed,boolean still) {
+        // The hollow opening faces left, with split bark and a little branch on the right.
+        p.fillEllipse(x,y+r*.78f,r*1.04f,r*.13f,0x26332925);
+        float[] bark=forestShape(x,y,r,-.68f,-.13f,.38f,-.23f,.83f,-.32f,.96f,-.20f,
+                .82f,-.09f,1.02f,-.05f,1.06f,.34f,.86f,.43f,1.01f,.47f,.91f,.65f,-.66f,.82f);
+        p.fillPoly(bark,0xFF89522F);p.strokePoly(bark,0xFF503522,r*.035f);
+        p.fillPoly(forestShape(x,y,r,.18f,-.18f,.46f,-.38f,.52f,-.66f,.58f,-.67f,
+                .57f,-.43f,.75f,-.54f,.79f,-.49f,.58f,-.27f,.45f,-.13f),0xFF9E6337);
+        p.polyline(forestShape(x,y,r,.28f,-.14f,.48f,-.33f,.54f,-.54f),0xFF643B26,r*.045f);
+        for(int i=0;i<5;i++) {
+            float yy=-.04f+i*.15f,xx=-.42f+(i%2)*.18f;
+            p.polyline(forestShape(x,y,r,xx,yy,xx+.25f,yy+.035f,xx+.55f,yy+.01f,xx+.86f,yy-.045f),
+                    i%2==0?0xFFB57A43:0xFF633D29,r*(i%2==0?.024f:.035f));
         }
-        p.fillEllipse(x-r*.14f,cy-r*.10f,r*.38f,r*.35f,0xFFFFD775);
-        p.fillEllipse(x-r*.14f,cy+r*.04f,r*.23f,r*.17f,0xFFFFEDBC);
-        eyes(p,x-r*.14f,cy-r*.10f,r*.57f,hit>0 || time%4>3.8f);
-        p.fillEllipse(x-r*.14f,cy+r*.02f,r*.055f,r*.04f,0xFF805640);
+        p.fillEllipse(x-r*.66f,y+r*.33f,r*.31f,r*.50f,0xFFBD864A);
+        p.fillEllipse(x-r*.68f,y+r*.32f,r*.225f,r*.405f,0xFF493326);
+        p.fillPoly(forestShape(x,y,r,-.91f,.16f,-.65f,.24f,-.79f,.29f),0xFF71462A);
+        p.fillPoly(forestShape(x,y,r,-.78f,.77f,-.38f,.65f,-.27f,.70f,-.64f,.84f),0xFFD19B55);
+
+        boolean collected=elapsed>=0;
+        float u=collected?Math.min(1,elapsed/.38f):0;
+        float raise=collected?(still?1:u*u*(3-2*u)):0;
+        float bounce=collected && !still?Math.abs((float)Math.sin(elapsed*Math.PI/.40f))*settle(elapsed):0;
+        float cx=x-r*.51f,cy=y-r*(.02f+raise*.18f+bounce*.40f);
+        if(!still && !collected)cy+=r*.035f*(float)Math.sin(time*2.3f);
+        int fur=0xFFF4B456,light=0xFFFFD383,cream=0xFFFFEAC0,ink=0xFF6B3428;
+        // A broad plume curls behind the head, like the reference squirrel's tail.
+        forestOval(p,cx+r*.48f,cy+r*.02f,r*.39f,r*.59f,fur);
+        forestOval(p,cx+r*.57f,cy-r*.28f,r*.37f,r*.36f,light);
+        p.fillEllipse(cx+r*.49f,cy+r*.17f,r*.24f,r*.40f,cream);
+        p.fillEllipse(cx+r*.58f,cy-r*.22f,r*.25f,r*.24f,cream);
+        p.arc(cx+r*.59f,cy-r*.20f,r*.15f,r*.16f,5,300,ink,r*.035f);
+        p.arc(cx+r*.59f,cy-r*.20f,r*.075f,r*.08f,180,220,ink,r*.03f);
+        forestOval(p,cx,cy+r*.30f,r*.32f,r*.39f,fur);
+        p.fillEllipse(cx,cy+r*.35f,r*.23f,r*.29f,cream);
+        for(int side=-1;side<=1;side+=2) {
+            forestOval(p,cx+side*r*.21f,cy+r*.60f,r*.14f,r*.075f,fur);
+            forestOval(p,cx+side*r*.29f,cy-r*.49f,r*.14f,r*.23f,fur);
+            p.fillEllipse(cx+side*r*.29f,cy-r*.50f,r*.082f,r*.16f,0xFFE79879);
+        }
+        forestOval(p,cx,cy-r*.12f,r*.43f,r*.39f,light);
+        p.fillPoly(forestShape(cx,cy,r,-.13f,-.46f,-.03f,-.62f,.01f,-.50f,.17f,-.58f,.10f,-.44f),light);
+        for(int side=-1;side<=1;side+=2) {
+            float ex=cx+side*r*.205f;
+            p.fillEllipse(ex,cy-r*.10f,r*.18f,r*.27f,cream);
+            p.fillEllipse(cx+side*r*.28f,cy+r*.10f,r*.18f,r*.13f,cream);
+            boolean blink=!collected && !still && time%4.8f>4.65f;
+            if(blink)p.arc(ex,cy-r*.08f,r*.11f,r*.045f,190,160,ink,r*.035f);
+            else {
+                p.fillEllipse(ex,cy-r*.09f,r*.125f,r*.16f,0xFF48212B);
+                p.arc(ex,cy-r*.08f,r*.083f,r*.112f,15,150,0xFFD68B44,r*.04f);
+                p.fillEllipse(ex-r*.035f,cy-r*.15f,r*.051f,r*.050f,0xFFFFFAEB);
+                p.fillCircle(ex+r*.045f,cy-r*.035f,r*.020f,0xFFFFFAEB);
+            }
+            p.fillEllipse(cx+side*r*.31f,cy+r*.08f,r*.068f,r*.036f,0xFFEEA180);
+            p.fillEllipse(cx+side*r*.19f,cy-r*.34f,r*.041f,r*.022f,ink);
+        }
+        p.fillEllipse(cx,cy+r*.10f,r*.17f,r*.095f,cream);
+        p.fillEllipse(cx,cy+r*.015f,r*.045f,r*.032f,0xFF48212B);
+        for(int side=-1;side<=1;side+=2)p.arc(cx+side*r*.055f,cy+r*.04f,r*.055f,r*.045f,0,180,ink,r*.022f);
+        // Both hands stay attached to the acorn as it rises above the ears.
+        float acornY=cy+r*(.31f-raise*1.27f);
+        for(int side=-1;side<=1;side+=2) {
+            float shoulderX=cx+side*r*.26f,shoulderY=cy+r*.24f;
+            float handX=cx+side*r*.16f,handY=acornY+r*.015f;
+            float elbowX=cx+side*r*(.31f+raise*.08f),elbowY=cy+r*(.38f-raise*.82f);
+            float[] arm={shoulderX,shoulderY,elbowX,elbowY,handX,handY};
+            p.polyline(arm,ink,r*.17f);p.polyline(arm,fur,r*.12f);
+        }
+        forestOval(p,cx,acornY+r*.07f,r*.135f,r*.19f,0xFFCA8748);
+        p.fillEllipse(cx-r*.025f,acornY+r*.08f,r*.072f,r*.12f,0xFFF0B863);
+        p.fillPoly(forestShape(cx,acornY,r,-.045f,.22f,0,.285f,.045f,.22f),ink);
+        p.line(cx,acornY-r*.14f,cx+r*.015f,acornY-r*.23f,ink,r*.055f);
+        forestOval(p,cx,acornY-r*.065f,r*.165f,r*.11f,0xFF825038);
+        for(int side=-1;side<=1;side+=2)for(int i=0;i<3;i++) {
+            float ax=cx+r*(-.10f+i*.07f);
+            p.line(ax,acornY-r*.13f,ax+side*r*.06f,acornY-r*.025f,0xFFAD7749,r*.014f);
+        }
         for(int side=-1;side<=1;side+=2)
-            p.fillEllipse(x-r*.14f+side*r*.30f,cy+r*.34f,r*.10f,r*.075f,0xFFFFDA84);
+            forestOval(p,cx+side*r*.19f,acornY+r*.025f,r*.09f,r*.065f,light);
+        // The lower rim hides the feet inside the hollow while the log remains planted.
+        p.arc(x-r*.66f,y+r*.33f,r*.26f,r*.45f,15,150,0xFFBD864A,r*.075f);
+    }
+    private static float[] forestShape(float x,float y,float r,float... points) {
+        for(int i=0;i<points.length;i+=2){points[i]=x+points[i]*r;points[i+1]=y+points[i+1]*r;}
+        return points;
+    }
+    private static void forestOval(Painter p,float x,float y,float rx,float ry,int color) {
+        float line=Math.min(rx,ry)*.13f;
+        p.fillEllipse(x,y,rx+line,ry+line,0xFF6B3428);p.fillEllipse(x,y,rx,ry,color);
     }
     private static void flamingo(Painter p,float x,float y,float r,float time,float hit,boolean still) {
         float flap=(float)Math.sin(time*(hit>0?14:3)),hop=still?0:hit*r*.13f;

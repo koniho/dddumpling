@@ -36,7 +36,7 @@ final class Preview {
                 c.landBonus.burst=beat;
                 shot(dir,"244-bonus-"+land+"-tap-"+(int)(beat*100),c,L,w,h,ss);
             }
-            if(land<=2) {
+            if(land<=3) {
                 c.cloudUi.reduceMotion=true;
                 shot(dir,"244-collected-still-"+land,c,L,w,h,ss);
                 c.cloudUi.reduceMotion=false;
