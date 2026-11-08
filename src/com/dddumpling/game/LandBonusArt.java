@@ -2,7 +2,7 @@ package com.dddumpling.game;
 
 /** Small scenery discoveries, with a short collection burst behind the falling prompts. */
 final class LandBonusArt extends Draw {
-    private static final int[] COLORS={SlimeHills.MINT,0xFF9AF9FF,0xFFFFBCE8,0xFFFFD56B,0,0xFFFF9EBF,0xFFFFE57B};
+    private static final int[] COLORS={SlimeHills.MINT,CrystalField.edgeColor(2),0xFFFFBCE8,0xFFFFD56B,0,0xFFFF9EBF,0xFFFFE57B};
     private static final int[] RAINBOW={0xFFFF91B7,0xFFFFC26D,0xFFFFEC83,0xFF92EDBC,0xFF85DAFF,0xFFC5ACFF};
     static void draw(Painter p,GameCore c,Layout L) {
         if((Lands.forStage(c.stage)!=CrystalField.LAND && Lands.forStage(c.stage)!=Underwater.LAND) || c.landBonus.burst>=0)drawBonus(p,c,L);
@@ -178,18 +178,52 @@ final class LandBonusArt extends Draw {
     }
     private static void jewel(Painter p,float x,float y,float r,float time,float hit,boolean still) {
         float cy=y-(still?0:hit*r*.65f),pulse=still?.5f:.5f+.5f*(float)Math.sin(time*1.7f);
-        float[] outline={x,cy-r*.78f,x+r*.46f,cy-r*.14f,x,cy+r*.64f,x-r*.46f,cy-r*.14f};
+        int shade=CrystalField.edgeColor(0),mid=CrystalField.edgeColor(1),light=CrystalField.edgeColor(2);
+        int ink=Glyph.mix(shade,Lands.BG[CrystalField.LAND],.80f);
+        float[] outline={0,-.82f,.62f,-.10f,.40f,.59f,0,.80f,-.40f,.59f,-.62f,-.10f};
+        float[] face={0,-.44f,.45f,-.06f,.27f,.48f,0,.64f,-.27f,.48f,-.45f,-.06f};
+        for(int i=0;i<outline.length;i+=2) {
+            outline[i]=x+outline[i]*r;outline[i+1]=cy+outline[i+1]*r;
+            face[i]=x+face[i]*r;face[i+1]=cy+face[i+1]*r;
+        }
         for(int i=4;i>0;i--) {
             p.fillEllipse(x,cy,r*(.5f+i*.15f),r*(.75f+i*.12f),
-                    Glyph.withAlpha(0xFF96E6D9,(int)(3+4*pulse+hit*8)));
-            p.strokePoly(outline,Glyph.withAlpha(0xFFB2F0E7,(int)(7+4*pulse)),r*.07f*i*(1-hit*.8f));
+                    Glyph.withAlpha(light,(int)(3+4*pulse+hit*8)));
+            p.strokePoly(outline,Glyph.withAlpha(light,(int)(7+4*pulse)),r*.07f*i*(1-hit*.8f));
         }
-        // Translucent facets and soft edges sit beneath the scrolling crystal surface.
-        int opacity=(int)(65+25*pulse+hit*150);
-        p.fillPoly(outline,Glyph.withAlpha(0xFF79B8C3,opacity));
-        p.fillPoly(new float[]{x,cy-r*.78f,x,cy-r*.12f,x-r*.46f,cy-r*.14f},Glyph.withAlpha(0xFFD4EEE9,opacity));
-        p.fillPoly(new float[]{x,cy-r*.78f,x+r*.46f,cy-r*.14f,x,cy-r*.12f},Glyph.withAlpha(0xFFAFE4DF,opacity));
-        p.fillPoly(new float[]{x,cy-r*.12f,x+r*.46f,cy-r*.14f,x,cy+r*.64f},Glyph.withAlpha(0xFF94CFCF,opacity));
+        // The friendly prism stays translucent beneath the floor until collected.
+        Painter q=new OpacityPainter(p,.44f+.08f*pulse+hit*.48f);
+        q.fillPoly(outline,shade);
+        int[] facets={light,mid,Glyph.mix(shade,ink,.25f),Glyph.mix(shade,ink,.45f),shade,Glyph.mix(mid,light,.4f)};
+        for(int i=0;i<6;i++) {
+            int j=(i+1)%6,a=i*2,b=j*2;
+            q.fillPoly(new float[]{outline[a],outline[a+1],outline[b],outline[b+1],
+                    face[b],face[b+1],face[a],face[a+1]},facets[i]);
+            q.line(outline[a],outline[a+1],face[a],face[a+1],ink,r*.025f);
+        }
+        q.fillPoly(face,mid);
+        q.strokePoly(face,ink,r*.025f);q.strokePoly(outline,ink,r*.058f);
+        q.fillPoly(new float[]{x,cy-r*.78f,x+r*.49f,cy-r*.13f,x+r*.26f,cy-r*.25f},Glyph.withAlpha(Glyph.mix(light,0xFFFFFFFF,.4f),108));
+        q.fillPoly(new float[]{x-r*.56f,cy-r*.10f,x-r*.02f,cy-r*.76f,x-r*.24f,cy-r*.22f},Glyph.withAlpha(light,69));
+        boolean blink=!still && hit==0 && time%4.8f>4.6f;
+        for(int side=-1;side<=1;side+=2) {
+            float ex=x+side*r*.21f,ey=cy+r*.13f;
+            if(blink)q.arc(ex,ey,r*.085f,r*.045f,190,160,ink,r*.035f);
+            else {
+                q.fillCircle(ex,ey,r*(.105f+hit*.008f),ink);
+                q.fillCircle(ex+r*.014f,ey+r*.020f,r*.065f,Glyph.mix(shade,ink,.45f));
+                q.fillCircle(ex-r*.024f,ey-r*.029f,r*.043f,0xFFF4FFFF);
+                q.fillCircle(ex+r*.038f,ey+r*.043f,r*.016f,light);
+            }
+            q.fillEllipse(x+side*r*.31f,cy+r*.28f,r*.058f,r*.027f,0xFFF0B8D0);
+        }
+        float[] smile=new float[18];
+        for(int i=0;i<9;i++) {
+            float a=(float)Math.PI*i/8;
+            smile[i*2]=x+(float)Math.cos(a)*r*.145f;
+            smile[i*2+1]=cy+r*.31f+(float)Math.sin(a)*r*(.13f+hit*.035f);
+        }
+        q.fillPoly(smile,0xFFFFD879);q.strokePoly(smile,ink,r*.033f);
     }
     private static void clam(Painter p,float x,float y,float r,float time,float hit,boolean still) {
         float open=.40f+.19f*(float)Math.sin(time*2.5f)+hit*.30f;
