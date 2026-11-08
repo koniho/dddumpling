@@ -2,41 +2,53 @@ package com.dddumpling.game;
 
 /** Small scenery discoveries, with a short collection burst behind the falling prompts. */
 final class LandBonusArt extends Draw {
-    private static final int[] COLORS={0xFF8EFFB5,0xFF9AF9FF,0xFFFFBCE8,0xFFFFD56B,0,0xFFFF9EBF,0xFFFFE57B};
+    private static final int[] COLORS={SlimeHills.MINT,0xFF9AF9FF,0xFFFFBCE8,0xFFFFD56B,0,0xFFFF9EBF,0xFFFFE57B};
     private static final int[] RAINBOW={0xFFFF91B7,0xFFFFC26D,0xFFFFEC83,0xFF92EDBC,0xFF85DAFF,0xFFC5ACFF};
     static void draw(Painter p,GameCore c,Layout L) {
+        if((Lands.forStage(c.stage)!=CrystalField.LAND && Lands.forStage(c.stage)!=Underwater.LAND) || c.landBonus.burst>=0)drawBonus(p,c,L);
+    }
+    static void beneathCrystal(Painter p,GameCore c,Layout L) {
+        if(Lands.forStage(c.stage)==CrystalField.LAND && c.landBonus.burst<0)drawBonus(p,c,L);
+    }
+    static void onSeabed(Painter p,GameCore c,Layout L,float fade) {
+        if(Lands.forStage(c.stage)==Underwater.LAND && c.landBonus.burst<0)drawBonus(new OpacityPainter(p,fade),c,L);
+    }
+    private static void drawBonus(Painter p,GameCore c,Layout L) {
         LandBonus b=c.landBonus;
         if(!LandBonus.scene(c) || !b.visible(c) && b.burst<0)return;
         int land=Lands.forStage(c.stage),color=COLORS[land];
         boolean still=c.cloudUi.reduceMotion;
-        float x=LandBonus.x(c,L),y=LandBonus.y(c,L),r=LandBonus.radius(L);
+        float x=LandBonus.x(c,L),y=LandBonus.y(c,L),r=LandBonus.size(c,L);
         float t=still?0:b.age,hit=b.burst;
-        float fade=hit<0?Math.min(1,(b.age-LandBonus.REVEAL)/.28f):Math.min(1,(LandBonus.BURST-hit)/.35f);
+        float fade=hit<0?Math.min(1,(b.age-b.delay)/.28f):Math.min(1,(LandBonus.BURST-hit)/.35f);
         fade*=Math.max(0,Math.min(1,(L.deckTop+r-y)/(r*2)));
         if(fade<=0)return;
         p.save();p.clipRect(0,L.playTop,L.w,L.deckTop);
-        Painter q=new OpacityPainter(p,fade*(hit<0?.68f:1));
+        Painter q=new OpacityPainter(p,fade*(hit<0 && land!=0?.68f:1));
+        if(land==Underwater.LAND && hit<0) {
+            final float clarity=.25f+.75f*Math.min(1,UnderwaterVista.depth(LandBonus.clamTravel(c))*2.8f);
+            q=new OpacityPainter(q,1) {int color(int color) {return UnderwaterVista.depthColor(color,clarity);}};
+        }
         float glow=hit<0?.08f:1;
         for(int i=3;i>0;i--)q.fillCircle(x,y,r*(1+i*.12f),Glyph.withAlpha(color,(int)(8*glow)));
         float pop=hit<0 || still?0:(float)(Math.sin(hit*18)*Math.exp(-hit*4));
-        float entry=still || land!=0?1:.45f+.55f*b.entrance();
-        float scale=(1+pop*.22f)*entry;
+        float scale=1+pop*.22f;
         float reaction=hit<0?0:Math.min(1,hit/.2f);
-        if(hit<0)ambient(new OpacityPainter(q,.25f),land,x,y,r,t,still);
+        if(hit<0 && land>2)ambient(new OpacityPainter(q,.25f),land,x,y,r,t,still);
         float lift=hit<0 || still?0:r*.55f*(float)Math.sin(Math.min(1,hit/.85f)*Math.PI);
         y-=lift;
         switch(land) {
-            case 0:bubble(q,x,y,r*scale,t,reaction);break;
+            case 0:bubble(q,c,L,x,y,r*scale,t,reaction);break;
             case 1:jewel(q,x,y,r*scale,t,reaction,still);break;
             case 2:clam(q,x,y,r*scale,t,reaction,still);break;
             case 3:squirrel(q,x,y,r*scale,t,reaction,still);break;
             case Lands.SWAMP:flamingo(q,x,y,r*scale,t,reaction,still);break;
             case Lands.RAINBOW:coin(q,x,y,r*scale,t,hit,still);break;
         }
-        if(hit<0) {
+        if(hit<0 && land>2) {
             float twinkle=still?.8f:.55f+.45f*(float)Math.sin(t*4);
             q.fillPoly(star(x+r*.84f,y-r*.72f,r*(.045f+.025f*twinkle),r*.02f,4,0),0x99FFF3C9);
-        } else celebrate(p,L,land,x,y+lift,r,color,hit,still);
+        } else if(hit>=0)celebrate(p,L,land,x,y+lift,Math.max(r,LandBonus.radius(L)*.72f),color,hit,still);
         p.restore();
     }
     private static void celebrate(Painter p,Layout L,int land,float x,float y,float r,int color,float t,boolean still) {
@@ -56,7 +68,7 @@ final class LandBonusArt extends Draw {
         if(land==Lands.RAINBOW)for(int i=0;i<6;i++)
             p.arc(x,y,r*(spread+i*.08f),r*(spread+i*.08f),190,160,
                     Glyph.withAlpha(RAINBOW[i],(int)(160*fade)),r*.06f);
-        float yy=y-r*(1.5f+(still?0:u*.65f));
+        float yy=Math.max(L.playTop+r*.6f,y-r*(1.5f+(still?0:u*.65f)));
         p.text("+"+LandBonus.POINTS,x,yy+r*.035f,r*.54f,Glyph.withAlpha(0xFF302440,(int)(255*fade)),Painter.CENTER,true);
         p.text("+"+LandBonus.POINTS,x,yy,r*.54f,Glyph.withAlpha(0xFFFFF3C9,(int)(255*fade)),Painter.CENTER,true);
     }
@@ -97,39 +109,71 @@ final class LandBonusArt extends Draw {
         }
         p.arc(x,y+r*.12f,r*.10f,r*.08f,0,180,0xFF49344F,r*.035f);
     }
-    private static void bubble(Painter p,float x,float y,float r,float time,float hit) {
-        float bob=-(float)Math.abs(Math.sin(time*2.6f))*r*.16f;
-        p.fillEllipse(x,y+r*.94f,r*.65f,r*.08f,0x35304537);
-        y+=bob;
+    private static void bubble(Painter p,GameCore c,Layout L,float x,float y,float r,float time,float hit) {
+        LandBonus bonus=c.landBonus;float surface=LandBonus.surfaceY(c,L),rise=bonus.bubbleRise(c);
+        boolean emerging=hit==0 && rise<1;
+        if(!emerging)p.fillEllipse(x,surface,r*.75f,r*.12f,0x25213B26);
+        p.save();
+        if(emerging)p.clipRect(0,L.playTop,L.w,surface);
+        zucchini(p,x,y,r,time,hit);
         if(hit<.8f) {
-            p.fillCircle(x,y,r*.87f,0x286EEDD6);
-            p.strokeCircle(x,y,r*.87f,0xB3D4FFFF,r*.035f);
-            p.arc(x,y,r*.78f,r*.78f,205,75,0xD9FFFFFF,r*.055f);
-            p.arc(x,y,r*.80f,r*.80f,20,65,0xA5B4FFCB,r*.045f);
-            p.fillEllipse(x-r*.43f,y-r*.50f,r*.13f,r*.075f,0xCFFFFFFF);
+            SlimeBubbles.Bubble shell=new SlimeBubbles.Bubble();
+            shell.age=c.cloudUi.reduceMotion?0:Math.max(0,bonus.age-bonus.delay);
+            shell.seed=bonus.bubbleSeed();shell.r=r;
+            c.slimeBubbles.bubbleShell(p,shell,x,y,1);
         }
-        BossScreen.slimePortrait(p,x,y+r*.05f-hit*r*.12f,r*(.34f+hit*.14f+.018f*(float)Math.cos(time*5.2f)),time);
+        p.restore();
+        if(emerging) {
+            float chord=r*(float)Math.sin(Math.PI*rise);
+            p.arc(x,surface,chord,r*.11f,0,180,Glyph.withAlpha(SlimeHills.MINT,40),r*.023f);
+        }
         if(hit>0)for(int i=0;i<6;i++) {
             float a=i*1.0472f,rr=r*(.6f+hit*.6f);
-            p.fillCircle(x+(float)Math.cos(a)*rr,y+(float)Math.sin(a)*rr,r*.075f*(1-hit*.6f),0xB3C8FFF0);
+            p.fillCircle(x+(float)Math.cos(a)*rr,y+(float)Math.sin(a)*rr,r*.075f*(1-hit*.6f),Glyph.withAlpha(SlimeHills.MINT,150));
         }
     }
+    private static void zucchini(Painter p,float x,float y,float r,float time,float hit) {
+        float lean=.10f+(float)Math.sin(time*2.4f)*.035f;
+        float[] skin=new float[48];
+        for(int i=0;i<24;i++) {
+            float a=i*Softbody.TAU/24,yy=(float)Math.sin(a);
+            skin[i*2]=x+(float)Math.cos(a)*r*(.28f-.025f*yy)-yy*r*lean;
+            skin[i*2+1]=y+yy*r*.63f;
+        }
+        p.fillPoly(skin,0xFF3E6A35);p.strokePoly(skin,0xFF31582D,r*.025f);
+        for(int side=-1;side<=1;side++) {
+            float[] stripe=new float[14];
+            for(int i=0;i<7;i++) {
+                float v=-.85f+i*1.7f/6;
+                stripe[i*2]=x-v*r*lean+side*r*.14f*(float)Math.sqrt(1-v*v);
+                stripe[i*2+1]=y+v*r*.63f;
+            }
+            p.polyline(stripe,side==0?0xFF8AA65A:0xFF64894A,r*.04f);
+        }
+        float sx=x+r*lean,sy=y-r*.62f;
+        p.fillPoly(new float[]{sx-r*.10f,sy+r*.04f,sx-r*.07f,sy-r*.12f,
+                sx+r*.04f,sy-r*.17f,sx+r*.10f,sy-r*.10f,sx+r*.08f,sy+r*.03f},0xFF829157);
+        for(int i=0;i<6;i++)p.fillCircle(x+r*((i%2==0?-.15f:.15f)),y+r*(-.38f+i*.14f),r*.014f,0xFFB1BB72);
+        eyes(p,x,y+r*.03f,r*.58f,hit>0 || time%4>3.8f);
+    }
     private static void jewel(Painter p,float x,float y,float r,float time,float hit,boolean still) {
-        p.fillPoly(new float[]{x-r,y+r*.85f,x-r*.75f,y-r*.23f,x-r*.33f,y-r*.48f,
-                x+r*.15f,y+r*.80f},0xFF7066B6);
-        p.fillPoly(new float[]{x+r*.05f,y+r*.84f,x+r*.36f,y-r*.17f,x+r*.74f,y-r*.43f,
-                x+r*.96f,y+r*.88f},0xFFAB8DDA);
-        p.fillPoly(new float[]{x-r*.75f,y-r*.23f,x-r*.33f,y-r*.48f,x-r*.08f,y+r*.85f},0xFF9F94DF);
-        float cy=y+(float)Math.sin(time*3)*r*.035f-(still?0:hit*r*.65f);
-        p.fillPoly(new float[]{x,cy-r*.70f,x+r*.50f,cy-r*.13f,x,cy+r*.58f,x-r*.50f,cy-r*.13f},0xFF64C7D9);
-        p.fillPoly(new float[]{x,cy-r*.70f,x,cy-r*.10f,x-r*.50f,cy-r*.13f},0xFFE1FFFF);
-        p.fillPoly(new float[]{x,cy-r*.70f,x+r*.50f,cy-r*.13f,x,cy-r*.10f},0xFFA8F8F8);
-        p.fillPoly(new float[]{x,cy-r*.10f,x+r*.50f,cy-r*.13f,x,cy+r*.58f},0xFF91EFF0);
-        p.line(x-r*.45f,cy-r*.13f,x+r*.45f,cy-r*.13f,0xB3EAFFFF,r*.025f);
-        p.fillPoly(star(x-r*.12f,cy-r*.38f,r*.13f,r*.035f,4,0),0xFFFFFFFF);
+        float cy=y-(still?0:hit*r*.65f),pulse=still?.5f:.5f+.5f*(float)Math.sin(time*1.7f);
+        float[] outline={x,cy-r*.78f,x+r*.46f,cy-r*.14f,x,cy+r*.64f,x-r*.46f,cy-r*.14f};
+        for(int i=4;i>0;i--) {
+            p.fillEllipse(x,cy,r*(.5f+i*.15f),r*(.75f+i*.12f),
+                    Glyph.withAlpha(0xFF96E6D9,(int)(3+4*pulse+hit*8)));
+            p.strokePoly(outline,Glyph.withAlpha(0xFFB2F0E7,(int)(7+4*pulse)),r*.07f*i*(1-hit*.8f));
+        }
+        // Translucent facets and soft edges sit beneath the scrolling crystal surface.
+        int opacity=(int)(65+25*pulse+hit*150);
+        p.fillPoly(outline,Glyph.withAlpha(0xFF79B8C3,opacity));
+        p.fillPoly(new float[]{x,cy-r*.78f,x,cy-r*.12f,x-r*.46f,cy-r*.14f},Glyph.withAlpha(0xFFD4EEE9,opacity));
+        p.fillPoly(new float[]{x,cy-r*.78f,x+r*.46f,cy-r*.14f,x,cy-r*.12f},Glyph.withAlpha(0xFFAFE4DF,opacity));
+        p.fillPoly(new float[]{x,cy-r*.12f,x+r*.46f,cy-r*.14f,x,cy+r*.64f},Glyph.withAlpha(0xFF94CFCF,opacity));
     }
     private static void clam(Painter p,float x,float y,float r,float time,float hit,boolean still) {
         float open=.40f+.19f*(float)Math.sin(time*2.5f)+hit*.30f;
+        for(int i=3;i>0;i--)p.fillEllipse(x,y+r*.32f,r*(.80f+i*.05f),r*(.35f+i*.04f),0x08BD8BD3);
         p.fillEllipse(x,y+r*.80f,r*.85f,r*.10f,0x302A4660);
         p.fillEllipse(x,y-r*open,r*.88f,r*.43f,0xFFBD8BD3);
         for(int i=0;i<7;i++) {

@@ -1271,7 +1271,7 @@ public final class IOSInputTest extends Check {
         GameCore.Enemy word=add(c,l,new int[]{0,0},l.dangerY-l.enemyR*2);
         float x=LandBonus.x(c,l),y=LandBonus.y(c,l),kx=c.keyX(l,0),ky=c.keyY(l,0);
         int score=c.score;
-        c.landBonus.age=LandBonus.REVEAL+LandBonus.ENTRANCE;
+        c.landBonus.age=c.landBonus.delay+LandBonus.BUBBLE_RISE;
         y=LandBonus.y(c,l);c.skyClock+=6;
         tap(game,x,y);
         check("native old bonus position cannot collect after scrolling",c.score==score);

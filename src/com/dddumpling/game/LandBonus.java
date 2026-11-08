@@ -5,23 +5,36 @@ import java.util.Random;
 /** One scenery reward per Adventure chapter, with a separate random stream. */
 final class LandBonus {
     static final int POINTS=100;
-    static final float REVEAL=.65f, ENTRANCE=1.4f, BURST=1.25f;
+    static final float MIN_DELAY=4.5f, MAX_DELAY=8f, BUBBLE_RISE=2.8f, BURST=1.25f;
     final Random random;
     int chapter=-1,stage=-1,selectedStage=-1,collectedStages;
-    float age,skyAt,burst=-1;
+    float age,skyAt,burst=-1,delay=MIN_DELAY,sideX,entryDepth,seabedLane,seabedStart;
+    int bubbleId;
+    long visitSeed;
 
     LandBonus(long seed) {random=new Random(seed^0x4C414E4447494654L);}
-    void reset() {chapter=stage=selectedStage=-1;collectedStages=0;age=skyAt=0;burst=-1;}
+    void reset() {chapter=stage=selectedStage=-1;collectedStages=0;age=skyAt=0;burst=-1;delay=MIN_DELAY;sideX=entryDepth=seabedLane=seabedStart=0;bubbleId=0;visitSeed=0;}
     void enter(GameCore c) {
         if(!c.modes.adventure()) {reset();return;}
         int next=(Math.max(1,c.stage)-1)/Boss.EVERY;
         if(next!=chapter) {
-            chapter=next;selectedStage=next*Boss.EVERY+1+random.nextInt(4);collectedStages=0;
+            chapter=next;selectedStage=next*Boss.EVERY+1+random.nextInt(4);collectedStages=0;visitSeed=random.nextLong();
         }
-        if(stage!=c.stage) {stage=c.stage;restartEntrance(c);burst=-1;}
+        if(stage!=c.stage) {
+            stage=c.stage;
+            Random placement=new Random(visitSeed^((long)stage*0x5343454E455259L));
+            delay=MIN_DELAY+(MAX_DELAY-MIN_DELAY)*placement.nextFloat();
+            bubbleId=placement.nextInt(10000);
+            float inset=.12f+.08f*placement.nextFloat();sideX=placement.nextBoolean()?inset:1-inset;
+            entryDepth=1.1f+.7f*placement.nextFloat();
+            seabedLane=placement.nextFloat()*1.6f-.8f;seabedStart=.12f+.10f*placement.nextFloat();
+            restartEntrance(c);burst=-1;
+        }
     }
     void restartEntrance(GameCore c) {age=0;skyAt=c.skyClock;}
-    float entrance() {float u=Math.max(0,Math.min(1,(age-REVEAL)/ENTRANCE));return 1-(1-u)*(1-u)*(1-u);}
+    int bubbleSeed() {return 1391+bubbleId*83;}
+    float bubbleRise(GameCore c) {return c.cloudUi.reduceMotion?1:Math.max(0,Math.min(1,(age-delay)/BUBBLE_RISE));}
+    static boolean opening(GameCore c) {return c.stageBanner>0 || c.stageGap>0 || c.startFade>0;}
     static boolean scene(GameCore c) {
         return c.state==GameCore.PLAY && c.modes.adventure() && !c.survival.active
                 && !c.timeAttack.active && !c.boss.active() && !Cave.active(c)
@@ -34,7 +47,7 @@ final class LandBonus {
                 && (forced(c) || stage==selectedStage) && (collectedStages&bit())==0;
     }
     boolean visible(GameCore c) {
-        return offered(c) && !c.powerActive() && age>=REVEAL
+        return offered(c) && !c.powerActive() && !opening(c) && age>delay
                 && !c.onboarding.briefing && c.onboarding.practice==null;
     }
     void clean(GameCore c) {if(!scene(c))burst=-1;}
@@ -42,11 +55,19 @@ final class LandBonus {
         if(!scene(c))return;
         // Also handles test fixtures or mode transitions that set the stage directly.
         if(stage!=c.stage)enter(c);
-        if(!c.powerActive())age+=dt;
+        if(!c.powerActive() && !opening(c))age+=dt;
+        if(age<=delay)skyAt=c.skyClock;
         if(burst>=0) {burst+=dt;if(burst>=BURST)burst=-1;}
     }
     static float radius(Layout L) {return L.w*.078f;}
-    static float x(GameCore c,Layout L) {return L.w*(Lands.forStage(c.stage)%2==0?.16f:.84f);}
+    static float clamTravel(GameCore c) {return Math.min(1,c.landBonus.seabedStart+Math.max(0,c.skyClock-c.landBonus.skyAt)*(.20f/12));}
+    static float size(GameCore c,Layout L) {return radius(L)*(Lands.forStage(c.stage)==Underwater.LAND?UnderwaterVista.scale(clamTravel(c)):1);}
+    static float x(GameCore c,Layout L) {
+        int land=Lands.forStage(c.stage);
+        if(land==0)return SlimeBubbles.surfaceX(c.landBonus.bubbleSeed(),L);
+        if(land==Underwater.LAND)return L.w*(.5f+c.landBonus.seabedLane*(.04f+.30f*UnderwaterVista.depth(clamTravel(c))));
+        return L.w*c.landBonus.sideX;
+    }
     static float scrollSpeed(GameCore c,Layout L) {
         switch(Lands.forStage(c.stage)) {
             case 0:return L.h*SlimeHills.SCROLL_RATE;
@@ -57,16 +78,19 @@ final class LandBonus {
             default:return (L.deckTop+radius(L)*6)*.022f;
         }
     }
+    static float surfaceY(GameCore c,Layout L) {
+        return SlimeBubbles.surfaceY(c.landBonus.bubbleSeed(),L)+Math.max(0,c.skyClock-c.landBonus.skyAt)*scrollSpeed(c,L);
+    }
     static float y(GameCore c,Layout L) {
-        LandBonus b=c.landBonus;boolean bubble=Lands.forStage(c.stage)==0;
-        float home=L.playTop+(L.deckTop-L.playTop)*(bubble?.32f:.16f);
-        float entrance=c.cloudUi.reduceMotion?0:1-b.entrance();
-        float offset=bubble?radius(L)*1.8f:L.playTop-radius(L)*1.3f-home;
-        return home+Math.max(0,c.skyClock-b.skyAt)*scrollSpeed(c,L)+offset*entrance;
+        LandBonus b=c.landBonus;
+        if(Lands.forStage(c.stage)==0)return SlimeBubbles.emergeY(surfaceY(c,L),radius(L),b.bubbleRise(c));
+        if(Lands.forStage(c.stage)==Underwater.LAND)return L.h*UnderwaterVista.rootY(clamTravel(c))-size(c,L)*.8f;
+        return L.playTop-radius(L)*b.entryDepth+Math.max(0,c.skyClock-b.skyAt)*scrollSpeed(c,L);
     }
     boolean tap(GameCore c,Layout L,float x,float y) {
         if(c.paused || c.settingsOpen || c.cloudUi.open || !visible(c) || x<0 || x>L.w || y<L.playTop || y>=L.deckTop)return false;
-        float dx=x-x(c,L),dy=y-y(c,L),r=radius(L)*1.18f;
+        if(Lands.forStage(c.stage)==0 && bubbleRise(c)<1 && y>surfaceY(c,L))return false;
+        float dx=x-x(c,L),dy=y-y(c,L),r=Math.max(size(c,L)*1.18f,L.unit*1.25f);
         if(dx*dx+dy*dy>r*r || L.keyAt(x,y)>=0)return false;
         collectedStages|=bit();burst=0;
         c.score=(int)Math.min(Integer.MAX_VALUE,(long)c.score+POINTS);

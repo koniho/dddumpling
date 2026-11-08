@@ -18,6 +18,9 @@ final class TestProduction extends Check {
         int unselected=landTest.landBonus.selectedStage==1?2:1;
         landTest.enterStage(unselected);landTest.landBonus.update(landTest,1);
         check("production ignores forced land bonuses",!landTest.landBonus.visible(landTest));
+        landTest.enterStage(landTest.landBonus.selectedStage);landTest.stageBanner=landTest.stageGap=landTest.startFade=0;
+        landTest.landBonus.update(landTest,landTest.landBonus.delay+.1f);
+        check("production retains naturally selected bonus",landTest.landBonus.visible(landTest));
         GameCore reader=new GameCore(new Mem(),7190L);
         reader.releaseNotes.show(reader,L);
         check("release notes are available in production",reader.releaseNotes.open);

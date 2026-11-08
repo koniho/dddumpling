@@ -15,11 +15,20 @@ final class Preview {
             c.skyClock=3;c.landBonus.restartEntrance(c);c.landBonus.age=2;
             Check.add(c,L,new int[]{0,1,4},L.playTop+L.h*.18f);
             Check.add(c,L,new int[]{5,4},L.playTop+L.h*.35f);
-            for(float beat:new float[]{.7f,1.1f,2f,2.9f}) {
-                c.landBonus.age=beat;
-                shot(dir,"244-bonus-"+land+"-idle-"+(int)(beat*10),c,L,w,h,ss);
+            if(land==0)for(int i=0;i<2;i++) {
+                c.slimeBubbles.spawn(c.slimeBubbles.bubbles[i],i,L);
+                c.slimeBubbles.bubbles[i].age=2.5f;
             }
-            c.skyClock+=8;
+            float[] beats={.5f,c.landBonus.delay+.2f,c.landBonus.delay+.9f,c.landBonus.delay+1.6f,c.landBonus.delay+2.9f};
+            for(int phase=0;phase<beats.length;phase++) {
+                float beat=beats[phase];c.landBonus.age=beat;c.skyClock=3+Math.max(0,beat-c.landBonus.delay);
+                shot(dir,"244-bonus-"+land+"-entry-"+phase,c,L,w,h,ss);
+            }
+            if(land==Underwater.LAND)for(int travel:new int[]{0,15,30}) {
+                c.skyClock=3+travel;c.landBonus.age=c.landBonus.delay+10;
+                shot(dir,"244-clam-depth-"+travel,c,L,w,h,ss);
+            }
+            c.skyClock=3+(land==0?4:10);c.landBonus.age=c.landBonus.delay+10;
             shot(dir,"244-bonus-"+land+"-scrolled",c,L,w,h,ss);
             if(wanted("244-sound-"+land))Wav.write(new File(dir,"244-sound-"+land+".wav"),Sfx.build(Sfx.landBonusId(land)),Sfx.RATE);
             c.landBonus.tap(c,L,LandBonus.x(c,L),LandBonus.y(c,L));

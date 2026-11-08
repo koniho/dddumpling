@@ -61,6 +61,7 @@ final class Lands extends Draw {
         float mix=blend(c),fade=(c.landFrom==RAINBOW?1-mix:0)
                 +(forStage(visualStage(c))==RAINBOW?mix:0);
         Underwater.backdrop(p,c,L);
+        LandBonusArt.beneathCrystal(p,c,L);
         c.crystalField.draw(p,c,L,CrystalField.presence(c)*(1-BossVictory.backdropDrain(c)));
         if(fade>0)RainbowLand.backdrop(p,c,L,fade*(1-BossVictory.backdropDrain(c)));
     }

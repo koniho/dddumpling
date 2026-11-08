@@ -35,6 +35,7 @@ final class UnderwaterVista extends Draw {
         image(p,0,0,0,L.w,L.h,fade);
         surface(p,c,L,fade);
         ground(p,c,L,fade);
+        LandBonusArt.onSeabed(p,c,L,fade);
         // Each column and all its decorations share one cached image and projection.
         // The two rows of five emerge at the horizon and leave through the side edges.
         for(int row=0;row<ROWS;row++)for(int side=0;side<2;side++) {
