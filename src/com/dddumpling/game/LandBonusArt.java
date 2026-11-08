@@ -62,7 +62,7 @@ final class LandBonusArt extends Draw {
                 break;
             case 2:clam(q,x,y,r*scale,t,reaction,still);break;
             case 3:squirrel(q,x,y,r,t,hit,still);break;
-            case Lands.SWAMP:flamingo(q,x,y,r*scale,t,reaction,still);break;
+            case Lands.SWAMP:flamingo(q,x,y,r*scale,t,reaction,still,rewardY+r*.86f,r);break;
             case Lands.RAINBOW:coin(q,x,y,r*scale,t,hit,still);break;
         }
         if(hit<0 && land>2) {
@@ -372,18 +372,29 @@ final class LandBonusArt extends Draw {
         float line=Math.min(rx,ry)*.13f;
         p.fillEllipse(x,y,rx+line,ry+line,MushroomForest.WOOD_DARK);p.fillEllipse(x,y,rx,ry,color);
     }
-    private static void flamingo(Painter p,float x,float y,float r,float time,float hit,boolean still) {
+    private static void flamingo(Painter p,float x,float y,float r,float time,float hit,boolean still,float waterY,float groundR) {
         float flap=(float)Math.sin(time*(hit>0?14:3)),hop=still?0:hit*r*.13f;
         final float haze=.32f-hit*.26f;
         p=new OpacityPainter(p,.88f+hit*.12f) {
             int color(int color) {return super.color(Glyph.mix(color,Lands.BG[Lands.SWAMP],haze));}
         };
         y-=hop;
-        p.fillEllipse(x,y+r*.87f,r*.70f,r*.10f,0x353C8C95);
-        p.arc(x,y+r*.86f,r*.80f,r*.16f,0,180,0x8869CED1,r*.035f);
-        p.line(x-r*.11f,y+r*.26f,x-r*.11f,y+r*.80f,0xFFE7A0A9,r*.055f);
-        p.polyline(new float[]{x+r*.10f,y+r*.25f,x+r*.30f,y+r*.55f,x+r*.02f,y+r*.60f},0xFFF6A6B6,r*.055f);
-        p.line(x-r*.11f,y+r*.80f,x+r*.05f,y+r*.82f,0xFFE7A0A9,r*.055f);
+        // Water belongs to the scenery, independent of the bird's hop and scale pop.
+        float lift=Math.max(0,waterY-groundR*.86f-y),extension=still?0:Math.min(1,lift/(groundR*.35f));
+        float leftWater=x-groundR*.11f,rightWater=x+groundR*.16f;
+        for(float foot:new float[]{leftWater,rightWater}) {
+            p.fillEllipse(foot,waterY,groundR*.14f,groundR*.035f,0x223C8C95);
+            p.arc(foot,waterY,groundR*.14f,groundR*.04f,180,180,0x6669CED1,groundR*.018f);
+        }
+        float footY=waterY-lift*.70f;
+        float leftFoot=leftWater-groundR*.05f*extension,rightFoot=rightWater+groundR*.07f*extension;
+        p.line(x-r*.11f,y+r*.26f,leftFoot,footY,0xFFE7A0A9,r*.055f);
+        p.polyline(new float[]{x+r*.10f,y+r*.25f,x+groundR*(.30f-.13f*extension),
+                (y+r*.25f+footY)*.5f,rightFoot,footY},0xFFF6A6B6,r*.055f);
+        if(extension>0) {
+            p.line(leftFoot,footY,leftFoot+groundR*.13f*extension,footY-groundR*.025f*extension,0xFFE7A0A9,r*.045f);
+            p.line(rightFoot,footY,rightFoot+groundR*.13f*extension,footY-groundR*.025f*extension,0xFFF6A6B6,r*.045f);
+        }
         p.fillEllipse(x-r*.10f,y+r*.03f,r*.51f,r*.32f,0xFFF58AB5);
         // A shaded belly and soft upper light give the resting silhouette volume.
         for(int i=0;i<3;i++)p.fillEllipse(x-r*.12f,y+r*(.10f+i*.035f),r*(.44f-i*.045f),r*(.20f-i*.035f),0x28A75E89);
@@ -440,9 +451,10 @@ final class LandBonusArt extends Draw {
             for(int i=0;i<2;i++)p.arc(x-r*(.23f-i*.12f),cy+r*.015f,r*.15f,r*.095f,
                     5,115,0x77AF698D,r*.023f);
         }
-        if(hit>0)for(int i=0;i<5;i++) {
-            float a=i*.7f+2.5f;
-            p.fillEllipse(x+(float)Math.cos(a)*r*.84f,y+r*.62f+(float)Math.sin(a)*r*.25f,r*.04f,r*.07f,0xAA9EEDFF);
+        for(float foot:new float[]{leftWater,rightWater}) {
+            p.arc(foot,waterY,groundR*.14f,groundR*.04f,0,180,0x8869CED1,groundR*.018f);
+            if(hit>0 && !still)for(int side=-1;side<=1;side+=2)
+                p.fillEllipse(foot+side*groundR*.13f,waterY-groundR*(.06f+hit*.12f),groundR*.022f,groundR*.04f,0x779EEDFF);
         }
     }
     private static void coin(Painter p,float x,float y,float r,float time,float hit,boolean still) {

@@ -142,7 +142,7 @@ final class TestLandBonuses extends Check {
     }
     private static final class ArtProbe extends OpacityPainter {
         boolean face,coinShimmer;int coinAlpha;float coinRadius;float[] body;float clamX,clamY,clamR,acornY,squirrelY,logY;
-        int order,squirrelOrder,leafOrder,squirrelDraws;
+        int order,squirrelOrder,leafOrder,squirrelDraws,rippleCount;float rippleY,legEndY;
         final float forestRadius,squirrelRadius;
         ArtProbe(Layout L){super(new RasterPainter(1,1,1),1);forestRadius=LandBonus.radius(L);squirrelRadius=forestRadius*LandBonusArt.SQUIRREL_SCALE;}
         public void fillPoly(float[] xy,int color) {
@@ -151,6 +151,14 @@ final class TestLandBonuses extends Check {
             if(rgb==0xffd879)face=true;
             if(rgb==0xfff8d9)coinShimmer=true;
             if(rgb==0x69a13d && xy.length==68 || rgb==(CrystalField.edgeColor(0)&0xffffff) && xy.length==12)body=xy.clone();
+        }
+        public void arc(float x,float y,float rx,float ry,float start,float sweep,int color,float width) {
+            if(Math.abs(rx/forestRadius-.14f)<.001f && Math.abs(ry/forestRadius-.04f)<.001f && start==0) {
+                rippleY=y;rippleCount++;
+            }
+        }
+        public void line(float x,float y,float xx,float yy,int color,float width) {
+            if(Math.abs(x-xx)<.07f*forestRadius && yy-y>forestRadius*.4f)legEndY=yy;
         }
         public void fillEllipse(float x,float y,float rx,float ry,int color) {
             order++;
@@ -190,6 +198,15 @@ final class TestLandBonuses extends Check {
         coin.landBonus.burst=-1;coin.cloudUi.reduceMotion=true;float stillX=LandBonus.x(coin,L),stillY=LandBonus.y(coin,L);
         coin.landBonus.age+=1;
         check("reduced motion keeps coin position steady",LandBonus.x(coin,L)==stillX && LandBonus.y(coin,L)==stillY);
+        GameCore flamingo=start(L,Lands.firstStage(Lands.SWAMP),true,244);
+        ArtProbe resting=art(flamingo,L);
+        flamingo.landBonus.tap(flamingo,L,LandBonus.x(flamingo,L),LandBonus.y(flamingo,L));
+        flamingo.landBonus.burst=.36f;ArtProbe jumping=art(flamingo,L);
+        check("flamingo has one small ripple per leg",resting.rippleCount==2 && jumping.rippleCount==2);
+        check("flamingo waterline does not jump or scale",resting.rippleY==jumping.rippleY);
+        check("flamingo legs emerge above the waterline",Math.abs(resting.legEndY-resting.rippleY)<.01f && jumping.legEndY<jumping.rippleY-full*.2f);
+        flamingo.cloudUi.reduceMotion=true;ArtProbe grounded=art(flamingo,L);
+        check("reduced motion keeps flamingo grounded",Math.abs(grounded.legEndY-grounded.rippleY)<.01f);
         GameCore c=start(L,6,true,244);
         check("crystal is faceless before collection",!art(c,L).face);
         c.landBonus.tap(c,L,LandBonus.x(c,L),LandBonus.y(c,L));
