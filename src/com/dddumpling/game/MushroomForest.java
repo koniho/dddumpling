@@ -238,6 +238,7 @@ final class MushroomForest extends Draw {
         fade*=1-groveProgress(c);
         if(fade<=0)return;
         floorTexture(p,c,L,fade*(1-groveProgress(c)*.6f));
+        LandBonusArt.beneathForest(p,c,L,fade);
         fade*=1-groveProgress(c)*.65f;
         float[] leaf=new float[66];
         for(int layer=0;layer<2;layer++)for(int i=0;i<10;i++) {

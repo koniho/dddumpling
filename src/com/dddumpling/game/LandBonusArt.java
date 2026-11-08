@@ -5,7 +5,11 @@ final class LandBonusArt extends Draw {
     private static final int[] COLORS={SlimeHills.MINT,CrystalField.edgeColor(2),0xFFFFBCE8,MushroomForest.WOOD_LIGHT,0,0xFFFF9EBF,0xFFFFE57B};
     private static final int[] RAINBOW={0xFFFF91B7,0xFFFFC26D,0xFFFFEC83,0xFF92EDBC,0xFF85DAFF,0xFFC5ACFF};
     static void draw(Painter p,GameCore c,Layout L) {
-        if((Lands.forStage(c.stage)!=CrystalField.LAND && Lands.forStage(c.stage)!=Underwater.LAND) || c.landBonus.burst>=0)drawBonus(p,c,L);
+        int land=Lands.forStage(c.stage);
+        if(land!=MushroomForest.LAND && ((land!=CrystalField.LAND && land!=Underwater.LAND) || c.landBonus.burst>=0))drawBonus(p,c,L);
+    }
+    static void beneathForest(Painter p,GameCore c,Layout L,float fade) {
+        if(Lands.forStage(c.stage)==MushroomForest.LAND)drawBonus(new OpacityPainter(p,fade),c,L);
     }
     static void beneathCrystal(Painter p,GameCore c,Layout L) {
         if(Lands.forStage(c.stage)==CrystalField.LAND && c.landBonus.burst<0)drawBonus(p,c,L);

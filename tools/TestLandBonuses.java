@@ -142,22 +142,27 @@ final class TestLandBonuses extends Check {
     }
     private static final class ArtProbe extends OpacityPainter {
         boolean face;float[] body;float clamX,clamY,clamR,acornY,squirrelY,logY;
+        int order,squirrelOrder,leafOrder,squirrelDraws;
         final float forestRadius;
         ArtProbe(Layout L){super(new RasterPainter(1,1,1),1);forestRadius=LandBonus.radius(L);}
         public void fillPoly(float[] xy,int color) {
-            int rgb=color&0xffffff;
+            int rgb=color&0xffffff;order++;
+            if(xy.length==66 && (rgb==0x71917a || rgb==0x91a486 || rgb==0x587d70 || rgb==0xacb394))leafOrder=order;
             if(rgb==0xffd879)face=true;
             if(rgb==0x69a13d && xy.length==68 || rgb==(CrystalField.edgeColor(0)&0xffffff) && xy.length==12)body=xy.clone();
         }
         public void fillEllipse(float x,float y,float rx,float ry,int color) {
+            order++;
             if((color&0xffffff)==0xb57ad0){clamX=x;clamY=y;clamR=rx;}
             if(Math.abs(rx/forestRadius-.135f)<.001f && Math.abs(ry/forestRadius-.19f)<.001f)acornY=y;
-            if(Math.abs(rx/forestRadius-.32f)<.001f && Math.abs(ry/forestRadius-.39f)<.001f)squirrelY=y;
+            if(Math.abs(rx/forestRadius-.32f)<.001f && Math.abs(ry/forestRadius-.39f)<.001f) {
+                squirrelY=y;squirrelOrder=order;squirrelDraws++;
+            }
             if(Math.abs(rx/forestRadius-.31f)<.001f && Math.abs(ry/forestRadius-.50f)<.001f)logY=y;
         }
     }
     private static ArtProbe art(GameCore c,Layout L) {
-        ArtProbe p=new ArtProbe(L);LandBonusArt.beneathCrystal(p,c,L);LandBonusArt.draw(p,c,L);return p;
+        ArtProbe p=new ArtProbe(L);LandBonusArt.beneathCrystal(p,c,L);LandBonusArt.beneathForest(p,c,L,1);LandBonusArt.draw(p,c,L);return p;
     }
     private static float turn(float[] a,float[] b) {
         int j=(a.length/4)*2;
@@ -185,6 +190,13 @@ final class TestLandBonuses extends Check {
         check("clam collection centers on playfield",Math.abs(near.clamX-L.w*.5f)<.01f);
         c.cloudUi.reduceMotion=true;c.landBonus.burst=0;far=art(c,L);c.landBonus.burst=.6f;near=art(c,L);
         check("reduced motion avoids clam zoom",far.clamR==near.clamR && far.clamY==near.clamY);
+        for(float burst:new float[]{-1,.36f}) {
+            c=start(L,16,true,244);c.landBonus.burst=burst;
+            ArtProbe layers=new ArtProbe(L);
+            Lands.scenery(layers,c,L);LandBonusArt.draw(layers,c,L);
+            check("forest bonus is drawn once beneath translucent leaves "+burst,
+                    layers.squirrelDraws==1 && layers.leafOrder>layers.squirrelOrder);
+        }
         c=start(L,16,true,244);ArtProbe idle=art(c,L);
         check("forest squirrel holds an acorn before collection",idle.acornY>0 && idle.squirrelY>0);
         c.landBonus.tap(c,L,LandBonus.x(c,L),LandBonus.y(c,L));
