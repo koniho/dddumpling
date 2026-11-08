@@ -143,8 +143,8 @@ final class TestLandBonuses extends Check {
     private static final class ArtProbe extends OpacityPainter {
         boolean face;float[] body;float clamX,clamY,clamR,acornY,squirrelY,logY;
         int order,squirrelOrder,leafOrder,squirrelDraws;
-        final float forestRadius;
-        ArtProbe(Layout L){super(new RasterPainter(1,1,1),1);forestRadius=LandBonus.radius(L);}
+        final float forestRadius,squirrelRadius;
+        ArtProbe(Layout L){super(new RasterPainter(1,1,1),1);forestRadius=LandBonus.radius(L);squirrelRadius=forestRadius*LandBonusArt.SQUIRREL_SCALE;}
         public void fillPoly(float[] xy,int color) {
             int rgb=color&0xffffff;order++;
             if(xy.length==66 && (rgb==0x71917a || rgb==0x91a486 || rgb==0x587d70 || rgb==0xacb394))leafOrder=order;
@@ -154,8 +154,8 @@ final class TestLandBonuses extends Check {
         public void fillEllipse(float x,float y,float rx,float ry,int color) {
             order++;
             if((color&0xffffff)==0xb57ad0){clamX=x;clamY=y;clamR=rx;}
-            if(Math.abs(rx/forestRadius-.135f)<.001f && Math.abs(ry/forestRadius-.19f)<.001f)acornY=y;
-            if(Math.abs(rx/forestRadius-.32f)<.001f && Math.abs(ry/forestRadius-.39f)<.001f) {
+            if(Math.abs(rx/squirrelRadius-.135f)<.001f && Math.abs(ry/squirrelRadius-.19f)<.001f)acornY=y;
+            if(Math.abs(rx/squirrelRadius-.32f)<.001f && Math.abs(ry/squirrelRadius-.39f)<.001f) {
                 squirrelY=y;squirrelOrder=order;squirrelDraws++;
             }
             if(Math.abs(rx/forestRadius-.31f)<.001f && Math.abs(ry/forestRadius-.50f)<.001f)logY=y;
@@ -202,7 +202,7 @@ final class TestLandBonuses extends Check {
         c.landBonus.tap(c,L,LandBonus.x(c,L),LandBonus.y(c,L));
         c.landBonus.burst=.12f;ArtProbe hopping=art(c,L);
         c.landBonus.burst=.4f;ArtProbe raised=art(c,L);
-        check("squirrel raises acorn above its body",raised.acornY-raised.squirrelY<idle.acornY-idle.squirrelY-LandBonus.radius(L));
+        check("squirrel raises acorn above its body",raised.acornY-raised.squirrelY<idle.acornY-idle.squirrelY-LandBonus.radius(L)*.75f);
         check("squirrel bounces during the lift",hopping.squirrelY<raised.squirrelY);
         check("forest log stays grounded during collection",idle.logY==hopping.logY && idle.logY==raised.logY);
         c.cloudUi.reduceMotion=true;c.landBonus.burst=.12f;hopping=art(c,L);

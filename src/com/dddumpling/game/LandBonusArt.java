@@ -2,6 +2,7 @@ package com.dddumpling.game;
 
 /** Small scenery discoveries, with a short collection burst behind the falling prompts. */
 final class LandBonusArt extends Draw {
+    static final float SQUIRREL_SCALE=.76f;
     private static final int[] COLORS={SlimeHills.MINT,CrystalField.edgeColor(2),0xFFFFBCE8,MushroomForest.WOOD_LIGHT,0,0xFFFF9EBF,0xFFFFE57B};
     private static final int[] RAINBOW={0xFFFF91B7,0xFFFFC26D,0xFFFFEC83,0xFF92EDBC,0xFF85DAFF,0xFFC5ACFF};
     static void draw(Painter p,GameCore c,Layout L) {
@@ -293,20 +294,19 @@ final class LandBonusArt extends Draw {
         p.fillPoly(forestShape(x,y,r,-.91f,.16f,-.65f,.24f,-.79f,.29f),MushroomForest.WOOD_DARK);
         p.fillPoly(forestShape(x,y,r,-.78f,.77f,-.38f,.65f,-.27f,.70f,-.64f,.84f),MushroomForest.WOOD_LIGHT);
 
+        float logR=r;r*=SQUIRREL_SCALE;
         boolean collected=elapsed>=0;
         float u=collected?Math.min(1,elapsed/.38f):0;
         float raise=collected?(still?1:u*u*(3-2*u)):0;
         float bounce=collected && !still?Math.abs((float)Math.sin(elapsed*Math.PI/.40f))*settle(elapsed):0;
-        float cx=x-r*.51f,cy=y-r*(.02f+raise*.18f+bounce*.40f);
+        float cx=x-logR*.58f,cy=y+logR*.13f-r*(.02f+raise*.18f+bounce*.40f);
         if(!still && !collected)cy+=r*.035f*(float)Math.sin(time*2.3f);
         int fur=MushroomForest.WOOD,light=MushroomForest.WOOD_LIGHT,cream=0xFFC1C6A4,ink=MushroomForest.WOOD_DARK;
         // A broad plume curls behind the head, like the reference squirrel's tail.
         forestOval(p,cx+r*.48f,cy+r*.02f,r*.39f,r*.59f,fur);
         forestOval(p,cx+r*.57f,cy-r*.28f,r*.37f,r*.36f,light);
-        p.fillEllipse(cx+r*.49f,cy+r*.17f,r*.24f,r*.40f,cream);
         p.fillEllipse(cx+r*.58f,cy-r*.22f,r*.25f,r*.24f,cream);
         p.arc(cx+r*.59f,cy-r*.20f,r*.15f,r*.16f,5,300,ink,r*.035f);
-        p.arc(cx+r*.59f,cy-r*.20f,r*.075f,r*.08f,180,220,ink,r*.03f);
         forestOval(p,cx,cy+r*.30f,r*.32f,r*.39f,fur);
         p.fillEllipse(cx,cy+r*.35f,r*.23f,r*.29f,cream);
         for(int side=-1;side<=1;side+=2) {
@@ -315,7 +315,6 @@ final class LandBonusArt extends Draw {
             p.fillEllipse(cx+side*r*.29f,cy-r*.50f,r*.082f,r*.16f,0xFFAB8C7C);
         }
         forestOval(p,cx,cy-r*.12f,r*.43f,r*.39f,light);
-        p.fillPoly(forestShape(cx,cy,r,-.13f,-.46f,-.03f,-.62f,.01f,-.50f,.17f,-.58f,.10f,-.44f),light);
         for(int side=-1;side<=1;side+=2) {
             float ex=cx+side*r*.205f;
             p.fillEllipse(ex,cy-r*.10f,r*.18f,r*.27f,cream);
@@ -324,38 +323,46 @@ final class LandBonusArt extends Draw {
             if(blink)p.arc(ex,cy-r*.08f,r*.11f,r*.045f,190,160,ink,r*.035f);
             else {
                 p.fillEllipse(ex,cy-r*.09f,r*.125f,r*.16f,0xFF30382F);
-                p.arc(ex,cy-r*.08f,r*.083f,r*.112f,15,150,0xFFA69A71,r*.04f);
                 p.fillEllipse(ex-r*.035f,cy-r*.15f,r*.051f,r*.050f,0xFFE0DDC1);
-                p.fillCircle(ex+r*.045f,cy-r*.035f,r*.020f,0xFFE0DDC1);
             }
             p.fillEllipse(cx+side*r*.31f,cy+r*.08f,r*.068f,r*.036f,0xFFAB8C7C);
-            p.fillEllipse(cx+side*r*.19f,cy-r*.34f,r*.041f,r*.022f,ink);
         }
         p.fillEllipse(cx,cy+r*.10f,r*.17f,r*.095f,cream);
         p.fillEllipse(cx,cy+r*.015f,r*.045f,r*.032f,0xFF30382F);
         for(int side=-1;side<=1;side+=2)p.arc(cx+side*r*.055f,cy+r*.04f,r*.055f,r*.045f,0,180,ink,r*.022f);
         // Both hands stay attached to the acorn as it rises above the ears.
-        float acornY=cy+r*(.31f-raise*1.27f);
+        float acornY=cy+r*(.31f-raise*1.23f);
         for(int side=-1;side<=1;side+=2) {
             float shoulderX=cx+side*r*.26f,shoulderY=cy+r*.24f;
             float handX=cx+side*r*.16f,handY=acornY+r*.015f;
-            float elbowX=cx+side*r*(.31f+raise*.08f),elbowY=cy+r*(.38f-raise*.82f);
-            float[] arm={shoulderX,shoulderY,elbowX,elbowY,handX,handY};
-            p.polyline(arm,ink,r*.17f);p.polyline(arm,fur,r*.12f);
+            float elbowX=cx+side*r*.55f,elbowY=cy+r*(.42f-raise*.88f);
+            forestArm(p,shoulderX,shoulderY,elbowX,elbowY,handX,handY,r,fur);
         }
         forestOval(p,cx,acornY+r*.07f,r*.135f,r*.19f,0xFF88754F);
         p.fillEllipse(cx-r*.025f,acornY+r*.08f,r*.072f,r*.12f,MushroomForest.WOOD_LIGHT);
-        p.fillPoly(forestShape(cx,acornY,r,-.045f,.22f,0,.285f,.045f,.22f),ink);
         p.line(cx,acornY-r*.14f,cx+r*.015f,acornY-r*.23f,ink,r*.055f);
         forestOval(p,cx,acornY-r*.065f,r*.165f,r*.11f,MushroomForest.WOOD_DARK);
-        for(int side=-1;side<=1;side+=2)for(int i=0;i<3;i++) {
-            float ax=cx+r*(-.10f+i*.07f);
-            p.line(ax,acornY-r*.13f,ax+side*r*.06f,acornY-r*.025f,MushroomForest.WOOD,r*.014f);
-        }
         for(int side=-1;side<=1;side+=2)
-            forestOval(p,cx+side*r*.19f,acornY+r*.025f,r*.09f,r*.065f,light);
+            forestOval(p,cx+side*r*.19f,acornY+r*.025f,r*.11f,r*.10f,light);
         // The lower rim hides the feet inside the hollow while the log remains planted.
-        p.arc(x-r*.66f,y+r*.33f,r*.26f,r*.45f,15,150,0xFF88754F,r*.075f);
+        p.arc(x-logR*.66f,y+logR*.33f,logR*.26f,logR*.45f,15,150,0xFF88754F,logR*.075f);
+    }
+    private static void forestArm(Painter p,float ax,float ay,float bx,float by,float cx,float cy,float r,int fur) {
+        // A plump curved sleeve with rounded ends, instead of a hinged elbow.
+        float[] shape=new float[52];
+        for(int layer=0;layer<2;layer++) {
+            float width=r*(layer==0?.12f:.085f);
+            for(int i=0;i<=12;i++) {
+                float t=i/12f,u=1-t,x=u*u*ax+2*u*t*bx+t*t*cx,y=u*u*ay+2*u*t*by+t*t*cy;
+                float dx=2*(u*(bx-ax)+t*(cx-bx)),dy=2*(u*(by-ay)+t*(cy-by));
+                float length=(float)Math.sqrt(dx*dx+dy*dy),bulge=width*(1+.18f*(float)Math.sin(t*Math.PI));
+                float nx=-dy/length*bulge,ny=dx/length*bulge;
+                shape[i*2]=x+nx;shape[i*2+1]=y+ny;
+                shape[(25-i)*2]=x-nx;shape[(25-i)*2+1]=y-ny;
+            }
+            int color=layer==0?MushroomForest.WOOD_DARK:fur;
+            p.fillPoly(shape,color);p.fillCircle(ax,ay,width,color);p.fillCircle(cx,cy,width,color);
+        }
     }
     private static float[] forestShape(float x,float y,float r,float... points) {
         for(int i=0;i<points.length;i+=2){points[i]=x+points[i]*r;points[i+1]=y+points[i+1]*r;}
