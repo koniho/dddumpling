@@ -23,6 +23,7 @@ final class CoreTest {
         only = args.length > 0 && !args[0].isEmpty() ? args[0].toLowerCase() : null;
 
         group("Playthrough", () -> TestPlaythroughLog.all(L));
+        group("LandBonuses", () -> TestLandBonuses.all(L));
         group("Companion", () -> TestCompanion.all(L));
         group("Leaderboard submissions", () -> TestLeaderboardSubmissions.all(L));
         group("HighScores", () -> TestHighScores.all(L));

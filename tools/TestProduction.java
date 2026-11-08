@@ -13,6 +13,11 @@ final class TestProduction extends Check {
         GameCore preview=new GameCore(new Mem(),237L);
         preview.leaderboardNotice.test(preview);
         check("production cannot create notification preview",!preview.leaderboardNotice.preview && preview.leaderboardNotice.board<0);
+        GameCore landTest=new GameCore(new Mem(),244L);landTest.startGame();landTest.onboarding.clear();
+        landTest.devLandBonuses=true;
+        int unselected=landTest.landBonus.selectedStage==1?2:1;
+        landTest.enterStage(unselected);landTest.landBonus.update(landTest,1);
+        check("production ignores forced land bonuses",!landTest.landBonus.visible(landTest));
         GameCore reader=new GameCore(new Mem(),7190L);
         reader.releaseNotes.show(reader,L);
         check("release notes are available in production",reader.releaseNotes.open);

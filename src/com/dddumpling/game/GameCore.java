@@ -629,7 +629,8 @@ final class GameCore {
     final ReleaseMascot releaseMascot=new ReleaseMascot();
     int settingsTab;
     /** Session-only developer aid; damage feedback still plays normally. */
-    boolean devInfiniteLives;
+    boolean devInfiniteLives,devLandBonuses;
+    final LandBonus landBonus;
     /** Newly collected stars in this update, including the winning pickup. */
     int starPickups;
     int starBlastHaptic; // Per-frame completion storm: 1 light, 2 heavy.
@@ -1674,6 +1675,7 @@ final class GameCore {
         this.progress = new Progress(store, trackProgress);
         this.leaderboards = new LeaderboardSubmissions(store,trackProgress);
         this.rnd = new Random(seed);
+        landBonus=new LandBonus(seed);
         boss.alligator.cueRandom.setSeed(seed^0x4741544f52L);
         survival.blurbs.setSeed(seed^0x5241494e424f57L);
         Random sr = new Random(20260803L);
@@ -2079,6 +2081,7 @@ final class GameCore {
     }
 
     void startGame() {
+        landBonus.reset();
         slimeBubbles.reset();slimeBanks.reset();crystalField.reset();waterRipples.reset();
         if(!modes.playable(this))return;
         playthrough.finish(this,"restarted");
@@ -2200,6 +2203,7 @@ final class GameCore {
         preferences.apply(this);
         LinkedPairs.beginStage(this);
         if (Starter.introPending(this)) onboarding.introduceCompanion(this);
+        landBonus.enter(this);
         playthrough.start(this);
     }
 
@@ -2219,6 +2223,7 @@ final class GameCore {
     }
 
     void toTitle() {
+        landBonus.reset();
         steamer.selectionGlow=0;
         stopCombatSounds();
         slimeBubbles.reset();slimeBanks.reset();crystalField.reset();waterRipples.reset();
@@ -2910,6 +2915,7 @@ final class GameCore {
     void update(float dt, Layout L) { update(dt, dt, L); }
 
     void update(float dt, float elapsed, Layout L) {
+        landBonus.clean(this);
         leaderboardUi.update(this);
         leaderboardNotice.update(this,elapsed);
         wardrobe.refresh(this);
@@ -2987,6 +2993,7 @@ final class GameCore {
         if (sound != null && (settingsOpen || !boss.fighting() || boss.kind != Boss.SLIME
                 || boss.hasGlob() || boss.boltCount() > 0)) sound.bossCharge(0f);
         if (settingsOpen) { preferences.updatePanel(this,elapsed); return; }
+        landBonus.update(this,elapsed);
         ducks.update(this,dt);
         companion.update(this,dt);
         gator.update(this,dt);
@@ -3759,6 +3766,7 @@ final class GameCore {
         cave.begin(this);
         LinkedPairs.beginStage(this);
         if (sound != null && bk < 0) sound.selectMusic(normalMusicChoice());
+        landBonus.enter(this);
         playthrough.beginStage(this);
     }
 
@@ -3859,6 +3867,7 @@ final class GameCore {
      * early returns, or clear it where the early return is taken. There is no third way.
      */
     private void die() {
+        landBonus.reset();
         stopCombatSounds();
         reviewPrompt.pending=false;
         pairSpawnSlots = 0;

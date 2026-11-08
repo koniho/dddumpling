@@ -221,6 +221,8 @@ src/com/dddumpling/game/CaveEffects.java
 src/com/dddumpling/game/CaveEnemy.java
 src/com/dddumpling/game/CaveScreen.java
 src/com/dddumpling/game/Lands.java
+src/com/dddumpling/game/LandBonus.java
+src/com/dddumpling/game/LandBonusArt.java
 src/com/dddumpling/game/SeaSkits.java
 src/com/dddumpling/game/SlimeSkits.java
 src/com/dddumpling/game/LandPlaySkits.java

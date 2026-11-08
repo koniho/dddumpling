@@ -73,6 +73,7 @@ final class Renderer extends Draw {
         Sky.cloudBand(p, c, L, 0, Sky.CLOUD_FRONT_LAYER, hurt);
 
         Lands.scenery(p, c, L);
+        LandBonusArt.draw(p,c,L);
         c.survival.cheer.pulse(p,c,L);
         c.survival.cheer.draw(p,c,L);
 

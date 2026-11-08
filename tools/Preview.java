@@ -8,6 +8,32 @@ import java.io.File;
  * without a build/install cycle: same Layout, same Renderer, same state machine as the APK.
  */
 final class Preview {
+    private static void landBonusFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
+        if(!wantedGroup("244-"))return;
+        for(int land:new int[]{0,1,2,3,Lands.SWAMP,Lands.RAINBOW}) {
+            GameCore c=TestLandBonuses.start(L,Lands.firstStage(land),true,244);
+            c.skyClock=3;c.landBonus.age=2;
+            Check.add(c,L,new int[]{0,1,4},L.playTop+L.h*.18f);
+            Check.add(c,L,new int[]{5,4},L.playTop+L.h*.35f);
+            for(float beat:new float[]{1.1f,2f,2.9f}) {
+                c.landBonus.age=beat;
+                shot(dir,"244-bonus-"+land+"-idle-"+(int)(beat*10),c,L,w,h,ss);
+            }
+            c.landBonus.tap(c,L,LandBonus.x(c,L),LandBonus.y(L));
+            for(float beat:new float[]{.10f,.35f,.8f}) {
+                c.landBonus.burst=beat;
+                shot(dir,"244-bonus-"+land+"-tap-"+(int)(beat*100),c,L,w,h,ss);
+            }
+            if(land==0) {
+                c.cloudUi.reduceMotion=true;
+                shot(dir,"244-bonus-reduced-motion",c,L,w,h,ss);
+                c.openSettings();c.settingsPage=1;c.settingsTab=SettingsUi.GENERAL;
+                c.preferences.updatePanel(c,PlayerSettings.PANEL_TIME);
+                shot(dir,"244-developer-run",c,L,w,h,ss);
+            }
+        }
+    }
+
     private static void rainbowFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wantedGroup("151-"))return;
         for(int skin=0;skin<Skins.COUNT;skin++) {
@@ -2161,6 +2187,7 @@ final class Preview {
             shot(dir,"206-retried-record",retry,L,w,h,ss);
         }
         if(wantedGroup("214-"))AccessoryPreview.frames(dir,L,w,h,ss);
+        landBonusFrames(dir,L,w,h,ss);
         rainbowFrames(dir,L,w,h,ss);
         skinFrames(dir,L,w,h,ss);
         clearSpreadFrames(dir,L,w,h,ss);

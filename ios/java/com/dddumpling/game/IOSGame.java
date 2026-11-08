@@ -284,6 +284,11 @@ public final class IOSGame {
             return true;
         }
 
+        if ((action == IOSTouch.ACTION_DOWN || action == IOSTouch.ACTION_POINTER_DOWN)
+                && core.landBonus.tap(core,layout,ev.getX(ev.getActionIndex()),ev.getY(ev.getActionIndex()))) {
+            tick();return true;
+        }
+
         // The boss.s own elements: taps and drags on the things it puts on the field. Needs MOVE
         // events, so it comes before the down-only filter, and before both the blade and the panic
         // swipe — a finger that landed on a glob is carrying that glob, not slicing or shoving.
