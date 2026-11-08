@@ -36,7 +36,7 @@ final class Preview {
                 c.landBonus.burst=beat;
                 shot(dir,"244-bonus-"+land+"-tap-"+(int)(beat*100),c,L,w,h,ss);
             }
-            if(land<=3) {
+            if(land<=3 || land==Lands.SWAMP || land==Lands.RAINBOW) {
                 c.cloudUi.reduceMotion=true;
                 shot(dir,"244-collected-still-"+land,c,L,w,h,ss);
                 c.cloudUi.reduceMotion=false;

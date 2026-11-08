@@ -76,7 +76,7 @@ final class TestLandBonuses extends Check {
             c=start(L,Lands.firstStage(land),true,244);c.landBonus.age=c.landBonus.delay;
             float entrance=LandBonus.y(c,L);c.landBonus.age+=LandBonus.BUBBLE_RISE;
             float settled=LandBonus.y(c,L);
-            check("themed entrance direction "+land,land==0?settled<entrance:settled==entrance);
+            check("themed entrance direction "+land,land==0?settled<entrance:land==Lands.RAINBOW?Math.abs(settled-entrance)<LandBonus.radius(L)*.3f:settled==entrance);
             float travel=land==2?12:4;c.skyClock+=travel;float moved=LandBonus.y(c,L);
             check("bonus shares scenery travel "+land,land==2?Math.abs(moved+LandBonus.size(c,L)*.8f-L.h*UnderwaterVista.rootY(LandBonus.clamTravel(c)))<.01f:Math.abs(moved-settled-travel*LandBonus.scrollSpeed(c,L))<.01f);
             c.paused=true;c.update(.1f,L);
@@ -141,7 +141,7 @@ final class TestLandBonuses extends Check {
         check("developer Run controls fit",ui.debuffY+ui.testH<ui.panelB);
     }
     private static final class ArtProbe extends OpacityPainter {
-        boolean face;float[] body;float clamX,clamY,clamR,acornY,squirrelY,logY;
+        boolean face,coinShimmer;int coinAlpha;float coinRadius;float[] body;float clamX,clamY,clamR,acornY,squirrelY,logY;
         int order,squirrelOrder,leafOrder,squirrelDraws;
         final float forestRadius,squirrelRadius;
         ArtProbe(Layout L){super(new RasterPainter(1,1,1),1);forestRadius=LandBonus.radius(L);squirrelRadius=forestRadius*LandBonusArt.SQUIRREL_SCALE;}
@@ -149,10 +149,12 @@ final class TestLandBonuses extends Check {
             int rgb=color&0xffffff;order++;
             if(xy.length==66 && (rgb==0x71917a || rgb==0x91a486 || rgb==0x587d70 || rgb==0xacb394))leafOrder=order;
             if(rgb==0xffd879)face=true;
+            if(rgb==0xfff8d9)coinShimmer=true;
             if(rgb==0x69a13d && xy.length==68 || rgb==(CrystalField.edgeColor(0)&0xffffff) && xy.length==12)body=xy.clone();
         }
         public void fillEllipse(float x,float y,float rx,float ry,int color) {
             order++;
+            if((color&0xffffff)==0xffdc67){coinRadius=ry/.76f;coinAlpha=color>>>24;}
             if((color&0xffffff)==0xb57ad0){clamX=x;clamY=y;clamR=rx;}
             if(Math.abs(rx/squirrelRadius-.135f)<.001f && Math.abs(ry/squirrelRadius-.19f)<.001f)acornY=y;
             if(Math.abs(rx/squirrelRadius-.32f)<.001f && Math.abs(ry/squirrelRadius-.39f)<.001f) {
@@ -169,6 +171,25 @@ final class TestLandBonuses extends Check {
         return (a[j]-a[0])*(b[j+1]-b[1])-(a[j+1]-a[1])*(b[j]-b[0]);
     }
     private static void collectionArt(Layout L) {
+        GameCore coin=start(L,Lands.firstStage(Lands.RAINBOW),true,244);
+        float full=LandBonus.radius(L);ArtProbe small=art(coin,L);
+        check("idle coin is three-quarter size and translucent",Math.abs(small.coinRadius-full*.75f)<.01f && small.coinAlpha<128);
+        check("idle coin shimmers",small.coinShimmer);
+        coin.cloudUi.reduceMotion=true;float anchorX=LandBonus.x(coin,L),anchorY=LandBonus.y(coin,L);
+        coin.cloudUi.reduceMotion=false;
+        float orbitX=LandBonus.x(coin,L),orbitY=LandBonus.y(coin,L);
+        for(int phase=0;phase<4;phase++) {
+            coin.landBonus.age+= (float)Math.PI/2/1.4f;
+            float dx=LandBonus.x(coin,L)-anchorX,dy=LandBonus.y(coin,L)-anchorY;
+            if(phase==0)check("coin drifts around its scenery anchor",Math.abs(LandBonus.x(coin,L)-orbitX)+Math.abs(LandBonus.y(coin,L)-orbitY)>full*.1f);
+            check("coin idle motion follows a small circle",Math.abs(Math.sqrt(dx*dx+dy*dy)-full*.12f)<.01f);
+        }
+        check("coin collects at orbiting position",coin.landBonus.tap(coin,L,LandBonus.x(coin,L),LandBonus.y(coin,L)));
+        coin.landBonus.burst=.25f;ArtProbe collected=art(coin,L);
+        check("collected coin reaches full size and opacity",LandBonus.size(coin,L)==full && collected.coinAlpha==255 && collected.coinShimmer);
+        coin.landBonus.burst=-1;coin.cloudUi.reduceMotion=true;float stillX=LandBonus.x(coin,L),stillY=LandBonus.y(coin,L);
+        coin.landBonus.age+=1;
+        check("reduced motion keeps coin position steady",LandBonus.x(coin,L)==stillX && LandBonus.y(coin,L)==stillY);
         GameCore c=start(L,6,true,244);
         check("crystal is faceless before collection",!art(c,L).face);
         c.landBonus.tap(c,L,LandBonus.x(c,L),LandBonus.y(c,L));

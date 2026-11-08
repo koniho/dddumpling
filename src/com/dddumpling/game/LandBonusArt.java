@@ -374,6 +374,10 @@ final class LandBonusArt extends Draw {
     }
     private static void flamingo(Painter p,float x,float y,float r,float time,float hit,boolean still) {
         float flap=(float)Math.sin(time*(hit>0?14:3)),hop=still?0:hit*r*.13f;
+        final float haze=.32f-hit*.26f;
+        p=new OpacityPainter(p,.88f+hit*.12f) {
+            int color(int color) {return super.color(Glyph.mix(color,Lands.BG[Lands.SWAMP],haze));}
+        };
         y-=hop;
         p.fillEllipse(x,y+r*.87f,r*.70f,r*.10f,0x353C8C95);
         p.arc(x,y+r*.86f,r*.80f,r*.16f,0,180,0x8869CED1,r*.035f);
@@ -381,10 +385,23 @@ final class LandBonusArt extends Draw {
         p.polyline(new float[]{x+r*.10f,y+r*.25f,x+r*.30f,y+r*.55f,x+r*.02f,y+r*.60f},0xFFF6A6B6,r*.055f);
         p.line(x-r*.11f,y+r*.80f,x+r*.05f,y+r*.82f,0xFFE7A0A9,r*.055f);
         p.fillEllipse(x-r*.10f,y+r*.03f,r*.51f,r*.32f,0xFFF58AB5);
+        // A shaded belly and soft upper light give the resting silhouette volume.
+        for(int i=0;i<3;i++)p.fillEllipse(x-r*.12f,y+r*(.10f+i*.035f),r*(.44f-i*.045f),r*(.20f-i*.035f),0x28A75E89);
+        p.fillEllipse(x-r*.17f,y-r*.10f,r*.31f,r*.11f,0x55FFD5DF);
         p.fillPoly(new float[]{x-r*.45f,y+r*.02f,x-r*.72f,y-r*.15f,x-r*.58f,y+r*.19f},0xFFFFB4D0);
-        p.polyline(new float[]{x+r*.18f,y+r*.03f,x+r*.34f,y-r*.20f,x+r*.15f,y-r*.43f,
-                x+r*.28f,y-r*.65f,x+r*.43f,y-r*.64f},0xFFF58AB5,r*.19f);
+        float[] neck=new float[50];
+        for(int i=0;i<=24;i++) {
+            float t=i/24f,u=1-t;
+            neck[i*2]=x+r*(u*u*u*.18f+3*u*u*t*.65f-3*u*t*t*.05f+t*t*t*.43f);
+            neck[i*2+1]=y+r*(u*u*u*.03f-3*u*u*t*.20f-3*u*t*t*.67f-t*t*t*.64f);
+        }
+        p.polyline(neck,0xFFC5789D,r*.20f);
+        p.polyline(neck,0xFFF58AB5,r*.15f);
+        for(int i=0;i<neck.length;i+=2)neck[i]-=r*.035f;
+        p.polyline(neck,0x66FFD4DF,r*.045f);
         p.fillCircle(x+r*.40f,y-r*.65f,r*.20f,0xFFFFABD0);
+        p.fillEllipse(x+r*.42f,y-r*.57f,r*.15f,r*.09f,0x44BA739C);
+        p.fillEllipse(x+r*.34f,y-r*.74f,r*.075f,r*.035f,0x77FFE4EA);
         p.fillPoly(new float[]{x+r*.55f,y-r*.65f,x+r*.79f,y-r*.58f,x+r*.68f,y-r*.38f,
                 x+r*.52f,y-r*.51f},0xFFFFE6CB);
         p.fillPoly(new float[]{x+r*.73f,y-r*.54f,x+r*.79f,y-r*.58f,x+r*.68f,y-r*.38f,
@@ -409,15 +426,30 @@ final class LandBonusArt extends Draw {
                             cy+dy*r*.35f+dx*offset,0xFFFFD3E6,r*.045f);
                 }
             }
-        } else p.fillEllipse(x-r*.16f,y-r*.02f-r*.12f*flap,r*.32f,r*(.16f+.065f*flap),0xFFFFB7D6);
+        } else {
+            float cy=y-r*(.025f+(still?0:.018f*flap));
+            float[] folded=new float[48];
+            for(int i=0;i<24;i++) {
+                float a=i*Softbody.TAU/24,across=(float)Math.cos(a);
+                folded[i*2]=x-r*.17f+across*r*.34f;
+                folded[i*2+1]=cy+(float)Math.sin(a)*r*.20f*(.75f+.25f*across);
+            }
+            p.fillEllipse(x-r*.16f,cy+r*.075f,r*.32f,r*.14f,0x669D5C85);
+            p.fillPoly(folded,0xFFE79ABA);
+            p.fillEllipse(x-r*.13f,cy-r*.055f,r*.24f,r*.075f,0x77FFD4E1);
+            for(int i=0;i<2;i++)p.arc(x-r*(.23f-i*.12f),cy+r*.015f,r*.15f,r*.095f,
+                    5,115,0x77AF698D,r*.023f);
+        }
         if(hit>0)for(int i=0;i<5;i++) {
             float a=i*.7f+2.5f;
             p.fillEllipse(x+(float)Math.cos(a)*r*.84f,y+r*.62f+(float)Math.sin(a)*r*.25f,r*.04f,r*.07f,0xAA9EEDFF);
         }
     }
     private static void coin(Painter p,float x,float y,float r,float time,float hit,boolean still) {
+        float reveal=hit<0?0:Math.min(1,hit/.22f);
+        p=new OpacityPainter(p,.58f+.42f*reveal);
         float spin=still?1:Math.abs((float)Math.cos(time*2.6f+(hit<0?0:hit*13)));
-        float rx=r*(.16f+.57f*spin),cy=y+(still?0:(float)Math.sin(time*3)*r*.10f);
+        float rx=r*(.16f+.57f*spin),cy=y;
         p.fillEllipse(x,y+r*.87f,r*.60f,r*.08f,0x35372B5B);
         p.strokeCircle(x,cy,r*.94f,0x36E8A9FF,r*.07f);
         p.fillEllipse(x+r*.06f,cy,rx,r*.76f,0xFFCA813A);
@@ -425,5 +457,21 @@ final class LandBonusArt extends Draw {
         p.arc(x,cy,rx*.78f,r*.61f,0,360,0xFFFFF1AC,r*.035f);
         if(spin>.20f)p.fillPoly(star(x,cy,r*.34f*spin,r*.15f*spin,5,0),0xFFD99837);
         p.arc(x,cy,rx*.88f,r*.66f,210,80,0xFFFFF6CF,r*.065f);
+        float phase=still?.3f:time*(hit<0?1.8f:3.5f)+Math.max(0,hit)*6;
+        float sweep=(float)Math.sin(phase)*1.3f;
+        float[] face=new float[48];
+        for(int i=0;i<24;i++) {
+            float angle=i*Softbody.TAU/24;
+            face[i*2]=(float)Math.cos(angle);face[i*2+1]=(float)Math.sin(angle);
+        }
+        for(int layer=0;layer<2;layer++) {
+            float width=layer==0?.22f:.075f;
+            float[] shine=CrystalField.clip(CrystalField.clip(face,1,.35f,sweep+width),-1,-.35f,-sweep+width);
+            for(int i=0;i<shine.length;i+=2){shine[i]=x+shine[i]*rx;shine[i+1]=cy+shine[i+1]*r*.76f;}
+            if(shine.length>=6)p.fillPoly(shine,Glyph.withAlpha(0xFFFFF8D9,layer==0?45:90));
+        }
+        float gleam=still?.65f:.35f+.65f*(float)Math.pow(Math.sin(phase*.8f),2);
+        p.fillPoly(star(x+rx*.66f,cy-r*.43f,r*(.04f+.035f*gleam),r*.014f,4,0),
+                Glyph.withAlpha(0xFFFFF8D9,(int)(120+100*gleam)));
     }
 }

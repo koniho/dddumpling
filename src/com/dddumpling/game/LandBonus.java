@@ -61,12 +61,26 @@ final class LandBonus {
     }
     static float radius(Layout L) {return L.w*.078f;}
     static float clamTravel(GameCore c) {return Math.min(1,c.landBonus.seabedStart+Math.max(0,c.skyClock-c.landBonus.skyAt)*(.20f/12));}
-    static float size(GameCore c,Layout L) {return radius(L)*(Lands.forStage(c.stage)==Underwater.LAND?UnderwaterVista.scale(clamTravel(c)):1);}
+    static float size(GameCore c,Layout L) {
+        int land=Lands.forStage(c.stage);
+        if(land==Underwater.LAND)return radius(L)*UnderwaterVista.scale(clamTravel(c));
+        if(land==Lands.RAINBOW) {
+            float u=c.landBonus.burst<0?0:c.cloudUi.reduceMotion?1:Math.min(1,c.landBonus.burst/.22f);
+            return radius(L)*(.75f+.25f*u*u*(3-2*u));
+        }
+        return radius(L);
+    }
+    private static float coinOrbit(GameCore c,Layout L,boolean vertical) {
+        if(Lands.forStage(c.stage)!=Lands.RAINBOW || c.cloudUi.reduceMotion)return 0;
+        float settle=c.landBonus.burst<0?1:Math.max(0,1-c.landBonus.burst/.24f);
+        float angle=(c.landBonus.age-c.landBonus.delay)*1.4f;
+        return radius(L)*.12f*settle*(float)(vertical?Math.sin(angle):Math.cos(angle));
+    }
     static float x(GameCore c,Layout L) {
         int land=Lands.forStage(c.stage);
         if(land==0)return SlimeBubbles.surfaceX(c.landBonus.bubbleSeed(),L);
         if(land==Underwater.LAND)return L.w*(.5f+c.landBonus.seabedLane*(.04f+.30f*UnderwaterVista.depth(clamTravel(c))));
-        return L.w*c.landBonus.sideX;
+        return L.w*c.landBonus.sideX+coinOrbit(c,L,false);
     }
     static float scrollSpeed(GameCore c,Layout L) {
         switch(Lands.forStage(c.stage)) {
@@ -85,7 +99,7 @@ final class LandBonus {
         LandBonus b=c.landBonus;
         if(Lands.forStage(c.stage)==0)return SlimeBubbles.emergeY(surfaceY(c,L),radius(L),b.bubbleRise(c));
         if(Lands.forStage(c.stage)==Underwater.LAND)return L.h*UnderwaterVista.rootY(clamTravel(c))-size(c,L)*.8f;
-        return L.playTop-radius(L)*b.entryDepth+Math.max(0,c.skyClock-b.skyAt)*scrollSpeed(c,L);
+        return L.playTop-radius(L)*b.entryDepth+Math.max(0,c.skyClock-b.skyAt)*scrollSpeed(c,L)+coinOrbit(c,L,true);
     }
     boolean tap(GameCore c,Layout L,float x,float y) {
         if(c.paused || c.settingsOpen || c.cloudUi.open || !visible(c) || x<0 || x>L.w || y<L.playTop || y>=L.deckTop)return false;
