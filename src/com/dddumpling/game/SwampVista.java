@@ -25,7 +25,9 @@ final class SwampVista extends Draw {
         if(fade<=.001f)return;
         float time=c.cloudUi.reduceMotion?0:c.skyClock;
         backdrop(p,L,fade);
+        magicMist(p,L,time,fade);
         water(p,c,L,fade);
+        waterShimmer(p,L,time,fade);
         banks(p,c,L,fade);
         // Far rows are painted first. The same world tree advances to the next row at wrap.
         for(int row=0;row<ROWS;row++)for(int side=-1;side<=1;side+=2) {
@@ -45,12 +47,73 @@ final class SwampVista extends Draw {
         // A few closer reeds frame the water without covering the centre or the bonus.
         for(int side=-1;side<=1;side+=2)
             grass(p,L.w*(side<0?-.05f:1.05f),L.deckTop+L.w*.04f,L.w*.20f,713+side*43,time,1,fade*.72f);
-        for(int i=0;i<9;i++) {
-            int seed=341+i*37;float x=L.w*(.15f+hash(seed)*.70f),y=L.h*(.18f+hash(seed+3)*.45f);
-            x+=L.w*.012f*(float)Math.sin(time*.5f+i);y+=L.h*.008f*(float)Math.sin(time*.7f+i*2);
-            float glow=.5f+.5f*(float)Math.sin(time*1.3f+i*2.4f),r=L.w*.0018f;
-            p.fillCircle(x,y,r*3,ink(0xFFCADA98,fade*glow*.08f));
-            p.fillCircle(x,y,r,ink(0xFFDFE7B5,fade*(.18f+glow*.20f)));
+        fireflies(p,L,time,fade);
+    }
+    private static final int[] MAGIC={0xFF75E8C7,0xFFC399E4,0xFFA9D987};
+    private static void glow(Painter p,float x,float y,float rx,float ry,int color,float strength) {
+        for(int i=3;i>=1;i--) {
+            float spread=1+i*.55f;
+            p.fillEllipse(x,y,rx*spread,ry*spread,ink(color,strength*(4-i)*.04f));
+        }
+    }
+    private static void magicMist(Painter p,Layout L,float time,float fade) {
+        // Broad translucent ribbons sit behind trunks, giving the opening luminous depth.
+        for(int band=0;band<3;band++) {
+            float[] ribbon=new float[100];
+            for(int veil=4;veil>=1;veil--) {
+                for(int i=0;i<25;i++) {
+                    float u=i/24f,x=L.w*(-.12f+u*1.24f);
+                    float y=L.h*(.18f+band*.072f+.046f*(float)Math.sin(u*5.4f+band*1.8f+time*.10f));
+                    float width=L.h*(.018f+.016f*(float)Math.sin(u*Math.PI))*veil/4;
+                    ribbon[i*2]=x;ribbon[i*2+1]=y-width;
+                    ribbon[(49-i)*2]=x;ribbon[(49-i)*2+1]=y+width;
+                }
+                p.fillPoly(ribbon,ink(MAGIC[band],fade*.024f));
+            }
+            glow(p,L.w*(.27f+band*.24f),L.h*(.28f+band*.045f),L.w*.11f,L.h*.055f,MAGIC[band],fade*.48f);
+        }
+    }
+    private static void waterShimmer(Painter p,Layout L,float time,float fade) {
+        // Iridescent currents follow the water's perspective, with no bright centre overlay.
+        float[] ribbon=new float[100];
+        for(int band=0;band<7;band++) {
+            float d=(band+.5f)/7,y=horizon(L)+d*d*(L.deckTop-horizon(L));
+            float span=L.w*(.10f+d*.34f);
+            int color=MAGIC[band%3];
+            for(int veil=3;veil>=1;veil--) {
+                for(int i=0;i<25;i++) {
+                    float u=i/24f,x=L.w*.5f+(u*2-1)*span;
+                    float yy=y+L.h*(.003f+d*.009f)*(float)Math.sin(u*9+time*.35f+band*1.7f);
+                    float width=L.w*(.0015f+d*.002f)*veil*(float)Math.sin(u*Math.PI);
+                    ribbon[i*2]=x;ribbon[i*2+1]=yy-width;
+                    ribbon[(49-i)*2]=x;ribbon[(49-i)*2+1]=yy+width;
+                }
+                p.fillPoly(ribbon,ink(color,fade*(.018f+.025f*d)));
+            }
+        }
+    }
+    private static void fireflies(Painter p,Layout L,float time,float fade) {
+        if(fade<=.001f)return;
+        // Three depths of wandering insects: small distant specks and warm nearby lanterns.
+        for(int i=0;i<27;i++) {
+            int seed=341+i*37,layer=i%3;float d=(layer+1)/3f;
+            float side=i%2==0?-1:1;
+            float x=L.w*(.5f+side*(.10f+hash(seed)*.32f));
+            float y=L.h*(.23f+hash(seed+3)*(.20f+d*.27f));
+            x+=L.w*(.008f+d*.016f)*(float)Math.sin(time*(.23f+d*.17f)+i*2.1f);
+            y+=L.h*(.004f+d*.010f)*(float)Math.sin(time*.31f+i*1.7f);
+            float pulse=.5f+.5f*(float)Math.sin(time*(.75f+hash(seed+7)*.45f)+i*2.4f);
+            float light=fade*(.32f+pulse*.68f),r=L.w*(.0013f+d*.0021f);
+            int color=i%5==0?MAGIC[0]:0xFFE3ED91;
+            glow(p,x,y,r*2.7f,r*2.7f,color,light*(.50f+d*.45f));
+            p.fillCircle(x,y,r*1.65f,ink(color,light*.22f));
+            p.fillCircle(x,y,r,ink(0xFFFFF6C5,light*(.5f+d*.40f)));
+            if(layer==2) {
+                float wing=r*(1.4f+.45f*(float)Math.sin(time*9+i));
+                p.fillEllipse(x-r*1.2f,y-r*.6f,wing,r*.55f,ink(0xFFD2F5D7,light*.20f));
+                p.fillEllipse(x+r*1.2f,y-r*.6f,wing,r*.55f,ink(0xFFD2F5D7,light*.20f));
+                if(y>horizon(L))p.fillEllipse(x,y+L.h*.045f,r*4,r*.6f,ink(color,light*.09f));
+            }
         }
     }
     private static void backdrop(Painter p,Layout L,float fade) {
@@ -113,7 +176,7 @@ final class SwampVista extends Draw {
     private static int shade(int color,float clarity,float fade){return ink(Glyph.mix(0xFF758579,color,clarity),fade);}
     private static void tree(Painter p,float x,float y,float r,float h,int seed,float time,float clarity,float fade) {
         float lean=(hash(seed+5)-.5f)*r*1.3f,top=x+lean,curve=(hash(seed+19)-.5f)*r*.65f;
-        int bark=shade(0xFF354C3D,clarity,fade*.90f),dark=shade(0xFF1E3B31,clarity,fade*.85f),light=shade(0xFF697A50,clarity,fade*.65f);
+        int bark=shade(0xFF354C3D,clarity,fade*.90f),dark=shade(0xFF1E3B31,clarity,fade*.85f),light=shade(0xFF79AD91,clarity,fade*.65f);
         p.fillEllipse(x,y+r*.06f,r*1.5f,r*.22f,shade(0xFF203F34,clarity,fade*.35f));
         p.arc(x,y+r*.10f,r*1.7f,r*.28f,0,180,shade(0xFF82AA91,clarity,fade*.10f),r*.018f);
         // Low, kinked reflections break up the tree's contact with the water.
@@ -139,10 +202,23 @@ final class SwampVista extends Draw {
             p.polyline(root,dark,r*.12f);p.polyline(root,bark,r*.082f);
             p.line(root[2]-r*.018f,root[3],root[4]-r*.018f,root[5],light,r*.023f);
         }
+        if(clarity>.55f) {
+            // Small luminous shelf fungi tie the coloured glow to the living scenery.
+            int color=MAGIC[(seed&0x7fffffff)%MAGIC.length];
+            for(int i=0;i<3;i++) {
+                float u=.14f+i*.085f,xx=x+lean*u+curve*(float)Math.sin(u*Math.PI)+(i%2==0?-1:1)*r*.16f;
+                float yy=y-h*u,cap=r*(.12f+hash(seed+i*71)*.06f);
+                float luma=fade*(.65f+.15f*(float)Math.sin(time*.6f+seed+i));
+                glow(p,xx,yy,cap*1.2f,cap*.65f,color,luma*.65f);
+                p.line(xx,yy,xx,yy+cap*.65f,shade(0xFF9FBCA8,clarity,fade*.65f),cap*.22f);
+                p.fillEllipse(xx,yy,cap,cap*.40f,ink(color,luma*.70f));
+                p.fillEllipse(xx,yy-cap*.09f,cap*.65f,cap*.13f,ink(0xFFE1FFE7,luma*.43f));
+            }
+        }
         float sway=(float)Math.sin(time*.38f+seed)*r*.018f;
         for(int i=0;i<5;i++) {
             float cx=top+(i-2)*r*.60f+sway,cy=y-h+r*(.06f+hash(seed+i*53)*.35f);
-            crown(p,cx,cy,r*(.76f+hash(seed+i*61)*.40f),seed+i*59,shade(i%2==0?0xFF385D3D:0xFF476E46,clarity,fade*.72f));
+            crown(p,cx,cy,r*(.76f+hash(seed+i*61)*.40f),seed+i*59,shade(i%2==0?0xFF315B4B:0xFF526455,clarity,fade*.72f));
         }
     }
     private static void crown(Painter p,float x,float y,float r,int seed,int color) {
@@ -156,11 +232,11 @@ final class SwampVista extends Draw {
     private static void grass(Painter p,float x,float y,float r,int seed,float time,float clarity,float fade) {
         p.fillEllipse(x,y,r*1.1f,r*.16f,shade(0xFF294A34,clarity,fade*.40f));
         float[] blade=new float[8];
-        int count=clarity<.3f?12:25;
+        int count=clarity<.3f?6:clarity<.55f?12:20;
         for(int i=0;i<count;i++) {
             int n=seed+i*31;float bx=x+(hash(n)-.5f)*r*1.9f,by=y+(hash(n+3)-.5f)*r*.13f;
             float h=r*(.48f+hash(n+5)*1.20f),lean=(hash(n+7)-.5f)*r*.48f+(float)Math.sin(time*.75f+n)*r*.035f;
-            float w=r*(.025f+hash(n+9)*.035f),tip=bx+lean;
+            float w=r*(.030f+hash(n+9)*.040f),tip=bx+lean;
             blade[0]=bx-w;blade[1]=by;blade[2]=bx+w;blade[3]=by;blade[4]=tip;blade[5]=by-h;
             blade[6]=bx+lean*.38f-w*.4f;blade[7]=by-h*.52f;
             p.fillPoly(blade,shade(i%3==0?0xFF93A66B:i%3==1?0xFF547C4E:0xFF6F955C,clarity,fade*(.65f+hash(n+11)*.2f)));
