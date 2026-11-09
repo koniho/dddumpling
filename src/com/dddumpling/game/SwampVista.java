@@ -175,7 +175,7 @@ final class SwampVista extends Draw {
             }
             // Match the distant sky at the seam, then feather into the visible banks.
             float softness=(float)Math.sin(u*Math.PI);
-            p.fillPoly(band,ink(0xFF657C68,fade*.90f*softness*softness));
+            p.fillPoly(band,ink(0xFF657C68,fade*.60f*softness*softness));
         }
     }
     private static void ripples(Painter p,GameCore c,Layout L,float fade) {
