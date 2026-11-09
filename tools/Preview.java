@@ -8,6 +8,37 @@ import java.io.File;
  * without a build/install cycle: same Layout, same Renderer, same state machine as the APK.
  */
 final class Preview {
+    private static void forestTerrainFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
+        if(!wantedGroup("246-"))return;
+        for(float age:new float[]{0,8,13,14,18,32,55,90}) {
+            GameCore c=TestLandBonuses.start(L,16,true,246);
+            c.skyClock=age;c.clock=age;c.landBonus.skyAt=age-10;c.landBonus.age=c.landBonus.delay+10;
+            c.forestCritters.update(c,L,0);
+            Check.add(c,L,new int[]{0,1,4},L.playTop+L.h*.18f);
+            Check.add(c,L,new int[]{5,4},L.playTop+L.h*.35f);
+            shot(dir,"246-forest-"+(int)age,c,L,w,h,ss);
+            if(age==18) {
+                c.cloudUi.reduceMotion=true;shot(dir,"246-forest-still",c,L,w,h,ss);
+                c.cloudUi.reduceMotion=false;
+                c.landBonus.tap(c,L,LandBonus.x(c,L),LandBonus.y(c,L));c.landBonus.burst=.36f;
+                shot(dir,"246-forest-discovery",c,L,w,h,ss);
+            }
+        }
+        for(float beat:new float[]{.16f,.45f,.85f,1.25f,1.7f}) {
+            GameCore c=TestLandBonuses.start(L,16,true,246);c.skyClock=18;
+            GameCore.Enemy e=Check.add(c,L,new int[]{0,1,4},L.h*.43f);
+            c.destroyWord(e,c.enemyCentreX(e),e.y,L);c.enemies.clear();c.particles.clear();
+            c.flash=c.shake=c.skyGlow=0;
+            c.forestCritters.update(c,L,beat);c.skyClock+=beat;
+            shot(dir,"246-critters-"+(int)(beat*100),c,L,w,h,ss);
+            if(beat==.45f) {c.cloudUi.reduceMotion=true;shot(dir,"246-critters-still",c,L,w,h,ss);}
+        }
+        GameCore boss=TestLandBonuses.start(L,20,false,246);
+        boss.skyClock=32;boss.boss.intro=boss.boss.introDuration()-Boss.INTRO*.5f;
+        shot(dir,"246-grove-entry",boss,L,w,h,ss);
+        boss.boss.intro=0;shot(dir,"246-grove",boss,L,w,h,ss);
+    }
+
     private static void landBonusFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wantedGroup("244-"))return;
         for(int land:new int[]{0,1,2,3,Lands.SWAMP,Lands.RAINBOW}) {
@@ -2219,6 +2250,7 @@ final class Preview {
             shot(dir,"206-retried-record",retry,L,w,h,ss);
         }
         if(wantedGroup("214-"))AccessoryPreview.frames(dir,L,w,h,ss);
+        forestTerrainFrames(dir,L,w,h,ss);
         landBonusFrames(dir,L,w,h,ss);
         rainbowFrames(dir,L,w,h,ss);
         skinFrames(dir,L,w,h,ss);

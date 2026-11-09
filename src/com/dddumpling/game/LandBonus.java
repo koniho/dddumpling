@@ -87,7 +87,7 @@ final class LandBonus {
             case 0:return L.h*SlimeHills.SCROLL_RATE;
             case 1:return L.w*CrystalField.SPEED[2];
             case 2:return L.h*Underwater.SCROLL;
-            case 3:return L.h*.028f;
+            case 3:return ForestTerrain.speed(L);
             case Lands.RAINBOW:return L.h*RainbowLand.BAND_SCROLL_RATE;
             default:return (L.deckTop+radius(L)*6)*.022f;
         }
