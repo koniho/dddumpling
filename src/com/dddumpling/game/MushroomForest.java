@@ -56,19 +56,8 @@ final class MushroomForest extends Draw {
         }
     }
 
-    private static void floorTexture(Painter p,GameCore c,Layout L,float fade) {
-        float[] shape=new float[66];
-        for(int i=0;i<36;i++) {
-            int seed=2671+i*59;
-            float r=L.w*(.018f+hash(seed)*.035f),span=L.deckTop+r*8;
-            float x=L.w*(.16f+hash(seed+3)*.68f);
-            float y=(hash(seed+9)*span+c.skyClock*L.h*.016f+scroll(c,L))%span-r*4;
-            litter(p,shape,x,y,r,seed,(int)(fade*(32+hash(seed+13)*26)));
-        }
-    }
-
     /** Traced curled leaves and broken fern fronds, with no oval ground stamps. */
-    private static void litter(Painter p,float[] shape,float x,float y,float r,int seed,int a) {
+    static void litter(Painter p,float[] shape,float x,float y,float r,int seed,int a) {
         if(a<=0)return;
         if(p.stamps()!=null && p.stamps().forest(3+seed%3,x,y,r,hash(seed+21)*Softbody.TAU,0,a))return;
         float turn=hash(seed+21)*Softbody.TAU;
@@ -237,8 +226,9 @@ final class MushroomForest extends Draw {
     static void undergrowth(Painter p,GameCore c,Layout L,float fade) {
         fade*=1-groveProgress(c);
         if(fade<=0)return;
-        floorTexture(p,c,L,fade*(1-groveProgress(c)*.6f));
+        ForestTerrain.ground(p,c,L,fade);
         LandBonusArt.beneathForest(p,c,L,fade);
+        ForestTerrain.foliage(p,c,L,fade);
         fade*=1-groveProgress(c)*.65f;
         float[] leaf=new float[66];
         for(int layer=0;layer<2;layer++)for(int i=0;i<10;i++) {
@@ -306,7 +296,7 @@ final class MushroomForest extends Draw {
         }
     }
 
-    private static void sprig(Painter p,float[] shape,float x,float y,float r,float lean,int kind,int a,int color) {
+    static void sprig(Painter p,float[] shape,float x,float y,float r,float lean,int kind,int a,int color) {
         if(a<=0)return;
         if(p.stamps()!=null && p.stamps().forest(kind,x,y,r,lean,color,a))return;
         int count=kind==0?6:3;

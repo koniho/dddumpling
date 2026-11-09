@@ -230,6 +230,7 @@ src/com/dddumpling/game/LandPlaySkits.java
 src/com/dddumpling/game/CrystalSkits.java
 src/com/dddumpling/game/MushroomSkits.java
 src/com/dddumpling/game/MushroomForest.java
+src/com/dddumpling/game/ForestTerrain.java
 src/com/dddumpling/game/Underwater.java
 src/com/dddumpling/game/UnderwaterVista.java
 src/com/dddumpling/game/UnderwaterCave.java
