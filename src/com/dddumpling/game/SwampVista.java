@@ -102,7 +102,7 @@ final class SwampVista extends Draw {
         float[] tree=new float[78];
         for(int layer=0;layer<3;layer++)for(int i=0;i<12;i++) {
             int seed=919+layer*317+i*67;
-            float x=L.w*((i+.2f+hash(seed)*.6f)/12),y=horizonAt(L,x)+L.h*(.006f+layer*.003f);
+            float x=L.w*((i+.2f+hash(seed)*.6f)/12),y=horizonAt(L,x)+L.h*(.052f+layer*.005f);
             float h=L.h*(.045f+layer*.025f+hash(seed+3)*.05f),r=L.w*(.055f+layer*.016f+hash(seed+5)*.045f);
             float lean=L.w*(hash(seed+7)-.5f)*.04f;
             int color=ink(layer==0?0xFF4F6A60:layer==1?0xFF3C5A4E:0xFF2E4A40,fade);
@@ -117,6 +117,8 @@ final class SwampVista extends Draw {
             tree[68]=x+r*.13f;tree[69]=y-h*.20f;tree[70]=x+r*.55f;tree[71]=y;
             tree[72]=x+r*.28f;tree[73]=y-h*.10f;tree[74]=x;tree[75]=y-h*.13f;
             tree[76]=x-r*.25f;tree[77]=y-h*.10f;
+            // Sink the roots behind the curved distant bank instead of exposing a separate row.
+            for(int n=0;n<tree.length;n+=2)tree[n+1]=Math.min(tree[n+1],horizonAt(L,tree[n]));
             p.fillPoly(tree,color);
         }
     }
