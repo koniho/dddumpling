@@ -42,14 +42,20 @@ final class TestSwampVista extends Check {
         check("water corridor visibly bends in both directions",left<-.10f && right>.10f);
         GameCore c=TestLandBonuses.start(L,21,true,248),twin=TestLandBonuses.start(L,21,true,248);
         c.landBonus.collectedStages=-1;c.skyClock=18;
-        boolean treesOnBanks=true,treesSteady=true;long firstTreeFrame=0;
+        boolean treesOnBanks=true,treesGentle=true;
+        float[] treeMin=new float[36],treeMax=new float[36];
+        java.util.Arrays.fill(treeMin,Float.MAX_VALUE);java.util.Arrays.fill(treeMax,-Float.MAX_VALUE);
         for(int age=0;age<=90;age+=3) {
             c.skyClock=age;Probe trees=new Probe();trees.treeLayout=L;trees.treeClock=age;
             SwampVista.horizonTrees(trees,c,L,1);treesOnBanks&=trees.rootsOnBanks && trees.calls==36;
-            if(age==0)firstTreeFrame=trees.hash;else treesSteady&=trees.hash==firstTreeFrame;
+            for(int i=0;i<36;i++){treeMin[i]=Math.min(treeMin[i],trees.treeXs[i]);treeMax[i]=Math.max(treeMax[i],trees.treeXs[i]);}
         }
         check("distant tree roots stay on both banks as the river bends",treesOnBanks);
-        check("horizon trees stay fixed while the river scenery advances",treesSteady);c.skyClock=18;
+        for(int i=0;i<36;i++)treesGentle&=treeMax[i]-treeMin[i]>L.w*.002f && treeMax[i]-treeMin[i]<L.w*.013f;
+        check("horizon tree movement stays subtle throughout travel",treesGentle);
+        c.cloudUi.reduceMotion=true;c.skyClock=0;Probe quietTrees=new Probe();SwampVista.horizonTrees(quietTrees,c,L,1);
+        c.skyClock=18;Probe quietLater=new Probe();SwampVista.horizonTrees(quietLater,c,L,1);
+        check("reduced motion freezes distant tree parallax",quietTrees.hash==quietLater.hash);c.cloudUi.reduceMotion=false;
         check("travelling swamp clears all cloud layers",SwampVista.presence(c)==1);
         Probe clouds=new Probe();for(int layer=0;layer<GameCore.CLOUD_LAYERS;layer++)Sky.clouds(clouds,c,L,layer,0);
         check("clear swamp sky emits no clouds",clouds.calls==0);
@@ -86,7 +92,7 @@ final class TestSwampVista extends Check {
     }
     private static final class Probe extends OpacityPainter {
         float width,cornerTop,cornerBottom;int leftGrass,rightGrass;
-        Layout treeLayout;float treeClock;boolean rootsOnBanks=true;
+        Layout treeLayout;float treeClock;boolean rootsOnBanks=true;final float[] treeXs=new float[36];
         long hash=1;int calls;float top=Float.MAX_VALUE;
         Probe(){super(null,1);}
         public ArtStamp stamps(){return this;}
@@ -95,6 +101,7 @@ final class TestSwampVista extends Check {
         void record(int color,float... values){calls++;hash=hash*31+color;for(float v:values)hash=hash*31+Float.floatToIntBits(v);}
         public void fillPoly(float[] xy,int c){
             if(treeLayout!=null) {
+                treeXs[calls]=xy[0];
                 float base=-Float.MAX_VALUE;for(int i=1;i<xy.length;i+=2)base=Math.max(base,xy[i]);
                 float d=SwampVista.waterDepth(treeLayout,base);
                 float left=treeLayout.w*SwampVista.waterEdgeX(treeLayout,treeClock,d,-1);
