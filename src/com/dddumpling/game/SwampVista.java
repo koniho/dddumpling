@@ -111,8 +111,8 @@ final class SwampVista extends Draw {
             float outer=side<0?-L.w*.045f:L.w*1.045f,x=bank+(outer-bank)*u;
             float root=bankY(L,d,x)+L.h*.002f*hash(seed+9),rootH=Math.min(L.h*.016f,h*.20f);
             float lean=L.w*(hash(seed+7)-.5f)*.018f;
-            int base=layer==0?0xFF4F6A60:layer==1?0xFF3C5A4E:0xFF2E4A40;
-            int color=ink(Glyph.mix(base,0xFF657C68,(1-u)*.50f+(2-layer)*.08f),fade);
+            int base=layer==0?0xFF3F5D52:layer==1?0xFF304E43:0xFF264338;
+            int color=ink(Glyph.mix(base,0xFF657C68,(1-u)*.30f+(2-layer)*.05f),fade);
             // Each bank recedes into smaller, paler trees; every root stays outside the channel.
             tree[0]=x-r*.50f;tree[1]=root;tree[2]=x-r*.12f;tree[3]=root-rootH;
             for(int n=0;n<32;n++) {
