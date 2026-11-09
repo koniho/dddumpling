@@ -67,7 +67,7 @@ final class LandBonus {
     static float size(GameCore c,Layout L) {
         int land=Lands.forStage(c.stage);
         if(land==Underwater.LAND)return radius(L)*UnderwaterVista.scale(clamTravel(c));
-        if(land==Lands.SWAMP)return radius(L)*(.24f+1.10f*SwampVista.depth(flamingoTravel(c)));
+        if(land==Lands.SWAMP)return radius(L)*3*(.24f+1.10f*SwampVista.depth(flamingoTravel(c)));
         if(land==Lands.RAINBOW) {
             float u=c.landBonus.burst<0?0:c.cloudUi.reduceMotion?1:Math.min(1,c.landBonus.burst/.22f);
             return radius(L)*(.75f+.25f*u*u*(3-2*u));

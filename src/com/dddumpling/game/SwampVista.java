@@ -201,8 +201,8 @@ final class SwampVista extends Draw {
         // Carry the water into the distant opening with mist that follows the same bend.
         for(int i=0;i<8;i++) {
             float u=(i+.5f)/8,s=1.2f-i*.11f;
-            p.fillEllipse(x,y,L.w*.13f*s,L.h*.048f*s,
-                    ink(0xFF94A68F,fade*(.024f+.036f*(float)Math.sin(u*Math.PI))));
+            p.fillEllipse(x,y,L.w*.22f*s,L.h*.022f*s,
+                    ink(0xFF94A68F,fade*(.010f+.018f*(float)Math.sin(u*Math.PI))));
         }
     }
     private static void horizonHaze(Painter p,Layout L,float fade) {
