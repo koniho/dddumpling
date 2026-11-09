@@ -6,12 +6,12 @@ final class TestForestTerrain extends Check {
         boolean dryEdges=true,inside=true,separate=true;
         for(int i=-10000;i<=10000;i++) {
             float z=i*.031f,s=ForestTerrain.streamX(z),sw=ForestTerrain.streamWidth(z);
-            float x=ForestTerrain.pathX(z),w=ForestTerrain.pathWidth(z);
-            dryEdges&=sw>0 && s-sw*2.25f>.27f && s+sw*2.25f<.73f;
-            separate&=s-sw*2.25f-(x+w*1.5f)>.03f;
+            float x=ForestTerrain.pathX(z),w=ForestTerrain.pathWidth(z),bank=ForestTerrain.streamBankWidth(z);
+            dryEdges&=sw>.03f && s-bank>.40f && s+bank<.81f;
+            separate&=s-bank-(x+w*1.5f)>.03f;
             inside&=w>0 && x-w*1.5f>0 && x+w*1.5f<1;
         }
-        check("stream banks leave dry outer scenery for the log",dryEdges);
+        check("wide channel and recessed banks stay within the forest corridor",dryEdges);
         check("trail remains inside the forest",inside);
         check("stream banks never overlap the trail or its soft edges",separate);
         GameCore c=TestLandBonuses.start(L,16,true,246);

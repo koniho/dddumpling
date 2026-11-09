@@ -2,14 +2,15 @@ package com.dddumpling.game;
 
 /** Continuous woodland ground in world coordinates; detail follows the same scrolling banks. */
 final class ForestTerrain extends Draw {
-    static final float ROW=.08f,CLUSTER=.34f;
+    static final float ROW=.05f,CLUSTER=.34f;
     private ForestTerrain() {}
     static float speed(Layout L) {return L.h*.028f;}
     static float travel(GameCore c,Layout L) {return c.skyClock*speed(L)+MushroomForest.groveProgress(c)*L.h*.72f;}
-    static float pathX(float z) {return .32f+.08f*(float)Math.sin(z*1.7f-.5f)+.012f*(float)Math.sin(z*4.1f+.3f);}
-    static float pathWidth(float z) {return (.066f+.012f*(float)Math.sin(z*2.1f+1))*(1+.14f*(float)Math.sin(z*8.3f)+.055f*(float)Math.sin(z*19));}
-    static float streamX(float z) {return pathX(z)+.245f+.008f*(float)Math.sin(z*.9f+.4f);}
-    static float streamWidth(float z) {return .017f+.006f*(float)Math.sin(z*4.1f+.7f)+.002f*(float)Math.sin(z*13);}
+    static float pathX(float z) {return .205f+.04f*(float)Math.sin(z*1.7f-.5f)+.006f*(float)Math.sin(z*4.1f+.3f);}
+    static float pathWidth(float z) {return (.058f+.009f*(float)Math.sin(z*2.1f+1))*(1+.14f*(float)Math.sin(z*8.3f)+.055f*(float)Math.sin(z*19));}
+    static float streamX(float z) {return .60f+.105f*(float)Math.sin(z*3.7f+1.4f)+.010f*(float)Math.sin(z*7.1f-.8f);}
+    static float streamWidth(float z) {return .040f+.006f*(float)Math.sin(z*3.1f+.7f)+.003f*(float)Math.sin(z*7.7f);}
+    static float streamBankWidth(float z) {return streamWidth(z)+.033f;}
     static float screenY(float z,float travel,Layout L) {return z*L.w+travel;}
     static int firstRow(float travel,Layout L,float step) {return (int)Math.floor((-travel/L.w-.4f)/step);}
     static int lastRow(float travel,Layout L,float step) {return (int)Math.ceil(((L.deckTop-travel)/L.w+.4f)/step);}
@@ -27,11 +28,18 @@ final class ForestTerrain extends Draw {
         band(p,L,travel,first,last,ribbon,false,.97f,0xFF766A50,fade*.44f);
         band(p,L,travel,first,last,ribbon,false,.73f,0xFFAA946B,fade*.06f);
         pathTexture(p,L,travel,fade);
-        // Soft wet banks surround the narrow stream, with a translucent shallow center.
-        band(p,L,travel,first,last,ribbon,true,2.25f,0xFF506D55,fade*.20f);
-        band(p,L,travel,first,last,ribbon,true,1.45f,0xFF122F2B,fade*.42f);
-        band(p,L,travel,first,last,ribbon,true,1,0xFF44756D,fade*.55f);
-        band(p,L,travel,first,last,ribbon,true,.57f,0xFF88BAA6,fade*.07f);
+        // A raised grassy lip drops into shaded earth, then a dark seam at the waterline.
+        streamStrip(p,L,travel,first,last,ribbon,-1,.033f,1,.033f,0,0,0xFF354B32,fade*.28f);
+        streamStrip(p,L,travel,first,last,ribbon,-1,.026f,1,.026f,0,0,0xFF162F29,fade*.60f);
+        streamStrip(p,L,travel,first,last,ribbon,-1,.028f,-1,.023f,-.025f,-.020f,0xFFA4AA75,fade*.42f);
+        streamStrip(p,L,travel,first,last,ribbon,-1,.023f,-1,.002f,-.020f,0,0xFF665B3E,fade*.78f);
+        streamStrip(p,L,travel,first,last,ribbon,1,.002f,1,.025f,0,-.020f,0xFF8D8960,fade*.68f);
+        streamStrip(p,L,travel,first,last,ribbon,1,.025f,1,.029f,-.020f,-.025f,0xFF819563,fade*.46f);
+        band(p,L,travel,first,last,ribbon,true,1,0xFF3E7970,fade*.74f);
+        band(p,L,travel,first,last,ribbon,true,.55f,0xFF76A896,fade*.14f);
+        streamStrip(p,L,travel,first,last,ribbon,-1,.001f,-.30f,0,0,0,0xFF122F2C,fade*.24f);
+        streamStrip(p,L,travel,first,last,ribbon,-1,.001f,-.73f,0,0,0,0xFF122F2C,fade*.30f);
+        streamStrip(p,L,travel,first,last,ribbon,.88f,0,1,0,0,0,0xFFABC4A0,fade*.23f);
         water(p,c,L,travel,fade);
         float[] rock=new float[16],leaves=new float[66];
         int lo=firstRow(travel,L,CLUSTER),hi=lastRow(travel,L,CLUSTER);
@@ -39,7 +47,7 @@ final class ForestTerrain extends Draw {
             int seed=7919+row*137+side*41;
             float z=(row+.10f+.78f*hash(seed))*CLUSTER;
             boolean wet=hash(seed+11)>.45f;
-            float center=wet?streamX(z):pathX(z),width=wet?streamWidth(z):pathWidth(z);
+            float center=wet?streamX(z):pathX(z),width=wet?streamBankWidth(z):pathWidth(z);
             float bank=center+side*(width+.013f+hash(seed+3)*.016f);
             float y=screenY(z,travel,L);
             if(y<-L.w*.16f || y>L.deckTop+L.w*.16f)continue;
@@ -108,6 +116,20 @@ final class ForestTerrain extends Draw {
         }
         p.fillPoly(ribbon,Glyph.withAlpha(color,(int)(255*fade)));
     }
+    private static void streamStrip(Painter p,Layout L,float travel,int first,int last,float[] shape,
+            float left,float leftExtra,float right,float rightExtra,float leftLift,float rightLift,int color,float fade) {
+        int count=last-first+1;
+        for(int i=0;i<count;i++) {
+            float z=(first+i)*ROW,cx=streamX(z),width=streamWidth(z),y=screenY(z,travel,L);
+            float bank=.82f+.12f*(float)Math.sin(z*5.3f)+.06f*(float)Math.sin(z*17);
+            shape[i*2]=L.w*(cx+left*width+Math.signum(left)*leftExtra*bank);
+            shape[i*2+1]=y+L.w*leftLift;
+            int back=(count*2-1-i)*2;
+            shape[back]=L.w*(cx+right*width+Math.signum(right)*rightExtra*bank);
+            shape[back+1]=y+L.w*rightLift;
+        }
+        p.fillPoly(shape,Glyph.withAlpha(color,(int)(255*fade)));
+    }
     private static void water(Painter p,GameCore c,Layout L,float travel,float fade) {
         float flow=c.cloudUi.reduceMotion?0:c.clock*.045f;
         int lo=firstRow(travel+flow*L.w,L,.29f),hi=lastRow(travel+flow*L.w,L,.29f);
@@ -132,7 +154,7 @@ final class ForestTerrain extends Draw {
             int seed=7919+row*137+side*41;
             float z=(row+.10f+.78f*hash(seed))*CLUSTER;
             boolean wet=hash(seed+11)>.45f;
-            float center=wet?streamX(z):pathX(z),width=wet?streamWidth(z):pathWidth(z);
+            float center=wet?streamX(z):pathX(z),width=wet?streamBankWidth(z):pathWidth(z);
             float bank=center+side*(width+.045f+hash(seed+3)*.025f),y=screenY(z,travel,L);
             if(y<-L.w*.16f || y>L.deckTop+L.w*.16f)continue;
             for(int i=0;i<2;i++) {
