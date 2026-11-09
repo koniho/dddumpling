@@ -29,6 +29,15 @@ final class SwampVista extends Draw {
         float fringe=.010f*(.14f+d*1.55f)*((float)Math.sin(material*24+side)*.65f+(float)Math.sin(material*47+side*3)*.35f);
         return .5f+bend(clock,d)+side*(.065f+.28f*(float)Math.sqrt(Math.max(0,v))+fringe);
     }
+    // Recede the soil through the nearest clump without moving its planted roots.
+    static float waterEdgeX(Layout L,float clock,float d,int side) {
+        return shoreX(L,clock,d,side)+side*.106f*(.14f+d*1.55f);
+    }
+    static float presence(GameCore c) {
+        if(c.survival.active || SurvivalEntrance.active(c) || c.state==GameCore.TITLE)return 0;
+        float mix=Lands.blend(c);
+        return ((c.landFrom==Lands.SWAMP?1-mix:0)+(Lands.forStage(Lands.visualStage(c))==Lands.SWAMP?mix:0))*(1-arena(c));
+    }
     static float bankOffset(int lane) {
         return BANK_OFFSETS[lane];
     }
@@ -47,6 +56,7 @@ final class SwampVista extends Draw {
         fade*=1-BossVictory.backdropDrain(c);if(fade<=.001f)return;
         float time=c.cloudUi.reduceMotion?0:c.skyClock;
         backdrop(p,L,fade);
+        nightSky(p,L,fade);
         horizonTrees(p,L,fade);
         banks(p,c,L,fade);
         flotsam(p,c,L,fade);
@@ -69,9 +79,22 @@ final class SwampVista extends Draw {
         float h=horizon(L)/L.deckTop;
         for(int i=0;i<80;i++) {
             float t=i/80f,y=i==0?-L.h*.03f:(float)Math.floor(t*L.deckTop),next=(float)Math.floor((i+1)/80f*L.deckTop);
-            int color=t<h?Glyph.mix(0xFF263E3B,0xFF657C68,t/h):Glyph.mix(0xFF657C68,0xFF153E43,(float)(1-Math.exp(-3.7f*(t-h)/(1-h))));
+            int color=t<h?Glyph.mix(0xFF142E3B,0xFF657C68,(float)Math.pow(t/h,2.2)):Glyph.mix(0xFF657C68,0xFF153E43,(float)(1-Math.exp(-3.7f*(t-h)/(1-h))));
             p.fillRect(-L.w*.06f,y,L.w*1.06f,next,ink(color,fade));
         }
+    }
+    private static void nightSky(Painter p,Layout L,float fade) {
+        for(int i=0;i<22;i++) {
+            int seed=7301+i*193;
+            float x=L.w*(.05f+.90f*hash(seed)),y=L.h*(.025f+.26f*hash(seed+7));
+            float r=L.w*(.0012f+.0012f*hash(seed+13));
+            p.fillCircle(x,y,r,ink(0xFFD6E2CF,fade*(.20f+.32f*hash(seed+19))));
+        }
+        float x=L.w*.76f,y=L.h*.19f,r=L.w*.041f;
+        // Thin, soft halo layers keep the moon hazy without clouding the open sky.
+        for(int i=5;i>=1;i--)p.fillCircle(x,y,r*(1+i*.20f),ink(0xFFD0DFC1,fade*.025f));
+        p.fillCircle(x,y,r,ink(0xFFD9E3C8,fade*.48f));
+        p.fillCircle(x-r*.14f,y-r*.12f,r*.76f,ink(0xFFE1E8D1,fade*.10f));
     }
     private static void horizonTrees(Painter p,Layout L,float fade) {
         float[] trunk=new float[18],crown=new float[64];
@@ -103,7 +126,7 @@ final class SwampVista extends Draw {
             float outer=side<0?-L.w*.06f:L.w*1.06f;
             for(int i=0;i<=48;i++) {
                 float v=i/48f;ds[i]=waterDepth(L,horizon(L)+v*range);
-                xs[i]=L.w*shoreX(L,c.skyClock,ds[i],side);
+                xs[i]=L.w*waterEdgeX(L,c.skyClock,ds[i],side);
                 float material=3*ds[i]/(1+2*ds[i])-c.skyClock*SPEED;
                 widths[i]=L.w*(.006f+.016f*v)*(.85f+.20f*(float)Math.sin(material*19+side));
             }
@@ -130,7 +153,7 @@ final class SwampVista extends Draw {
             for(int i=0;i<6;i++) {
                 int seed=8923+(i-(int)Math.floor(phase))*191+side*73;
                 float t=(i+phase-(float)Math.floor(phase))/6,d=depth(t),r=L.w*(.003f+.011f*d);
-                float x=L.w*(shoreX(L,c.skyClock,d,side)+side*.003f*scale(t)),y=rootY(L,t,x),a=fade*reveal(t);
+                float x=L.w*(waterEdgeX(L,c.skyClock,d,side)+side*.003f*scale(t)),y=rootY(L,t,x),a=fade*reveal(t);
                 if(x+r*1.4f<0 || x-r*1.4f>L.w || y-r*SwampGrass.TOP>L.deckTop || a<.01f)continue;
                 p.fillEllipse(x,y,r*1.7f,r*.35f,ink(0xFF385D45,a*.18f));
                 SwampGrass.draw(p,x,y,r,seed,time,.35f+d*.55f,a*.70f);

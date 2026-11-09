@@ -28,11 +28,23 @@ final class TestSwampVista extends Check {
         }
         check("row rollover preserves grass identity and projected roots",continuous);
         check("grass keeps its world offset on the same moving bank",rooted);
+        boolean halfInWater=true;
+        for(int side=-1;side<=1;side+=2)for(int row=1;row<SwampVista.ROWS;row++) {
+            float t=SwampVista.travel(18,row,side),d=SwampVista.depth(t);
+            int seed=SwampVista.grassSeed(18,row,side,0);
+            float edge=SwampVista.waterEdgeX(L,18,d,side),root=SwampVista.grassX(L,18,t,side,0,seed);
+            halfInWater&=Math.abs(edge-root)<.007f*SwampVista.scale(t)
+                    && side*(edge-SwampVista.shoreX(L,18,d,side))>0;
+        }
+        check("receded banks pass through the nearest grass footprints",halfInWater);
         float left=0,right=0;
         for(int i=0;i<=60;i++) {float offset=SwampVista.bend(0,i/100f);left=Math.min(left,offset);right=Math.max(right,offset);}
         check("water corridor visibly bends in both directions",left<-.10f && right>.10f);
         GameCore c=TestLandBonuses.start(L,21,true,248),twin=TestLandBonuses.start(L,21,true,248);
         c.landBonus.collectedStages=-1;c.skyClock=18;
+        check("travelling swamp clears all cloud layers",SwampVista.presence(c)==1);
+        Probe clouds=new Probe();for(int layer=0;layer<GameCore.CLOUD_LAYERS;layer++)Sky.clouds(clouds,c,L,layer,0);
+        check("clear swamp sky emits no clouds",clouds.calls==0);
         Probe p=new Probe();SwampVista.draw(p,c,L,1);
         check("perspective art preserves gameplay randomness",c.rnd.nextLong()==twin.rnd.nextLong());
         check("scenery stays bounded and extends behind the header ("+p.calls+" draws)",p.calls>100 && p.calls<530 && p.top<=0);
@@ -62,7 +74,7 @@ final class TestSwampVista extends Check {
         c=TestLandBonuses.start(L,25,false,248);c.boss.intro=c.boss.introDuration();
         check("boss arrival starts in the travelling swamp",SwampVista.arena(c)==0);
         c.boss.intro-=.45f;check("boss arrival crossfades the scenery",Math.abs(SwampVista.arena(c)-.5f)<.001f);
-        c.boss.intro=0;check("established boss arena replaces the perspective scene",SwampVista.arena(c)==1);
+        c.boss.intro=0;check("boss arena restores its cloud treatment",SwampVista.presence(c)==0);check("established boss arena replaces the perspective scene",SwampVista.arena(c)==1);
     }
     private static final class Probe extends OpacityPainter {
         float width,cornerTop,cornerBottom;int leftGrass,rightGrass;
