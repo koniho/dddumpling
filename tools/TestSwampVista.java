@@ -42,6 +42,12 @@ final class TestSwampVista extends Check {
         check("water corridor visibly bends in both directions",left<-.10f && right>.10f);
         GameCore c=TestLandBonuses.start(L,21,true,248),twin=TestLandBonuses.start(L,21,true,248);
         c.landBonus.collectedStages=-1;c.skyClock=18;
+        boolean treesOnBanks=true;
+        for(int age=0;age<=90;age+=3) {
+            c.skyClock=age;Probe trees=new Probe();trees.treeLayout=L;trees.treeClock=age;
+            SwampVista.horizonTrees(trees,c,L,1);treesOnBanks&=trees.rootsOnBanks && trees.calls==36;
+        }
+        check("distant tree roots stay on both banks as the river bends",treesOnBanks);c.skyClock=18;
         check("travelling swamp clears all cloud layers",SwampVista.presence(c)==1);
         Probe clouds=new Probe();for(int layer=0;layer<GameCore.CLOUD_LAYERS;layer++)Sky.clouds(clouds,c,L,layer,0);
         check("clear swamp sky emits no clouds",clouds.calls==0);
@@ -78,13 +84,23 @@ final class TestSwampVista extends Check {
     }
     private static final class Probe extends OpacityPainter {
         float width,cornerTop,cornerBottom;int leftGrass,rightGrass;
+        Layout treeLayout;float treeClock;boolean rootsOnBanks=true;
         long hash=1;int calls;float top=Float.MAX_VALUE;
         Probe(){super(null,1);}
         public ArtStamp stamps(){return this;}
         public boolean swampGrass(int art,float x,float y,float r,float sway,int alpha,float mono){record(alpha,art,x,y,r,sway,mono);if(y>cornerTop && y<cornerBottom){if(x>=0 && x<width*.15f)leftGrass++;if(x>width*.85f && x<=width)rightGrass++;}return true;}
 
         void record(int color,float... values){calls++;hash=hash*31+color;for(float v:values)hash=hash*31+Float.floatToIntBits(v);}
-        public void fillPoly(float[] xy,int c){for(int i=1;i<xy.length;i+=2)top=Math.min(top,xy[i]);record(c,xy);}
+        public void fillPoly(float[] xy,int c){
+            if(treeLayout!=null) {
+                float base=-Float.MAX_VALUE;for(int i=1;i<xy.length;i+=2)base=Math.max(base,xy[i]);
+                float d=SwampVista.waterDepth(treeLayout,base);
+                float left=treeLayout.w*SwampVista.waterEdgeX(treeLayout,treeClock,d,-1);
+                float right=treeLayout.w*SwampVista.waterEdgeX(treeLayout,treeClock,d,1);
+                for(int i=0;i<xy.length;i+=2)if(xy[i+1]>=base-.01f)rootsOnBanks&=xy[i]<left || xy[i]>right;
+            }
+            for(int i=1;i<xy.length;i+=2)top=Math.min(top,xy[i]);record(c,xy);
+        }
         public void fillEllipse(float x,float y,float rx,float ry,int c){top=Math.min(top,y-ry);record(c,x,y,rx,ry);}
         public void fillCircle(float x,float y,float r,int c){record(c,x,y,r);}
         public void fillRect(float l,float t,float r,float b,int c){top=Math.min(top,t);record(c,l,t,r,b);}
