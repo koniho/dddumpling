@@ -2997,7 +2997,7 @@ final class GameCore {
                 || boss.hasGlob() || boss.boltCount() > 0)) sound.bossCharge(0f);
         if (settingsOpen) { preferences.updatePanel(this,elapsed); return; }
         landBonus.update(this,elapsed);
-        forestCritters.update(this,dt);
+        forestCritters.update(this,L,dt);
         ducks.update(this,dt);
         companion.update(this,dt);
         gator.update(this,dt);

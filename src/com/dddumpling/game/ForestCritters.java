@@ -2,35 +2,64 @@ package com.dddumpling.game;
 
 /** Small bank animals startled by cleared words; cosmetic state never uses combat RNG. */
 final class ForestCritters extends Draw {
-    static final int PER_WORD=3,CAPACITY=24;
+    static final int PER_WORD=3,CAPACITY=24,RESIDENTS=9;
     static final class Critter {
-        float age=-1,delay,duration,z,phase;
+        float age=-1,delay,duration,z,phase,startAlpha,bankOffset=.037f;
         int side,kind;
     }
     final Critter[] animals=new Critter[CAPACITY];
+    final Critter[] residents=new Critter[RESIDENTS];
     private int next,sequence;
-    ForestCritters(){for(int i=0;i<CAPACITY;i++)animals[i]=new Critter();}
-    void reset(){for(Critter a:animals)a.age=-1;next=sequence=0;}
+    private boolean settled;
+    ForestCritters(){for(int i=0;i<CAPACITY;i++)animals[i]=new Critter();for(int i=0;i<RESIDENTS;i++)residents[i]=new Critter();}
+    void reset(){for(Critter a:animals)a.age=-1;for(Critter a:residents)a.age=-1;next=sequence=0;settled=false;}
     static boolean enabled(GameCore c) {
         return LandBonus.scene(c) && Lands.forStage(c.stage)==MushroomForest.LAND;
     }
     void clean(GameCore c){if(!enabled(c))reset();}
-    void update(GameCore c,float dt) {
-        clean(c);
+    private void settle(GameCore c,Layout L) {
+        if(settled)return;
+        settled=true;
+        for(int i=0;i<RESIDENTS;i++) {
+            Critter a=residents[i];a.kind=i%3==2?1:0;a.side=hash(719+i*67)>.5f?-1:1;a.bankOffset=.037f+hash(421+i*91)*.025f;
+            a.phase=hash(173+i*83)*Softbody.TAU;a.age=.7f;
+            a.z=(L.playTop+(L.deckTop-L.playTop)*(.08f+.84f*(i+.15f+.70f*hash(519+i*83))/RESIDENTS)-ForestTerrain.travel(c,L))/L.w;
+        }
+    }
+    void update(GameCore c,Layout L,float dt) {
+        clean(c);if(!enabled(c))return;
+        settle(c,L);
         for(Critter a:animals)if(a.age>=0) {
             a.age+=dt;if(a.age>=a.delay+a.duration)a.age=-1;
+        }
+        for(Critter a:residents) {
+            a.age+=dt;
+            if(ForestTerrain.screenY(a.z,ForestTerrain.travel(c,L),L)>L.deckTop+L.w*.05f) {
+                a.z=(-L.w*.04f-ForestTerrain.travel(c,L))/L.w;a.age=0;
+            }
         }
     }
     void cleared(GameCore c,Layout L,float x,float y) {
         if(!enabled(c))return;
-        float base=(Math.max(L.playTop+L.h*.08f,Math.min(L.deckTop-L.h*.12f,y))-ForestTerrain.travel(c,L))/L.w;
-        int near=x/L.w<ForestTerrain.streamX(base)?-1:1;
+        settle(c,L);int chosen=0;
         for(int i=0;i<PER_WORD;i++) {
+            int best=-1;float nearest=Float.MAX_VALUE;
+            for(int j=0;j<RESIDENTS;j++) {
+                Critter a=residents[j];if((chosen&(1<<j))!=0 || a.kind!=(i==2?1:0))continue;
+                float yy=ForestTerrain.screenY(a.z,ForestTerrain.travel(c,L),L);
+                float distance=Math.abs(yy-y)+Math.abs(x(a,0)*L.w-x)*.25f;
+                if(a.age<.3f || yy<L.playTop || yy>L.deckTop)distance+=L.h*4;
+                if(distance<nearest){nearest=distance;best=j;}
+            }
+            chosen|=1<<best;Critter source=residents[best];
             int seed=++sequence*137+913;
             Critter a=animals[next];next=(next+1)%CAPACITY;
             a.age=0;a.delay=i*.075f+hash(seed)*.05f;a.duration=1.65f+hash(seed+7)*.65f;
-            a.z=base+(hash(seed+3)-.5f)*.19f;a.side=i==1?-near:near;
-            a.phase=hash(seed+11)*Softbody.TAU;a.kind=sequence%3==0?1:0;
+            a.z=source.z;a.side=source.side;a.phase=source.phase;a.kind=source.kind;a.bankOffset=source.bankOffset;
+            a.startAlpha=.72f*Math.max(0,Math.min(1,source.age/.65f));
+            // Replacement residents emerge quietly from foliage after the fleeing group has passed.
+            source.z=(L.playTop+(L.deckTop-L.playTop)*(.12f+hash(seed+3)*.74f)-ForestTerrain.travel(c,L))/L.w;
+            source.phase=hash(seed+11)*Softbody.TAU;source.bankOffset=.037f+hash(seed+13)*.025f;source.age=-1.3f-hash(seed+7)*.7f;
         }
     }
     static float progress(Critter a){return Math.max(0,Math.min(1,(a.age-a.delay)/a.duration));}
@@ -40,21 +69,30 @@ final class ForestCritters extends Draw {
     }
     static float x(Critter a,float t) {
         float zz=z(a,t),run=t*t/(.18f+.82f*t);
-        return ForestTerrain.streamX(zz)+a.side*(ForestTerrain.streamWidth(zz)+.037f+.53f*run);
+        return ForestTerrain.streamX(zz)+a.side*(ForestTerrain.streamWidth(zz)+a.bankOffset+.53f*run);
     }
     void draw(Painter p,GameCore c,Layout L,float fade) {
         if(fade<=0 || !enabled(c))return;
         boolean still=c.cloudUi.reduceMotion;
+        if(settled)for(Critter a:residents)if(a.age>=0) {
+            float time=still?0:a.age,angle=(a.side<0?(float)Math.PI:0)+.18f*(float)Math.sin(time*1.4f+a.phase);
+            float r=L.w*(a.kind==1?.0125f:.0135f)*(1+.035f*(float)Math.sin(time*2+a.phase));
+            float xx=x(a,0)*L.w,yy=ForestTerrain.screenY(a.z,ForestTerrain.travel(c,L),L);
+            float alpha=fade*.72f*Math.min(1,a.age/.65f);
+            p.fillEllipse(xx,yy+r*.5f,r*1.2f,r*.64f,Glyph.withAlpha(0xFF152D23,(int)(alpha*80)));
+            animal(p,xx,yy,r,(float)Math.cos(angle),(float)Math.sin(angle),
+                    still?0:.09f*(float)Math.sin(time*3+a.phase),a.kind,alpha);
+        }
         for(Critter a:animals) {
-            float age=a.age-a.delay;if(a.age<0 || age<0)continue;
+            float age=a.age-a.delay;if(a.age<0)continue;
             float t=progress(a),move=still?0:t;
-            float opacity=fade*Math.min(1,age/.10f)*Math.min(1,(a.duration-age)/.30f);
+            float opacity=fade*Math.max(a.startAlpha,Math.max(0,Math.min(1,age/.10f)))*Math.min(1,(a.duration-age)/.30f);
             if(opacity<=0)continue;
             float xx=x(a,move)*L.w,yy=ForestTerrain.screenY(z(a,move),ForestTerrain.travel(c,L),L);
             float ahead=Math.min(1,move+.008f),behind=Math.max(0,move-.008f);
             float dx=x(a,ahead)-x(a,behind),dy=z(a,ahead)-z(a,behind);
             float length=(float)Math.sqrt(dx*dx+dy*dy),ux=length>0?dx/length:a.side,uy=length>0?dy/length:0;
-            float r=L.w*(a.kind==1?.0125f:.0135f),stride=still?0:(float)Math.sin(age*(a.kind==1?20:35)+a.phase);
+            float r=L.w*(a.kind==1?.0125f:.0135f),stride=still || age<0?0:(float)Math.sin(age*(a.kind==1?20:35)+a.phase);
             float hop=a.kind==1 && !still?Math.max(0,stride)*r*.5f:0;
             p.fillEllipse(xx,yy+r*.5f,r*1.2f,r*.64f,Glyph.withAlpha(0xFF152D23,(int)(opacity*80)));
             animal(p,xx,yy-hop,r,ux,uy,stride,a.kind,opacity);

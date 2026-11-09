@@ -40,6 +40,7 @@ final class ForestTerrain extends Draw {
         streamStrip(p,L,travel,first,last,ribbon,-1,.001f,-.30f,0,0,0,0xFF122F2C,fade*.24f);
         streamStrip(p,L,travel,first,last,ribbon,-1,.001f,-.73f,0,0,0,0xFF122F2C,fade*.30f);
         streamStrip(p,L,travel,first,last,ribbon,.88f,0,1,0,0,0,0xFFABC4A0,fade*.23f);
+        shallows(p,c,L,travel,fade);
         water(p,c,L,travel,fade);
         float[] rock=new float[16],leaves=new float[66];
         int lo=firstRow(travel,L,CLUSTER),hi=lastRow(travel,L,CLUSTER);
@@ -130,6 +131,41 @@ final class ForestTerrain extends Draw {
         }
         p.fillPoly(shape,Glyph.withAlpha(color,(int)(255*fade)));
     }
+    private static void shallows(Painter p,GameCore c,Layout L,float travel,float fade) {
+        float step=.68f,time=c.cloudUi.reduceMotion?0:c.skyClock;
+        int lo=firstRow(travel,L,step),hi=lastRow(travel,L,step);
+        float[] wake=new float[14];
+        for(int row=lo;row<=hi;row++) {
+            int seed=4831+row*197;
+            float base=(row+.2f+hash(seed)*.6f)*step;
+            for(int i=0;i<4;i++) {
+                int n=seed+i*43;
+                float z=base+(hash(n+3)-.5f)*.085f,lane=(hash(n+5)-.5f)*.95f;
+                float x=L.w*(streamX(z)+streamWidth(z)*lane),y=screenY(z,travel,L);
+                float r=L.w*(.004f+hash(n+7)*.005f);
+                p.fillEllipse(x,y+r*.25f,r*1.4f,r*.85f,Glyph.withAlpha(0xFF193F36,(int)(fade*85)));
+                p.fillEllipse(x,y,r*1.2f,r*.72f,Glyph.withAlpha(0xFF91A58A,(int)(fade*95)));
+                p.fillEllipse(x-r*.2f,y-r*.2f,r*.55f,r*.30f,Glyph.withAlpha(0xFFC2C6A0,(int)(fade*65)));
+                for(int ripple=0;ripple<2;ripple++) {
+                    float phase=(time*.72f+hash(n+11)+ripple*.5f)%1;
+                    float reach=r*(1.1f+phase*1.2f);
+                    for(int j=0;j<7;j++) {
+                        float u=j/3f-1,zz=z+(r*(.9f+phase*3)+reach*(1-u*u)*.55f)/L.w;
+                        wake[j*2]=L.w*(streamX(zz)+streamWidth(zz)*lane)+u*reach;
+                        wake[j*2+1]=screenY(zz,travel,L);
+                    }
+                    p.polyline(wake,Glyph.withAlpha(0xFFCDDBBB,(int)(fade*45*(1-phase))),L.w*.0018f);
+                }
+            }
+        }
+    }
+    static float gust(GameCore c,Layout L,float x,float y) {
+        if(c.cloudUi.reduceMotion)return 0;
+        float phase=(c.skyClock-y/L.h*.9f-x/L.w*.45f+22)%11;
+        if(phase<0 || phase>=3.2f)return 0;
+        float wave=(float)Math.sin(Math.PI*phase/3.2f);
+        return wave*wave*(.9f+.1f*(float)Math.sin(phase*6));
+    }
     private static void water(Painter p,GameCore c,Layout L,float travel,float fade) {
         float flow=c.cloudUi.reduceMotion?0:c.clock*.045f;
         int lo=firstRow(travel+flow*L.w,L,.29f),hi=lastRow(travel+flow*L.w,L,.29f);
@@ -160,7 +196,7 @@ final class ForestTerrain extends Draw {
             for(int i=0;i<2;i++) {
                 float r=L.w*(.035f+hash(seed+i*23+5)*.035f);
                 float x=L.w*bank+side*i*r*.80f,yy=y+i*r*.30f;
-                float lean=side*(.48f+.35f*hash(seed+i*37+8))+.04f*(float)Math.sin(time*.65f+seed);
+                float lean=side*(.48f+.35f*hash(seed+i*37+8))+.04f*(float)Math.sin(time*.65f+seed)+.22f*gust(c,L,x,yy);
                 int color=wet?0xFF729C82:i==0?0xFF81976D:0xFFA1AA7E;
                 MushroomForest.sprig(p,shape,x,yy,r,lean,Math.floorMod(row+i,3),(int)(fade*(wet?82:96)),color);
             }

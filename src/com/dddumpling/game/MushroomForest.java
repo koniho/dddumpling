@@ -239,10 +239,10 @@ final class MushroomForest extends Draw {
             float span=L.deckTop+r*5;
             float y=((i+hash(seed+2))*.1f*span+c.skyClock*L.h*(.012f+layer*.008f)+scroll(c,L))%span-r*2.5f;
             if(y<-r*2.1f || y-r*2.1f>L.deckTop)continue;
-            float sway=(float)Math.sin(c.clock*.43f+i)*r*.10f;
+            float sway=c.cloudUi.reduceMotion?0:(float)Math.sin(c.skyClock*.43f+i)*r*.10f;
             int alpha=(int)(fade*(layer==0?38:66));
             // Ferns alternate with rounded broad leaves and slim willow sprays.
-            sprig(p,leaf,x,y,r,side*(.6f+sway/r),i%3,alpha,GREENS[(i+layer)%GREENS.length]);
+            sprig(p,leaf,x,y,r,side*(.6f+sway/r)+ForestTerrain.gust(c,L,x,y)*.18f,i%3,alpha,GREENS[(i+layer)%GREENS.length]);
         }
     }
 
@@ -261,8 +261,8 @@ final class MushroomForest extends Draw {
             float y=((i+hash(seed+3))/6f*span+c.skyClock*L.h*.034f+scroll(c,L)*1.35f)%span-r*2;
             if(y<-r*2.1f || y-r*2.1f>L.deckTop)continue;
             float x=side>0?-r*.12f:L.w+r*.12f;
-            float sway=(float)Math.sin(c.clock*.65f+i*2.3f)*.23f;
-            sprig(p,shape,x,y,r,side*(1.05f+sway),1,(int)(fade*(1-grove)*20),GREENS[i%4]);
+            float sway=c.cloudUi.reduceMotion?0:(float)Math.sin(c.skyClock*.65f+i*2.3f)*.23f;
+            sprig(p,shape,x,y,r,side*(1.05f+sway)+ForestTerrain.gust(c,L,x,y)*.18f,1,(int)(fade*(1-grove)*20),GREENS[i%4]);
         }
         if(grove>0)for(int i=0;i<2;i++) {
             float side=i%2==0?1:-1,r=L.w*(i<2?.43f:.32f);

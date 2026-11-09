@@ -31,7 +31,17 @@ final class TestForestTerrain extends Check {
                 && first.trail[first.trail.length/2-1]>L.deckTop);
         check("log and terrain share scroll speed",LandBonus.scrollSpeed(c,L)==ForestTerrain.speed(L));
         check("drawing leaves gameplay randomness unchanged",c.rnd.nextLong()==twin.rnd.nextLong());
-        c.cloudUi.reduceMotion=true;c.clock=0;Probe still=draw(c,L,false);
+        float peak=0;int quiet=0;boolean bounded=true;
+        for(int i=0;i<110;i++) {
+            c.skyClock=i*.1f;float wind=ForestTerrain.gust(c,L,L.w*.3f,L.h*.4f);
+            peak=Math.max(peak,wind);if(wind==0)quiet++;bounded&=wind>=0 && wind<=1;
+        }
+        check("gusts have quiet gaps and a bounded gentle peak",bounded && peak>.8f && quiet>65);
+        c.skyClock=1.8f;
+        check("gust reaches different foliage positions in sequence",Math.abs(ForestTerrain.gust(c,L,0,0)-ForestTerrain.gust(c,L,L.w,L.h))>.15f);
+        c.cloudUi.reduceMotion=true;
+        check("reduced motion disables gusts",ForestTerrain.gust(c,L,0,0)==0);
+        c.skyClock=8;c.clock=0;Probe still=draw(c,L,false);
         c.clock=23;Probe later=draw(c,L,false);
         check("reduced motion freezes water glints and plant sway",still.hash==later.hash);
         c.cloudUi.reduceMotion=false;

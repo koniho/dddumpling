@@ -10,9 +10,10 @@ import java.io.File;
 final class Preview {
     private static void forestTerrainFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wantedGroup("246-"))return;
-        for(float age:new float[]{0,8,18,32,55,90}) {
+        for(float age:new float[]{0,8,13,14,18,32,55,90}) {
             GameCore c=TestLandBonuses.start(L,16,true,246);
             c.skyClock=age;c.clock=age;c.landBonus.skyAt=age-10;c.landBonus.age=c.landBonus.delay+10;
+            c.forestCritters.update(c,L,0);
             Check.add(c,L,new int[]{0,1,4},L.playTop+L.h*.18f);
             Check.add(c,L,new int[]{5,4},L.playTop+L.h*.35f);
             shot(dir,"246-forest-"+(int)age,c,L,w,h,ss);
@@ -28,7 +29,7 @@ final class Preview {
             GameCore.Enemy e=Check.add(c,L,new int[]{0,1,4},L.h*.43f);
             c.destroyWord(e,c.enemyCentreX(e),e.y,L);c.enemies.clear();c.particles.clear();
             c.flash=c.shake=c.skyGlow=0;
-            c.forestCritters.update(c,beat);c.skyClock+=beat;
+            c.forestCritters.update(c,L,beat);c.skyClock+=beat;
             shot(dir,"246-critters-"+(int)(beat*100),c,L,w,h,ss);
             if(beat==.45f) {c.cloudUi.reduceMotion=true;shot(dir,"246-critters-still",c,L,w,h,ss);}
         }
