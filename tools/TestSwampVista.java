@@ -47,11 +47,11 @@ final class TestSwampVista extends Check {
         check("clear swamp sky emits no clouds",clouds.calls==0);
         Probe p=new Probe();SwampVista.draw(p,c,L,1);
         check("perspective art preserves gameplay randomness",c.rnd.nextLong()==twin.rnd.nextLong());
-        check("scenery stays bounded and extends behind the header ("+p.calls+" draws)",p.calls>100 && p.calls<530 && p.top<=0);
+        check("scenery stays bounded and extends behind the header ("+p.calls+" draws)",p.calls>100 && p.calls<570 && p.top<=0);
         boolean bounded=true;int peak=0;
         for(int age=0;age<=90;age+=3) {
             c.skyClock=age;Probe frame=new Probe();SwampVista.draw(frame,c,L,1);
-            bounded&=frame.calls<530;peak=Math.max(peak,frame.calls);
+            bounded&=frame.calls<570;peak=Math.max(peak,frame.calls);
         }
         check("quiet scenery stays bounded throughout travel ("+peak+" draws)",bounded);c.skyClock=18;
         boolean filled=true;

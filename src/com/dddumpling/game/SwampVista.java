@@ -59,6 +59,7 @@ final class SwampVista extends Draw {
         nightSky(p,L,fade);
         horizonTrees(p,L,fade);
         banks(p,c,L,fade);
+        horizonGrass(p,L,time,fade);
         ripples(p,c,L,fade);
         flotsam(p,c,L,fade);
         // Keep tall trailing tufts until their tips leave view; world seeds survive row rollover.
@@ -163,6 +164,15 @@ final class SwampVista extends Draw {
                 p.fillEllipse(x,y,r*1.7f,r*.35f,ink(0xFF385D45,a*.18f));
                 SwampGrass.draw(p,x,y,r,seed,time,.35f+d*.55f,a*.70f);
             }
+        }
+    }
+    private static void horizonGrass(Painter p,Layout L,float time,float fade) {
+        // Distant reeds close the horizon below the trees, including the far river bend.
+        for(int i=0;i<36;i++) {
+            int seed=12400+i*28+(i%2==0?0:3);
+            float x=L.w*i/35f,r=L.w*(.015f+.001f*hash(seed+7));
+            float y=horizonAt(L,x)+r*7.4f;
+            SwampGrass.draw(p,x,y,r,seed,time,.30f,fade*.95f);
         }
     }
     private static void horizonHaze(Painter p,Layout L,float fade) {
