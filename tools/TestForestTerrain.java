@@ -3,15 +3,17 @@ package com.dddumpling.game;
 final class TestForestTerrain extends Check {
     static void all(Layout L) {
         group("continuous forest terrain");
-        boolean dryEdges=true,inside=true;
+        boolean dryEdges=true,inside=true,separate=true;
         for(int i=-10000;i<=10000;i++) {
             float z=i*.031f,s=ForestTerrain.streamX(z),sw=ForestTerrain.streamWidth(z);
             float x=ForestTerrain.pathX(z),w=ForestTerrain.pathWidth(z);
             dryEdges&=sw>0 && s-sw*2.25f>.27f && s+sw*2.25f<.73f;
+            separate&=s-sw*2.25f-(x+w*1.5f)>.03f;
             inside&=w>0 && x-w*1.5f>0 && x+w*1.5f<1;
         }
         check("stream banks leave dry outer scenery for the log",dryEdges);
         check("trail remains inside the forest",inside);
+        check("stream banks never overlap the trail or its soft edges",separate);
         GameCore c=TestLandBonuses.start(L,16,true,246);
         GameCore twin=TestLandBonuses.start(L,16,true,246);
         c.skyClock=0;Probe first=draw(c,L,false);

@@ -6,9 +6,9 @@ final class ForestTerrain extends Draw {
     private ForestTerrain() {}
     static float speed(Layout L) {return L.h*.028f;}
     static float travel(GameCore c,Layout L) {return c.skyClock*speed(L)+MushroomForest.groveProgress(c)*L.h*.72f;}
-    static float pathX(float z) {return .50f+.21f*(float)Math.sin(z*1.7f-.5f)+.03f*(float)Math.sin(z*4.1f+.3f);}
+    static float pathX(float z) {return .32f+.08f*(float)Math.sin(z*1.7f-.5f)+.012f*(float)Math.sin(z*4.1f+.3f);}
     static float pathWidth(float z) {return (.066f+.012f*(float)Math.sin(z*2.1f+1))*(1+.14f*(float)Math.sin(z*8.3f)+.055f*(float)Math.sin(z*19));}
-    static float streamX(float z) {return .50f+.13f*(float)Math.sin(z*2.2f+1.4f)+.025f*(float)Math.sin(z*5.7f-.8f);}
+    static float streamX(float z) {return pathX(z)+.245f+.008f*(float)Math.sin(z*.9f+.4f);}
     static float streamWidth(float z) {return .017f+.006f*(float)Math.sin(z*4.1f+.7f)+.002f*(float)Math.sin(z*13);}
     static float screenY(float z,float travel,Layout L) {return z*L.w+travel;}
     static int firstRow(float travel,Layout L,float step) {return (int)Math.floor((-travel/L.w-.4f)/step);}
@@ -26,6 +26,7 @@ final class ForestTerrain extends Draw {
         band(p,L,travel,first,last,ribbon,false,1.07f,0xFF554E3D,fade*.46f);
         band(p,L,travel,first,last,ribbon,false,.97f,0xFF766A50,fade*.44f);
         band(p,L,travel,first,last,ribbon,false,.73f,0xFFAA946B,fade*.06f);
+        pathTexture(p,L,travel,fade);
         // Soft wet banks surround the narrow stream, with a translucent shallow center.
         band(p,L,travel,first,last,ribbon,true,2.25f,0xFF506D55,fade*.20f);
         band(p,L,travel,first,last,ribbon,true,1.45f,0xFF122F2B,fade*.42f);
@@ -50,12 +51,36 @@ final class ForestTerrain extends Draw {
             if(!wet)MushroomForest.litter(p,leaves,L.w*(bank-side*.035f),y-L.w*.05f,
                     L.w*(.018f+hash(seed+37)*.015f),Math.floorMod(seed,10000),(int)(fade*58));
         }
-        // Small flat stepping stones mark occasional places where water crosses the trail.
+    }
+    private static void pathTexture(Painter p,Layout L,float travel,float fade) {
+        float step=.115f;
+        int lo=firstRow(travel,L,step),hi=lastRow(travel,L,step);
+        float[] patch=new float[12],leaf=new float[66];
         for(int row=lo;row<=hi;row++) {
-            float z=(row+.5f)*CLUSTER;
-            if(Math.abs(pathX(z)-streamX(z))>pathWidth(z)*.40f || Math.floorMod(row,3)!=0)continue;
-            for(int i=-1;i<=1;i++)stone(p,rock,L.w*(streamX(z)+i*streamWidth(z)*.62f),
-                    screenY(z+i*.012f,travel,L),L.w*.013f,371+row*71+i*19,fade*.66f);
+            int seed=row*173+4319;
+            for(int i=0;i<3;i++) {
+                int n=seed+i*47;
+                float z=(row+hash(n))*step,half=pathWidth(z)*L.w;
+                float x=pathX(z)*L.w+(hash(n+3)-.5f)*half*1.25f,y=screenY(z,travel,L);
+                float rx=half*(.14f+hash(n+5)*.18f),ry=L.w*(.007f+hash(n+7)*.021f);
+                for(int j=0;j<6;j++) {
+                    float angle=j*Softbody.TAU/6,rough=.7f+hash(n+j*19)*.3f;
+                    patch[j*2]=x+(float)Math.cos(angle)*rx*rough;
+                    patch[j*2+1]=y+(float)Math.sin(angle)*ry*rough;
+                }
+                p.fillPoly(patch,Glyph.withAlpha(i==0?0xFFC0A47A:0xFF514C39,(int)(fade*(i==0?34:27))));
+                if(i==1) {
+                    float r=L.w*(.0025f+hash(n+13)*.0035f);
+                    p.fillEllipse(x,y,r*1.3f,r*.8f,Glyph.withAlpha(0xFF484C3D,(int)(fade*100)));
+                    p.fillEllipse(x-r*.15f,y-r*.25f,r*.8f,r*.45f,Glyph.withAlpha(0xFFB0A58A,(int)(fade*100)));
+                }
+            }
+            if(hash(seed+31)>.68f) {
+                float z=(row+hash(seed+37))*step;
+                float x=L.w*(pathX(z)+(hash(seed+41)-.5f)*pathWidth(z)*1.35f);
+                MushroomForest.litter(p,leaf,x,screenY(z,travel,L),L.w*(.008f+hash(seed+43)*.009f),
+                        Math.floorMod(seed,10000),(int)(fade*75));
+            }
         }
     }
     private static void moss(Painter p,Layout L,float travel,float fade) {
