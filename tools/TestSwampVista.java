@@ -61,13 +61,20 @@ final class TestSwampVista extends Check {
         check("clear swamp sky emits no clouds",clouds.calls==0);
         Probe p=new Probe();SwampVista.draw(p,c,L,1);
         check("perspective art preserves gameplay randomness",c.rnd.nextLong()==twin.rnd.nextLong());
-        check("scenery stays bounded and extends behind the header ("+p.calls+" draws)",p.calls>100 && p.calls<570 && p.top<=0);
+        check("scenery stays bounded and extends behind the header ("+p.calls+" draws)",p.calls>100 && p.calls<650 && p.top<=0);
         boolean bounded=true;int peak=0;
         for(int age=0;age<=90;age+=3) {
             c.skyClock=age;Probe frame=new Probe();SwampVista.draw(frame,c,L,1);
-            bounded&=frame.calls<570;peak=Math.max(peak,frame.calls);
+            bounded&=frame.calls<650;peak=Math.max(peak,frame.calls);
         }
         check("quiet scenery stays bounded throughout travel ("+peak+" draws)",bounded);c.skyClock=18;
+        for(int i=0;i<12;i++) {
+            c.swampFireflies.cleared(c,L,L.w*(.2f+(i%3)*.3f),L.h*(.40f+(i%4)*.09f));
+            c.swampFireflies.update(c,.03f);
+        }
+        Probe sparkling=new Probe();SwampVista.draw(sparkling,c,L,1);
+        check("rapid clear sparkle and river life stay within the scenery budget",sparkling.calls<650);
+        c.swampFireflies.reset();
         boolean filled=true;
         for(float clock:new float[]{0,8,18,32}) {
             c.skyClock=clock;Probe corners=new Probe();corners.width=L.w;corners.cornerTop=SwampVista.horizon(L);corners.cornerBottom=corners.cornerTop+L.h*.12f;

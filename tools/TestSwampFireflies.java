@@ -6,7 +6,7 @@ final class TestSwampFireflies extends Check {
         GameCore c=TestLandBonuses.start(L,21,true,248);
         GameCore.Enemy e=add(c,L,new int[]{0,1,4},L.h*.48f);
         c.destroyWord(e,c.enemyCentreX(e),e.y,L);
-        check("word clear scatters four resident fireflies",count(c)==SwampFireflies.PER_CLEAR);
+        check("word clear scatters nearby resident fireflies",count(c)==SwampFireflies.PER_CLEAR);
         c.swampFireflies.update(c,.2f);float before=0;for(float age:c.swampFireflies.age)before+=age;
         c.destroyWord(e,c.enemyCentreX(e),e.y,L);float after=0;for(float age:c.swampFireflies.age)after+=age;
         check("duplicate clear does not restart the scatter",before==after);
@@ -14,6 +14,16 @@ final class TestSwampFireflies extends Check {
     }
     static void all(Layout L) {
         group("swamp firefly scatter");
+        boolean clustered=true;
+        for(int time=0;time<=90;time+=3)for(int group=0;group<4;group++) {
+            float minX=1,maxX=0,minY=1,maxY=0;
+            for(int i=group*4;i<group*4+4;i++) {
+                float xx=SwampFireflies.baseX(i,time),yy=SwampFireflies.baseY(i,time);
+                minX=Math.min(minX,xx);maxX=Math.max(maxX,xx);minY=Math.min(minY,yy);maxY=Math.max(maxY,yy);
+            }
+            clustered&=maxX-minX<.075f && maxY-minY<.04f;
+        }
+        check("idle fireflies stay in small drifting clusters",clustered);
         GameCore c=cleared(L);float x=L.w*.5f,y=L.h*.48f;
         c.swampFireflies.reset();c.swampFireflies.cleared(c,L,x,y);c.swampFireflies.update(c,.25f);
         boolean away=true,continuous=true;

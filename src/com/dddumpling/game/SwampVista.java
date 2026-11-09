@@ -59,6 +59,7 @@ final class SwampVista extends Draw {
         nightSky(p,L,fade);
         horizonTrees(p,c,L,fade);
         banks(p,c,L,fade);
+        underwaterLife(p,c,L,fade);
         riverHaze(p,c,L,fade);
         horizonGrass(p,c,L,time,fade);
         ripples(p,c,L,fade);
@@ -179,7 +180,7 @@ final class SwampVista extends Draw {
     }
     private static void horizonGrass(Painter p,GameCore c,Layout L,float time,float fade) {
         // Keep the whole distant river opening clear, from the blade tips to their roots.
-        float left=L.w,right=0,farDepth=waterDepth(L,horizon(L)+L.w*.016f*7.4f);
+        float left=L.w,right=0,farDepth=waterDepth(L,horizon(L)+L.w*.021f*6.2f);
         for(int i=0;i<=4;i++) {
             float d=farDepth*i/4;
             left=Math.min(left,L.w*waterEdgeX(L,c.skyClock,d,-1));
@@ -187,11 +188,11 @@ final class SwampVista extends Draw {
         }
         for(int i=0;i<36;i++) {
             int seed=12400+i*28+(i%2==0?0:3);
-            float x=L.w*i/35f,r=L.w*(.015f+.001f*hash(seed+7));
-            float y=horizonAt(L,x)+r*7.4f;
+            float x=L.w*i/35f,r=L.w*(.020f+.001f*hash(seed+7));
+            float y=horizonAt(L,x)+r*6.2f;
             float bank=Math.max(0,Math.min(1,(Math.max(left-x,x-right)-r*1.1f)/(r*1.5f)));
             if(bank<=.01f)continue;
-            SwampGrass.draw(p,x,y,r,seed,time,.95f,fade*bank*bank*(3-2*bank));
+            SwampGrass.draw(p,x,y,r,seed,time,1,fade*bank*bank*(3-2*bank));
         }
     }
     private static void riverHaze(Painter p,GameCore c,Layout L,float fade) {
@@ -229,6 +230,66 @@ final class SwampVista extends Draw {
                     ink(0xFF9EBBA1,a),Math.max(.55f,L.w*(.0012f+.001f*d)));
         }
     }
+    private static void underwaterLife(Painter p,GameCore c,Layout L,float fade) {
+        float phase=c.skyClock*SPEED*6,time=c.cloudUi.reduceMotion?0:c.skyClock;float[] points=new float[8];
+        for(int i=0;i<6;i++) {
+            int seed=16321+(i-(int)Math.floor(phase))*197;
+            float t=(i+phase-(float)Math.floor(phase))/6,d=depth(t);
+            float x=L.w*(.5f+bend(c.skyClock,d)+(hash(seed)-.5f)*(.08f+.22f*d));
+            float y=rootY(L,t,x),r=L.w*(.006f+.025f*d),a=fade*reveal(t)*(.14f+.10f*d);
+            if(y-r*3>L.deckTop || a<.008f)continue;
+            int kind=Math.floorMod(seed,3);
+            if(kind==0) {
+                p.fillEllipse(x,y,r*1.4f,r*.62f,ink(0xFF71846C,a));
+                p.fillEllipse(x+r*1.6f,y+r*.65f,r*.75f,r*.40f,ink(0xFF587A70,a));
+                p.fillEllipse(x-r*1.4f,y+r*.8f,r*.55f,r*.32f,ink(0xFF8A9678,a*.75f));
+            } else if(kind==1) {
+                for(int blade=0;blade<3;blade++) {
+                    float h=r*(1.6f+blade*.5f),lean=r*(blade-1)*.65f;
+                    for(int n=0;n<4;n++) {
+                        float u=n/3f;
+                        points[n*2]=x+lean*u+r*.20f*(float)Math.sin(time*.7f+seed+u*3)*u;
+                        points[n*2+1]=y-h*u;
+                    }
+                    p.polyline(points,ink(0xFF69987D,a),Math.max(.55f,r*.18f));
+                }
+            } else {
+                for(int fish=0;fish<2;fish++) {
+                    float dir=seed%2==0?1:-1;
+                    float xx=x+fish*r*2.4f+r*.4f*(float)Math.sin(time*.65f+seed),yy=y+fish*r*.7f;
+                    p.fillEllipse(xx,yy,r*.85f,r*.27f,ink(0xFF709E9A,a));
+                    points[0]=xx-dir*r*.7f;points[1]=yy;points[2]=xx-dir*r*1.35f;points[3]=yy-r*.40f;
+                    points[4]=xx-dir*r*1.18f;points[5]=yy;points[6]=xx-dir*r*1.35f;points[7]=yy+r*.40f;
+                    p.fillPoly(points,ink(0xFF709E9A,a));
+                }
+            }
+        }
+    }
+    private static void lilyPad(Painter p,float x,float y,float r,int seed,float time,float fade,boolean still) {
+        float[] pad=new float[26];pad[0]=x;pad[1]=y;
+        for(int i=0;i<12;i++) {
+            float angle=.28f+i*(Softbody.TAU-.56f)/11;
+            pad[(i+1)*2]=x+(float)Math.cos(angle)*r*1.65f;
+            pad[(i+1)*2+1]=y+(float)Math.sin(angle)*r*.65f;
+        }
+        p.fillEllipse(x,y+r*.24f,r*1.8f,r*.55f,ink(0xFF153F3A,fade*.20f));
+        p.fillPoly(pad,ink(0xFF6A965E,fade));
+        p.line(x-r*1.2f,y+r*.1f,x+r*.45f,y-r*.12f,ink(0xFFA3B77D,fade*.35f),Math.max(.5f,r*.07f));
+        float breath=still?0:(float)Math.sin(time*2+seed)*r*.025f;
+        int green=ink(0xFF80A85F,fade),dark=ink(0xFF284D3C,fade);
+        p.fillEllipse(x-r*.53f,y-r*.12f,r*.32f,r*.22f,green);
+        p.fillEllipse(x+r*.53f,y-r*.12f,r*.32f,r*.22f,green);
+        p.fillEllipse(x,y-r*.32f,r*.64f,r*.46f+breath,green);
+        p.fillEllipse(x,y-r*.23f,r*.36f,r*.22f,ink(0xFFBDCB83,fade*.65f));
+        float blink=(time+hash(seed+5)*5)%5.2f;
+        for(int side=-1;side<=1;side+=2) {
+            float eyeX=x+side*r*.29f,eyeY=y-r*.67f;
+            p.fillEllipse(eyeX,eyeY,r*.20f,r*.22f,ink(0xFFD1D99A,fade));
+            if(!still && blink>5.06f)p.line(eyeX-r*.10f,eyeY,eyeX+r*.10f,eyeY,dark,Math.max(.5f,r*.07f));
+            else p.fillCircle(eyeX,eyeY,r*.10f,dark);
+        }
+        p.arc(x,y-r*.36f,r*.24f,r*.13f,10,160,dark,Math.max(.5f,r*.06f));
+    }
     private static void flotsam(Painter p,GameCore c,Layout L,float fade) {
         float phase=c.skyClock*SPEED*8,time=c.cloudUi.reduceMotion?0:c.skyClock;
         for(int i=0;i<8;i++) {
@@ -241,8 +302,7 @@ final class SwampVista extends Draw {
             p.fillEllipse(x,y+r*.55f,r*2,r*.25f,ink(0xFF153F3A,a*.24f));
             int kind=Math.floorMod(seed,3);
             if(kind==0) {
-                p.fillEllipse(x,y+bob,r*1.1f,r*.45f,ink(0xFF658C6B,a));
-                p.fillEllipse(x+r*1.1f,y+r*.4f+bob,r*.7f,r*.30f,ink(0xFF71966F,a*.85f));
+                lilyPad(p,x,y+bob,r*2,seed,time,a*1.25f,c.cloudUi.reduceMotion);
             } else if(kind==1) {
                 p.line(x-r*1.8f,y-r*.2f+bob,x+r*1.8f,y+r*.3f+bob,ink(0xFF827C5E,a),r*.45f);
                 p.line(x,y+bob,x+r*.55f,y-r*.75f+bob,ink(0xFF827C5E,a),r*.23f);
