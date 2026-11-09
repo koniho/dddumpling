@@ -5,6 +5,7 @@
 #import <math.h>
 
 #import "com/dddumpling/game/MushroomForest.h"
+#import "com/dddumpling/game/SwampGrass.h"
 #import "com/dddumpling/game/SlimeBasinArt.h"
 #import "com/dddumpling/game/CrystalField.h"
 #import "com/dddumpling/game/CrystalArena.h"
@@ -67,6 +68,7 @@ static void DDDrawCachedImage(CGContextRef ctx,CGRect rect,CGImageRef color,CGIm
 
 @interface DDIOSPainter () {
   CGImageRef _forest[6];
+  CGImageRef _swampGrass[DDSwampGrass_COUNT],_swampGrassGray[DDSwampGrass_COUNT];
   CGImageRef _reefVista[DDUnderwaterVista_COUNT],_reefVistaGray[DDUnderwaterVista_COUNT];
   CGImageRef _reef[DDUnderwater_ROCK_COUNT],_reefGray[DDUnderwater_ROCK_COUNT];
   CGImageRef _waterBand,_waterGlow,_waterBandGray,_waterGlowGray;
@@ -102,6 +104,33 @@ static void DDDrawCachedImage(CGContextRef ctx,CGRect rect,CGImageRef color,CGIm
 - (jboolean)greenStampWithInt:(jint)art withFloat:(jfloat)x withFloat:(jfloat)y
                    withFloat:(jfloat)w withFloat:(jfloat)h withFloat:(jfloat)angle
                      withInt:(jint)tint withFloat:(jfloat)amount withFloat:(jfloat)phase { return NO; }
+
+- (jboolean)swampGrassWithInt:(jint)art withFloat:(jfloat)x withFloat:(jfloat)y
+                  withFloat:(jfloat)r withFloat:(jfloat)sway withInt:(jint)alpha withFloat:(jfloat)mono {
+  CGContextRef context=self.context;
+  if(!context || _drawingForest || art<0 || art>=DDSwampGrass_COUNT || r<=0)return NO;
+  if(!_swampGrass[art]) {
+    CGContextRef bitmap=CGBitmapContextCreate(NULL,DDSwampGrass_WIDTH,DDSwampGrass_HEIGHT,8,
+        DDSwampGrass_WIDTH*4,_colorSpace,kCGBitmapByteOrder32Big|kCGImageAlphaPremultipliedLast);
+    if(!bitmap)return NO;
+    self.context=bitmap;_drawingForest=YES;
+    [DDSwampGrass paintWithDDPainter:self withInt:art withFloat:DDSwampGrass_ANCHOR_X
+        withFloat:DDSwampGrass_ANCHOR_Y withFloat:DDSwampGrass_UNIT withFloat:0 withFloat:1];
+    _drawingForest=NO;self.context=context;
+    _swampGrass[art]=CGBitmapContextCreateImage(bitmap);CGContextRelease(bitmap);
+    if(!_swampGrass[art])return NO;
+  }
+  if(mono>0 && !_swampGrassGray[art])_swampGrassGray[art]=DDGrayImage(_swampGrass[art],_colorSpace);
+  if(mono>0 && !_swampGrassGray[art])return NO;
+  CGFloat unit=r/DDSwampGrass_UNIT;
+  CGContextSaveGState(context);CGContextTranslateCTM(context,x,y);
+  CGContextConcatCTM(context,CGAffineTransformMake(1,0,-sway,1,0,0));
+  CGContextSetAlpha(context,MAX(0,MIN(255,alpha))/255.0);
+  CGContextSetInterpolationQuality(context,kCGInterpolationMedium);
+  DDDrawCachedImage(context,CGRectMake(-DDSwampGrass_ANCHOR_X*unit,-DDSwampGrass_ANCHOR_Y*unit,
+      DDSwampGrass_WIDTH*unit,DDSwampGrass_HEIGHT*unit),_swampGrass[art],_swampGrassGray[art],mono);
+  CGContextRestoreGState(context);return YES;
+}
 
 - (CGImageRef)forestImage:(jint)art color:(jint)color {
   const size_t side=256, rowBytes=side*4;
@@ -404,6 +433,7 @@ static void DDDrawCachedImage(CGContextRef ctx,CGRect rect,CGImageRef color,CGIm
   for (NSUInteger i=0;i<DDCrystalField_LAYERS;i++){CGImageRelease(_crystal[i]);CGImageRelease(_crystalArena[i]);CGImageRelease(_crystalGray[i]);CGImageRelease(_crystalArenaGray[i]);}
   for (NSUInteger i=0;i<DDSlimeBasinArt_COUNT;i++) CGImageRelease(_basin[i]);
   for (NSUInteger i=0;i<6;i++) CGImageRelease(_forest[i]);
+  for (NSUInteger i=0;i<DDSwampGrass_COUNT;i++){CGImageRelease(_swampGrass[i]);CGImageRelease(_swampGrassGray[i]);}
   for (NSUInteger i=0;i<16;i++) CGImageRelease(_forestTinted[i]);
   for (NSUInteger i = 0; i < 1024; ++i) CGColorRelease(_colors[i]);
   CGColorSpaceRelease(_colorSpace);

@@ -11,6 +11,9 @@ final class MonochromePainter implements Painter,ArtStamp {
     public GatorCompanion gator() { return p.gator(); }
     public ArtStamp stamps() { return p.stamps()==null?null:amount==0?p.stamps():this; }
     public boolean stamp(int art,float x,float y,float w,float h,float angle,int tint,float mix) {return false;}
+    public boolean swampGrass(int art,float x,float y,float r,float sway,int alpha,float mono) {
+        return p.stamps().swampGrass(art,x,y,r,sway,alpha,amount+(1-amount)*mono);
+    }
     public boolean waterBand(float[] xy,float radius,int alpha) {
         return p.stamps().waterBand(xy,radius,alpha,amount);
     }

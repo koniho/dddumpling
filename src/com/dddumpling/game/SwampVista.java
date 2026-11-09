@@ -2,14 +2,14 @@ package com.dddumpling.game;
 
 /** Quiet grass banks and fireflies, projected from the same moving water-level landscape. */
 final class SwampVista extends Draw {
-    static final int ROWS=6;
+    static final int ROWS=16,LANES=4;
     static final float SPEED=.030f;
     private SwampVista() {}
     static float depth(float t){return t/(3-2*t);}
     static float scale(float t){return .14f+depth(t)*1.55f;}
     static float horizon(Layout L){return L.h*.43f;}
-    static float rootY(Layout L,float t){return horizon(L)+depth(t)*(L.deckTop-horizon(L)+L.h*.25f);}
-    static float waterDepth(Layout L,float y){return Math.max(0,(y-horizon(L))/(L.deckTop-horizon(L)+L.h*.25f));}
+    static float rootY(Layout L,float t){return horizon(L)+depth(t)*(L.deckTop-horizon(L)+L.h*.35f);}
+    static float waterDepth(Layout L,float y){return Math.max(0,(y-horizon(L))/(L.deckTop-horizon(L)+L.h*.35f));}
     static float bend(float clock,float d) {
         d=Math.max(0,Math.min(1,d));float t=3*d/(1+2*d);
         return .19f*(float)Math.sin(Math.PI*Math.sqrt(d))*(float)Math.sin(t*12-clock*SPEED*12+.6f);
@@ -19,11 +19,11 @@ final class SwampVista extends Draw {
     static float travel(float clock,int row,int side,int lane){float p=phase(clock,side,lane);return (row+p-(float)Math.floor(p))/ROWS;}
     static int grassSeed(float clock,int row,int side,int lane){return 4391+(row-(int)Math.floor(phase(clock,side,lane)))*137+side*53+lane*701;}
     static float shoreX(Layout L,float clock,float d,int side) {
-        float v=d*(L.deckTop-horizon(L)+L.h*.25f)/(L.deckTop-horizon(L));
+        float v=d*(L.deckTop-horizon(L)+L.h*.35f)/(L.deckTop-horizon(L));
         return .5f+bend(clock,d)+side*(.065f+.28f*(float)Math.sqrt(Math.max(0,v)));
     }
     static float grassX(Layout L,float clock,float t,int side,int lane,int seed) {
-        return shoreX(L,clock,depth(t),side)+side*(.080f+lane*.13f+hash(seed+7)*.012f)*scale(t);
+        return shoreX(L,clock,depth(t),side)+side*(.10f+lane*.14f+hash(seed+7)*.012f)*scale(t);
     }
     static float arena(GameCore c) {
         if(BossCollect.keepsArena(c,Boss.ALLIGATOR))return 1;
@@ -40,14 +40,14 @@ final class SwampVista extends Draw {
         horizonTrees(p,L,fade);
         banks(p,c,L,fade);
         // Each tuft has a permanent world seed and bank offset. Only blade tips sway.
-        for(int row=0;row<ROWS;row++)for(int side=-1;side<=1;side+=2)for(int lane=1;lane>=0;lane--) {
+        for(int row=0;row<ROWS;row++)for(int side=-1;side<=1;side+=2)for(int lane=LANES-1;lane>=0;lane--) {
             int seed=grassSeed(c.skyClock,row,side,lane);
             float t=travel(c.skyClock,row,side,lane),d=depth(t),s=scale(t);
             float x=L.w*grassX(L,c.skyClock,t,side,lane,seed),y=rootY(L,t);
-            float r=L.w*.070f*s*(.8f+hash(seed)*.25f);
-            if(x+r<0 || x-r>L.w || y-r*1.7f>L.deckTop)continue;
+            float r=L.w*SwampGrass.RADIUS*s*(.8f+hash(seed)*.25f);
+            if(x+r*1.4f<0 || x-r*1.4f>L.w || y-r*SwampGrass.TOP>L.deckTop)continue;
             float opacity=fade*reveal(t);if(opacity<.008f)continue;
-            grass(p,x,y,r,seed,time,.25f+.75f*Math.min(1,d*2.5f),opacity);
+            SwampGrass.draw(p,x,y,r,seed,time,.25f+.75f*Math.min(1,d*2.5f),opacity);
         }
         LandBonusArt.inSwamp(p,c,L,fade);
         c.swampFireflies.draw(p,c,L,fade);
@@ -86,20 +86,6 @@ final class SwampVista extends Draw {
         for(int i=0;i<8;i++) {
             float u=(i+.5f)/8,y=h+L.h*(i/8f-.5f)*.06f,next=h+L.h*((i+1)/8f-.5f)*.06f;
             p.fillRect(0,y,L.w,next,ink(0xFF657C68,fade*.35f*(float)Math.sin(u*Math.PI)));
-        }
-    }
-    private static void grass(Painter p,float x,float y,float r,int seed,float time,float clarity,float fade) {
-        p.fillEllipse(x,y,r,r*.12f,ink(0xFF294A34,fade*.28f));
-        float[] blade=new float[8];
-        // A fixed blade count keeps a tuft's shape from changing as it approaches.
-        for(int i=0;i<9;i++) {
-            int n=seed+i*31;float bx=x+(hash(n)-.5f)*r*1.7f,by=y+(hash(n+3)-.5f)*r*.12f;
-            float h=r*(.55f+hash(n+5)*1.05f),lean=(hash(n+7)-.5f)*r*.48f+(float)Math.sin(time*.65f+n)*r*.025f;
-            float w=r*(.05f+hash(n+9)*.05f);
-            blade[0]=bx-w;blade[1]=by;blade[2]=bx+w;blade[3]=by;blade[4]=bx+lean;blade[5]=by-h;
-            blade[6]=bx+lean*.38f-w*.4f;blade[7]=by-h*.52f;
-            int color=i%3==0?0xFF819563:i%3==1?0xFF4E754E:0xFF638653;
-            p.fillPoly(blade,ink(Glyph.mix(0xFF758579,color,clarity),fade*.85f));
         }
     }
 }

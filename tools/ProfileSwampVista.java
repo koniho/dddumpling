@@ -15,11 +15,12 @@ final class ProfileSwampVista {
         boolean allocations=bean.isThreadAllocatedMemorySupported();
         if(allocations)bean.setThreadAllocatedMemoryEnabled(true);
         long thread=Thread.currentThread().getId();
-        System.out.println("Swamp drawing preparation; excludes rasterization/GPU. Portrait 393x852.");
+        boolean cached=args.length==0 || !args[0].equals("vector");
+        System.out.println("Swamp drawing preparation; excludes rasterization/GPU. Portrait 393x852. Cached="+cached);
         for(String state:new String[]{"0","8","18","32"}) {
             GameCore c=TestLandBonuses.start(l,21,false,248);c.skyClock=Float.parseFloat(state);
             c.landBonus.collectedStages=-1;
-            Counter p=new Counter();
+            Counter p=new Counter(cached);
             long warmUntil=System.nanoTime()+300_000_000L;
             while(System.nanoTime()<warmUntil)draw(p,c,l);
             long[] batches=new long[30];int frames=0;
@@ -40,7 +41,13 @@ final class ProfileSwampVista {
     private static void draw(Painter p,GameCore c,Layout l) {
         SwampVista.draw(p,c,l,1);
     }
-    private static final class Counter implements Painter {
+    private static final class Counter implements Painter,ArtStamp {
+        final boolean cached;
+        Counter(boolean cached){this.cached=cached;}
+        public ArtStamp stamps(){return cached?this:null;}
+        public boolean stamp(int art,float x,float y,float w,float h,float angle,int tint,float amount){return false;}
+        public boolean swampGrass(int art,float x,float y,float r,float sway,int alpha,float mono){point(x,y,alpha);vertices+=4;return true;}
+
         long calls,vertices;double checksum;
         void path(float[] pts,int color) {
             calls++;vertices+=pts.length/2;checksum+=color;

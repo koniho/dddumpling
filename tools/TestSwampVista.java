@@ -9,9 +9,9 @@ final class TestSwampVista extends Check {
             approaches&=y>previousY && s>previousScale;previousY=y;previousScale=s;
         }
         check("scenery grows and approaches from a water-level horizon",approaches && SwampVista.horizon(L)>L.playTop);
-        check("grass leaves below the deck before recycling",SwampVista.rootY(L,1)-L.w*.070f*SwampVista.scale(1)*1.05f*1.7f>L.deckTop);
+        check("grass leaves below the deck before recycling",SwampVista.rootY(L,1)-L.w*SwampGrass.RADIUS*SwampVista.scale(1)*1.05f*SwampGrass.TOP>L.deckTop);
         boolean continuous=true,rooted=true;
-        for(int side=-1;side<=1;side+=2)for(int lane=0;lane<2;lane++)for(int row=0;row<SwampVista.ROWS-1;row++) {
+        for(int side=-1;side<=1;side+=2)for(int lane=0;lane<SwampVista.LANES;lane++)for(int row=0;row<SwampVista.ROWS-1;row++) {
             float clock=(1-(side>0?.43f:0)-lane*.37f)/(SwampVista.SPEED*SwampVista.ROWS);
             float before=SwampVista.travel(clock-.0001f,row,side,lane),after=SwampVista.travel(clock+.0001f,row+1,side,lane);
             int seed=SwampVista.grassSeed(clock-.0001f,row,side,lane);
@@ -31,11 +31,11 @@ final class TestSwampVista extends Check {
         c.landBonus.collectedStages=-1;c.skyClock=18;
         Probe p=new Probe();SwampVista.draw(p,c,L,1);
         check("perspective art preserves gameplay randomness",c.rnd.nextLong()==twin.rnd.nextLong());
-        check("scenery stays bounded and extends behind the header ("+p.calls+" draws)",p.calls>100 && p.calls<450 && p.top<=0);
+        check("scenery stays bounded and extends behind the header ("+p.calls+" draws)",p.calls>100 && p.calls<330 && p.top<=0);
         boolean bounded=true;int peak=0;
         for(int age=0;age<=90;age+=3) {
             c.skyClock=age;Probe frame=new Probe();SwampVista.draw(frame,c,L,1);
-            bounded&=frame.calls<450;peak=Math.max(peak,frame.calls);
+            bounded&=frame.calls<330;peak=Math.max(peak,frame.calls);
         }
         check("quiet scenery stays bounded throughout travel ("+peak+" draws)",bounded);c.skyClock=18;
         Probe hidden=new Probe();SwampVista.draw(hidden,c,L,0);check("faded scenery does no drawing",hidden.calls==0);
@@ -57,6 +57,9 @@ final class TestSwampVista extends Check {
     private static final class Probe extends OpacityPainter {
         long hash=1;int calls;float top=Float.MAX_VALUE;
         Probe(){super(null,1);}
+        public ArtStamp stamps(){return this;}
+        public boolean swampGrass(int art,float x,float y,float r,float sway,int alpha,float mono){record(alpha,art,x,y,r,sway,mono);return true;}
+
         void record(int color,float... values){calls++;hash=hash*31+color;for(float v:values)hash=hash*31+Float.floatToIntBits(v);}
         public void fillPoly(float[] xy,int c){for(int i=1;i<xy.length;i+=2)top=Math.min(top,xy[i]);record(c,xy);}
         public void fillEllipse(float x,float y,float rx,float ry,int c){top=Math.min(top,y-ry);record(c,x,y,rx,ry);}

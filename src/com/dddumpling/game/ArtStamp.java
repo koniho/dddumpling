@@ -2,6 +2,7 @@ package com.dddumpling.game;
 
 /** Optional host cache for immutable local artwork. Unsupported painters use vectors. */
 interface ArtStamp {
+    default boolean swampGrass(int art,float x,float y,float r,float sway,int alpha,float mono) {return false;}
     int PALM=0, PEBBLE=1, COUNT=2;
     /** Alpha is applied to the completed foliage image, avoiding hundreds of translucent paths. */
     default boolean forest(int art,float x,float y,float r,float lean,int color,int alpha) {return false;}

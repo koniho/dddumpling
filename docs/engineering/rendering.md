@@ -220,6 +220,19 @@ This measures forest draw calls, path vertices, CPU preparation, and allocation 
 not rasterize or measure device FPS. Both native caches approximate branch bending with a
 small rotation and preserves a separate vector path for software previews.
 
+### Swamp reed stamps
+
+Android and iOS reuse four 128×256 grass-clump textures (512 KiB total), with occasional
+cattails. The iOS cache may additionally hold four grayscale copies (512 KiB); Android applies
+its existing grayscale filter. Native stamps are sheared around their planted base, preserving
+bank attachment while the tips sway. Stable world seeds select the clump and its scale.
+The shared `SwampGrass.paint` routine also supplies the vector fallback for unsupported painters.
+
+After a harness check, `java -cp build/harness com.dddumpling.game.ProfileSwampVista` measures
+preparation with the native stamp contract; pass `vector` to measure the fallback. Neither mode
+measures rasterization or device FPS. Tests cover image bounds, cached dispatch through palette
+wrappers, and grass attachment as rows recycle.
+
 ### Slime Springs arena
 
 Android and iOS cache immutable `SlimeBasinArt` layers: the 480×960 pool/rear light,

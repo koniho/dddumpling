@@ -15,6 +15,10 @@ class OpacityPainter implements Painter, ArtStamp {
         ArtStamp cache=stamps()==null?null:p.stamps();
         return cache!=null && cache.stamp(art,x,y,w,h,angle,tint,mix);
     }
+    public boolean swampGrass(int art,float x,float y,float r,float sway,int alpha,float mono) {
+        ArtStamp cache=stamps()==null?null:p.stamps();
+        return cache!=null && cache.swampGrass(art,x,y,r,sway,alpha,mono);
+    }
     public boolean forest(int art,float x,float y,float r,float lean,int tint,int alpha) {
         ArtStamp cache=stamps()==null?null:p.stamps();
         return cache!=null && cache.forest(art,x,y,r,lean,tint,alpha);

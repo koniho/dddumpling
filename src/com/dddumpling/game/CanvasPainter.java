@@ -20,6 +20,7 @@ final class CanvasPainter implements Painter, ArtStamp {
     private Canvas canvas;
     private CanvasArtStamps artStamps;
     private CanvasForestStamps forestStamps;
+    private CanvasSwampGrass swampGrass;
     private CanvasSlimeStamps slimeStamps;
     private CanvasCrystalStamps crystalStamps;
     private CanvasReefStamps reefStamps;
@@ -42,6 +43,8 @@ final class CanvasPainter implements Painter, ArtStamp {
         artStamps.warm();
         if(forestStamps==null)forestStamps=new CanvasForestStamps();
         forestStamps.warm();
+        if(swampGrass==null)swampGrass=new CanvasSwampGrass();
+        swampGrass.warm();
         if(slimeStamps==null)slimeStamps=new CanvasSlimeStamps();
         slimeStamps.warm();
         if(crystalStamps==null)crystalStamps=new CanvasCrystalStamps();
@@ -125,6 +128,11 @@ final class CanvasPainter implements Painter, ArtStamp {
                 || offsets==null || offsets.length!=SlimeBanks.ROWS+1)return false;
         if(slimeStamps==null)slimeStamps=new CanvasSlimeStamps();
         slimeStamps.mesh(canvas,art,x,y,w,h,offsets,alpha);return true;
+    }
+    public boolean swampGrass(int art,float x,float y,float r,float sway,int alpha,float mono) {
+        if(stamps()==null || art<0 || art>=SwampGrass.COUNT || r<=0)return false;
+        if(swampGrass==null)swampGrass=new CanvasSwampGrass();
+        swampGrass.draw(canvas,art,x,y,r,sway,alpha,monoFilter(mono));return true;
     }
     public boolean forest(int art,float x,float y,float r,float lean,int color,int alpha) {
         if(stamps()==null || art<0 || art>=CanvasForestStamps.COUNT)return false;

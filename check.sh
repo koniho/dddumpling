@@ -70,6 +70,7 @@ src/com/dddumpling/game/Alligator.java
 src/com/dddumpling/game/AlligatorArt.java
 src/com/dddumpling/game/Swamp.java
 src/com/dddumpling/game/SwampVista.java
+src/com/dddumpling/game/SwampGrass.java
 src/com/dddumpling/game/SwampFireflies.java
 src/com/dddumpling/game/KeyboardInput.java
 src/com/dddumpling/game/Duck.java
