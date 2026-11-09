@@ -6,7 +6,7 @@ import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.RectF;
 
-/** Four 128x256 reed images: 512 KiB total, independent of frame or travel time. */
+/** Four 128x512 reed images: 1 MiB total, independent of frame or travel time. */
 final class CanvasSwampGrass {
     private final Bitmap[] images=new Bitmap[SwampGrass.COUNT];
     private final Paint paint=new Paint(Paint.ANTI_ALIAS_FLAG|Paint.FILTER_BITMAP_FLAG);

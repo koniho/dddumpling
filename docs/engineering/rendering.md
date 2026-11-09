@@ -222,8 +222,8 @@ small rotation and preserves a separate vector path for software previews.
 
 ### Swamp reed stamps
 
-Android and iOS reuse four 128×256 grass-clump textures (512 KiB total), with occasional
-cattails. The iOS cache may additionally hold four grayscale copies (512 KiB); Android applies
+Android and iOS reuse four 128×512 grass-clump textures (1 MiB total), with occasional
+cattails. The iOS cache may additionally hold four grayscale copies (1 MiB); Android applies
 its existing grayscale filter. Native stamps are sheared around their planted base, preserving
 bank attachment while the tips sway. Stable world seeds select the clump and its scale.
 The shared `SwampGrass.paint` routine also supplies the vector fallback for unsupported painters.

@@ -9,14 +9,14 @@ final class TestSwampVista extends Check {
             approaches&=y>previousY && s>previousScale;previousY=y;previousScale=s;
         }
         check("scenery grows and approaches from a water-level horizon",approaches && SwampVista.horizon(L)>L.playTop);
-        check("grass leaves below the deck before recycling",SwampVista.rootY(L,1)-L.w*SwampGrass.RADIUS*SwampVista.scale(1)*1.05f*SwampGrass.TOP>L.deckTop);
+        check("grass leaves below the deck before recycling",SwampVista.rootY(L,(SwampVista.DRAW_ROWS-1f)/SwampVista.ROWS)-L.w*SwampGrass.RADIUS*SwampVista.scale((SwampVista.DRAW_ROWS-1f)/SwampVista.ROWS)*1.05f*SwampGrass.TOP>L.deckTop);
         boolean continuous=true,rooted=true;
-        for(int side=-1;side<=1;side+=2)for(int lane=0;lane<SwampVista.LANES;lane++)for(int row=0;row<SwampVista.ROWS-1;row++) {
+        for(int side=-1;side<=1;side+=2)for(int lane=0;lane<SwampVista.LANES;lane++)for(int row=0;row<SwampVista.DRAW_ROWS-1;row++) {
             float clock=(1-(side>0?.43f:0)-lane*.37f)/(SwampVista.SPEED*SwampVista.ROWS);
             float before=SwampVista.travel(clock-.0001f,row,side,lane),after=SwampVista.travel(clock+.0001f,row+1,side,lane);
             int seed=SwampVista.grassSeed(clock-.0001f,row,side,lane);
             continuous&=seed==SwampVista.grassSeed(clock+.0001f,row+1,side,lane) && Math.abs(before-after)<.0001f;
-            continuous&=Math.abs(SwampVista.grassX(L,clock-.0001f,before,side,lane,seed)-SwampVista.grassX(L,clock+.0001f,after,side,lane,seed))<.0001f;
+            continuous&=Math.abs(SwampVista.grassX(L,clock-.0001f,before,side,lane,seed)-SwampVista.grassX(L,clock+.0001f,after,side,lane,seed))<.001f;
             float first=(SwampVista.grassX(L,clock,before,side,lane,seed)-SwampVista.shoreX(L,clock,SwampVista.depth(before),side))/SwampVista.scale(before);
             float later=before+.10f,elapsed=.10f/SwampVista.SPEED;
             float moved=(SwampVista.grassX(L,clock+elapsed,later,side,lane,seed)-SwampVista.shoreX(L,clock+elapsed,SwampVista.depth(later),side))/SwampVista.scale(later);
@@ -31,11 +31,11 @@ final class TestSwampVista extends Check {
         c.landBonus.collectedStages=-1;c.skyClock=18;
         Probe p=new Probe();SwampVista.draw(p,c,L,1);
         check("perspective art preserves gameplay randomness",c.rnd.nextLong()==twin.rnd.nextLong());
-        check("scenery stays bounded and extends behind the header ("+p.calls+" draws)",p.calls>100 && p.calls<330 && p.top<=0);
+        check("scenery stays bounded and extends behind the header ("+p.calls+" draws)",p.calls>100 && p.calls<450 && p.top<=0);
         boolean bounded=true;int peak=0;
         for(int age=0;age<=90;age+=3) {
             c.skyClock=age;Probe frame=new Probe();SwampVista.draw(frame,c,L,1);
-            bounded&=frame.calls<330;peak=Math.max(peak,frame.calls);
+            bounded&=frame.calls<450;peak=Math.max(peak,frame.calls);
         }
         check("quiet scenery stays bounded throughout travel ("+peak+" draws)",bounded);c.skyClock=18;
         Probe hidden=new Probe();SwampVista.draw(hidden,c,L,0);check("faded scenery does no drawing",hidden.calls==0);

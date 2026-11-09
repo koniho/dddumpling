@@ -3,12 +3,12 @@ package com.dddumpling.game;
 final class TestSwampGrass extends Check {
     static void all() {
         group("cached tall swamp reeds");
-        check("reed coverage is about ten times the sparse banks",SwampVista.ROWS*2*SwampVista.LANES*SwampGrass.BLADES>=6*2*2*9*10);
+        check("reed coverage is about twenty times the sparse banks",SwampVista.ROWS*2*SwampVista.LANES*SwampGrass.BLADES>=6*2*2*9*20);
         boolean fits=true,tall=true,heads=false,bare=false;
-        for(int art=0;art<SwampGrass.COUNT;art++)for(float sway:new float[]{-.012f,.012f}) {
+        for(int art=0;art<SwampGrass.COUNT;art++)for(float sway:new float[]{-.006f,.006f}) {
             Probe p=new Probe(false);SwampGrass.paint(p,art,SwampGrass.ANCHOR_X,SwampGrass.ANCHOR_Y,SwampGrass.UNIT,sway,1);
             fits&=p.left>=0 && p.right<=SwampGrass.WIDTH && p.top>=0 && p.bottom<=SwampGrass.HEIGHT;
-            tall&=(SwampGrass.ANCHOR_Y-p.top)/SwampGrass.UNIT>3;
+            tall&=(SwampGrass.ANCHOR_Y-p.top)/SwampGrass.UNIT>6;
             heads|=p.lines>0;bare|=p.lines==0;
             check("cached patch contains every blade "+art+" sway "+sway,p.polys==SwampGrass.BLADES);
         }

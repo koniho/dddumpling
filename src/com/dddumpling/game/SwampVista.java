@@ -2,7 +2,7 @@ package com.dddumpling.game;
 
 /** Quiet grass banks and fireflies, projected from the same moving water-level landscape. */
 final class SwampVista extends Draw {
-    static final int ROWS=16,LANES=4;
+    static final int ROWS=32,LANES=4, DRAW_ROWS=ROWS+ROWS*2/5;
     static final float SPEED=.030f;
     private SwampVista() {}
     static float depth(float t){return t/(3-2*t);}
@@ -39,8 +39,8 @@ final class SwampVista extends Draw {
         backdrop(p,L,fade);
         horizonTrees(p,L,fade);
         banks(p,c,L,fade);
-        // Each tuft has a permanent world seed and bank offset. Only blade tips sway.
-        for(int row=0;row<ROWS;row++)for(int side=-1;side<=1;side+=2)for(int lane=LANES-1;lane>=0;lane--) {
+        // Keep tall trailing tufts until their tips leave view; world seeds survive row rollover.
+        for(int row=0;row<DRAW_ROWS;row++)for(int side=-1;side<=1;side+=2)for(int lane=LANES-1;lane>=0;lane--) {
             int seed=grassSeed(c.skyClock,row,side,lane);
             float t=travel(c.skyClock,row,side,lane),d=depth(t),s=scale(t);
             float x=L.w*grassX(L,c.skyClock,t,side,lane,seed),y=rootY(L,t);
