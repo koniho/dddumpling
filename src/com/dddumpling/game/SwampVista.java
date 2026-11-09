@@ -137,30 +137,30 @@ final class SwampVista extends Draw {
     private static void banks(Painter p,GameCore c,Layout L,float fade) {
         float range=L.deckTop-horizon(L);float[] xs=new float[49],ds=new float[49],widths=new float[49];
         float[] core=new float[120],strip=new float[196];
-        float[] offsets={-.8f,-.25f,.3f,.85f,1.4f};
-        int[] colors={0xFF3D6557,0xFF285348,0xFF2B4A3B,0xFF324F3B};float[] alpha={.12f,.28f,.45f,.58f};
         for(int side=-1;side<=1;side+=2) {
             float outer=side<0?-L.w*.06f:L.w*1.06f;
             for(int i=0;i<=48;i++) {
                 float v=i/48f;ds[i]=waterDepth(L,horizon(L)+v*range);
                 xs[i]=L.w*waterEdgeX(L,c.skyClock,ds[i],side);
                 float material=3*ds[i]/(1+2*ds[i])-c.skyClock*SPEED;
-                widths[i]=L.w*(.006f+.016f*v)*(.85f+.20f*(float)Math.sin(material*19+side));
+                widths[i]=L.w*(.008f+.024f*v)*(.85f+.20f*(float)Math.sin(material*19+side));
             }
-            float top=xs[0]+side*widths[0]*1.4f;
+            float top=xs[0]+side*widths[0]*2f;
             for(int i=0;i<=10;i++){float x=outer+(top-outer)*i/10f;core[i*2]=x;core[i*2+1]=horizonAt(L,x);}
             for(int i=1;i<=48;i++) {
-                float x=xs[i]+side*widths[i]*1.4f;core[(i+10)*2]=x;core[(i+10)*2+1]=bankY(L,ds[i],x);
+                float x=xs[i]+side*widths[i]*2f;core[(i+10)*2]=x;core[(i+10)*2+1]=bankY(L,ds[i],x);
             }
             core[118]=outer;core[119]=L.deckTop;p.fillPoly(core,ink(0xFF324F3B,fade*.65f));
-            // Narrow non-overlapping wet margins soften the bank without full-screen overdraw.
-            for(int band=0;band<4;band++) {
+            // Feather the wet bank into the water with a smooth, shared-color falloff.
+            for(int band=0;band<8;band++) {
+                float inner=-1.6f+band*.45f,outerEdge=inner+.45f;
+                float u=(band+.5f)/8,softness=u*u*(3-2*u);
                 for(int i=0;i<=48;i++) {
-                    float x=xs[i]+side*widths[i]*offsets[band],xx=xs[i]+side*widths[i]*offsets[band+1];
+                    float x=xs[i]+side*widths[i]*inner,xx=xs[i]+side*widths[i]*outerEdge;
                     strip[i*2]=x;strip[i*2+1]=bankY(L,ds[i],x);
                     strip[(97-i)*2]=xx;strip[(97-i)*2+1]=bankY(L,ds[i],xx);
                 }
-                p.fillPoly(strip,ink(colors[band],fade*alpha[band]));
+                p.fillPoly(strip,ink(Glyph.mix(0xFF285348,0xFF324F3B,softness),fade*.65f*softness));
             }
         }
     }
