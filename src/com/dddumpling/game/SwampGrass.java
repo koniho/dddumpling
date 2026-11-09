@@ -4,7 +4,7 @@ package com.dddumpling.game;
 final class SwampGrass extends Draw {
     static final int COUNT=4,BLADES=18,WIDTH=128,HEIGHT=512;
     static final float RADIUS=.09f,UNIT=48,ANCHOR_X=64,ANCHOR_Y=480,TOP=9.2f;
-    private static final float[][][] BLADES_XY=new float[COUNT][BLADES][8];
+    private static final float[][][] BLADES_XY=new float[COUNT][BLADES][10];
     private static final int[] COLORS={0xFF3D856B,0xFF5F913F,0xFF8DAA63,0xFF78913F,
             0xFF468F88,0xFFB2A75E,0xFF899D80,0xFF638B58};
     private static final int[][] BLADE_COLORS=new int[COUNT][BLADES];
@@ -13,9 +13,13 @@ final class SwampGrass extends Draw {
             int seed=811+art*317+i*37;
             float x=(hash(seed)-.5f)*2.1f;
             float y=-.20f+(hash(seed+3)-.5f)*1.4f*(float)Math.sqrt(Math.max(.1f,1-x*x/1.21f));
-            float h=2*(1.9f+hash(seed+5)*1.5f),lean=(hash(seed+7)-.5f)*.50f,w=.018f+hash(seed+9)*.024f;
+            float h=2*(1.9f+hash(seed+5)*1.5f),w=.018f+hash(seed+9)*.024f;
+            float target=(hash(seed+7)-.5f)*2.36f,lean=(target-x)*(.45f+.55f*hash(seed+11));
+            float middle=x+lean*(.35f+.20f*hash(seed+13));
             float[] b=BLADES_XY[art][i];
-            b[0]=x-w;b[1]=y;b[2]=x+w;b[3]=y;b[4]=x+lean;b[5]=y-h;b[6]=x+lean*.38f-w*.4f;b[7]=y-h*.52f;
+            b[0]=x-w;b[1]=y;b[2]=x+w;b[3]=y;
+            b[4]=middle+w*.65f;b[5]=y-h*.52f;b[6]=x+lean;b[7]=y-h;
+            b[8]=middle-w*.65f;b[9]=y-h*.52f;
         }
         for(float[][] blades:BLADES_XY)java.util.Arrays.sort(blades,(a,b)->Float.compare(a[1],b[1]));
         // Bake cooler rear shadows and varied greens into the existing native stamps.
@@ -43,10 +47,10 @@ final class SwampGrass extends Draw {
             p.line(x+tip*r,y+(by-h)*r,x+(tip+sway*.32f)*r,y+(by-h-.32f)*r,head,r*.11f);
             p.line(x+(tip+sway*.32f)*r,y+(by-h-.32f)*r,x+(tip+sway*.43f)*r,y+(by-h-.43f)*r,stem,r*.016f);
         }
-        float[] out=new float[8];
+        float[] out=new float[10];
         for(int i=0;i<BLADES;i++) {
             float[] b=BLADES_XY[art][i];
-            for(int j=0;j<8;j+=2){out[j]=x+r*(b[j]-b[j+1]*sway);out[j+1]=y+r*b[j+1];}
+            for(int j=0;j<b.length;j+=2){out[j]=x+r*(b[j]-b[j+1]*sway);out[j+1]=y+r*b[j+1];}
             p.fillPoly(out,Glyph.withAlpha(BLADE_COLORS[art][i],(int)(255*fade)));
         }
     }
