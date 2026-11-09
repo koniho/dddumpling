@@ -939,6 +939,7 @@ final class GameCore {
     final CrystalField crystalField=new CrystalField();
     final WaterRipples waterRipples=new WaterRipples();
     final ForestCritters forestCritters=new ForestCritters();
+    final SwampFireflies swampFireflies=new SwampFireflies();
     final CrystalArena crystalArena=new CrystalArena();
     int landFrom, landFromBg = Lands.BG[0], landFromTint = Lands.TINT[0];
     float landBlend = 1f;
@@ -2084,7 +2085,7 @@ final class GameCore {
     }
 
     void startGame() {
-        landBonus.reset();forestCritters.reset();
+        landBonus.reset();forestCritters.reset();swampFireflies.reset();
         slimeBubbles.reset();slimeBanks.reset();crystalField.reset();waterRipples.reset();
         if(!modes.playable(this))return;
         playthrough.finish(this,"restarted");
@@ -2226,7 +2227,7 @@ final class GameCore {
     }
 
     void toTitle() {
-        landBonus.reset();forestCritters.reset();
+        landBonus.reset();forestCritters.reset();swampFireflies.reset();
         steamer.selectionGlow=0;
         stopCombatSounds();
         slimeBubbles.reset();slimeBanks.reset();crystalField.reset();waterRipples.reset();
@@ -2918,7 +2919,7 @@ final class GameCore {
     void update(float dt, Layout L) { update(dt, dt, L); }
 
     void update(float dt, float elapsed, Layout L) {
-        landBonus.clean(this);forestCritters.clean(this);
+        landBonus.clean(this);forestCritters.clean(this);swampFireflies.clean(this);
         leaderboardUi.update(this);
         leaderboardNotice.update(this,elapsed);
         wardrobe.refresh(this);
@@ -2998,6 +2999,7 @@ final class GameCore {
         if (settingsOpen) { preferences.updatePanel(this,elapsed); return; }
         landBonus.update(this,elapsed);
         forestCritters.update(this,L,dt);
+        swampFireflies.update(this,dt);
         ducks.update(this,dt);
         companion.update(this,dt);
         gator.update(this,dt);
@@ -3569,6 +3571,7 @@ final class GameCore {
         crystalField.cleared(this,L,e.clearX,e.clearY,e.word.length,Glyph.COLOR[e.word[e.word.length-1]]);
         waterRipples.cleared(this,L,e.clearX,e.clearY);
         forestCritters.cleared(this,L,e.clearX,e.clearY);
+        swampFireflies.cleared(this,L,e.clearX,e.clearY);
         e.dying = false;
         // A destroyed word is no longer a threat, so it must stop looking like one. The
         // update loop skips destroyed words, so whatever warning state it held would
@@ -3872,7 +3875,7 @@ final class GameCore {
      * early returns, or clear it where the early return is taken. There is no third way.
      */
     private void die() {
-        landBonus.reset();forestCritters.reset();
+        landBonus.reset();forestCritters.reset();swampFireflies.reset();
         stopCombatSounds();
         reviewPrompt.pending=false;
         pairSpawnSlots = 0;

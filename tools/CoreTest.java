@@ -24,7 +24,7 @@ final class CoreTest {
 
         group("Playthrough", () -> TestPlaythroughLog.all(L));
         group("LandBonuses", () -> TestLandBonuses.all(L));
-        group("SwampVista", () -> TestSwampVista.all(L));
+        group("SwampVista", () -> {TestSwampVista.all(L);TestSwampFireflies.all(L);});
         group("ForestTerrain", () -> {TestForestTerrain.all(L);TestForestCritters.all(L);});
         group("Companion", () -> TestCompanion.all(L));
         group("Leaderboard submissions", () -> TestLeaderboardSubmissions.all(L));

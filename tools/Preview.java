@@ -18,6 +18,8 @@ final class Preview {
             shot(dir,"248-swamp-"+(int)age,c,L,w,h,ss);
             if(age==18) {
                 c.cloudUi.reduceMotion=true;shot(dir,"248-swamp-still",c,L,w,h,ss);c.cloudUi.reduceMotion=false;
+                c.swampFireflies.cleared(c,L,L.w*.5f,L.h*.48f);c.swampFireflies.update(c,.25f);
+                shot(dir,"248-fireflies-scatter",c,L,w,h,ss);
                 c.landBonus.tap(c,L,LandBonus.x(c,L),LandBonus.y(c,L));c.landBonus.burst=.36f;
                 shot(dir,"248-flamingo-collected",c,L,w,h,ss);
             }
