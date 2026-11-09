@@ -16,7 +16,7 @@ final class TestSwampVista extends Check {
             float before=SwampVista.travel(clock-.0001f,row,side,lane),after=SwampVista.travel(clock+.0001f,row+1,side,lane);
             int seed=SwampVista.grassSeed(clock-.0001f,row,side,lane);
             continuous&=seed==SwampVista.grassSeed(clock+.0001f,row+1,side,lane) && Math.abs(before-after)<.0001f;
-            continuous&=Math.abs(SwampVista.grassX(L,clock-.0001f,before,side,lane,seed)-SwampVista.grassX(L,clock+.0001f,after,side,lane,seed))<.001f;
+            continuous&=Math.abs(SwampVista.grassX(L,clock+.0001f,before+.0002f*SwampVista.SPEED,side,lane,seed)-SwampVista.grassX(L,clock+.0001f,after,side,lane,seed))<.001f;
             float first=(SwampVista.grassX(L,clock,before,side,lane,seed)-SwampVista.shoreX(L,clock,SwampVista.depth(before),side))/SwampVista.scale(before);
             float later=before+.10f,elapsed=.10f/SwampVista.SPEED;
             float moved=(SwampVista.grassX(L,clock+elapsed,later,side,lane,seed)-SwampVista.shoreX(L,clock+elapsed,SwampVista.depth(later),side))/SwampVista.scale(later);
@@ -38,6 +38,12 @@ final class TestSwampVista extends Check {
             bounded&=frame.calls<450;peak=Math.max(peak,frame.calls);
         }
         check("quiet scenery stays bounded throughout travel ("+peak+" draws)",bounded);c.skyClock=18;
+        boolean filled=true;
+        for(float clock:new float[]{0,8,18,32}) {
+            c.skyClock=clock;Probe corners=new Probe();corners.width=L.w;corners.cornerTop=SwampVista.horizon(L);corners.cornerBottom=corners.cornerTop+L.h*.12f;
+            SwampVista.draw(corners,c,L,1);filled&=corners.leftGrass>0 && corners.rightGrass>0;
+        }
+        check("moving grass fills both upper corners below the horizon",filled);c.skyClock=18;
         Probe hidden=new Probe();SwampVista.draw(hidden,c,L,0);check("faded scenery does no drawing",hidden.calls==0);
         c.cloudUi.reduceMotion=true;Probe still=new Probe();SwampVista.draw(still,c,L,1);
         c.clock+=20;Probe later=new Probe();SwampVista.draw(later,c,L,1);
@@ -55,10 +61,11 @@ final class TestSwampVista extends Check {
         c.boss.intro=0;check("established boss arena replaces the perspective scene",SwampVista.arena(c)==1);
     }
     private static final class Probe extends OpacityPainter {
+        float width,cornerTop,cornerBottom;int leftGrass,rightGrass;
         long hash=1;int calls;float top=Float.MAX_VALUE;
         Probe(){super(null,1);}
         public ArtStamp stamps(){return this;}
-        public boolean swampGrass(int art,float x,float y,float r,float sway,int alpha,float mono){record(alpha,art,x,y,r,sway,mono);return true;}
+        public boolean swampGrass(int art,float x,float y,float r,float sway,int alpha,float mono){record(alpha,art,x,y,r,sway,mono);if(y>cornerTop && y<cornerBottom){if(x>=0 && x<width*.15f)leftGrass++;if(x>width*.85f && x<=width)rightGrass++;}return true;}
 
         void record(int color,float... values){calls++;hash=hash*31+color;for(float v:values)hash=hash*31+Float.floatToIntBits(v);}
         public void fillPoly(float[] xy,int c){for(int i=1;i<xy.length;i+=2)top=Math.min(top,xy[i]);record(c,xy);}

@@ -2,8 +2,9 @@ package com.dddumpling.game;
 
 /** Quiet grass banks and fireflies, projected from the same moving water-level landscape. */
 final class SwampVista extends Draw {
-    static final int ROWS=32,LANES=4, DRAW_ROWS=ROWS+ROWS*2/5;
+    static final int ROWS=32,LANES=10, DRAW_ROWS=ROWS+ROWS*2/5;
     static final float SPEED=.030f;
+    private static final float[] BANK_OFFSETS={.10f,.24f,.38f,.52f,.68f,.92f,1.28f,1.82f,2.63f,3.845f};
     private SwampVista() {}
     static float depth(float t){return t/(3-2*t);}
     static float scale(float t){return .14f+depth(t)*1.55f;}
@@ -22,8 +23,11 @@ final class SwampVista extends Draw {
         float v=d*(L.deckTop-horizon(L)+L.h*.35f)/(L.deckTop-horizon(L));
         return .5f+bend(clock,d)+side*(.065f+.28f*(float)Math.sqrt(Math.max(0,v)));
     }
+    static float bankOffset(int lane) {
+        return BANK_OFFSETS[lane];
+    }
     static float grassX(Layout L,float clock,float t,int side,int lane,int seed) {
-        return shoreX(L,clock,depth(t),side)+side*(.10f+lane*.14f+hash(seed+7)*.012f)*scale(t);
+        return shoreX(L,clock,depth(t),side)+side*(bankOffset(lane)+hash(seed+7)*.012f)*scale(t);
     }
     static float arena(GameCore c) {
         if(BossCollect.keepsArena(c,Boss.ALLIGATOR))return 1;
