@@ -8,6 +8,25 @@ import java.io.File;
  * without a build/install cycle: same Layout, same Renderer, same state machine as the APK.
  */
 final class Preview {
+    private static void swampVistaFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
+        if(!wantedGroup("248-"))return;
+        for(float age:new float[]{0,8,18,32,55,90}) {
+            GameCore c=TestLandBonuses.start(L,21,true,248);c.skyClock=c.clock=age;
+            c.landBonus.skyAt=age-16;c.landBonus.age=c.landBonus.delay+16;
+            Check.add(c,L,new int[]{0,1,4},L.playTop+L.h*.18f);
+            Check.add(c,L,new int[]{5,4},L.playTop+L.h*.35f);
+            shot(dir,"248-swamp-"+(int)age,c,L,w,h,ss);
+            if(age==18) {
+                c.cloudUi.reduceMotion=true;shot(dir,"248-swamp-still",c,L,w,h,ss);c.cloudUi.reduceMotion=false;
+                c.landBonus.tap(c,L,LandBonus.x(c,L),LandBonus.y(c,L));c.landBonus.burst=.36f;
+                shot(dir,"248-flamingo-collected",c,L,w,h,ss);
+            }
+        }
+        GameCore c=TestLandBonuses.start(L,25,false,248);c.skyClock=32;
+        c.boss.intro=c.boss.introDuration()-.45f;shot(dir,"248-arena-entry",c,L,w,h,ss);
+        c.boss.intro=0;shot(dir,"248-arena",c,L,w,h,ss);
+    }
+
     private static void forestTerrainFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wantedGroup("246-"))return;
         for(float age:new float[]{0,8,13,14,18,32,55,90}) {
@@ -2250,6 +2269,7 @@ final class Preview {
             shot(dir,"206-retried-record",retry,L,w,h,ss);
         }
         if(wantedGroup("214-"))AccessoryPreview.frames(dir,L,w,h,ss);
+        swampVistaFrames(dir,L,w,h,ss);
         forestTerrainFrames(dir,L,w,h,ss);
         landBonusFrames(dir,L,w,h,ss);
         rainbowFrames(dir,L,w,h,ss);

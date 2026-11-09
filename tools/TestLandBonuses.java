@@ -77,15 +77,15 @@ final class TestLandBonuses extends Check {
             float entrance=LandBonus.y(c,L);c.landBonus.age+=LandBonus.BUBBLE_RISE;
             float settled=LandBonus.y(c,L);
             check("themed entrance direction "+land,land==0?settled<entrance:land==Lands.RAINBOW?Math.abs(settled-entrance)<LandBonus.radius(L)*.3f:settled==entrance);
-            float travel=land==2?12:4;c.skyClock+=travel;float moved=LandBonus.y(c,L);
-            check("bonus shares scenery travel "+land,land==2?Math.abs(moved+LandBonus.size(c,L)*.8f-L.h*UnderwaterVista.rootY(LandBonus.clamTravel(c)))<.01f:Math.abs(moved-settled-travel*LandBonus.scrollSpeed(c,L))<.01f);
+            float travel=land==2 || land==Lands.SWAMP?12:4;c.skyClock+=travel;float moved=LandBonus.y(c,L);
+            check("bonus shares scenery travel "+land,land==Lands.SWAMP?Math.abs(moved+LandBonus.size(c,L)*.86f-SwampVista.rootY(L,LandBonus.flamingoTravel(c)))<.01f:land==2?Math.abs(moved+LandBonus.size(c,L)*.8f-L.h*UnderwaterVista.rootY(LandBonus.clamTravel(c)))<.01f:Math.abs(moved-settled-travel*LandBonus.scrollSpeed(c,L))<.01f);
             c.paused=true;c.update(.1f,L);
             check("pause holds world position "+land,LandBonus.y(c,L)==moved);
             c.paused=false;c.settingsOpen=true;c.update(.1f,L);
             check("settings hold world position "+land,LandBonus.y(c,L)==moved);
             c.settingsOpen=false;
             check("old fixed target does not collect moving scenery "+land,!c.landBonus.tap(c,L,LandBonus.x(c,L),settled));
-            c.skyClock+=L.h/LandBonus.scrollSpeed(c,L);
+            c.skyClock+=land==Lands.SWAMP?80:L.h/LandBonus.scrollSpeed(c,L);
             check("bonus cannot collect below deck "+land,!c.landBonus.tap(c,L,LandBonus.x(c,L),LandBonus.y(c,L)));
             c.landBonus.restartEntrance(c);c.landBonus.age=c.landBonus.delay+LandBonus.BUBBLE_RISE;c.skyClock+=4;
             Ear cue=new Ear();c.sound=cue;
@@ -142,9 +142,10 @@ final class TestLandBonuses extends Check {
     }
     private static final class ArtProbe extends OpacityPainter {
         boolean face,coinShimmer;int coinAlpha;float coinRadius;float[] body;float clamX,clamY,clamR,acornY,squirrelY,logY;
-        int order,squirrelOrder,leafOrder,squirrelDraws,rippleCount,lipOrder,acornOrder,pawOrder;float lipY,pawY,flamingoX,flamingoY,headX,headY;boolean closedEye;float rippleY,legEndY;
+        int order,squirrelOrder,leafOrder,squirrelDraws,rippleCount,lipOrder,acornOrder,pawOrder;float lipY,pawY,flamingoX,flamingoY,headX,headY;boolean closedEye,legSeen;float rippleY,legEndY;
         final float forestRadius,squirrelRadius;
-        ArtProbe(Layout L){super(new RasterPainter(1,1,1),1);forestRadius=LandBonus.radius(L);squirrelRadius=forestRadius*LandBonusArt.SQUIRREL_SCALE;}
+        ArtProbe(Layout L){this(L,LandBonus.radius(L));}
+        ArtProbe(Layout L,float radius){super(new RasterPainter(1,1,1),1);forestRadius=radius;squirrelRadius=LandBonus.radius(L)*LandBonusArt.SQUIRREL_SCALE;}
         public void fillPoly(float[] xy,int color) {
             int rgb=color&0xffffff;order++;
             if(xy.length==66 && (rgb==0x71917a || rgb==0x91a486 || rgb==0x587d70 || rgb==0xacb394))leafOrder=order;
@@ -163,7 +164,7 @@ final class TestLandBonuses extends Check {
             }
         }
         public void line(float x,float y,float xx,float yy,int color,float width) {
-            if(Math.abs(x-xx)<.07f*forestRadius && yy-y>forestRadius*.4f)legEndY=yy;
+            if(!legSeen && Math.abs(x-xx)<.07f*forestRadius && yy-y>forestRadius*.4f){legEndY=yy;legSeen=true;}
         }
         public void fillEllipse(float x,float y,float rx,float ry,int color) {
             order++;
@@ -179,7 +180,7 @@ final class TestLandBonuses extends Check {
         }
     }
     private static ArtProbe art(GameCore c,Layout L) {
-        ArtProbe p=new ArtProbe(L);LandBonusArt.beneathCrystal(p,c,L);LandBonusArt.beneathForest(p,c,L,1);LandBonusArt.draw(p,c,L);return p;
+        ArtProbe p=new ArtProbe(L,Lands.forStage(c.stage)==Lands.SWAMP?LandBonus.size(c,L):LandBonus.radius(L));LandBonusArt.beneathCrystal(p,c,L);LandBonusArt.beneathForest(p,c,L,1);LandBonusArt.inSwamp(p,c,L,1);LandBonusArt.draw(p,c,L);return p;
     }
     private static float turn(float[] a,float[] b) {
         int j=(a.length/4)*2;
@@ -206,9 +207,9 @@ final class TestLandBonuses extends Check {
         coin.landBonus.age+=1;
         check("reduced motion keeps coin position steady",LandBonus.x(coin,L)==stillX && LandBonus.y(coin,L)==stillY);
         GameCore flamingo=start(L,Lands.firstStage(Lands.SWAMP),true,244);
-        ArtProbe resting=art(flamingo,L);
+        float birdRadius=LandBonus.size(flamingo,L);ArtProbe resting=art(flamingo,L);
         flamingo.landBonus.age+=1.1f;ArtProbe breathing=art(flamingo,L);
-        check("idle flamingo breathes and gently shifts its head",Math.abs(breathing.flamingoY-resting.flamingoY)>.01f && Math.abs(breathing.headX-resting.headX)+Math.abs(breathing.headY-resting.headY)>full*.01f);
+        check("idle flamingo breathes and gently shifts its head",Math.abs(breathing.flamingoY-resting.flamingoY)>.01f && Math.abs(breathing.headX-resting.headX)+Math.abs(breathing.headY-resting.headY)>birdRadius*.01f);
         check("idle flamingo keeps feet and ripples grounded",breathing.rippleY==resting.rippleY && Math.abs(breathing.legEndY-resting.legEndY)<.01f);
         flamingo.landBonus.age=11.12f;check("idle flamingo occasionally blinks",art(flamingo,L).closedEye);
         flamingo.cloudUi.reduceMotion=true;ArtProbe quiet=art(flamingo,L);
@@ -219,7 +220,7 @@ final class TestLandBonuses extends Check {
         flamingo.landBonus.burst=.36f;ArtProbe jumping=art(flamingo,L);
         check("flamingo has one small ripple per leg",resting.rippleCount==2 && jumping.rippleCount==2);
         check("flamingo waterline does not jump or scale",resting.rippleY==jumping.rippleY);
-        check("flamingo legs emerge above the waterline",Math.abs(resting.legEndY-resting.rippleY)<.01f && jumping.legEndY<jumping.rippleY-full*.2f);
+        check("flamingo legs emerge above the waterline",Math.abs(resting.legEndY-resting.rippleY)<.01f && jumping.legEndY<jumping.rippleY-birdRadius*.2f);
         flamingo.cloudUi.reduceMotion=true;ArtProbe grounded=art(flamingo,L);
         check("reduced motion keeps flamingo grounded",Math.abs(grounded.legEndY-grounded.rippleY)<.01f);
         GameCore c=start(L,6,true,244);
