@@ -58,6 +58,7 @@ final class SwampVista extends Draw {
         backdrop(p,L,fade);
         nightSky(p,L,fade);
         horizonTrees(p,L,fade);
+        riverHaze(p,L,fade);
         banks(p,c,L,fade);
         horizonGrass(p,L,time,fade);
         ripples(p,c,L,fade);
@@ -102,7 +103,7 @@ final class SwampVista extends Draw {
         float[] tree=new float[78];
         for(int layer=0;layer<3;layer++)for(int i=0;i<12;i++) {
             int seed=919+layer*317+i*67;
-            float x=L.w*((i+.2f+hash(seed)*.6f)/12),y=horizonAt(L,x)+L.h*(.052f+layer*.005f);
+            float x=L.w*((i+.2f+hash(seed)*.6f)/12),y=horizonAt(L,x)+L.h*(.032f+layer*.004f);
             float h=L.h*(.045f+layer*.025f+hash(seed+3)*.05f),r=L.w*(.055f+layer*.016f+hash(seed+5)*.045f);
             float lean=L.w*(hash(seed+7)-.5f)*.04f;
             int color=ink(layer==0?0xFF4F6A60:layer==1?0xFF3C5A4E:0xFF2E4A40,fade);
@@ -174,7 +175,16 @@ final class SwampVista extends Draw {
             int seed=12400+i*28+(i%2==0?0:3);
             float x=L.w*i/35f,r=L.w*(.015f+.001f*hash(seed+7));
             float y=horizonAt(L,x)+r*7.4f;
-            SwampGrass.draw(p,x,y,r,seed,time,.30f,fade*.95f);
+            SwampGrass.draw(p,x,y,r,seed,time,.95f,fade);
+        }
+    }
+    private static void riverHaze(Painter p,Layout L,float fade) {
+        float x=L.w*.5f,y=horizonAt(L,x)-L.h*.022f;
+        // A local mist pocket marks the river opening behind the stronger foreground reeds.
+        for(int i=0;i<8;i++) {
+            float u=(i+.5f)/8,s=1.2f-i*.11f;
+            p.fillEllipse(x,y,L.w*.19f*s,L.h*.032f*s,
+                    ink(0xFF94A68F,fade*(.018f+.028f*(float)Math.sin(u*Math.PI))));
         }
     }
     private static void horizonHaze(Painter p,Layout L,float fade) {
