@@ -78,7 +78,7 @@ final class TestLandBonuses extends Check {
             float settled=LandBonus.y(c,L);
             check("themed entrance direction "+land,land==0?settled<entrance:land==Lands.RAINBOW?Math.abs(settled-entrance)<LandBonus.radius(L)*.3f:settled==entrance);
             float travel=land==2 || land==Lands.SWAMP?12:4;c.skyClock+=travel;float moved=LandBonus.y(c,L);
-            check("bonus shares scenery travel "+land,land==Lands.SWAMP?Math.abs(moved+LandBonus.size(c,L)*.86f-SwampVista.rootY(L,LandBonus.flamingoTravel(c)))<.01f:land==2?Math.abs(moved+LandBonus.size(c,L)*.8f-L.h*UnderwaterVista.rootY(LandBonus.clamTravel(c)))<.01f:Math.abs(moved-settled-travel*LandBonus.scrollSpeed(c,L))<.01f);
+            check("bonus shares scenery travel "+land,land==Lands.SWAMP?Math.abs(moved+LandBonus.size(c,L)*.86f-SwampVista.rootY(L,LandBonus.flamingoTravel(c),LandBonus.x(c,L)))<.01f:land==2?Math.abs(moved+LandBonus.size(c,L)*.8f-L.h*UnderwaterVista.rootY(LandBonus.clamTravel(c)))<.01f:Math.abs(moved-settled-travel*LandBonus.scrollSpeed(c,L))<.01f);
             c.paused=true;c.update(.1f,L);
             check("pause holds world position "+land,LandBonus.y(c,L)==moved);
             c.paused=false;c.settingsOpen=true;c.update(.1f,L);

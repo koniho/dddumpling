@@ -10,6 +10,10 @@ final class TestSwampVista extends Check {
         }
         check("scenery grows and approaches from a water-level horizon",approaches && SwampVista.horizon(L)>L.playTop);
         check("grass leaves below the deck before recycling",SwampVista.rootY(L,(SwampVista.DRAW_ROWS-1f)/SwampVista.ROWS)-L.w*SwampGrass.RADIUS*SwampVista.scale((SwampVista.DRAW_ROWS-1f)/SwampVista.ROWS)*1.05f*SwampGrass.TOP>L.deckTop);
+        check("horizon forms a gentle symmetrical arc",SwampVista.horizonAt(L,0)>SwampVista.horizonAt(L,L.w*.5f)
+                && Math.abs(SwampVista.horizonAt(L,0)-SwampVista.horizonAt(L,L.w))<.01f);
+        check("distant ground follows the arc while foreground stays level",SwampVista.rootY(L,.1f,0)>SwampVista.rootY(L,.1f)
+                && SwampVista.rootY(L,.9f,0)==SwampVista.rootY(L,.9f));
         boolean continuous=true,rooted=true;
         for(int side=-1;side<=1;side+=2)for(int lane=0;lane<SwampVista.LANES;lane++)for(int row=0;row<SwampVista.DRAW_ROWS-1;row++) {
             float clock=(1-(side>0?.43f:0)-lane*.37f)/(SwampVista.SPEED*SwampVista.ROWS);
@@ -31,11 +35,11 @@ final class TestSwampVista extends Check {
         c.landBonus.collectedStages=-1;c.skyClock=18;
         Probe p=new Probe();SwampVista.draw(p,c,L,1);
         check("perspective art preserves gameplay randomness",c.rnd.nextLong()==twin.rnd.nextLong());
-        check("scenery stays bounded and extends behind the header ("+p.calls+" draws)",p.calls>100 && p.calls<450 && p.top<=0);
+        check("scenery stays bounded and extends behind the header ("+p.calls+" draws)",p.calls>100 && p.calls<530 && p.top<=0);
         boolean bounded=true;int peak=0;
         for(int age=0;age<=90;age+=3) {
             c.skyClock=age;Probe frame=new Probe();SwampVista.draw(frame,c,L,1);
-            bounded&=frame.calls<450;peak=Math.max(peak,frame.calls);
+            bounded&=frame.calls<530;peak=Math.max(peak,frame.calls);
         }
         check("quiet scenery stays bounded throughout travel ("+peak+" draws)",bounded);c.skyClock=18;
         boolean filled=true;
@@ -53,7 +57,7 @@ final class TestSwampVista extends Check {
         c=TestLandBonuses.start(L,21,true,248);
         float far=LandBonus.size(c,L),farY=LandBonus.y(c,L);c.skyClock+=10;
         check("flamingo approaches and grows with the scenery",LandBonus.size(c,L)>far && LandBonus.y(c,L)>farY);
-        check("flamingo feet meet the projected water surface",Math.abs(LandBonus.y(c,L)+LandBonus.size(c,L)*.86f-SwampVista.rootY(L,LandBonus.flamingoTravel(c)))<.01f);
+        check("flamingo feet meet the projected water surface",Math.abs(LandBonus.y(c,L)+LandBonus.size(c,L)*.86f-SwampVista.rootY(L,LandBonus.flamingoTravel(c),LandBonus.x(c,L)))<.01f);
         check("projected flamingo remains collectible",c.landBonus.tap(c,L,LandBonus.x(c,L),LandBonus.y(c,L)));
         c=TestLandBonuses.start(L,25,false,248);c.boss.intro=c.boss.introDuration();
         check("boss arrival starts in the travelling swamp",SwampVista.arena(c)==0);

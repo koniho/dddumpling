@@ -104,7 +104,7 @@ final class LandBonus {
         LandBonus b=c.landBonus;
         if(Lands.forStage(c.stage)==0)return SlimeBubbles.emergeY(surfaceY(c,L),radius(L),b.bubbleRise(c));
         if(Lands.forStage(c.stage)==Underwater.LAND)return L.h*UnderwaterVista.rootY(clamTravel(c))-size(c,L)*.8f;
-        if(Lands.forStage(c.stage)==Lands.SWAMP)return SwampVista.rootY(L,flamingoTravel(c))-size(c,L)*.86f;
+        if(Lands.forStage(c.stage)==Lands.SWAMP)return SwampVista.rootY(L,flamingoTravel(c),x(c,L))-size(c,L)*.86f;
         return L.playTop-radius(L)*b.entryDepth+Math.max(0,c.skyClock-b.skyAt)*scrollSpeed(c,L)+coinOrbit(c,L,true);
     }
     boolean tap(GameCore c,Layout L,float x,float y) {

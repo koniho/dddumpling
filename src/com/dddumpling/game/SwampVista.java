@@ -9,6 +9,10 @@ final class SwampVista extends Draw {
     static float depth(float t){return t/(3-2*t);}
     static float scale(float t){return .14f+depth(t)*1.55f;}
     static float horizon(Layout L){return L.h*.43f;}
+    static float horizonAt(Layout L,float x) {
+        float u=Math.max(-1,Math.min(1,x/L.w*2-1));return horizon(L)+L.h*.014f*u*u;
+    }
+    static float rootY(Layout L,float t,float x){return rootY(L,t)+(horizonAt(L,x)-horizon(L))*Math.max(0,1-depth(t)*2);}
     static float rootY(Layout L,float t){return horizon(L)+depth(t)*(L.deckTop-horizon(L)+L.h*.35f);}
     static float waterDepth(Layout L,float y){return Math.max(0,(y-horizon(L))/(L.deckTop-horizon(L)+L.h*.35f));}
     static float bend(float clock,float d) {
@@ -21,7 +25,9 @@ final class SwampVista extends Draw {
     static int grassSeed(float clock,int row,int side,int lane){return 4391+(row-(int)Math.floor(phase(clock,side,lane)))*137+side*53+lane*701;}
     static float shoreX(Layout L,float clock,float d,int side) {
         float v=d*(L.deckTop-horizon(L)+L.h*.35f)/(L.deckTop-horizon(L));
-        return .5f+bend(clock,d)+side*(.065f+.28f*(float)Math.sqrt(Math.max(0,v)));
+        float material=3*d/(1+2*d)-clock*SPEED;
+        float fringe=.010f*(.14f+d*1.55f)*((float)Math.sin(material*24+side)*.65f+(float)Math.sin(material*47+side*3)*.35f);
+        return .5f+bend(clock,d)+side*(.065f+.28f*(float)Math.sqrt(Math.max(0,v))+fringe);
     }
     static float bankOffset(int lane) {
         return BANK_OFFSETS[lane];
@@ -43,16 +49,19 @@ final class SwampVista extends Draw {
         backdrop(p,L,fade);
         horizonTrees(p,L,fade);
         banks(p,c,L,fade);
+        flotsam(p,c,L,fade);
         // Keep tall trailing tufts until their tips leave view; world seeds survive row rollover.
         for(int row=0;row<DRAW_ROWS;row++)for(int side=-1;side<=1;side+=2)for(int lane=LANES-1;lane>=0;lane--) {
             int seed=grassSeed(c.skyClock,row,side,lane);
             float t=travel(c.skyClock,row,side,lane),d=depth(t),s=scale(t);
-            float x=L.w*grassX(L,c.skyClock,t,side,lane,seed),y=rootY(L,t);
+            float x=L.w*grassX(L,c.skyClock,t,side,lane,seed),y=rootY(L,t,x);
             float r=L.w*SwampGrass.RADIUS*s*(.8f+hash(seed)*.25f);
             if(x+r*1.4f<0 || x-r*1.4f>L.w || y-r*SwampGrass.TOP>L.deckTop)continue;
             float opacity=fade*reveal(t);if(opacity<.008f)continue;
             SwampGrass.draw(p,x,y,r,seed,time,.25f+.75f*Math.min(1,d*2.5f),opacity);
         }
+        shoreReeds(p,c,L,time,fade);
+        horizonHaze(p,L,fade);
         LandBonusArt.inSwamp(p,c,L,fade);
         c.swampFireflies.draw(p,c,L,fade);
     }
@@ -65,31 +74,104 @@ final class SwampVista extends Draw {
         }
     }
     private static void horizonTrees(Painter p,Layout L,float fade) {
-        // Distant mangroves stay in the haze rather than entering the foreground.
-        for(int i=0;i<10;i++) {
-            int seed=919+i*67;float x=L.w*(i<5?.02f+i*.082f:.66f+(i-5)*.082f);
-            float y=horizon(L)+L.h*.008f,h=L.h*(.055f+hash(seed)*.065f),r=L.w*(.035f+hash(seed+3)*.025f);
-            float lean=L.w*(hash(seed+5)-.5f)*.03f;int color=ink(0xFF3C5A4B,fade*.20f);
-            p.fillPoly(new float[]{x-r*.08f,y,x+r*.08f,y,x+lean+r*.035f,y-h,x+lean-r*.035f,y-h},color);
-            p.fillEllipse(x+lean-r*.35f,y-h,r,r*.45f,color);
-            p.fillEllipse(x+lean+r*.60f,y-h+r*.10f,r*.8f,r*.38f,color);
-            p.polyline(new float[]{x-r*.65f,y,x-r*.2f,y-h*.2f,x,y-h*.35f,x+r*.3f,y-h*.18f,x+r*.7f,y},color,L.w*.002f);
+        float[] trunk=new float[18],crown=new float[64];
+        for(int layer=0;layer<3;layer++)for(int i=0;i<8;i++) {
+            int seed=919+layer*317+i*67;
+            float x=L.w*((i+.2f+hash(seed)*.6f)/8),y=horizonAt(L,x)+L.h*(.006f+layer*.003f);
+            float h=L.h*(.045f+layer*.025f+hash(seed+3)*.05f),r=L.w*(.055f+layer*.016f+hash(seed+5)*.045f);
+            float lean=L.w*(hash(seed+7)-.5f)*.04f;
+            int color=ink(layer==0?0xFF617A69:layer==1?0xFF466653:0xFF365A49,fade*(.12f+layer*.055f));
+            float[] xy={x-r*.50f,y,x-r*.12f,y-h*.21f,x+lean-r*.07f,y-h,
+                    x+lean+r*.07f,y-h,x+r*.13f,y-h*.20f,x+r*.55f,y,x+r*.28f,y-h*.10f,x,y-h*.13f,x-r*.25f,y-h*.10f};
+            System.arraycopy(xy,0,trunk,0,xy.length);p.fillPoly(trunk,color);
+            for(int n=0;n<32;n++) {
+                float angle=n*Softbody.TAU/32,reach=r*(.90f+.07f*(float)Math.sin(angle*5+seed)+.03f*(float)Math.sin(angle*9-seed));
+                crown[n*2]=x+lean+(float)Math.cos(angle)*reach;crown[n*2+1]=y-h+(float)Math.sin(angle)*reach*.42f;
+            }
+            p.fillPoly(crown,color);
         }
     }
+    private static float bankY(Layout L,float d,float x) {
+        return horizon(L)+d*(L.deckTop-horizon(L)+L.h*.35f)+(horizonAt(L,x)-horizon(L))*Math.max(0,1-d*2);
+    }
     private static void banks(Painter p,GameCore c,Layout L,float fade) {
-        float h=horizon(L),range=L.deckTop-h;float[] edge=new float[66];
+        float range=L.deckTop-horizon(L);float[] xs=new float[49],ds=new float[49],widths=new float[49];
+        float[] core=new float[120],strip=new float[196];
+        float[] offsets={-.8f,-.25f,.3f,.85f,1.4f};
+        int[] colors={0xFF3D6557,0xFF285348,0xFF2B4A3B,0xFF324F3B};float[] alpha={.12f,.28f,.45f,.58f};
         for(int side=-1;side<=1;side+=2) {
-            edge[0]=side<0?-L.w*.06f:L.w*1.06f;edge[1]=h;
-            for(int i=0;i<=30;i++) {
-                float y=h+i/30f*range;
-                edge[(i+1)*2]=L.w*shoreX(L,c.skyClock,waterDepth(L,y),side);edge[(i+1)*2+1]=y;
+            float outer=side<0?-L.w*.06f:L.w*1.06f;
+            for(int i=0;i<=48;i++) {
+                float v=i/48f;ds[i]=waterDepth(L,horizon(L)+v*range);
+                xs[i]=L.w*shoreX(L,c.skyClock,ds[i],side);
+                float material=3*ds[i]/(1+2*ds[i])-c.skyClock*SPEED;
+                widths[i]=L.w*(.006f+.016f*v)*(.85f+.20f*(float)Math.sin(material*19+side));
             }
-            edge[64]=edge[0];edge[65]=L.deckTop;
-            p.fillPoly(edge,ink(0xFF324F3B,fade*.65f));
+            float top=xs[0]+side*widths[0]*1.4f;
+            for(int i=0;i<=10;i++){float x=outer+(top-outer)*i/10f;core[i*2]=x;core[i*2+1]=horizonAt(L,x);}
+            for(int i=1;i<=48;i++) {
+                float x=xs[i]+side*widths[i]*1.4f;core[(i+10)*2]=x;core[(i+10)*2+1]=bankY(L,ds[i],x);
+            }
+            core[118]=outer;core[119]=L.deckTop;p.fillPoly(core,ink(0xFF324F3B,fade*.65f));
+            // Narrow non-overlapping wet margins soften the bank without full-screen overdraw.
+            for(int band=0;band<4;band++) {
+                for(int i=0;i<=48;i++) {
+                    float x=xs[i]+side*widths[i]*offsets[band],xx=xs[i]+side*widths[i]*offsets[band+1];
+                    strip[i*2]=x;strip[i*2+1]=bankY(L,ds[i],x);
+                    strip[(97-i)*2]=xx;strip[(97-i)*2+1]=bankY(L,ds[i],xx);
+                }
+                p.fillPoly(strip,ink(colors[band],fade*alpha[band]));
+            }
         }
+    }
+    private static void shoreReeds(Painter p,GameCore c,Layout L,float time,float fade) {
+        for(int side=-1;side<=1;side+=2) {
+            float phase=c.skyClock*SPEED*6+(side>0?.5f:0);
+            for(int i=0;i<6;i++) {
+                int seed=8923+(i-(int)Math.floor(phase))*191+side*73;
+                float t=(i+phase-(float)Math.floor(phase))/6,d=depth(t),r=L.w*(.003f+.011f*d);
+                float x=L.w*(shoreX(L,c.skyClock,d,side)+side*.003f*scale(t)),y=rootY(L,t,x),a=fade*reveal(t);
+                if(x+r*1.4f<0 || x-r*1.4f>L.w || y-r*SwampGrass.TOP>L.deckTop || a<.01f)continue;
+                p.fillEllipse(x,y,r*1.7f,r*.35f,ink(0xFF385D45,a*.18f));
+                SwampGrass.draw(p,x,y,r,seed,time,.35f+d*.55f,a*.70f);
+            }
+        }
+    }
+    private static void horizonHaze(Painter p,Layout L,float fade) {
+        float[] band=new float[100];
+        for(int layer=0;layer<12;layer++) {
+            float u=(layer+.5f)/12,top=L.h*(-.025f+layer*.005f),bottom=top+L.h*.005f;
+            for(int i=0;i<25;i++) {
+                float x=L.w*(-.06f+i/24f*1.12f),y=horizonAt(L,x);
+                band[i*2]=x;band[i*2+1]=y+top;band[(49-i)*2]=x;band[(49-i)*2+1]=y+bottom;
+            }
+            p.fillPoly(band,ink(0xFFAFBEA5,fade*.22f*(float)Math.sin(u*Math.PI)));
+        }
+    }
+    private static void flotsam(Painter p,GameCore c,Layout L,float fade) {
+        float phase=c.skyClock*SPEED*8,time=c.cloudUi.reduceMotion?0:c.skyClock;
         for(int i=0;i<8;i++) {
-            float u=(i+.5f)/8,y=h+L.h*(i/8f-.5f)*.06f,next=h+L.h*((i+1)/8f-.5f)*.06f;
-            p.fillRect(0,y,L.w,next,ink(0xFF657C68,fade*.35f*(float)Math.sin(u*Math.PI)));
+            int seed=6211+(i-(int)Math.floor(phase))*139;
+            float t=(i+phase-(float)Math.floor(phase))/8,d=depth(t);
+            float x=L.w*(.5f+bend(c.skyClock,d)+(hash(seed)-.5f)*(.07f+.17f*d));
+            float y=rootY(L,t,x),r=L.w*(.004f+.020f*d),a=fade*.60f*reveal(t);
+            if(y-r>L.deckTop || a<.01f)continue;
+            float bob=(float)Math.sin(time*.6f+seed)*r*.12f;
+            p.fillEllipse(x,y+r*.55f,r*2,r*.25f,ink(0xFF153F3A,a*.24f));
+            int kind=Math.floorMod(seed,3);
+            if(kind==0) {
+                p.fillEllipse(x,y+bob,r*1.1f,r*.45f,ink(0xFF658C6B,a));
+                p.fillEllipse(x+r*1.1f,y+r*.4f+bob,r*.7f,r*.30f,ink(0xFF71966F,a*.85f));
+            } else if(kind==1) {
+                p.line(x-r*1.8f,y-r*.2f+bob,x+r*1.8f,y+r*.3f+bob,ink(0xFF827C5E,a),r*.45f);
+                p.line(x,y+bob,x+r*.55f,y-r*.75f+bob,ink(0xFF827C5E,a),r*.23f);
+            } else {
+                p.fillPoly(new float[]{x-r*1.1f,y+bob,x-r*.25f,y-r*.55f+bob,x+r*1.2f,y+r*.2f+bob,x+r*.1f,y+r*.45f+bob},ink(0xFF8A9C69,a));
+            }
+        }
+        for(int i=0;i<5;i++) {
+            float d=.025f+i*.015f,x=L.w*(.5f+bend(c.skyClock,d)),y=bankY(L,d,x),w=L.w*(.018f+i*.005f);
+            p.fillEllipse(x,y,w,L.h*.0012f,ink(0xFFB0C3A4,fade*.08f));
         }
     }
 }
