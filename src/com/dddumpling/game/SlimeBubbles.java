@@ -15,7 +15,7 @@ final class SlimeBubbles extends Draw {
         float freeTime() {return Math.max(0,Math.min(age,popAt)-riseTime);}
         float centreY() {
             float t=emergence(),f=freeTime();
-            if(t<1)return surfaceY+r-r*2*t*t*(3-2*t);
+            if(t<1)return emergeY(surfaceY,r,t);
             float settle=Math.min(1,f/.5f);settle=settle*settle*(3-2*settle);
             float hover=r*settle*(.30f+.07f*(float)Math.sin(f*3+seed));
             return groundY-r-hover;
@@ -41,12 +41,17 @@ final class SlimeBubbles extends Draw {
         // Shuffle each pair's order while retaining an even split of the two outcomes.
         return ((serial&1)==0)==(hash(1499+serial/2*61)>.5f);
     }
+    static float surfaceX(int seed,Layout L) {return L.w*(.30f+hash(seed+3)*.40f);}
+    static float surfaceY(int seed,Layout L) {return L.playTop+(L.deckTop-L.playTop)*(.20f+hash(seed+7)*.56f);}
+    static float emergeY(float surface,float radius,float progress) {
+        return surface+radius-radius*2*progress*progress*(3-2*progress);
+    }
     void spawn(Bubble b,int id,Layout L) {
         int seed=1391+id*83;
         b.live=true;b.age=0;b.seed=seed;b.early=earlyPop(id);
         b.r=L.enemyR*(1.43f+hash(seed+1)*.14f);
-        b.x=L.w*(.30f+hash(seed+3)*.40f);
-        b.surfaceY=L.playTop+(L.deckTop-L.playTop)*(.20f+hash(seed+7)*.56f);
+        b.x=surfaceX(seed,L);
+        b.surfaceY=surfaceY(seed,L);
         b.groundY=b.surfaceY;
         b.riseTime=2.3f+hash(seed+11)*.8f;
         b.popAt=b.early?b.riseTime*(.43f+hash(seed+13)*.30f):b.riseTime+1.6f+hash(seed+17)*1.1f;
@@ -107,7 +112,7 @@ final class SlimeBubbles extends Draw {
             float show=Math.min(1,b.age/.35f)*fade;
             p.save();
             // The waterline clips the soft shell as it emerges, keeping the same material after lift-off.
-            if(b.age<b.riseTime)p.clipRect(0,L.playTop,L.w,b.surfaceY);
+            if(b.age<b.riseTime)p.clipRect(0,0,L.w,b.surfaceY);
             bubbleShell(p,b,x,y,show);
             p.restore();
             if(b.age<b.riseTime) {
@@ -160,7 +165,7 @@ final class SlimeBubbles extends Draw {
     }
 
     /** Soft vector layers avoid native blur passes on either mobile renderer. */
-    private void bubbleShell(Painter p,Bubble b,float x,float y,float show) {
+    void bubbleShell(Painter p,Bubble b,float x,float y,float show) {
         float lift=Math.min(1,b.age*2.5f);
         float pulse=.5f+.5f*(float)Math.sin(b.age*3.8f+b.seed);
         int sheen=Glyph.mix(SlimeHills.MINT,INK,.25f+pulse*.35f);

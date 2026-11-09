@@ -8,6 +8,64 @@ import java.io.File;
  * without a build/install cycle: same Layout, same Renderer, same state machine as the APK.
  */
 final class Preview {
+    private static void landBonusFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
+        if(!wantedGroup("244-"))return;
+        for(int land:new int[]{0,1,2,3,Lands.SWAMP,Lands.RAINBOW}) {
+            GameCore c=TestLandBonuses.start(L,Lands.firstStage(land),true,244);
+            c.skyClock=3;c.landBonus.restartEntrance(c);c.landBonus.age=2;
+            Check.add(c,L,new int[]{0,1,4},L.playTop+L.h*.18f);
+            Check.add(c,L,new int[]{5,4},L.playTop+L.h*.35f);
+            if(land==0)for(int i=0;i<2;i++) {
+                c.slimeBubbles.spawn(c.slimeBubbles.bubbles[i],i,L);
+                c.slimeBubbles.bubbles[i].age=2.5f;
+            }
+            float[] beats={.5f,c.landBonus.delay+.2f,c.landBonus.delay+.9f,c.landBonus.delay+1.6f,c.landBonus.delay+2.9f};
+            for(int phase=0;phase<beats.length;phase++) {
+                float beat=beats[phase];c.landBonus.age=beat;c.skyClock=3+Math.max(0,beat-c.landBonus.delay);
+                shot(dir,"244-bonus-"+land+"-entry-"+phase,c,L,w,h,ss);
+            }
+            if(land==Underwater.LAND)for(int travel:new int[]{0,15,30}) {
+                c.skyClock=3+travel;c.landBonus.age=c.landBonus.delay+10;
+                shot(dir,"244-clam-depth-"+travel,c,L,w,h,ss);
+            }
+            c.skyClock=3+(land==0?4:10);c.landBonus.age=c.landBonus.delay+10;
+            shot(dir,"244-bonus-"+land+"-scrolled",c,L,w,h,ss);
+            if(land==Lands.SWAMP) {
+                float age=c.landBonus.age;
+                for(float beat:new float[]{10,11.12f,12.2f}) {
+                    c.landBonus.age=beat;
+                    shot(dir,"244-flamingo-idle-"+(int)(beat*100),c,L,w,h,ss);
+                }
+                c.cloudUi.reduceMotion=true;
+                shot(dir,"244-flamingo-idle-still",c,L,w,h,ss);
+                c.cloudUi.reduceMotion=false;c.landBonus.age=age;
+            }
+            if(wanted("244-sound-"+land))Wav.write(new File(dir,"244-sound-"+land+".wav"),Sfx.build(Sfx.landBonusId(land)),Sfx.RATE);
+            c.landBonus.tap(c,L,LandBonus.x(c,L),LandBonus.y(c,L));
+            for(float beat:new float[]{0,.12f,.36f,.60f,.95f}) {
+                c.landBonus.burst=beat;
+                shot(dir,"244-bonus-"+land+"-tap-"+(int)(beat*100),c,L,w,h,ss);
+            }
+            if(land<=3 || land==Lands.SWAMP || land==Lands.RAINBOW) {
+                c.cloudUi.reduceMotion=true;
+                shot(dir,"244-collected-still-"+land,c,L,w,h,ss);
+                c.cloudUi.reduceMotion=false;
+            }
+            if(land==CrystalField.LAND) {
+                GameCore header=TestLandBonuses.start(L,6,true,244);
+                header.skyClock=header.landBonus.skyAt+(LandBonus.radius(L)*header.landBonus.entryDepth-2)/LandBonus.scrollSpeed(header,L);
+                shot(dir,"244-crystal-header",header,L,w,h,ss);
+            }
+            if(land==0) {
+                c.cloudUi.reduceMotion=true;
+                shot(dir,"244-bonus-reduced-motion",c,L,w,h,ss);
+                c.openSettings();c.settingsPage=1;c.settingsTab=SettingsUi.GENERAL;
+                c.preferences.updatePanel(c,PlayerSettings.PANEL_TIME);
+                shot(dir,"244-developer-run",c,L,w,h,ss);
+            }
+        }
+    }
+
     private static void rainbowFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wantedGroup("151-"))return;
         for(int skin=0;skin<Skins.COUNT;skin++) {
@@ -2161,6 +2219,7 @@ final class Preview {
             shot(dir,"206-retried-record",retry,L,w,h,ss);
         }
         if(wantedGroup("214-"))AccessoryPreview.frames(dir,L,w,h,ss);
+        landBonusFrames(dir,L,w,h,ss);
         rainbowFrames(dir,L,w,h,ss);
         skinFrames(dir,L,w,h,ss);
         clearSpreadFrames(dir,L,w,h,ss);

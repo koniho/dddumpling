@@ -24,7 +24,7 @@ final class SlimeArrival extends Draw {
         if(!active(c))return;
         Boss b=c.boss;float t=elapsed(b),y=surface(b,L),width=L.w;
         float[] sheet=new float[102],edge=new float[98],blob=new float[34];
-        p.save();p.clipRect(0,L.playTop,L.w,L.deckTop);
+        p.save();p.clipRect(0,0,L.w,L.deckTop);
         if(t<DRAIN) {
             float falling=smooth((t-RELEASE)/.45f);
             for(int layer=0;layer<3;layer++) {

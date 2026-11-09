@@ -3,6 +3,7 @@ package com.dddumpling.game;
 /** Muted undergrowth and an overhead canopy; all motion follows the scenery clock. */
 final class MushroomForest extends Draw {
     static final int LAND=3;
+    static final int WOOD_DARK=0xFF604D3C,WOOD=0xFF8A7050,WOOD_LIGHT=0xFFB29770;
     static final float REVEAL_TIME=.9f, LEAF_TIME=4.5f;
     private static final int[] GREENS={0xFF71917A,0xFF91A486,0xFF587D70,0xFFACB394};
     private MushroomForest() {}
@@ -110,7 +111,7 @@ final class MushroomForest extends Draw {
         float floor=groveFloor(b,L);
         float lift=-(1-progress)*L.h*.72f;
         float[] shape=new float[66];
-        p.save();p.clipRect(0,L.playTop,L.w,L.deckTop);p.translate(0,lift);
+        p.save();p.clipRect(0,0,L.w,L.deckTop);p.translate(0,lift);
         // A softly lit clearing joins the boss's own living roots, without a hard horizon.
         for(int i=3;i>=0;i--)p.fillEllipse(L.w*.5f,floor,L.w*(.38f+i*.055f),L.h*(.035f+i*.018f),
                 Glyph.withAlpha(0xFF9BAE86,(int)(fade*9)));
@@ -128,9 +129,9 @@ final class MushroomForest extends Draw {
             int a=(int)(fade*(layer==0?60:135));
             p.fillPoly(new float[]{x-w*1.8f,base,x-w*.68f,base-L.h*.14f,
                     x-w*.48f+lean,top,x+w*.47f+lean,top,x+w*.76f,base-L.h*.17f,x+w*1.9f,base},
-                    Glyph.withAlpha(lit(layer==0?0xFF655F50:0xFF604D3C,c.boss),a));
+                    Glyph.withAlpha(lit(layer==0?0xFF655F50:WOOD_DARK,c.boss),a));
             p.fillPoly(new float[]{x-w*.60f,base-L.h*.07f,x-w*.18f+lean,top,
-                    x+w*.13f+lean,top,x+w*.20f,base-L.h*.13f},Glyph.withAlpha(lit(0xFFB29770,c.boss),a/3));
+                    x+w*.13f+lean,top,x+w*.20f,base-L.h*.13f},Glyph.withAlpha(lit(WOOD_LIGHT,c.boss),a/3));
             for(int root=0;root<3;root++) {
                 float reach=-side*L.w*(.11f+root*.065f);
                 p.polyline(new float[]{x,base-L.h*.16f,x+reach*.24f,base-L.h*.025f,
@@ -141,7 +142,7 @@ final class MushroomForest extends Draw {
                         +(float)Math.sin(c.clock*1.8f+branch)*.055f;
                 float by=L.playTop+L.h*(.04f+branch*.12f),reach=-side*L.w*(.26f-branch*.055f)*(1+wind*.3f);
                 p.polyline(new float[]{x,by+L.h*.12f,x+reach*.38f,by+L.h*.035f,x+reach,by-L.h*.035f},
-                        Glyph.withAlpha(lit(0xFF8A7050,c.boss),a*2/3),w*.23f);
+                        Glyph.withAlpha(lit(WOOD,c.boss),a*2/3),w*.23f);
                 sprig(p,shape,x+reach*.55f,by+L.h*.02f,L.w*(.17f-branch*.025f),-side*(.8f+wind),1,a/2,lit(GREENS[(branch+layer)%4],c.boss));
             }
             sprig(p,shape,x,base,L.w*.18f,-side*(.65f+.23f*(float)Math.sin(c.clock*1.1f+side+layer)),0,a/2,lit(GREENS[1],c.boss));
@@ -237,6 +238,7 @@ final class MushroomForest extends Draw {
         fade*=1-groveProgress(c);
         if(fade<=0)return;
         floorTexture(p,c,L,fade*(1-groveProgress(c)*.6f));
+        LandBonusArt.beneathForest(p,c,L,fade);
         fade*=1-groveProgress(c)*.65f;
         float[] leaf=new float[66];
         for(int layer=0;layer<2;layer++)for(int i=0;i<10;i++) {
@@ -245,7 +247,7 @@ final class MushroomForest extends Draw {
             float x=side>0?L.w*(-.03f+hash(seed+1)*.11f):L.w*(1.03f-hash(seed+1)*.11f);
             float span=L.deckTop+r*5;
             float y=((i+hash(seed+2))*.1f*span+c.skyClock*L.h*(.012f+layer*.008f)+scroll(c,L))%span-r*2.5f;
-            if(y<L.playTop-r*.6f || y-r*2.1f>L.deckTop)continue;
+            if(y<-r*2.1f || y-r*2.1f>L.deckTop)continue;
             float sway=(float)Math.sin(c.clock*.43f+i)*r*.10f;
             int alpha=(int)(fade*(layer==0?38:66));
             // Ferns alternate with rounded broad leaves and slim willow sprays.
@@ -258,7 +260,7 @@ final class MushroomForest extends Draw {
         if(forest<=.001f)return;
         float fade=forest*(retained(c)?1:1-c.drained());
         p.save();
-        p.clipRect(0,L.playTop,L.w,L.deckTop);
+        p.clipRect(0,0,L.w,L.deckTop);
         float[] shape=new float[66];
         // The travelling canopy leaves the scene; anchored branches take over at the grove.
         if(grove<1)for(int i=0;i<6;i++) {
@@ -266,7 +268,7 @@ final class MushroomForest extends Draw {
             float side=i%2==0?1:-1,r=L.w*(.42f+hash(seed)*.17f);
             float span=L.deckTop+r*4;
             float y=((i+hash(seed+3))/6f*span+c.skyClock*L.h*.034f+scroll(c,L)*1.35f)%span-r*2;
-            if(y<L.playTop-r*.6f || y-r*2.1f>L.deckTop)continue;
+            if(y<-r*2.1f || y-r*2.1f>L.deckTop)continue;
             float x=side>0?-r*.12f:L.w+r*.12f;
             float sway=(float)Math.sin(c.clock*.65f+i*2.3f)*.23f;
             sprig(p,shape,x,y,r,side*(1.05f+sway),1,(int)(fade*(1-grove)*20),GREENS[i%4]);

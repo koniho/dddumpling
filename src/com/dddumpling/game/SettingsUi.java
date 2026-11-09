@@ -13,8 +13,8 @@ final class SettingsUi {
     static final int HIT_COLLECTION = 15, HIT_PROGRESS = 16, HIT_COLLECT_ALL = 17, HIT_RESET_PROGRESS = 18;
     static final int HIT_COMPLETE_BOSSES = 19, HIT_RESET_UPDATE_PROMPT = 20, HIT_INFINITE_LIVES = 21, HIT_TEST_UPDATE = 22, HIT_TEST_REVIEW = 23, HIT_RESET_REVIEW = 24;
     static final int HIT_ACCESSORY_GRANT=25,HIT_ACCESSORY_ALL=26,HIT_ACCESSORY_RESET=27;
-    static final int HIT_ACCESSORY_CATEGORY=28, HIT_EXPORT_PLAYTHROUGHS=40, HIT_TEST_NOTIFICATION=41;
-    float accessoryY,notificationY;
+    static final int HIT_ACCESSORY_CATEGORY=28, HIT_EXPORT_PLAYTHROUGHS=40, HIT_TEST_NOTIFICATION=41, HIT_LAND_BONUSES=42;
+    float accessoryY,notificationY,landBonusY;
     final float[] accessoryCategoryY=new float[(Accessories.SLOTS+1)/2];
     static final String[] TABS = {"RUN", "MINIGAMES", "COLLECTION", "PROGRESS"};
     /** Power shortcuts and minigame shortcuts share action IDs, not a row. */
@@ -72,7 +72,7 @@ final class SettingsUi {
         testH=stageH=runH=clearH=difficultyH=s*2f;
         difficultyStepLabelY=panelT+s*9f; difficultyStepY=panelT+s*10.3f;
         stageLabelY=panelT+s*9f; stageY=stageLabelY+s*.5f;
-        runLabelY=panelT+s*13f; runY=runLabelY+s*.5f;infiniteLivesY=runY+s*3f;playthroughY=infiniteLivesY+s*4f;
+        runLabelY=panelT+s*13f; runY=runLabelY+s*.5f;infiniteLivesY=runY+s*3f;landBonusY=infiniteLivesY+s*2.5f;playthroughY=landBonusY+s*4f;
         testLabelY=panelT+s*9f; testY=testLabelY+s*.5f;
         debuffY=panelT+s*14f;
         difficultyLabelY=panelT+s*20f; difficultyY=difficultyLabelY+s*.5f;
@@ -173,6 +173,7 @@ final class SettingsUi {
             if(y>=debuffY && y<=debuffY+testH) for(int i=0;i<2;i++)
                 if(inChip(x,i,2)) return HIT_DEBUFF+i;
             if(y>=playthroughY && y<=playthroughY+testH && inChip(x,0,1))return HIT_EXPORT_PLAYTHROUGHS;
+            if(y>=landBonusY && y<=landBonusY+testH && inChip(x,0,1))return HIT_LAND_BONUSES;
             if(y>=infiniteLivesY && y<=infiniteLivesY+testH && inChip(x,0,1))return HIT_INFINITE_LIVES;
             if(y>=stageY && y<=stageY+stageH) for(int i=0;i<STAGE_STEP.length;i++)
                 if(inChip(x,i,STAGE_STEP.length)) return HIT_STAGE+i;

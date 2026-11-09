@@ -22,11 +22,11 @@ final class SlimeBasin extends Draw {
         return L.w*SlimeBasinArt.BANK_FRACTION*(1+.025f*(float)Math.sin(time*.65f+side*2.4f));
     }
     static float bankHeight(float time,int side,Layout L) {
-        return (L.deckTop-L.playTop)*(1.09f+.008f*(float)Math.sin(time*.55f+side*2.4f));
+        return L.deckTop*(1.09f+.008f*(float)Math.sin(time*.55f+side*2.4f));
     }
     static float bankTop(float time,int side,Layout L) {
-        float span=L.deckTop-L.playTop;
-        return L.playTop+(span-bankHeight(time,side,L))*.5f+span*.0015f*(float)Math.sin(time*.5f+side);
+        float span=L.deckTop;
+        return (span-bankHeight(time,side,L))*.5f+span*.0015f*(float)Math.sin(time*.5f+side);
     }
     static float layerWidth(float time,int side,int layer,Layout L) {
         return bankWidth(time,side,L)*(1+.014f*(float)Math.sin(time*(.31f+layer*.045f)+layer*1.9f+side*2.4f));
@@ -74,7 +74,7 @@ final class SlimeBasin extends Draw {
                 float u=tail+(head-tail)*j/(line.length/2-1f),x,y;
                 if(side<0) {
                     x=L.w*u;
-                    y=L.playTop+(L.deckTop-L.playTop)*(.306f-.025f*(float)Math.sin(u*Math.PI)
+                    y=L.deckTop*(.306f-.025f*(float)Math.sin(u*Math.PI)
                             +.005f*(float)Math.sin(u*18+.6f));
                 } else {
                     u=.42f+u*.49f;
@@ -103,9 +103,9 @@ final class SlimeBasin extends Draw {
         float cx=b.bodyX(L),floor=b.bodyY(L)+b.bodyR(L)*.80f;
         float[] shape=new float[34];
         float[][] rings={new float[66],new float[66]};
-        art(p,SlimeBasinArt.SCENE,0,L.playTop,L.w,span,(int)(fade*255));
-        if(hit>.01f)art(p,SlimeBasinArt.REAR_LIT,0,L.playTop,L.w,span,
-                (int)(fade*surfaceLight(c,L,L.w*.5f,L.playTop+span*.27f,hit)*170));
+        art(p,SlimeBasinArt.SCENE,0,0,L.w,L.deckTop,(int)(fade*255));
+        if(hit>.01f)art(p,SlimeBasinArt.REAR_LIT,0,0,L.w,L.deckTop,
+                (int)(fade*surfaceLight(c,L,L.w*.5f,L.deckTop*.27f,hit)*170));
         for(int side=0;side<2;side++)for(int layer=0;layer<SlimeBasinArt.LAYERS;layer++) {
             bankArt(p,c,L,side,layer,false,(int)(fade*255));
             if(hit>.01f) {

@@ -1448,7 +1448,7 @@ final class TestVisuals extends Check {
                         ui.clearY + ui.clearH / 2f) == SettingsUi.HIT_CLEAR);
         ui.compute(L,SettingsUi.GENERAL);
         check("stage controls lead the run panel", ui.stageY<ui.runLabelY);
-        check("former music rows contain no track targets", ui.hit(L.w*.5f,ui.panelT+PlayerSettings.unit(L)*23f)==SettingsUi.HIT_NONE);
+        check("gap before frenzy controls has no target", ui.hit(L.w*.5f,(ui.playthroughY+ui.testH+ui.testLabelY)*.5f)==SettingsUi.HIT_NONE);
         // The stage readout is the settings button, and must not swallow key taps.
         check("the stage readout opens settings", L.inStageTap(L.w / 2f, L.hudY));
         boolean keysClear = true;

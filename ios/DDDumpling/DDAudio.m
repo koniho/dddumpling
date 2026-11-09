@@ -420,6 +420,7 @@ static const jint DDStyleSwing = DDMusic_SWING_STYLE;
   [self playEffect:[DDSfx ninjaSwishIdWithInt:variant] rate:1 gain:1];
 }
 - (void)zapWithInt:(jint)hop { [self playEffect:DDSfx_ZAP rate:1 + .055f * MAX(0, MIN(8, hop - 1)) gain:1]; }
+- (void)landBonusWithInt:(jint)land { [self playEffect:[DDSfx landBonusIdWithInt:land] rate:1 gain:DDSfx_LAND_BONUS_GAIN]; }
 - (void)collectWithInt:(jint)nth { [self playEffect:DDSfx_COLLECT rate:1 + .05f * MAX(0, MIN(7, nth)) gain:1]; }
 - (void)starWithInt:(jint)nth { [self playEffect:DDSfx_STAR rate:1 + .032f * MAX(0, MIN(16, nth - 1)) gain:1]; }
 - (void)courseStart { [self playEffect:DDSfx_COURSE rate:1 gain:1]; }

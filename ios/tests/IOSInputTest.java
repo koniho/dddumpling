@@ -1262,7 +1262,38 @@ public final class IOSInputTest extends Check {
         check("native export is one-shot",game.takePlaythroughExport()==null);
     }
 
+    private static void landBonuses() {
+        IOSGame game=game();GameCore c=game.core();Layout l=game.geometry();
+        Host host=new Host();game.setHost(host);
+        c.startGame();c.onboarding.clear();c.onboarding.saved=c.onboarding.savedPowers=-1;
+        c.stageBanner=c.stageGap=c.startFade=0;c.enemies.clear();
+        c.devLandBonuses=true;c.landBonus.update(c,1);
+        GameCore.Enemy word=add(c,l,new int[]{0,0},l.dangerY-l.enemyR*2);
+        float x=LandBonus.x(c,l),y=LandBonus.y(c,l),kx=c.keyX(l,0),ky=c.keyY(l,0);
+        int score=c.score;
+        c.landBonus.age=c.landBonus.delay+LandBonus.BUBBLE_RISE;
+        y=LandBonus.y(c,l);c.skyClock+=6;
+        tap(game,x,y);
+        check("native old bonus position cannot collect after scrolling",c.score==score);
+        y=LandBonus.y(c,l);
+        game.touch(one(0,7,x,y));
+        check("native bonus tap awards points and haptic",c.score==score+LandBonus.POINTS && host.ticks==1);
+        game.touch(two(5,1,7,x,y,19,kx,ky));
+        check("second thumb can score while bonus finger is held",word.pos==1 && host.ticks==2);
+        game.touch(two(6,1,7,x,y,19,kx,ky));
+        game.touch(one(2,7,x,y-l.enemyR*3));game.touch(one(1,7,x,y-l.enemyR*3));
+        check("bonus finger cannot accidentally spend rescue",!c.pushUsed);
+        c.openSettings();c.settingsPage=1;c.settingsTab=SettingsUi.GENERAL;
+        c.preferences.updatePanel(c,PlayerSettings.PANEL_TIME);
+        SettingsUi ui=new SettingsUi();ui.compute(l,SettingsUi.GENERAL);
+        tap(game,l.w*.5f,ui.landBonusY+ui.testH*.5f);
+        check("native developer chip switches bonus override off",!c.devLandBonuses);
+        tap(game,l.w*.5f,ui.landBonusY+ui.testH*.5f);
+        check("native developer chip switches bonus override on",c.devLandBonuses);
+    }
+
     public static void main(String[] args) {
+        landBonuses();
         playthroughExport();
         rainbowCatGestures();
         cloudSaveUi();

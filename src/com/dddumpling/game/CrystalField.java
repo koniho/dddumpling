@@ -232,7 +232,7 @@ final class CrystalField extends Draw {
                     L.w*(layer==0?.008f:layer==1?.005f:.003f));
         }
     }
-    private static int edgeColor(int layer) {
+    static int edgeColor(int layer) {
         return layer==0?0xFF9983BE:layer==1?0xFFB79BD8:0xFFDCC4FF;
     }
     static void base(Painter p,Cell cell,int layer,float w,float fade) {

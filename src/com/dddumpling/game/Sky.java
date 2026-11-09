@@ -155,10 +155,12 @@ final class Sky extends Draw {
      * readouts; with it they read as emerging from behind the HUD.
      */
     static void hudBacking(Painter p, Layout L, int bg) {
-        int layers = 14;
-        int col = Glyph.withAlpha(bg, 26);
-        for (int i = 0; i < layers; i++) {
-            p.fillRect(0, 0, L.w, L.playTop * (1f - (float) i / layers), col);
+        // Fade fully to transparent so scenery has no visible seam at the header edge.
+        int layers=48;
+        for(int i=0;i<layers;i++) {
+            float fade=1-(i+.5f)/layers;
+            p.fillRect(0,L.playTop*i/layers,L.w,L.playTop*(i+1)/layers,
+                    Glyph.withAlpha(bg,Math.round(199*fade*fade)));
         }
     }
 }

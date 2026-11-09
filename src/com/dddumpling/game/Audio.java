@@ -276,6 +276,8 @@ final class Audio implements GameCore.Sound {
         play(Sfx.ZAP, 1f + 0.055f * step);
     }
 
+    @Override public void landBonus(int land) {play(Sfx.landBonusId(land),1f,Sfx.LAND_BONUS_GAIN);}
+
     @Override public void collect(int nth) {
         // Climbs as the case fills, so a haul of four sounds like a run up the shelf rather than
         // the same chime four times. Capped well inside what setPlaybackRate will take.

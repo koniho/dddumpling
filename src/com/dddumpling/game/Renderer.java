@@ -73,6 +73,7 @@ final class Renderer extends Draw {
         Sky.cloudBand(p, c, L, 0, Sky.CLOUD_FRONT_LAYER, hurt);
 
         Lands.scenery(p, c, L);
+        LandBonusArt.draw(p,c,L);
         c.survival.cheer.pulse(p,c,L);
         c.survival.cheer.draw(p,c,L);
 
@@ -140,6 +141,10 @@ final class Renderer extends Draw {
             Sky.vignette(p, L, GOLD, 0.22f * (c.slowdown / Blade.SLOW_TIME));
         }
 
+        // Foreground leaves veil the world; the HUD stays above the canopy.
+        MushroomForest.canopy(p,c,L);
+        SlimeArrival.draw(p,c,L);
+
         // The title and game-over screens carry their own numbers; a second copy is clutter.
         if (c.state == GameCore.PLAY) {
             Sky.hudBacking(p, L, Glyph.mix(Lands.background(c), BG_HURT, hurt * 0.45f));
@@ -158,9 +163,6 @@ final class Renderer extends Draw {
             p.fillRect(0, 0, L.w, L.h, Glyph.withAlpha(c.flashColor, (int) (c.flash * 52)));
         }
 
-        // Foreground leaves veil the world and its effects; menus remain above the canopy.
-        MushroomForest.canopy(p,c,L);
-        SlimeArrival.draw(p,c,L);
         if (c.state == GameCore.TITLE) Screens.title(p, c, L);
         else if (c.state == GameCore.OVER) {
             if(c.survival.active && c.deathProgress()>=SurvivalEnd.REVEAL)p.fillRect(0,0,L.w,L.h,BG);

@@ -61,6 +61,7 @@ final class Lands extends Draw {
         float mix=blend(c),fade=(c.landFrom==RAINBOW?1-mix:0)
                 +(forStage(visualStage(c))==RAINBOW?mix:0);
         Underwater.backdrop(p,c,L);
+        LandBonusArt.beneathCrystal(p,c,L);
         c.crystalField.draw(p,c,L,CrystalField.presence(c)*(1-BossVictory.backdropDrain(c)));
         if(fade>0)RainbowLand.backdrop(p,c,L,fade*(1-BossVictory.backdropDrain(c)));
     }
@@ -71,7 +72,7 @@ final class Lands extends Draw {
         if (c.state == GameCore.TITLE) return;
         p.save();
         float margin = Renderer.shakeMargin(c, L);
-        p.clipRect(-margin, L.playTop - margin, L.w + margin, L.deckTop);
+        p.clipRect(-margin, -margin, L.w + margin, L.deckTop);
         float mix = blend(c), valley=1-SlimeBasin.progress(c);
         if (mix < 1f && c.landFrom >= 0) sceneryLayer(p, c, L, c.landFrom, (1f - mix)*valley);
         if (mix > 0f) sceneryLayer(p, c, L, forStage(visualStage(c)), mix*valley);
