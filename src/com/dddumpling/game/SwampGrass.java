@@ -5,7 +5,8 @@ final class SwampGrass extends Draw {
     static final int COUNT=4,BLADES=18,WIDTH=128,HEIGHT=512;
     static final float RADIUS=.09f,UNIT=48,ANCHOR_X=64,ANCHOR_Y=480,TOP=9.2f;
     private static final float[][][] BLADES_XY=new float[COUNT][BLADES][8];
-    private static final int[] COLORS={0xFF54784F,0xFF638452,0xFF7C925E};
+    private static final int[] COLORS={0xFF527D61,0xFF638452,0xFF879568,0xFF6F8C53,0xFF4E786C,0xFF929665};
+    private static final int[][] BLADE_COLORS=new int[COUNT][BLADES];
     static {
         for(int art=0;art<COUNT;art++)for(int i=0;i<BLADES;i++) {
             int seed=811+art*317+i*37;
@@ -16,6 +17,14 @@ final class SwampGrass extends Draw {
             b[0]=x-w;b[1]=y;b[2]=x+w;b[3]=y;b[4]=x+lean;b[5]=y-h;b[6]=x+lean*.38f-w*.4f;b[7]=y-h*.52f;
         }
         for(float[][] blades:BLADES_XY)java.util.Arrays.sort(blades,(a,b)->Float.compare(a[1],b[1]));
+        // Bake cooler rear shadows and varied greens into the existing native stamps.
+        for(int art=0;art<COUNT;art++)for(int i=0;i<BLADES;i++) {
+            int seed=2831+art*131+i*67;
+            int color=COLORS[Math.min(COLORS.length-1,(int)(hash(seed)*COLORS.length))];
+            color=Glyph.mix(color,0xFFB0AE79,hash(seed+3)*.14f);
+            float front=Math.max(0,Math.min(1,(BLADES_XY[art][i][1]+.9f)/1.4f));
+            BLADE_COLORS[art][i]=Glyph.mix(color,0xFF243F3E,.08f+.48f*(1-front));
+        }
     }
     static int cattails(int art){return art==0 || art==3?0:art+1;}
     static void draw(Painter p,float x,float y,float r,int seed,float time,float clarity,float fade) {
@@ -37,7 +46,7 @@ final class SwampGrass extends Draw {
         for(int i=0;i<BLADES;i++) {
             float[] b=BLADES_XY[art][i];
             for(int j=0;j<8;j+=2){out[j]=x+r*(b[j]-b[j+1]*sway);out[j+1]=y+r*b[j+1];}
-            p.fillPoly(out,Glyph.withAlpha(COLORS[i%3],(int)(255*fade)));
+            p.fillPoly(out,Glyph.withAlpha(BLADE_COLORS[art][i],(int)(255*fade)));
         }
     }
 }

@@ -91,11 +91,10 @@ final class SwampVista extends Draw {
             p.fillCircle(x,y,r,ink(0xFFD6E2CF,fade*(.20f+.32f*hash(seed+19))));
         }
         float x=L.w*.76f,y=L.h*.19f,r=L.w*.041f;
-        // Build the moon entirely from faint layers, with no hard disk beneath the haze.
-        for(int i=0;i<12;i++) {
-            float u=(i+.5f)/12;
-            p.fillCircle(x,y,r*(2.2f-i*.145f),ink(0xFFD9E3C8,fade*(.012f+.065f*(float)Math.sin(u*Math.PI))));
-        }
+        // Thin, soft halo layers keep the moon hazy without clouding the open sky.
+        for(int i=5;i>=1;i--)p.fillCircle(x,y,r*(1+i*.20f),ink(0xFFD0DFC1,fade*.025f));
+        p.fillCircle(x,y,r,ink(0xFFD9E3C8,fade*.48f));
+        p.fillCircle(x-r*.14f,y-r*.12f,r*.76f,ink(0xFFE1E8D1,fade*.10f));
     }
     private static void horizonTrees(Painter p,Layout L,float fade) {
         float[] trunk=new float[18],crown=new float[64];
