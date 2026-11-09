@@ -59,6 +59,7 @@ final class SwampVista extends Draw {
         nightSky(p,L,fade);
         horizonTrees(p,L,fade);
         banks(p,c,L,fade);
+        ripples(p,c,L,fade);
         flotsam(p,c,L,fade);
         // Keep tall trailing tufts until their tips leave view; world seeds survive row rollover.
         for(int row=0;row<DRAW_ROWS;row++)for(int side=-1;side<=1;side+=2)for(int lane=LANES-1;lane>=0;lane--) {
@@ -97,21 +98,25 @@ final class SwampVista extends Draw {
         p.fillCircle(x-r*.14f,y-r*.12f,r*.76f,ink(0xFFE1E8D1,fade*.10f));
     }
     private static void horizonTrees(Painter p,Layout L,float fade) {
-        float[] trunk=new float[18],crown=new float[64];
-        for(int layer=0;layer<3;layer++)for(int i=0;i<8;i++) {
+        float[] tree=new float[78];
+        for(int layer=0;layer<3;layer++)for(int i=0;i<12;i++) {
             int seed=919+layer*317+i*67;
-            float x=L.w*((i+.2f+hash(seed)*.6f)/8),y=horizonAt(L,x)+L.h*(.006f+layer*.003f);
+            float x=L.w*((i+.2f+hash(seed)*.6f)/12),y=horizonAt(L,x)+L.h*(.006f+layer*.003f);
             float h=L.h*(.045f+layer*.025f+hash(seed+3)*.05f),r=L.w*(.055f+layer*.016f+hash(seed+5)*.045f);
             float lean=L.w*(hash(seed+7)-.5f)*.04f;
-            int color=ink(layer==0?0xFF617A69:layer==1?0xFF466653:0xFF365A49,fade*(.12f+layer*.055f));
-            float[] xy={x-r*.50f,y,x-r*.12f,y-h*.21f,x+lean-r*.07f,y-h,
-                    x+lean+r*.07f,y-h,x+r*.13f,y-h*.20f,x+r*.55f,y,x+r*.28f,y-h*.10f,x,y-h*.13f,x-r*.25f,y-h*.10f};
-            System.arraycopy(xy,0,trunk,0,xy.length);p.fillPoly(trunk,color);
+            int color=ink(layer==0?0xFF4F6A60:layer==1?0xFF3C5A4E:0xFF2E4A40,fade);
+            // A single solid outline avoids darker trunk/canopy intersections and tree overlaps.
+            tree[0]=x-r*.50f;tree[1]=y;tree[2]=x-r*.12f;tree[3]=y-h*.21f;
             for(int n=0;n<32;n++) {
-                float angle=n*Softbody.TAU/32,reach=r*(.90f+.07f*(float)Math.sin(angle*5+seed)+.03f*(float)Math.sin(angle*9-seed));
-                crown[n*2]=x+lean+(float)Math.cos(angle)*reach;crown[n*2+1]=y-h+(float)Math.sin(angle)*reach*.42f;
+                float angle=Softbody.TAU*.25f+.14f+n*(Softbody.TAU-.28f)/31;
+                float reach=r*(.90f+.07f*(float)Math.sin(angle*5+seed)+.03f*(float)Math.sin(angle*9-seed));
+                tree[(n+2)*2]=x+lean+(float)Math.cos(angle)*reach;
+                tree[(n+2)*2+1]=y-h+(float)Math.sin(angle)*reach*.42f;
             }
-            p.fillPoly(crown,color);
+            tree[68]=x+r*.13f;tree[69]=y-h*.20f;tree[70]=x+r*.55f;tree[71]=y;
+            tree[72]=x+r*.28f;tree[73]=y-h*.10f;tree[74]=x;tree[75]=y-h*.13f;
+            tree[76]=x-r*.25f;tree[77]=y-h*.10f;
+            p.fillPoly(tree,color);
         }
     }
     private static float bankY(Layout L,float d,float x) {
@@ -171,6 +176,19 @@ final class SwampVista extends Draw {
             // Match the distant sky at the seam, then feather into the visible banks.
             float softness=(float)Math.sin(u*Math.PI);
             p.fillPoly(band,ink(0xFF657C68,fade*.90f*softness*softness));
+        }
+    }
+    private static void ripples(Painter p,GameCore c,Layout L,float fade) {
+        float phase=c.skyClock*SPEED*12,time=c.cloudUi.reduceMotion?0:c.skyClock;
+        for(int i=0;i<12;i++) {
+            int seed=10091+(i-(int)Math.floor(phase))*173;
+            float t=(i+phase-(float)Math.floor(phase))/12,d=depth(t);
+            float x=L.w*(.5f+bend(c.skyClock,d)+(hash(seed)-.5f)*(.08f+.28f*d)),y=rootY(L,t,x);
+            float cycle=time*.34f+hash(seed+3),u=cycle-(float)Math.floor(cycle);
+            float r=L.w*(.006f+.028f*d)*(.45f+u),a=fade*reveal(t)*.27f*(float)Math.sin(u*Math.PI);
+            if(y-r*.25f>L.deckTop || a<.008f)continue;
+            p.arc(x,y,r,r*.24f,15+hash(seed+7)*50,150+hash(seed+11)*130,
+                    ink(0xFF9EBBA1,a),Math.max(.55f,L.w*(.0012f+.001f*d)));
         }
     }
     private static void flotsam(Painter p,GameCore c,Layout L,float fade) {
