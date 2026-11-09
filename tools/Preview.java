@@ -12,7 +12,7 @@ final class Preview {
         if(!wantedGroup("248-"))return;
         for(float age:new float[]{0,8,18,32,55,90}) {
             GameCore c=TestLandBonuses.start(L,21,true,248);c.skyClock=c.clock=age;
-            c.landBonus.skyAt=age-16;c.landBonus.age=c.landBonus.delay+16;
+            c.landBonus.skyAt=age-8;c.landBonus.age=c.landBonus.delay+8;
             Check.add(c,L,new int[]{0,1,4},L.playTop+L.h*.18f);
             Check.add(c,L,new int[]{5,4},L.playTop+L.h*.35f);
             shot(dir,"248-swamp-"+(int)age,c,L,w,h,ss);

@@ -84,7 +84,7 @@ final class LandBonus {
         int land=Lands.forStage(c.stage);
         if(land==0)return SlimeBubbles.surfaceX(c.landBonus.bubbleSeed(),L);
         if(land==Underwater.LAND)return L.w*(.5f+c.landBonus.seabedLane*(.04f+.30f*UnderwaterVista.depth(clamTravel(c))));
-        if(land==Lands.SWAMP)return L.w*(.5f+(c.landBonus.sideX<.5f?-1:1)*(.13f+.48f*SwampVista.depth(flamingoTravel(c))));
+        if(land==Lands.SWAMP)return L.w*(.5f+SwampVista.bend(c.skyClock,SwampVista.depth(flamingoTravel(c)))+(c.landBonus.sideX<.5f?-1:1)*(.13f+.38f*SwampVista.depth(flamingoTravel(c))));
         return L.w*c.landBonus.sideX+coinOrbit(c,L,false);
     }
     static float scrollSpeed(GameCore c,Layout L) {
