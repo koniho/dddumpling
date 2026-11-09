@@ -84,17 +84,18 @@ final class SwampVista extends Draw {
         }
     }
     private static void nightSky(Painter p,Layout L,float fade) {
-        for(int i=0;i<22;i++) {
+        for(int i=0;i<18;i++) {
             int seed=7301+i*193;
             float x=L.w*(.05f+.90f*hash(seed)),y=L.h*(.025f+.26f*hash(seed+7));
             float r=L.w*(.0012f+.0012f*hash(seed+13));
             p.fillCircle(x,y,r,ink(0xFFD6E2CF,fade*(.20f+.32f*hash(seed+19))));
         }
         float x=L.w*.76f,y=L.h*.19f,r=L.w*.041f;
-        // Thin, soft halo layers keep the moon hazy without clouding the open sky.
-        for(int i=5;i>=1;i--)p.fillCircle(x,y,r*(1+i*.20f),ink(0xFFD0DFC1,fade*.025f));
-        p.fillCircle(x,y,r,ink(0xFFD9E3C8,fade*.48f));
-        p.fillCircle(x-r*.14f,y-r*.12f,r*.76f,ink(0xFFE1E8D1,fade*.10f));
+        // Build the moon entirely from faint layers, with no hard disk beneath the haze.
+        for(int i=0;i<12;i++) {
+            float u=(i+.5f)/12;
+            p.fillCircle(x,y,r*(2.2f-i*.145f),ink(0xFFD9E3C8,fade*(.012f+.065f*(float)Math.sin(u*Math.PI))));
+        }
     }
     private static void horizonTrees(Painter p,Layout L,float fade) {
         float[] trunk=new float[18],crown=new float[64];
@@ -162,13 +163,15 @@ final class SwampVista extends Draw {
     }
     private static void horizonHaze(Painter p,Layout L,float fade) {
         float[] band=new float[100];
-        for(int layer=0;layer<12;layer++) {
-            float u=(layer+.5f)/12,top=L.h*(-.025f+layer*.005f),bottom=top+L.h*.005f;
+        for(int layer=0;layer<18;layer++) {
+            float u=(layer+.5f)/18,top=L.h*(-.060f+layer*.007f),bottom=top+L.h*.007f;
             for(int i=0;i<25;i++) {
                 float x=L.w*(-.06f+i/24f*1.12f),y=horizonAt(L,x);
                 band[i*2]=x;band[i*2+1]=y+top;band[(49-i)*2]=x;band[(49-i)*2+1]=y+bottom;
             }
-            p.fillPoly(band,ink(0xFFAFBEA5,fade*.22f*(float)Math.sin(u*Math.PI)));
+            // Match the distant sky at the seam, then feather into the visible banks.
+            float softness=(float)Math.sin(u*Math.PI);
+            p.fillPoly(band,ink(0xFF657C68,fade*.90f*softness*softness));
         }
     }
     private static void flotsam(Painter p,GameCore c,Layout L,float fade) {
