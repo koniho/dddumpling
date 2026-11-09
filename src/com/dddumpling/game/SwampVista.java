@@ -61,6 +61,7 @@ final class SwampVista extends Draw {
         banks(p,c,L,fade);
         underwaterLife(p,c,L,fade);
         riverHaze(p,c,L,fade);
+        horizonHaze(p,L,fade);
         horizonGrass(p,c,L,time,fade);
         ripples(p,c,L,fade);
         flotsam(p,c,L,fade);
@@ -75,7 +76,6 @@ final class SwampVista extends Draw {
             SwampGrass.draw(p,x,y,r,seed,time,.25f+.75f*Math.min(1,d*2.5f),opacity);
         }
         shoreReeds(p,c,L,time,fade);
-        horizonHaze(p,L,fade);
         LandBonusArt.inSwamp(p,c,L,fade);
         c.swampFireflies.draw(p,c,L,fade);
     }
@@ -180,7 +180,7 @@ final class SwampVista extends Draw {
     }
     private static void horizonGrass(Painter p,GameCore c,Layout L,float time,float fade) {
         // Keep the whole distant river opening clear, from the blade tips to their roots.
-        float left=L.w,right=0,farDepth=waterDepth(L,horizon(L)+L.w*.021f*6.2f);
+        float left=L.w,right=0,farDepth=waterDepth(L,horizon(L)+L.w*.030f*3f);
         for(int i=0;i<=4;i++) {
             float d=farDepth*i/4;
             left=Math.min(left,L.w*waterEdgeX(L,c.skyClock,d,-1));
@@ -188,8 +188,9 @@ final class SwampVista extends Draw {
         }
         for(int i=0;i<36;i++) {
             int seed=12400+i*28+(i%2==0?0:3);
-            float x=L.w*i/35f,r=L.w*(.020f+.001f*hash(seed+7));
-            float y=horizonAt(L,x)+r*6.2f;
+            float x=L.w*i/35f,r=L.w*(.028f+.002f*hash(seed+7));
+            // Keep roots below the horizon and a clear band of blade tips above it.
+            float y=horizonAt(L,x)+r*3f;
             float bank=Math.max(0,Math.min(1,(Math.max(left-x,x-right)-r*1.1f)/(r*1.5f)));
             if(bank<=.01f)continue;
             SwampGrass.draw(p,x,y,r,seed,time,1,fade*bank*bank*(3-2*bank));
