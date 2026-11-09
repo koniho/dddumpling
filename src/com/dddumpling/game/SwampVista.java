@@ -60,7 +60,7 @@ final class SwampVista extends Draw {
         horizonTrees(p,L,fade);
         riverHaze(p,L,fade);
         banks(p,c,L,fade);
-        horizonGrass(p,L,time,fade);
+        horizonGrass(p,c,L,time,fade);
         ripples(p,c,L,fade);
         flotsam(p,c,L,fade);
         // Keep tall trailing tufts until their tips leave view; world seeds survive row rollover.
@@ -108,18 +108,19 @@ final class SwampVista extends Draw {
             float lean=L.w*(hash(seed+7)-.5f)*.04f;
             int color=ink(layer==0?0xFF4F6A60:layer==1?0xFF3C5A4E:0xFF2E4A40,fade);
             // A single solid outline avoids darker trunk/canopy intersections and tree overlaps.
-            tree[0]=x-r*.50f;tree[1]=y;tree[2]=x-r*.12f;tree[3]=y-h*.21f;
+            float root=horizonAt(L,x)+L.h*.014f,rootH=Math.min(L.h*.018f,h*.16f);
+            tree[0]=x-r*.50f;tree[1]=root;tree[2]=x-r*.12f;tree[3]=root-rootH;
             for(int n=0;n<32;n++) {
                 float angle=Softbody.TAU*.25f+.14f+n*(Softbody.TAU-.28f)/31;
                 float reach=r*(.90f+.07f*(float)Math.sin(angle*5+seed)+.03f*(float)Math.sin(angle*9-seed));
                 tree[(n+2)*2]=x+lean+(float)Math.cos(angle)*reach;
                 tree[(n+2)*2+1]=y-h+(float)Math.sin(angle)*reach*.42f;
             }
-            tree[68]=x+r*.13f;tree[69]=y-h*.20f;tree[70]=x+r*.55f;tree[71]=y;
-            tree[72]=x+r*.28f;tree[73]=y-h*.10f;tree[74]=x;tree[75]=y-h*.13f;
-            tree[76]=x-r*.25f;tree[77]=y-h*.10f;
-            // Sink the roots behind the curved distant bank instead of exposing a separate row.
-            for(int n=0;n<tree.length;n+=2)tree[n+1]=Math.min(tree[n+1],horizonAt(L,tree[n]));
+            tree[68]=x+r*.13f;tree[69]=root-rootH;tree[70]=x+r*.55f;tree[71]=root;
+            tree[72]=x+r*.28f;tree[73]=root-rootH*.5f;tree[74]=x;tree[75]=root-rootH*.65f;
+            tree[76]=x-r*.25f;tree[77]=root-rootH*.5f;
+            // Show the upper root flare, with the tips still buried behind the distant bank.
+            for(int n=0;n<tree.length;n+=2)tree[n+1]=Math.min(tree[n+1],horizonAt(L,tree[n])+L.h*.018f);
             p.fillPoly(tree,color);
         }
     }
@@ -169,13 +170,21 @@ final class SwampVista extends Draw {
             }
         }
     }
-    private static void horizonGrass(Painter p,Layout L,float time,float fade) {
-        // Distant reeds close the horizon below the trees, including the far river bend.
+    private static void horizonGrass(Painter p,GameCore c,Layout L,float time,float fade) {
+        // Keep the whole distant river opening clear, from the blade tips to their roots.
+        float left=L.w,right=0,farDepth=waterDepth(L,horizon(L)+L.w*.016f*7.4f);
+        for(int i=0;i<=4;i++) {
+            float d=farDepth*i/4;
+            left=Math.min(left,L.w*waterEdgeX(L,c.skyClock,d,-1));
+            right=Math.max(right,L.w*waterEdgeX(L,c.skyClock,d,1));
+        }
         for(int i=0;i<36;i++) {
             int seed=12400+i*28+(i%2==0?0:3);
             float x=L.w*i/35f,r=L.w*(.015f+.001f*hash(seed+7));
             float y=horizonAt(L,x)+r*7.4f;
-            SwampGrass.draw(p,x,y,r,seed,time,.95f,fade);
+            float bank=Math.max(0,Math.min(1,(Math.max(left-x,x-right)-r*1.1f)/(r*1.5f)));
+            if(bank<=.01f)continue;
+            SwampGrass.draw(p,x,y,r,seed,time,.95f,fade*bank*bank*(3-2*bank));
         }
     }
     private static void riverHaze(Painter p,Layout L,float fade) {
