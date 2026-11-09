@@ -5,7 +5,8 @@ final class SwampGrass extends Draw {
     static final int COUNT=4,BLADES=18,WIDTH=128,HEIGHT=512;
     static final float RADIUS=.09f,UNIT=48,ANCHOR_X=64,ANCHOR_Y=480,TOP=9.2f;
     private static final float[][][] BLADES_XY=new float[COUNT][BLADES][8];
-    private static final int[] COLORS={0xFF527D61,0xFF638452,0xFF879568,0xFF6F8C53,0xFF4E786C,0xFF929665};
+    private static final int[] COLORS={0xFF3D856B,0xFF5F913F,0xFF8DAA63,0xFF78913F,
+            0xFF468F88,0xFFB2A75E,0xFF899D80,0xFF638B58};
     private static final int[][] BLADE_COLORS=new int[COUNT][BLADES];
     static {
         for(int art=0;art<COUNT;art++)for(int i=0;i<BLADES;i++) {
@@ -21,9 +22,9 @@ final class SwampGrass extends Draw {
         for(int art=0;art<COUNT;art++)for(int i=0;i<BLADES;i++) {
             int seed=2831+art*131+i*67;
             int color=COLORS[Math.min(COLORS.length-1,(int)(hash(seed)*COLORS.length))];
-            color=Glyph.mix(color,0xFFB0AE79,hash(seed+3)*.14f);
+            color=Glyph.mix(color,0xFFB0AE79,hash(seed+3)*.08f);
             float front=Math.max(0,Math.min(1,(BLADES_XY[art][i][1]+.9f)/1.4f));
-            BLADE_COLORS[art][i]=Glyph.mix(color,0xFF243F3E,.08f+.48f*(1-front));
+            BLADE_COLORS[art][i]=Glyph.mix(color,0xFF243F3E,.06f+.62f*(1-front));
         }
     }
     static int cattails(int art){return art==0 || art==3?0:art+1;}
