@@ -107,7 +107,10 @@ final class SwampVista extends Draw {
             float d=.003f+layer*.009f+hash(seed)*.008f+u*.006f;
             float h=L.h*(.022f+.060f*spread+layer*.009f+hash(seed+3)*.015f);
             float r=L.w*(.018f+.050f*spread+layer*.008f+hash(seed+5)*.012f);
-            float bank=L.w*waterEdgeX(L,c.skyClock,d,side)+side*(r*1.1f+L.w*.025f);
+            // Distant trees frame the widest bend, rather than sliding with each passing curve.
+            float bankReach=Math.abs(waterEdgeX(L,0,d,side)-.5f-bend(0,d))
+                    +.19f*(float)Math.sin(Math.PI*Math.sqrt(d))+.020f*(.14f+d*1.55f);
+            float bank=L.w*(.5f+side*bankReach)+side*(r*1.1f+L.w*.025f);
             float outer=side<0?-L.w*.045f:L.w*1.045f,x=bank+(outer-bank)*u;
             float root=bankY(L,d,x)+L.h*.002f*hash(seed+9),rootH=Math.min(L.h*.016f,h*.20f);
             float lean=L.w*(hash(seed+7)-.5f)*.018f;
