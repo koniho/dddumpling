@@ -227,6 +227,7 @@ final class MushroomForest extends Draw {
         fade*=1-groveProgress(c);
         if(fade<=0)return;
         ForestTerrain.ground(p,c,L,fade);
+        c.forestCritters.draw(p,c,L,fade);
         LandBonusArt.beneathForest(p,c,L,fade);
         ForestTerrain.foliage(p,c,L,fade);
         fade*=1-groveProgress(c)*.65f;

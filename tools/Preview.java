@@ -23,6 +23,15 @@ final class Preview {
                 shot(dir,"246-forest-discovery",c,L,w,h,ss);
             }
         }
+        for(float beat:new float[]{.16f,.45f,.85f,1.25f,1.7f}) {
+            GameCore c=TestLandBonuses.start(L,16,true,246);c.skyClock=18;
+            GameCore.Enemy e=Check.add(c,L,new int[]{0,1,4},L.h*.43f);
+            c.destroyWord(e,c.enemyCentreX(e),e.y,L);c.enemies.clear();c.particles.clear();
+            c.flash=c.shake=c.skyGlow=0;
+            c.forestCritters.update(c,beat);c.skyClock+=beat;
+            shot(dir,"246-critters-"+(int)(beat*100),c,L,w,h,ss);
+            if(beat==.45f) {c.cloudUi.reduceMotion=true;shot(dir,"246-critters-still",c,L,w,h,ss);}
+        }
         GameCore boss=TestLandBonuses.start(L,20,false,246);
         boss.skyClock=32;boss.boss.intro=boss.boss.introDuration()-Boss.INTRO*.5f;
         shot(dir,"246-grove-entry",boss,L,w,h,ss);
