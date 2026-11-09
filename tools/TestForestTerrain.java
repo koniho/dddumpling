@@ -48,21 +48,26 @@ final class TestForestTerrain extends Check {
         check("normal motion animates water and foliage",draw(c,L,false).hash!=still.hash);
         Probe cached=draw(c,L,true);
         check("native foliage cache replaces vector leaves",cached.stamps>0 && cached.calls<later.calls/2);
+        Probe sunlight=new Probe(false);ForestSunlight.draw(sunlight,c,L,1);
+        check("sunlight uses faint translucent geometry",sunlight.calls>0 && sunlight.maxAlpha<24);
+        c.cloudUi.reduceMotion=true;Probe calm=new Probe(false);ForestSunlight.draw(calm,c,L,1);
+        c.clock+=10;Probe calmLater=new Probe(false);ForestSunlight.draw(calmLater,c,L,1);
+        check("reduced-motion sunlight stays steady",calm.hash==calmLater.hash);
         Probe invisible=new Probe(false);
-        ForestTerrain.ground(invisible,c,L,0);ForestTerrain.foliage(invisible,c,L,0);
+        ForestTerrain.ground(invisible,c,L,0);ForestTerrain.foliage(invisible,c,L,0);ForestSunlight.draw(invisible,c,L,0);
         check("hidden terrain does no drawing",invisible.calls==0);
         c=TestLandBonuses.start(L,20,false,246);c.boss.intro=0;
         Probe grove=new Probe(false);MushroomForest.undergrowth(grove,c,L,1);
         check("trail clears when the boss grove takes over",grove.trail==null);
     }
     private static Probe draw(GameCore c,Layout L,boolean cached) {
-        Probe p=new Probe(cached);ForestTerrain.ground(p,c,L,1);ForestTerrain.foliage(p,c,L,1);return p;
+        Probe p=new Probe(cached);ForestTerrain.ground(p,c,L,1);ForestSunlight.draw(p,c,L,1);ForestTerrain.foliage(p,c,L,1);return p;
     }
     private static final class Probe extends OpacityPainter {
-        final boolean cached;int calls,stamps;long hash=1;float[] trail;
+        final boolean cached;int calls,stamps,maxAlpha;long hash=1;float[] trail;
         Probe(boolean cached){super(null,1);this.cached=cached;}
         private void record(int color,float... values) {
-            calls++;hash=31*hash+color;for(float v:values)hash=31*hash+Float.floatToIntBits(v);
+            calls++;maxAlpha=Math.max(maxAlpha,color>>>24);hash=31*hash+color;for(float v:values)hash=31*hash+Float.floatToIntBits(v);
         }
         public ArtStamp stamps(){return cached?this:null;}
         public boolean forest(int art,float x,float y,float r,float lean,int tint,int alpha) {
