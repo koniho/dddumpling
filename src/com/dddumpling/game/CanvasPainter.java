@@ -9,6 +9,7 @@ import android.graphics.Typeface;
 /** {@link Painter} backed by an Android {@link Canvas}. */
 final class CanvasPainter implements Painter, ArtStamp {
 
+    private final Paint gradientFill = new Paint(Paint.DITHER_FLAG);
     private final Paint fill = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint stroke = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint type = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -20,6 +21,9 @@ final class CanvasPainter implements Painter, ArtStamp {
     private Canvas canvas;
     private CanvasArtStamps artStamps;
     private CanvasForestStamps forestStamps;
+    private CanvasSwampGrass swampGrass;
+    private CanvasSwampLayers swampLayers;
+    boolean cacheSwampScene=true,offscreenGrass;
     private CanvasSlimeStamps slimeStamps;
     private CanvasCrystalStamps crystalStamps;
     private CanvasReefStamps reefStamps;
@@ -36,12 +40,14 @@ final class CanvasPainter implements Painter, ArtStamp {
         return monoFilter;
     }
     boolean cacheArt=true;
-    public ArtStamp stamps() {return cacheArt && canvas!=null && canvas.isHardwareAccelerated()?this:null;}
+    public ArtStamp stamps() {return cacheArt && canvas!=null && (canvas.isHardwareAccelerated() || offscreenGrass)?this:null;}
     void warmArt() {
         if(artStamps==null)artStamps=new CanvasArtStamps();
         artStamps.warm();
         if(forestStamps==null)forestStamps=new CanvasForestStamps();
         forestStamps.warm();
+        if(swampGrass==null)swampGrass=new CanvasSwampGrass();
+        swampGrass.warm();
         if(slimeStamps==null)slimeStamps=new CanvasSlimeStamps();
         slimeStamps.warm();
         if(crystalStamps==null)crystalStamps=new CanvasCrystalStamps();
@@ -125,6 +131,16 @@ final class CanvasPainter implements Painter, ArtStamp {
                 || offsets==null || offsets.length!=SlimeBanks.ROWS+1)return false;
         if(slimeStamps==null)slimeStamps=new CanvasSlimeStamps();
         slimeStamps.mesh(canvas,art,x,y,w,h,offsets,alpha);return true;
+    }
+    public boolean swampLayer(int art,float w,float h,float deck,float shift,int alpha,float mono) {
+        if(stamps()==null || !cacheSwampScene || offscreenGrass || art<0 || art>=SwampLayers.COUNT)return false;
+        if(swampLayers==null)swampLayers=new CanvasSwampLayers();
+        swampLayers.draw(canvas,art,w,h,deck,shift,alpha,monoFilter(mono));return true;
+    }
+    public boolean swampGrass(int art,float x,float y,float r,float sway,int alpha,float mono) {
+        if(stamps()==null || art<0 || art>=SwampGrass.COUNT || r<=0)return false;
+        if(swampGrass==null)swampGrass=new CanvasSwampGrass();
+        swampGrass.draw(canvas,art,x,y,r,sway,alpha,monoFilter(mono));return true;
     }
     public boolean forest(int art,float x,float y,float r,float lean,int color,int alpha) {
         if(stamps()==null || art<0 || art>=CanvasForestStamps.COUNT)return false;
@@ -239,6 +255,13 @@ final class CanvasPainter implements Painter, ArtStamp {
         stroke.setColor(color);
         stroke.setStrokeWidth(width);
         canvas.drawPath(path, stroke);
+    }
+
+    @Override public void verticalGradient(float l,float t,float r,float b,int[] colors,float[] stops) {
+        if(b<=t)return;
+        gradientFill.setShader(new android.graphics.LinearGradient(0,t,0,b,colors,stops,android.graphics.Shader.TileMode.CLAMP));
+        canvas.drawRect(l,t,r,b,gradientFill);
+        gradientFill.setShader(null);
     }
 
     @Override public void fillRect(float l, float t, float r, float b, int color) {

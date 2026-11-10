@@ -87,6 +87,11 @@ final class Lands extends Draw {
         if(land==CrystalField.LAND)return; // The faceted floor is the crystal scenery.
         if(land==RAINBOW)return; // Its scrolling bands are drawn before the clouds.
         if(land==MushroomForest.LAND) {MushroomForest.undergrowth(p,c,L,fade);return;}
+        if(land==SWAMP) {
+            float arena=SwampVista.arena(c);
+            SwampVista.draw(p,c,L,fade*(1-arena));
+            fade*=arena;if(fade<=.001f)return;
+        }
         for (int layer = 0; layer < 2; layer++) {
             for (int i = 0; i < 8; i++) {
                 // Stable jitter breaks the rows without changing positions every frame or drawing RNG.

@@ -7,7 +7,10 @@ final class LandBonusArt extends Draw {
     private static final int[] RAINBOW={0xFFFF91B7,0xFFFFC26D,0xFFFFEC83,0xFF92EDBC,0xFF85DAFF,0xFFC5ACFF};
     static void draw(Painter p,GameCore c,Layout L) {
         int land=Lands.forStage(c.stage);
-        if(land!=MushroomForest.LAND && ((land!=CrystalField.LAND && land!=Underwater.LAND) || c.landBonus.burst>=0))drawBonus(p,c,L);
+        if(land!=MushroomForest.LAND && land!=Lands.SWAMP && ((land!=CrystalField.LAND && land!=Underwater.LAND) || c.landBonus.burst>=0))drawBonus(p,c,L);
+    }
+    static void inSwamp(Painter p,GameCore c,Layout L,float fade) {
+        if(Lands.forStage(c.stage)==Lands.SWAMP)drawBonus(new OpacityPainter(p,fade),c,L);
     }
     static void beneathForest(Painter p,GameCore c,Layout L,float fade) {
         if(Lands.forStage(c.stage)==MushroomForest.LAND)drawBonus(new OpacityPainter(p,fade),c,L);

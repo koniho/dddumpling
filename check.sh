@@ -69,6 +69,11 @@ src/com/dddumpling/game/AlligatorGuard.java
 src/com/dddumpling/game/Alligator.java
 src/com/dddumpling/game/AlligatorArt.java
 src/com/dddumpling/game/Swamp.java
+src/com/dddumpling/game/SwampVista.java
+src/com/dddumpling/game/SwampLayers.java
+src/com/dddumpling/game/SwampGeometry.java
+src/com/dddumpling/game/SwampGrass.java
+src/com/dddumpling/game/SwampFireflies.java
 src/com/dddumpling/game/KeyboardInput.java
 src/com/dddumpling/game/Duck.java
 src/com/dddumpling/game/DuckBodies.java

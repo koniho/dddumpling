@@ -11,6 +11,12 @@ final class MonochromePainter implements Painter,ArtStamp {
     public GatorCompanion gator() { return p.gator(); }
     public ArtStamp stamps() { return p.stamps()==null?null:amount==0?p.stamps():this; }
     public boolean stamp(int art,float x,float y,float w,float h,float angle,int tint,float mix) {return false;}
+    public boolean swampLayer(int art,float w,float h,float deck,float shift,int alpha,float mono) {
+        return p.stamps().swampLayer(art,w,h,deck,shift,alpha,amount+(1-amount)*mono);
+    }
+    public boolean swampGrass(int art,float x,float y,float r,float sway,int alpha,float mono) {
+        return p.stamps().swampGrass(art,x,y,r,sway,alpha,amount+(1-amount)*mono);
+    }
     public boolean waterBand(float[] xy,float radius,int alpha) {
         return p.stamps().waterBand(xy,radius,alpha,amount);
     }
@@ -51,6 +57,11 @@ final class MonochromePainter implements Painter,ArtStamp {
     public void strokeCircle(float x,float y,float r,int c,float w) { p.strokeCircle(x,y,r,color(c),w); }
     public void arc(float x,float y,float rx,float ry,float a,float s,int c,float w) { p.arc(x,y,rx,ry,a,s,color(c),w); }
     public void fillEllipse(float x,float y,float rx,float ry,int c) { p.fillEllipse(x,y,rx,ry,color(c)); }
+    public void verticalGradient(float l,float t,float r,float b,int[] colors,float[] stops) {
+        int[] mapped=new int[colors.length];
+        for(int i=0;i<colors.length;i++)mapped[i]=color(colors[i]);
+        p.verticalGradient(l,t,r,b,mapped,stops);
+    }
     public void fillRect(float l,float t,float r,float b,int c) { p.fillRect(l,t,r,b,color(c)); }
     public void line(float x,float y,float a,float b,int c,float w) { p.line(x,y,a,b,color(c),w); }
     public void polyline(float[] xy,int c,float w) { p.polyline(xy,color(c),w); }

@@ -61,9 +61,13 @@ final class LandBonus {
     }
     static float radius(Layout L) {return L.w*.078f;}
     static float clamTravel(GameCore c) {return Math.min(1,c.landBonus.seabedStart+Math.max(0,c.skyClock-c.landBonus.skyAt)*(.20f/12));}
+    static float flamingoTravel(GameCore c) {
+        return Math.min(1,.12f+(c.landBonus.entryDepth-1.1f)*.10f+Math.max(0,c.skyClock-c.landBonus.skyAt)*SwampVista.SPEED);
+    }
     static float size(GameCore c,Layout L) {
         int land=Lands.forStage(c.stage);
         if(land==Underwater.LAND)return radius(L)*UnderwaterVista.scale(clamTravel(c));
+        if(land==Lands.SWAMP)return radius(L)*3*(.24f+1.10f*SwampVista.depth(flamingoTravel(c)));
         if(land==Lands.RAINBOW) {
             float u=c.landBonus.burst<0?0:c.cloudUi.reduceMotion?1:Math.min(1,c.landBonus.burst/.22f);
             return radius(L)*(.75f+.25f*u*u*(3-2*u));
@@ -80,6 +84,7 @@ final class LandBonus {
         int land=Lands.forStage(c.stage);
         if(land==0)return SlimeBubbles.surfaceX(c.landBonus.bubbleSeed(),L);
         if(land==Underwater.LAND)return L.w*(.5f+c.landBonus.seabedLane*(.04f+.30f*UnderwaterVista.depth(clamTravel(c))));
+        if(land==Lands.SWAMP)return L.w*(.5f+SwampVista.bend(c.skyClock,SwampVista.depth(flamingoTravel(c)))+(c.landBonus.sideX<.5f?-1:1)*(.13f+.38f*SwampVista.depth(flamingoTravel(c))));
         return L.w*c.landBonus.sideX+coinOrbit(c,L,false);
     }
     static float scrollSpeed(GameCore c,Layout L) {
@@ -99,6 +104,7 @@ final class LandBonus {
         LandBonus b=c.landBonus;
         if(Lands.forStage(c.stage)==0)return SlimeBubbles.emergeY(surfaceY(c,L),radius(L),b.bubbleRise(c));
         if(Lands.forStage(c.stage)==Underwater.LAND)return L.h*UnderwaterVista.rootY(clamTravel(c))-size(c,L)*.8f;
+        if(Lands.forStage(c.stage)==Lands.SWAMP)return SwampVista.rootY(L,flamingoTravel(c),x(c,L))-size(c,L)*.86f;
         return L.playTop-radius(L)*b.entryDepth+Math.max(0,c.skyClock-b.skyAt)*scrollSpeed(c,L)+coinOrbit(c,L,true);
     }
     boolean tap(GameCore c,Layout L,float x,float y) {

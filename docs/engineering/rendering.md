@@ -220,6 +220,50 @@ This measures forest draw calls, path vertices, CPU preparation, and allocation 
 not rasterize or measure device FPS. Both native caches approximate branch bending with a
 small rotation and preserves a separate vector path for software previews.
 
+### Swamp reed stamps
+
+Android and iOS reuse four 128×512 grass-clump textures (1 MiB total), with occasional
+cattails. The iOS cache may additionally hold four grayscale copies (1 MiB); Android applies
+its existing grayscale filter. Native stamps are sheared around their planted base, preserving
+bank attachment while the tips sway. Stable world seeds select the clump and its scale.
+The shared `SwampGrass.paint` routine also supplies the vector fallback for unsupported painters.
+
+After a harness check, `java -cp build/harness com.dddumpling.game.ProfileSwampVista` measures
+preparation with the native stamp contract; pass `vector` to measure the fallback. Neither mode
+measures rasterization or device FPS. Tests cover image bounds, cached dispatch through palette
+wrappers, and grass attachment as rows recycle.
+
+The swamp backdrop uses one continuous vertical gradient on Android and iOS, including
+when baked into its scenery tile. Do not replace it with adjacent antialiased rectangles:
+fractional cache scaling leaves dark seams between their partially covered edges. Palette
+and opacity wrappers transform the gradient stops; the headless renderer samples each row.
+
+Swamp scenery also caches the fixed sky/stars/moon, horizon haze, three treeline layers,
+and up to twelve groups of three distant reed clumps. Android and iOS use seventeen
+cropped tiles capped at 512 pixels per viewport width, replacing the set when layout
+changes; iOS creates grayscale copies only when needed. Trees retain layer parallax.
+Reed groups are used only entirely on land; individual edge clumps keep their fade at
+the moving river opening. Foreground reeds and wildlife remain animated. Land fades
+retain the vector path to preserve per-primitive opacity. Riverbank and water-edge
+passes share per-game projection buffers without changing their contour samples.
+
+For a device comparison with a current developer APK installed:
+
+```sh
+PROFILE_SCENE=swamp sh tools/profile-gator.sh both
+```
+
+This runs the same isolated, seeded 36-second stage-21 replay with scripted enemy
+clears in `baseline` and `cached` modes. Both retain the existing individual grass
+cache; only the new scenery tiles/groups are disabled in baseline. Each mode warms
+for a full loop before capturing Android `gfxinfo`, replay-completion evidence and
+thermal state. Keep the phone unlocked and the app foregrounded. The script restores
+the player's actual game afterward and never writes replay rewards or progress.
+Set `PROFILE_SCREENSHOTS=1` to save a native screenshot after each timing capture.
+Use `baseline` or `cached` instead of `both` for a single mode, and
+`PROFILE_MONOCHROME=1` for the grayscale transition replay. Native iOS timing and
+`DDPainterTests` require a Mac/device; the pure preparation benchmark is not a GPU test.
+
 ### Slime Springs arena
 
 Android and iOS cache immutable `SlimeBasinArt` layers: the 480×960 pool/rear light,
