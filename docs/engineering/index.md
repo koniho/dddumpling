@@ -9,6 +9,7 @@ These notes preserve past failures, including historical values that may no long
 | Find the owning file | [Code map](code-map.md), [glossary](../../GLOSSARY.md) |
 | Town integration, scoped checks, refactor priorities | [Town](town.md) |
 | Drawing, text, layout, previews | [Rendering](rendering.md) |
+| Native gradients, soft effects, banding/seams | [Gradient guidance](rendering.md#native-gradients-and-soft-scenery) |
 | Adding accessory styles, rewards and artwork | [Accessory checklist](adding-accessories.md) |
 | Achievement wardrobe, outfit attachments and save merging | [Accessories](accessories.md) |
 | Seasonal skins, key artwork, boss visual variants | [Skins](skins.md) |

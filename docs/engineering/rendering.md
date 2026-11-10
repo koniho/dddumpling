@@ -117,6 +117,37 @@ policy lives in [AGENTS.md](../../AGENTS.md).
   sitting in `out/` — a green tick and yesterday's picture. Check the timestamps in the `out/` listing
   when a frame looks unchanged.
 
+## Native gradients and soft scenery
+
+Prefer native gradients for continuous color or opacity ramps on both Android and iOS.
+Use the shared `Painter` boundary so palette/opacity wrappers and headless previews retain
+the same semantics. Use linear gradients for screen fades and directional light; use radial
+or elliptical gradients for compatible glows. Keep separate geometry for actual facets,
+material boundaries, irregular contours and depth ordering. A gradient conversion should
+not flatten those features or remove their animation.
+
+The swamp backdrop originally used 80 adjacent rectangles because the shared API lacked a
+gradient primitive. Antialiasing and fractional cache scaling exposed dark seams between
+the rectangles. The software preview did not reveal the native artifact. Baking those
+rectangles into an image preserved the seams. The fix was a continuous native gradient,
+including while creating the cached image, with row-continuity and native fractional-scale
+coverage tests. Do not recreate continuous fades with stacks of strips merely because an
+existing primitive is convenient.
+
+Review alpha accumulation when replacing overlapping shapes: repeated low-opacity fills
+can be much brighter or darker than one fill at the same nominal alpha. Preserve clipping,
+monochrome transitions, cached-image bounds and rendering state. Cache immutable artwork;
+avoid adding full-screen blur passes or unbounded shader/image caches. Counts of drawing
+operations and path vertices are useful diagnostics, but are not evidence of device FPS.
+Verify visual changes on native hardware and compare complete, repeatable frame-time
+captures before making performance claims. Defer phone benchmarks while its battery is low.
+
+The cross-land follow-up is [#250](https://github.com/koniho/dddumpling/issues/250): shared
+HUD/vignette fades, underwater background/bottom fade/cave light, forest sunlight, rainbow
+band feathering, slime-boss glow and crystal shimmer. Already-cached artwork has different
+runtime costs from effects rebuilt every frame; prioritize accordingly and record cases
+where preserving layered geometry is the better choice.
+
 ## Deterministic comparison
 
 ### Automated Gator device profiling
