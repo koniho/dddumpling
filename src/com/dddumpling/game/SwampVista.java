@@ -197,6 +197,16 @@ final class SwampVista extends Draw {
                 float softness=(float)Math.sin(u*Math.PI);
                 p.fillPoly(strip,ink(0xFF487E83,fade*.38f*softness*softness));
             }
+            // A narrower shadow follows the water-facing side of the translucent band.
+            for(int band=0;band<4;band++) {
+                float inner=-2.1f+band*.25f,outer=inner+.25f,u=(band+.5f)/4;
+                for(int i=0;i<=48;i++) {
+                    strip[i*2]=xs[i]+side*widths[i]*inner;strip[i*2+1]=ys[i];
+                    strip[(97-i)*2]=xs[i]+side*widths[i]*outer;strip[(97-i)*2+1]=ys[i];
+                }
+                float softness=(float)Math.sin(u*Math.PI);
+                p.fillPoly(strip,ink(0xFF061F2B,fade*.52f*softness*softness));
+            }
         }
     }
     private static void shoreReeds(Painter p,GameCore c,Layout L,float time,float fade) {
