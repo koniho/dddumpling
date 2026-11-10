@@ -2137,6 +2137,20 @@ final class Preview {
                 shot(dir, "81-land-" + land + "-skit-" + variant, themed, L, w, h, ss);
             }
         }
+        if(wantedGroup("253-")) {
+            for(int land=0;land<Lands.COUNT;land++) {
+                if(!Lands.playable(land))continue;
+                GameCore intro=new GameCore(new Mem(),253L);
+                intro.collected=Collect.MASK;intro.landChoice=land;intro.startGame();intro.landBlend=1;
+                for(int repeat=0;repeat<2;repeat++) {
+                    intro.stage=Lands.firstStage(land)+repeat*Lands.playableCount()*WorldCatalog.STAGES_PER_CHAPTER;
+                    for(int frame=0;frame<3;frame++) {
+                        intro.stageBanner=frame==0?GameCore.BANNER_TIME:frame==1?GameCore.BANNER_TIME*.5f:.2f;
+                        shot(dir,"253-land-"+land+"-repeat-"+repeat+"-"+frame,intro,L,w,h,ss);
+                    }
+                }
+            }
+        }
         if(wantedGroup("207-")) {
             for(int land:new int[]{Lands.SWAMP,Lands.RAINBOW})for(int variant=0;variant<3;variant++) {
                 GameCore skit=new GameCore(new Mem(),207L);skit.startGame();skit.landBlend=1;
