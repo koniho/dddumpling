@@ -940,6 +940,7 @@ final class GameCore {
     final WaterRipples waterRipples=new WaterRipples();
     final ForestCritters forestCritters=new ForestCritters();
     final SwampFireflies swampFireflies=new SwampFireflies();
+    final SwampGeometry swampGeometry=new SwampGeometry();
     final CrystalArena crystalArena=new CrystalArena();
     int landFrom, landFromBg = Lands.BG[0], landFromTint = Lands.TINT[0];
     float landBlend = 1f;

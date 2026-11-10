@@ -233,6 +233,32 @@ preparation with the native stamp contract; pass `vector` to measure the fallbac
 measures rasterization or device FPS. Tests cover image bounds, cached dispatch through palette
 wrappers, and grass attachment as rows recycle.
 
+Swamp scenery also caches the fixed sky/stars/moon, horizon haze, three treeline layers,
+and up to twelve groups of three distant reed clumps. Android and iOS use seventeen
+cropped tiles capped at 512 pixels per viewport width, replacing the set when layout
+changes; iOS creates grayscale copies only when needed. Trees retain layer parallax.
+Reed groups are used only entirely on land; individual edge clumps keep their fade at
+the moving river opening. Foreground reeds and wildlife remain animated. Land fades
+retain the vector path to preserve per-primitive opacity. Riverbank and water-edge
+passes share per-game projection buffers without changing their contour samples.
+
+For a device comparison with a current developer APK installed:
+
+```sh
+PROFILE_SCENE=swamp sh tools/profile-gator.sh both
+```
+
+This runs the same isolated, seeded 36-second stage-21 replay with scripted enemy
+clears in `baseline` and `cached` modes. Both retain the existing individual grass
+cache; only the new scenery tiles/groups are disabled in baseline. Each mode warms
+for a full loop before capturing Android `gfxinfo`, replay-completion evidence and
+thermal state. Keep the phone unlocked and the app foregrounded. The script restores
+the player's actual game afterward and never writes replay rewards or progress.
+Set `PROFILE_SCREENSHOTS=1` to save a native screenshot after each timing capture.
+Use `baseline` or `cached` instead of `both` for a single mode, and
+`PROFILE_MONOCHROME=1` for the grayscale transition replay. Native iOS timing and
+`DDPainterTests` require a Mac/device; the pure preparation benchmark is not a GPU test.
+
 ### Slime Springs arena
 
 Android and iOS cache immutable `SlimeBasinArt` layers: the 480×960 pool/rear light,

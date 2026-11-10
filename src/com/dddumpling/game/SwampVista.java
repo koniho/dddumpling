@@ -55,14 +55,14 @@ final class SwampVista extends Draw {
     static void draw(Painter p,GameCore c,Layout L,float fade) {
         fade*=1-BossVictory.backdropDrain(c);if(fade<=.001f)return;
         float time=c.cloudUi.reduceMotion?0:c.skyClock;
-        backdrop(p,L,fade);
-        nightSky(p,L,fade);
+        c.swampGeometry.prepare(c,L);
+        if(!SwampLayers.draw(p,SwampLayers.SKY,L,0,fade)) {backdrop(p,L,fade);nightSky(p,L,fade);}
         horizonTrees(p,c,L,fade);
         banks(p,c,L,fade);
         riverTint(p,c,L,fade);
         underwaterLife(p,c,L,fade);
         riverHaze(p,c,L,fade);
-        horizonHaze(p,L,fade);
+        if(!SwampLayers.draw(p,SwampLayers.HAZE,L,0,fade))horizonHaze(p,L,fade);
         horizonGrass(p,c,L,time,fade);
         ripples(p,c,L,fade);
         flotsam(p,c,L,fade);
@@ -81,7 +81,7 @@ final class SwampVista extends Draw {
         LandBonusArt.inSwamp(p,c,L,fade);
         c.swampFireflies.draw(p,c,L,fade);
     }
-    private static void backdrop(Painter p,Layout L,float fade) {
+    static void backdrop(Painter p,Layout L,float fade) {
         float h=horizon(L)/L.deckTop;
         for(int i=0;i<80;i++) {
             float t=i/80f,y=i==0?-L.h*.03f:(float)Math.floor(t*L.deckTop),next=(float)Math.floor((i+1)/80f*L.deckTop);
@@ -89,7 +89,7 @@ final class SwampVista extends Draw {
             p.fillRect(-L.w*.06f,y,L.w*1.06f,next,ink(color,fade));
         }
     }
-    private static void nightSky(Painter p,Layout L,float fade) {
+    static void nightSky(Painter p,Layout L,float fade) {
         for(int i=0;i<18;i++) {
             int seed=7301+i*193;
             float x=L.w*(.05f+.90f*hash(seed)),y=L.h*(.025f+.26f*hash(seed+7));
@@ -103,9 +103,15 @@ final class SwampVista extends Draw {
         p.fillCircle(x-r*.14f,y-r*.12f,r*.76f,ink(0xFFE1E8D1,fade*.10f));
     }
     static void horizonTrees(Painter p,GameCore c,Layout L,float fade) {
-        float[] tree=new float[78];
         float parallax=c.cloudUi.reduceMotion?0:L.w*.006f*(float)Math.sin(c.skyClock*SPEED*12);
-        for(int layer=0;layer<3;layer++)for(int side=-1;side<=1;side+=2)for(int i=0;i<6;i++) {
+        for(int layer=0;layer<3;layer++) {
+            float shift=parallax*(.4f+layer*.3f);
+            if(!SwampLayers.draw(p,SwampLayers.TREES+layer,L,shift,fade))treeLayer(p,L,layer,shift,fade);
+        }
+    }
+    static void treeLayer(Painter p,Layout L,int layer,float shift,float fade) {
+        float[] tree=new float[78];
+        for(int side=-1;side<=1;side+=2)for(int i=0;i<6;i++) {
             int seed=919+layer*317+i*67+side*149;
             float u=i/5f,spread=(float)Math.sqrt(u);
             float d=.003f+layer*.009f+hash(seed)*.008f+u*.006f;
@@ -115,7 +121,7 @@ final class SwampVista extends Draw {
             float bankReach=Math.abs(waterEdgeX(L,0,d,side)-.5f-bend(0,d))
                     +.19f*(float)Math.sin(Math.PI*Math.sqrt(d))+.020f*(.14f+d*1.55f);
             float bank=L.w*(.5f+side*bankReach)+side*(r*1.1f+L.w*.025f);
-            float outer=side<0?-L.w*.045f:L.w*1.045f,x=bank+(outer-bank)*u+parallax*(.4f+layer*.3f);
+            float outer=side<0?-L.w*.045f:L.w*1.045f,x=bank+(outer-bank)*u+shift;
             float root=bankY(L,d,x)+L.h*.002f*hash(seed+9),rootH=Math.min(L.h*.016f,h*.20f);
             float lean=L.w*(hash(seed+7)-.5f)*.018f;
             int base=layer==0?0xFF3F5D52:layer==1?0xFF304E43:0xFF264338;
@@ -134,20 +140,14 @@ final class SwampVista extends Draw {
             p.fillPoly(tree,color);
         }
     }
-    private static float bankY(Layout L,float d,float x) {
+    static float bankY(Layout L,float d,float x) {
         return horizon(L)+d*(L.deckTop-horizon(L)+L.h*.35f)+(horizonAt(L,x)-horizon(L))*Math.max(0,1-d*2);
     }
     private static void banks(Painter p,GameCore c,Layout L,float fade) {
-        float range=L.deckTop-horizon(L);float[] xs=new float[49],ds=new float[49],widths=new float[49];
-        float[] core=new float[120],strip=new float[196];
+        SwampGeometry g=c.swampGeometry;float[] ds=g.depth,core=g.core,strip=g.strip;
         for(int side=-1;side<=1;side+=2) {
             float outer=side<0?-L.w*.06f:L.w*1.06f;
-            for(int i=0;i<=48;i++) {
-                float v=i/48f;ds[i]=waterDepth(L,horizon(L)+v*range);
-                xs[i]=L.w*waterEdgeX(L,c.skyClock,ds[i],side);
-                float material=3*ds[i]/(1+2*ds[i])-c.skyClock*SPEED;
-                widths[i]=L.w*(.008f+.024f*v)*(.85f+.20f*(float)Math.sin(material*19+side));
-            }
+            int slot=(side+1)/2;float[] xs=g.edge[slot],widths=g.bankWidth[slot];
             float top=xs[0]+side*widths[0]*2f;
             for(int i=0;i<=10;i++){float x=outer+(top-outer)*i/10f;core[i*2]=x;core[i*2+1]=horizonAt(L,x);}
             for(int i=1;i<=48;i++) {
@@ -168,7 +168,7 @@ final class SwampVista extends Draw {
         }
     }
     private static void riverTint(Painter p,GameCore c,Layout L,float fade) {
-        float[] strip=new float[8];
+        float[] strip=c.swampGeometry.quad;
         for(int band=0;band<12;band++) {
             float near=band/12f*.28f,far=(band+1)/12f*.28f,u=(band+.5f)/12;
             float left=L.w*waterEdgeX(L,c.skyClock,near,-1),right=L.w*waterEdgeX(L,c.skyClock,near,1);
@@ -179,17 +179,13 @@ final class SwampVista extends Draw {
         }
     }
     private static void submergedEdges(Painter p,GameCore c,Layout L,float fade) {
-        float[] xs=new float[49],ys=new float[49],widths=new float[49],strip=new float[196];
+        SwampGeometry g=c.swampGeometry;float[] strip=g.strip;
         for(int side=-1;side<=1;side+=2) {
-            for(int i=0;i<=48;i++) {
-                float d=waterDepth(L,horizon(L)+(L.deckTop-horizon(L))*i/48f);
-                xs[i]=L.w*waterEdgeX(L,c.skyClock,d,side);ys[i]=bankY(L,d,xs[i]);
-                float material=3*d/(1+2*d)-c.skyClock*SPEED;
-                widths[i]=L.w*(.010f+.060f*d)*(.9f+.1f*(float)Math.sin(material*19+side));
-            }
+            int slot=(side+1)/2;float[] xs=g.edge[slot],ys=g.y[slot],widths=g.waterWidth[slot];
             // Water is painted over the reeds, tinting their bases through a soft translucent edge.
             for(int band=0;band<8;band++) {
-                float inner=-1.5f+band*.375f,outer=inner+.375f,u=(band+.5f)/8;
+                // Reach across the full root footprint, biased slightly toward the water.
+                float inner=-3.5f+band*.75f,outer=inner+.75f,u=(band+.5f)/8;
                 for(int i=0;i<=48;i++) {
                     strip[i*2]=xs[i]+side*widths[i]*inner;strip[i*2+1]=ys[i];
                     strip[(97-i)*2]=xs[i]+side*widths[i]*outer;strip[(97-i)*2+1]=ys[i];
@@ -221,6 +217,9 @@ final class SwampVista extends Draw {
             right=Math.max(right,L.w*waterEdgeX(L,c.skyClock,d,1));
         }
         for(int i=0;i<36;i++) {
+            if(i%3==0 && fade==1 && horizonBank(L,i,left,right)==1
+                    && horizonBank(L,i+1,left,right)==1 && horizonBank(L,i+2,left,right)==1
+                    && SwampLayers.draw(p,SwampLayers.REEDS+i/3,L,0,1)) {i+=2;continue;}
             int seed=12400+i*28+(i%2==0?0:3);
             float x=L.w*i/35f,r=L.w*(.028f+.002f*hash(seed+7));
             // Keep roots below the horizon and a clear band of blade tips above it.
@@ -228,6 +227,18 @@ final class SwampVista extends Draw {
             float bank=Math.max(0,Math.min(1,(Math.max(left-x,x-right)-r*1.1f)/(r*1.5f)));
             if(bank<=.01f)continue;
             SwampGrass.draw(p,x,y,r,seed,time,1,fade*bank*bank*(3-2*bank));
+        }
+    }
+    static float horizonBank(Layout L,int i,float left,float right) {
+        int seed=12400+i*28+(i%2==0?0:3);
+        float x=L.w*i/35f,r=L.w*(.028f+.002f*hash(seed+7));
+        return Math.max(0,Math.min(1,(Math.max(left-x,x-right)-r*1.1f)/(r*1.5f)));
+    }
+    static void reedGroup(Painter p,Layout L,int group) {
+        for(int i=group*3;i<group*3+3;i++) {
+            int seed=12400+i*28+(i%2==0?0:3);
+            float x=L.w*i/35f,r=L.w*(.028f+.002f*hash(seed+7));
+            SwampGrass.draw(p,x,horizonAt(L,x)+r*3,r,seed,0,1,1);
         }
     }
     private static void riverHaze(Painter p,GameCore c,Layout L,float fade) {
@@ -239,7 +250,7 @@ final class SwampVista extends Draw {
                     ink(0xFF94A68F,fade*(.010f+.018f*(float)Math.sin(u*Math.PI))));
         }
     }
-    private static void horizonHaze(Painter p,Layout L,float fade) {
+    static void horizonHaze(Painter p,Layout L,float fade) {
         float[] band=new float[100];
         for(int layer=0;layer<18;layer++) {
             float u=(layer+.5f)/18,top=L.h*(-.060f+layer*.007f),bottom=top+L.h*.007f;
@@ -266,7 +277,7 @@ final class SwampVista extends Draw {
         }
     }
     private static void underwaterLife(Painter p,GameCore c,Layout L,float fade) {
-        float phase=c.skyClock*SPEED*6,time=c.cloudUi.reduceMotion?0:c.skyClock;float[] points=new float[8];
+        float phase=c.skyClock*SPEED*6,time=c.cloudUi.reduceMotion?0:c.skyClock;float[] points=c.swampGeometry.quad;
         for(int i=0;i<6;i++) {
             int seed=16321+(i-(int)Math.floor(phase))*197;
             float t=(i+phase-(float)Math.floor(phase))/6,d=depth(t);
@@ -300,8 +311,8 @@ final class SwampVista extends Draw {
             }
         }
     }
-    private static void lilyPad(Painter p,float x,float y,float r,int seed,float time,float fade,boolean still) {
-        float[] pad=new float[26];pad[0]=x;pad[1]=y;
+    private static void lilyPad(Painter p,SwampGeometry g,float x,float y,float r,int seed,float time,float fade,boolean still) {
+        float[] pad=g.pad;pad[0]=x;pad[1]=y;
         for(int i=0;i<12;i++) {
             float angle=.28f+i*(Softbody.TAU-.56f)/11;
             pad[(i+1)*2]=x+(float)Math.cos(angle)*r*1.65f;
@@ -337,12 +348,15 @@ final class SwampVista extends Draw {
             p.fillEllipse(x,y+r*.55f,r*2,r*.25f,ink(0xFF153F3A,a*.24f));
             int kind=Math.floorMod(seed,3);
             if(kind==0) {
-                lilyPad(p,x,y+bob,r*2,seed,time,a*1.25f,c.cloudUi.reduceMotion);
+                lilyPad(p,c.swampGeometry,x,y+bob,r*2,seed,time,a*1.25f,c.cloudUi.reduceMotion);
             } else if(kind==1) {
                 p.line(x-r*1.8f,y-r*.2f+bob,x+r*1.8f,y+r*.3f+bob,ink(0xFF827C5E,a),r*.45f);
                 p.line(x,y+bob,x+r*.55f,y-r*.75f+bob,ink(0xFF827C5E,a),r*.23f);
             } else {
-                p.fillPoly(new float[]{x-r*1.1f,y+bob,x-r*.25f,y-r*.55f+bob,x+r*1.2f,y+r*.2f+bob,x+r*.1f,y+r*.45f+bob},ink(0xFF8A9C69,a));
+                float[] leaf=c.swampGeometry.quad;
+                leaf[0]=x-r*1.1f;leaf[1]=y+bob;leaf[2]=x-r*.25f;leaf[3]=y-r*.55f+bob;
+                leaf[4]=x+r*1.2f;leaf[5]=y+r*.2f+bob;leaf[6]=x+r*.1f;leaf[7]=y+r*.45f+bob;
+                p.fillPoly(leaf,ink(0xFF8A9C69,a));
             }
         }
         for(int i=0;i<5;i++) {

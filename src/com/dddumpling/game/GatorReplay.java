@@ -9,13 +9,16 @@ final class GatorReplay {
     private float remainder;
     private final boolean slime;
     private final int kind;
-    private final boolean monochrome,stageLead;
+    private final boolean monochrome,stageLead,swamp;
     GatorReplay() {this(false);}
     GatorReplay(boolean slime) {this(slime?Boss.SLIME:Boss.ALLIGATOR);}
     GatorReplay(int kind) {this(kind,false,kind==Boss.OCTOPUS);}
     GatorReplay(int kind,boolean monochrome,boolean stageLead) {
-        this.kind=kind;this.slime=kind==Boss.SLIME;
-        this.monochrome=monochrome;this.stageLead=stageLead;reset();
+        this(kind,monochrome,stageLead,false);
+    }
+    GatorReplay(int kind,boolean monochrome,boolean stageLead,boolean swamp) {
+        this.swamp=swamp;this.kind=kind;this.slime=kind==Boss.SLIME;
+        this.monochrome=monochrome;this.stageLead=stageLead || swamp;reset();
     }
     private void reset() {
         core=new GameCore(null,168,false);
@@ -24,7 +27,7 @@ final class GatorReplay {
         core.modes.restore(ModeSelector.TIME_ATTACK);core.timeAttack.selected=kind;
         if(stageLead)core.modes.restore(ModeSelector.ADVENTURE);
         core.startGame();
-        if(stageLead){core.enterStage(WorldCatalog.bossStage(kind)-3);core.stageGap=0;}
+        if(stageLead){core.enterStage(WorldCatalog.bossStage(kind)-(swamp?4:3));core.stageGap=0;}
         core.stageBanner=0;core.landBlend=1;tick=0;
     }
     void update(float elapsed,Layout l) {
@@ -40,6 +43,13 @@ final class GatorReplay {
     }
     private void advance(Layout l) {
         if(tick>=LENGTH) {loops++;reset();}
+        if(swamp) {
+            if(tick%90==0 && !core.enemies.isEmpty()) {
+                GameCore.Enemy e=core.enemies.get(0);core.destroyWord(e,core.enemyCentreX(e),e.y,l,false);
+            }
+            core.spawnedThisStage=Math.min(core.spawnedThisStage,core.stageQuota()-1);
+            core.lives=3;core.update(STEP,l);tick++;return;
+        }
         if(stageLead && tick==18*60){core.enemies.clear();core.enterStage(WorldCatalog.bossStage(kind));core.stageBanner=0;}
         if(kind==Boss.OCTOPUS || (stageLead && tick<18*60)) {
             if(tick%90==0 && !core.enemies.isEmpty()) {

@@ -9,11 +9,14 @@ remote() {
     else adb shell "$1"; fi
 }
 scene=${PROFILE_SCENE:-gator}
-case "$scene" in gator) scene_prefix='';; slime) scene_prefix=slime-;; divide) scene_prefix=divide-;; underwater) scene_prefix=underwater-;; crystal) scene_prefix=crystal-;; *) echo 'PROFILE_SCENE must be gator, slime, divide, crystal or underwater' >&2; exit 1;; esac
+case "$scene" in swamp) scene_prefix=swamp-;; gator) scene_prefix='';; slime) scene_prefix=slime-;; divide) scene_prefix=divide-;; underwater) scene_prefix=underwater-;; crystal) scene_prefix=crystal-;; *) echo 'PROFILE_SCENE must be gator, slime, divide, crystal, underwater or swamp' >&2; exit 1;; esac
 if [ "${PROFILE_MONOCHROME:-0}" = 1 ]; then scene_prefix="${scene_prefix}mono-"; fi
 mode=${1:-both}
-case "$mode" in both) modes='vector cached';; vector|cached) modes=$mode;;
-    *) echo 'usage: sh tools/profile-gator.sh [both|vector|cached]' >&2; exit 1;; esac
+case "$mode" in both) modes='vector cached';; baseline|vector|cached) modes=$mode;;
+    *) echo 'usage: sh tools/profile-gator.sh [both|baseline|vector|cached]' >&2; exit 1;; esac
+if [ "$scene" = swamp ]; then
+    case "$mode" in both) modes='baseline cached';; vector) echo 'Use baseline for swamp; it retains the existing grass cache.' >&2; exit 1;; esac
+elif [ "$mode" = baseline ]; then echo 'baseline is only supported for swamp' >&2; exit 1; fi
 out="build/$scene-profile-$(date +%Y%m%d-%H%M%S)-$$"
 mkdir -p "$out"
 app=com.dddumpling.game.dev
@@ -50,6 +53,13 @@ for variant in $modes; do
     start "$scene_prefix$variant" "$token-$variant-measure"
     sleep 38
     remote "dumpsys gfxinfo $app framestats" >"$out/$variant-gfxinfo.txt" 2>&1
+    if [ "${PROFILE_SCREENSHOTS:-0}" = 1 ]; then
+        shot="/sdcard/Download/.dddumpling-$token-$variant.png"
+        remote "screencap -p $shot" >"$out/$variant-screenshot.txt" 2>&1
+        if [ "$transport" = rish ]; then cp "$shot" "$out/$variant.png";
+        else adb pull "$shot" "$out/$variant.png" >>"$out/$variant-screenshot.txt" 2>&1; fi
+        remote "rm $shot" >>"$out/$variant-screenshot.txt" 2>&1
+    fi
     remote 'logcat -d -s GatorProfile:I' >"$out/$variant-replay.txt" 2>&1
     if ! grep -Fq "loop=1 token=$token-$variant-measure" "$out/$variant-replay.txt"; then
         echo 'Capture did not finish a full replay. Keep the app foregrounded; inspect logs for stalls.' >&2

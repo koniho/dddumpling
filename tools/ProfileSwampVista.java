@@ -45,6 +45,7 @@ final class ProfileSwampVista {
         final boolean cached;
         Counter(boolean cached){this.cached=cached;}
         public ArtStamp stamps(){return cached?this:null;}
+        public boolean swampLayer(int art,float w,float h,float deck,float shift,int alpha,float mono){point(shift,art,alpha);vertices+=4;return true;}
         public boolean stamp(int art,float x,float y,float w,float h,float angle,int tint,float amount){return false;}
         public boolean swampGrass(int art,float x,float y,float r,float sway,int alpha,float mono){point(x,y,alpha);vertices+=4;return true;}
 

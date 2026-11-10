@@ -28,6 +28,24 @@
   [[DDIOSPainter new] accessoryTargetWithInt:0 withFloatArray:nil];
 }
 
+- (void)testSwampLayersRestoreContextAndResize {
+  unsigned char pixels[128*256*4]={0};
+  CGColorSpaceRef space=CGColorSpaceCreateDeviceRGB();
+  CGContextRef context=CGBitmapContextCreate(pixels,128,256,8,128*4,space,kCGImageAlphaPremultipliedLast);
+  DDIOSPainter *painter=[DDIOSPainter new];painter.context=context;
+  CGAffineTransform before=CGContextGetCTM(context);
+  for(int size=0;size<2;size++)for(int art=0;art<17;art++) {
+    memset(pixels,0,sizeof(pixels));
+    XCTAssertTrue([painter swampLayerWithInt:art withFloat:128-size*8 withFloat:256 withFloat:220 withFloat:0 withInt:100 withFloat:.5f]);
+    XCTAssertEqual(painter.context,context);
+    XCTAssertTrue(CGAffineTransformEqualToTransform(CGContextGetCTM(context),before));
+    unsigned char peak=0;for(int i=3;i<sizeof(pixels);i+=4)peak=MAX(peak,pixels[i]);
+    XCTAssertGreaterThan(peak,0);XCTAssertLessThanOrEqual(peak,101);
+  }
+  XCTAssertFalse([painter swampLayerWithInt:99 withFloat:128 withFloat:256 withFloat:220 withFloat:0 withInt:255 withFloat:0]);
+  painter.context=NULL;CGContextRelease(context);CGColorSpaceRelease(space);
+}
+
 - (void)testCrystalLayersRestoreContextAndRespectOpacity {
   unsigned char pixels[128*256*4]={0};
   CGColorSpaceRef space=CGColorSpaceCreateDeviceRGB();
