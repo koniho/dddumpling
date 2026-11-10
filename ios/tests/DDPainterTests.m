@@ -1,7 +1,4 @@
 #import "com/dddumpling/game/SlimeBasinArt.h"
-#import "com/dddumpling/game/RainbowLand.h"
-#import "com/dddumpling/game/GameCore.h"
-#import "com/dddumpling/game/Layout.h"
 #import "com/dddumpling/game/UnderwaterVista.h"
 #import <XCTest/XCTest.h>
 #import "DDPainter.h"
@@ -87,13 +84,6 @@
   XCTAssertFalse([painter capsuleGradientWithFloat:135 withFloat:90.31f withFloat:430.31f withFloat:50 withIntArray:colors withFloatArray:stops]);
   BOOL untouched=YES;for(int i=0;i<sizeof(pixels);i++)untouched&=pixels[i]==0;
   XCTAssertTrue(untouched);XCTAssertTrue(CGAffineTransformEqualToTransform(before,CGContextGetCTM(context)));
-  // Exercise the real caller, which must still render bands when this optional path declines.
-  DDGameCore *game=[[DDGameCore alloc] initWithDDGameCore_Store:nil withLong:250];
-  DDLayout *layout=[DDLayout new];
-  [layout computeWithFloat:270 withFloat:540 withFloat:0 withFloat:0 withFloat:0 withFloat:0];
-  [DDRainbowLand backdropWithDDPainter:painter withDDGameCore:game withDDLayout:layout withFloat:1];
-  BOOL visible=NO;for(int i=3;i<sizeof(pixels);i+=4)visible|=pixels[i]>0;
-  XCTAssertTrue(visible);XCTAssertTrue(CGAffineTransformEqualToTransform(before,CGContextGetCTM(context)));
   painter.context=NULL;CGContextRelease(context);CGColorSpaceRelease(space);
 }
 

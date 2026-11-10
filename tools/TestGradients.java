@@ -48,15 +48,18 @@ final class TestGradients extends Check {
         check("sunlight preserves irregular patches with fewer beam primitives",nativeP.linear>0 && nativeP.fills+nativeP.linear<fallback.fills);
         nativeP=new Probe(true);fallback=new Probe(false);RainbowLand.backdrop(nativeP,c,L,1);RainbowLand.backdrop(fallback,c,L,1);
         check("rainbow retains optional vector fallback",nativeP.capsules>0 && fallback.fills>=nativeP.capsules*8);
+        nativeP=new Probe(true);nativeP.declineCapsules=true;RainbowLand.backdrop(nativeP,c,L,1);
+        check("rainbow draws continuous vectors when only capsule gradients decline",
+                nativeP.capsules>0 && nativeP.fills==nativeP.capsules*8);
         check("gradient rendering leaves gameplay RNG untouched",c.rnd.nextLong()==twin.rnd.nextLong());
     }
     static final class Probe extends OpacityPainter {
-        final boolean supported;int linear,vertical,capsules,fills;int[] colors;
+        final boolean supported;boolean declineCapsules;int linear,vertical,capsules,fills;int[] colors;
         Probe(boolean supported){super(null,1);this.supported=supported;}
         public boolean gradients(){return supported;}
         public boolean linearGradient(float[] p,float a,float b,float c,float d,int[] colors,float[] stops){linear++;this.colors=colors;return supported;}
         public boolean radialGradient(float x,float y,float rx,float ry,int[] colors,float[] stops){this.colors=colors;return supported;}
-        public boolean capsuleGradient(float x,float t,float b,float r,int[] colors,float[] stops){capsules++;this.colors=colors;return supported;}
+        public boolean capsuleGradient(float x,float t,float b,float r,int[] colors,float[] stops){capsules++;this.colors=colors;return supported && !declineCapsules;}
         public void verticalGradient(float l,float t,float r,float b,int[] colors,float[] stops){vertical++;this.colors=colors;}
         public void save(){}
         public void restore(){}
