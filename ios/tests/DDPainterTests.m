@@ -80,7 +80,10 @@
   IOSIntArray *colors=[IOSIntArray arrayWithLength:2];
   colors->buffer_[0]=(jint)0x80FFFFFF;colors->buffer_[1]=(jint)0x80FFFFFF;
   IOSFloatArray *stops=[IOSFloatArray arrayWithLength:2];stops->buffer_[1]=1;
-  CGContextScaleCTM(context,.473,.473);CGAffineTransform before=CGContextGetCTM(context);
+  for(int flipped=0;flipped<2;flipped++) {
+  CGContextSaveGState(context);
+  if(flipped)CGContextTranslateCTM(context,0,256);
+  CGContextScaleCTM(context,.473,flipped?-.487:.473);CGAffineTransform before=CGContextGetCTM(context);
   for(int phase=0;phase<8;phase++) {
     memset(pixels,0,sizeof(pixels));
     XCTAssertTrue([painter capsuleGradientWithFloat:135 withFloat:90+phase*.31f withFloat:430+phase*.31f withFloat:50 withIntArray:colors withFloatArray:stops]);
@@ -88,6 +91,8 @@
     for(int row=30;row<218;row++)XCTAssertEqualWithAccuracy(pixels[(row*128+64)*4+3],128,1);
     XCTAssertEqual(pixels[(100*128+5)*4+3],0);
     XCTAssertTrue(CGAffineTransformEqualToTransform(before,CGContextGetCTM(context)));
+  }
+  CGContextRestoreGState(context);
   }
   painter.context=NULL;CGContextRelease(context);CGColorSpaceRelease(space);
 }

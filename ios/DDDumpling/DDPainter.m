@@ -7,7 +7,6 @@
 #import "com/dddumpling/game/MushroomForest.h"
 #import "com/dddumpling/game/SwampGrass.h"
 #import "com/dddumpling/game/SwampLayers.h"
-#import "com/dddumpling/game/Gradients.h"
 #import "com/dddumpling/game/SlimeBasinArt.h"
 #import "com/dddumpling/game/CrystalField.h"
 #import "com/dddumpling/game/CrystalArena.h"
@@ -651,19 +650,44 @@ static CGGradientRef DDGradient(CGColorSpaceRef space,IOSIntArray *colors,IOSFlo
 }
 - (jboolean)capsuleGradientWithFloat:(jfloat)x withFloat:(jfloat)top withFloat:(jfloat)bottom
     withFloat:(jfloat)radius withIntArray:(IOSIntArray *)colors withFloatArray:(IOSFloatArray *)stops {
-  if(!self.context || radius<=0 || bottom<top)return NO;
-  CGContextRef context=self.context;CGContextSaveGState(context);
-  // Quartz rounds fractional rectangle clips outward, even without antialiasing.
-  // Partition at device-pixel boundaries, keeping the gradient centers unchanged.
-  CGPoint first=CGContextConvertPointToDeviceSpace(context,CGPointMake(x,top));
-  CGPoint last=CGContextConvertPointToDeviceSpace(context,CGPointMake(x,bottom));
-  first.y=round(first.y);last.y=round(last.y);
-  jfloat joinTop=CGContextConvertPointToUserSpace(context,first).y;
-  jfloat joinBottom=CGContextConvertPointToUserSpace(context,last).y;
-  CGContextSetShouldAntialias(context,NO);
-  [DDGradients capsulePiecesWithDDPainter:self withFloat:x withFloat:top withFloat:bottom
-      withFloat:radius withFloat:joinTop withFloat:joinBottom withIntArray:colors withFloatArray:stops];
-  CGContextRestoreGState(context);return YES;
+  CGContextRef context=self.context;
+  if(!context || radius<=0 || bottom<top || !colors || !stops || colors->size_<2 || colors->size_!=stops->size_)return NO;
+  CGAffineTransform transform=CGContextGetCTM(context);
+  // Rotated or sheared capsules retain the vector fallback.
+  if(transform.b!=0 || transform.c!=0 || transform.a==0 || transform.d==0)return NO;
+  jint n=colors->size_;
+  IOSIntArray *across=[IOSIntArray arrayWithLength:n*2-1];
+  IOSFloatArray *positions=[IOSFloatArray arrayWithLength:n*2-1];
+  for(jint i=0;i<n;i++) {
+    across->buffer_[n-1-i]=across->buffer_[n-1+i]=colors->buffer_[i];
+    positions->buffer_[n-1-i]=(1-stops->buffer_[i])*.5f;
+    positions->buffer_[n-1+i]=(1+stops->buffer_[i])*.5f;
+  }
+  CGGradientRef body=DDGradient(_colorSpace,across,positions);if(!body)return NO;
+  CGRect bounds=CGContextConvertRectToDeviceSpace(context,CGRectMake(x-radius,top-radius,radius*2,bottom-top+radius*2));
+  CGFloat first=round(CGContextConvertPointToDeviceSpace(context,CGPointMake(x,top)).y);
+  CGFloat last=round(CGContextConvertPointToDeviceSpace(context,CGPointMake(x,bottom)).y);
+  CGFloat lo=floor(CGRectGetMinY(bounds)),hi=ceil(CGRectGetMaxY(bounds));
+  CGFloat left=floor(CGRectGetMinX(bounds)),right=ceil(CGRectGetMaxX(bounds));
+  CGFloat starts[]={MIN(first,last),transform.d>0?lo:first,transform.d>0?last:lo};
+  CGFloat ends[]={MAX(first,last),transform.d>0?first:hi,transform.d>0?hi:last};
+  for(int part=0;part<3;part++) {
+    if(ends[part]<=starts[part])continue;
+    CGContextSaveGState(context);CGContextSetShouldAntialias(context,NO);
+    // Clip in device space. Converting snapped joins back to Java floats reintroduces
+    // fractional boundaries, which Quartz rounds outward and blends twice.
+    CGContextConcatCTM(context,CGAffineTransformInvert(transform));
+    CGContextClipToRect(context,CGRectMake(left,starts[part],right-left,ends[part]-starts[part]));
+    CGContextConcatCTM(context,transform);
+    if(part==0) {
+      CGContextClipToRect(context,CGRectMake(x-radius,top-radius,radius*2,bottom-top+radius*2));
+      CGContextDrawLinearGradient(context,body,CGPointMake(x-radius,top),CGPointMake(x+radius,top),
+          kCGGradientDrawsBeforeStartLocation|kCGGradientDrawsAfterEndLocation);
+    } else [self radialGradientWithFloat:x withFloat:(part==1?top:bottom) withFloat:radius
+        withFloat:radius withIntArray:colors withFloatArray:stops];
+    CGContextRestoreGState(context);
+  }
+  CGGradientRelease(body);return YES;
 }
 
 - (void)verticalGradientWithFloat:(jfloat)left withFloat:(jfloat)top

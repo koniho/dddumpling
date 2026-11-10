@@ -155,8 +155,10 @@ implementations use Android shaders and Core Graphics gradients; software previe
 the same color stops. Unsupported painters keep the existing layered geometry. Palette,
 opacity and tint wrappers transform stops, and the underwater wrapper refracts geometry.
 Capsules partition their body and two caps at hard internal clips to avoid double blending.
-On iOS, snap these internal joins to device-pixel boundaries: Quartz rounds fractional
-rectangle clips outward even with antialiasing disabled, otherwise sharing a pixel twice.
+On iOS, construct the internal clips directly at integer device-pixel boundaries. Converting
+snapped coordinates back to Java floats can reintroduce fractions; Quartz rounds those
+clips outward even with antialiasing disabled, otherwise sharing a pixel twice. Rotated or
+sheared iOS capsules retain the vector fallback.
 
 - Shared HUD: 48 strips become one vertical gradient. The vignette retains corner overlap
   with four gradients instead of 128 overlapping rectangles.
