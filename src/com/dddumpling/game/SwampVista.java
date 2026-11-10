@@ -59,6 +59,7 @@ final class SwampVista extends Draw {
         nightSky(p,L,fade);
         horizonTrees(p,c,L,fade);
         banks(p,c,L,fade);
+        riverTint(p,c,L,fade);
         underwaterLife(p,c,L,fade);
         riverHaze(p,c,L,fade);
         horizonHaze(p,L,fade);
@@ -76,6 +77,7 @@ final class SwampVista extends Draw {
             SwampGrass.draw(p,x,y,r,seed,time,.25f+.75f*Math.min(1,d*2.5f),opacity);
         }
         shoreReeds(p,c,L,time,fade);
+        submergedEdges(p,c,L,fade);
         LandBonusArt.inSwamp(p,c,L,fade);
         c.swampFireflies.draw(p,c,L,fade);
     }
@@ -162,6 +164,38 @@ final class SwampVista extends Draw {
                     strip[(97-i)*2]=xx;strip[(97-i)*2+1]=bankY(L,ds[i],xx);
                 }
                 p.fillPoly(strip,ink(Glyph.mix(0xFF285348,0xFF324F3B,softness),fade*.65f*softness));
+            }
+        }
+    }
+    private static void riverTint(Painter p,GameCore c,Layout L,float fade) {
+        float[] strip=new float[8];
+        for(int band=0;band<12;band++) {
+            float near=band/12f*.28f,far=(band+1)/12f*.28f,u=(band+.5f)/12;
+            float left=L.w*waterEdgeX(L,c.skyClock,near,-1),right=L.w*waterEdgeX(L,c.skyClock,near,1);
+            float nextLeft=L.w*waterEdgeX(L,c.skyClock,far,-1),nextRight=L.w*waterEdgeX(L,c.skyClock,far,1);
+            strip[0]=left;strip[1]=bankY(L,near,left);strip[2]=right;strip[3]=bankY(L,near,right);
+            strip[4]=nextRight;strip[5]=bankY(L,far,nextRight);strip[6]=nextLeft;strip[7]=bankY(L,far,nextLeft);
+            p.fillPoly(strip,ink(0xFF3F7784,fade*.62f*(1-u)*(1-u)));
+        }
+    }
+    private static void submergedEdges(Painter p,GameCore c,Layout L,float fade) {
+        float[] xs=new float[49],ys=new float[49],widths=new float[49],strip=new float[196];
+        for(int side=-1;side<=1;side+=2) {
+            for(int i=0;i<=48;i++) {
+                float d=waterDepth(L,horizon(L)+(L.deckTop-horizon(L))*i/48f);
+                xs[i]=L.w*waterEdgeX(L,c.skyClock,d,side);ys[i]=bankY(L,d,xs[i]);
+                float material=3*d/(1+2*d)-c.skyClock*SPEED;
+                widths[i]=L.w*(.010f+.060f*d)*(.9f+.1f*(float)Math.sin(material*19+side));
+            }
+            // Water is painted over the reeds, tinting their bases through a soft translucent edge.
+            for(int band=0;band<8;band++) {
+                float inner=-1.5f+band*.375f,outer=inner+.375f,u=(band+.5f)/8;
+                for(int i=0;i<=48;i++) {
+                    strip[i*2]=xs[i]+side*widths[i]*inner;strip[i*2+1]=ys[i];
+                    strip[(97-i)*2]=xs[i]+side*widths[i]*outer;strip[(97-i)*2+1]=ys[i];
+                }
+                float softness=(float)Math.sin(u*Math.PI);
+                p.fillPoly(strip,ink(0xFF487E83,fade*.38f*softness*softness));
             }
         }
     }
