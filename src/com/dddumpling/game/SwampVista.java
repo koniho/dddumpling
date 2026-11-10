@@ -179,12 +179,10 @@ final class SwampVista extends Draw {
         }
     }
     private static void submergedEdges(Painter p,GameCore c,Layout L,float fade) {
-        // Twenty-four segments preserve the river bend without rebuilding dense native paths.
-        final int segments=24,points=segments+1;
-        float[] xs=new float[points],ys=new float[points],widths=new float[points],strip=new float[points*4];
+        float[] xs=new float[49],ys=new float[49],widths=new float[49],strip=new float[196];
         for(int side=-1;side<=1;side+=2) {
-            for(int i=0;i<=segments;i++) {
-                float d=waterDepth(L,horizon(L)+(L.deckTop-horizon(L))*i/(float)segments);
+            for(int i=0;i<=48;i++) {
+                float d=waterDepth(L,horizon(L)+(L.deckTop-horizon(L))*i/48f);
                 xs[i]=L.w*waterEdgeX(L,c.skyClock,d,side);ys[i]=bankY(L,d,xs[i]);
                 float material=3*d/(1+2*d)-c.skyClock*SPEED;
                 widths[i]=L.w*(.010f+.060f*d)*(.9f+.1f*(float)Math.sin(material*19+side));
@@ -192,22 +190,12 @@ final class SwampVista extends Draw {
             // Water is painted over the reeds, tinting their bases through a soft translucent edge.
             for(int band=0;band<8;band++) {
                 float inner=-1.5f+band*.375f,outer=inner+.375f,u=(band+.5f)/8;
-                for(int i=0;i<=segments;i++) {
+                for(int i=0;i<=48;i++) {
                     strip[i*2]=xs[i]+side*widths[i]*inner;strip[i*2+1]=ys[i];
-                    strip[(points*2-1-i)*2]=xs[i]+side*widths[i]*outer;strip[(points*2-1-i)*2+1]=ys[i];
+                    strip[(97-i)*2]=xs[i]+side*widths[i]*outer;strip[(97-i)*2+1]=ys[i];
                 }
                 float softness=(float)Math.sin(u*Math.PI);
                 p.fillPoly(strip,ink(0xFF487E83,fade*.38f*softness*softness));
-            }
-            // A broad, faint shadow overlaps the water-facing side of the translucent band.
-            for(int band=0;band<6;band++) {
-                float inner=-3f+band*(4f/6),outer=inner+4f/6,u=(band+.5f)/6;
-                for(int i=0;i<=segments;i++) {
-                    strip[i*2]=xs[i]+side*widths[i]*inner;strip[i*2+1]=ys[i];
-                    strip[(points*2-1-i)*2]=xs[i]+side*widths[i]*outer;strip[(points*2-1-i)*2+1]=ys[i];
-                }
-                float softness=(float)Math.sin(u*Math.PI);
-                p.fillPoly(strip,ink(0xFF061F2B,fade*.16f*softness*softness));
             }
         }
     }
