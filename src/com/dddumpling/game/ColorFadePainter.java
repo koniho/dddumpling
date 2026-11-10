@@ -33,6 +33,19 @@ final class ColorFadePainter implements Painter, ArtStamp {
     int color(int c) {
         return Glyph.withAlpha(Glyph.mix(c,tint,amount),(int)((c>>>24)*opacity));
     }
+    public boolean gradients(){return p!=null && p.gradients();}
+    private int[] gradientColors(int[] colors) {
+        int[] mapped=new int[colors.length];for(int i=0;i<colors.length;i++)mapped[i]=color(colors[i]);return mapped;
+    }
+    public boolean linearGradient(float[] polygon,float x0,float y0,float x1,float y1,int[] colors,float[] stops) {
+        return gradients() && p.linearGradient(polygon,x0,y0,x1,y1,gradientColors(colors),stops);
+    }
+    public boolean radialGradient(float x,float y,float rx,float ry,int[] colors,float[] stops) {
+        return gradients() && p.radialGradient(x,y,rx,ry,gradientColors(colors),stops);
+    }
+    public boolean capsuleGradient(float x,float top,float bottom,float radius,int[] colors,float[] stops) {
+        return gradients() && p.capsuleGradient(x,top,bottom,radius,gradientColors(colors),stops);
+    }
     public void fillPoly(float[] xy,int c) { p.fillPoly(xy,color(c)); }
     public void fillContours(float[][] xy,int c) { p.fillContours(xy,color(c)); }
     public void strokePoly(float[] xy,int c,float w) { p.strokePoly(xy,color(c),w); }
@@ -40,6 +53,9 @@ final class ColorFadePainter implements Painter, ArtStamp {
     public void strokeCircle(float x,float y,float r,int c,float w) { p.strokeCircle(x,y,r,color(c),w); }
     public void arc(float x,float y,float rx,float ry,float a,float s,int c,float w) { p.arc(x,y,rx,ry,a,s,color(c),w); }
     public void fillEllipse(float x,float y,float rx,float ry,int c) { p.fillEllipse(x,y,rx,ry,color(c)); }
+    public void verticalGradient(float l,float t,float r,float b,int[] colors,float[] stops) {
+        p.verticalGradient(l,t,r,b,gradientColors(colors),stops);
+    }
     public void fillRect(float l,float t,float r,float b,int c) { p.fillRect(l,t,r,b,color(c)); }
     public void line(float x,float y,float a,float b,int c,float w) { p.line(x,y,a,b,color(c),w); }
     public void fastPolyline(float[] xy,int c,float w) { p.fastPolyline(xy,color(c),w); }

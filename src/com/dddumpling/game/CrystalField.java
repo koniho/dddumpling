@@ -106,7 +106,8 @@ final class CrystalField extends Draw {
     Cell[][] layers;
     static final class Cell {
         float[] rim,face;
-        float[][] sheen;
+        float[][] sheen,sheenFaces;
+        float sheenDirection=1;
         float top,bottom,phase;
         int color;
     }
@@ -151,6 +152,7 @@ final class CrystalField extends Draw {
                 cell.top=Math.min(cell.top,poly[k+1]);cell.bottom=Math.max(cell.bottom,poly[k+1]);
             }
             cell.sheen=makeSheen(cell.face,1);
+            cell.sheenFaces=new float[][]{cell.face};
         }
         return cells;
     }
@@ -170,6 +172,19 @@ final class CrystalField extends Draw {
     }
     static void shimmer(Painter p,Cell cell,int layer,float clock,float fade) {
         float sweep=((clock*.16f+cell.phase/Softbody.TAU)%1)*13-2.5f;
+        if(p.gradients() && cell.sheenFaces!=null) {
+            int[] colors=Gradients.bell(edgeColor(layer),fade*(5+layer*5));
+            for(int face=0;face<cell.sheenFaces.length;face++) {
+                float[] polygon=cell.sheenFaces[face];if(polygon.length<6)continue;
+                float nx=face==0?cell.sheenDirection:-cell.sheenDirection,ny=.65f,norm=nx*nx+ny*ny;
+                float lo=Float.MAX_VALUE,hi=-Float.MAX_VALUE;
+                for(int i=0;i<polygon.length;i+=2){float u=polygon[i]*nx+polygon[i+1]*ny;lo=Math.min(lo,u);hi=Math.max(hi,u);}
+                float from=lo+(sweep+.5f-1.8f)/8*(hi-lo),to=lo+(sweep+.5f+1.8f)/8*(hi-lo);
+                if(to<lo || from>hi || to<=from)continue;
+                p.linearGradient(polygon,nx*from/norm,ny*from/norm,nx*to/norm,ny*to/norm,colors,Gradients.STOPS);
+            }
+            return;
+        }
         for(int band=0;band<cell.sheen.length;band++) {
             float distance=Math.abs(band%8-sweep)/1.8f;
             if(distance>=1 || cell.sheen[band].length<6)continue;

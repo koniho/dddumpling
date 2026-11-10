@@ -49,6 +49,8 @@ final class SlimeBasinArt extends Draw {
             return;
         }
         p.fillRect(0,0,w,h,0xFF153D34);
+        if(!p.radialGradient(w*.5f,h*.34f,w*.86f,h*.67f,
+                Gradients.nested(0xFF6FBC73,4,48,.19f),Gradients.STOPS))
         for(int i=47;i>=0;i--) {
             float r=i/47f;
             p.fillEllipse(w*.5f,h*.34f,w*(.20f+r*.66f),h*(.10f+r*.57f),0x046FBC73);

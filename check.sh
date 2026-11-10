@@ -196,6 +196,7 @@ src/com/dddumpling/game/BossCollect.java
 src/com/dddumpling/game/Interlude.java
 src/com/dddumpling/game/BossPlay.java
 src/com/dddumpling/game/Painter.java
+src/com/dddumpling/game/Gradients.java
 src/com/dddumpling/game/MonochromePainter.java
 src/com/dddumpling/game/ColorFadePainter.java
 src/com/dddumpling/game/GatorPalette.java

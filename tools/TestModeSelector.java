@@ -112,7 +112,7 @@ final class TestModeSelector extends Check {
                     if(method.getName().equals("fillPoly") && ((float[])args[0]).length>100)order.add("boss");
                     if(method.getName().equals("text") && args[0].equals("LOCKED"))order.add("label");
                     if(method.getName().equals("arc"))order.add("lock");
-                    return null;
+                    return method.getReturnType()==boolean.class?Boolean.FALSE:null;
                 });
         c.modes.draw(p,c,L);
         check("locked scene draws the boss, padlock and label",order.contains("boss") && order.contains("lock") && order.contains("label"));
@@ -129,7 +129,7 @@ final class TestModeSelector extends Check {
                     if(method.getName().equals("arc"))alphas.add(((Integer)args[6])>>>24);
                     if(method.getName().equals("text") && (args[0].equals("LOCKED")
                             || args[0].equals("BEAT YOUR FIRST BOSS")))alphas.add(((Integer)args[4])>>>24);
-                    return null;
+                    return method.getReturnType()==boolean.class?Boolean.FALSE:null;
                 });
         c.modes.draw(p,c,L);
         check("lock and copy fade together",alphas.size()==3 && alphas.get(0).equals(alphas.get(1))
@@ -147,7 +147,7 @@ final class TestModeSelector extends Check {
                     if(method.getName().equals("accessory"))return -1;
                     if(method.getName().equals("skin"))return Skins.DEFAULT;
                         if(method.getName().equals("text"))labels.add((String)args[0]);
-                        return null;
+                        return method.getReturnType()==boolean.class?Boolean.FALSE:null;
                     });
             c.modes.draw(p,c,L);
             check("locked modes share the first boss instruction "+mode,labels.contains("LOCKED")
@@ -308,7 +308,7 @@ final class TestModeSelector extends Check {
                         if(y<ModeSelector.y(L)-L.unit && y>ModeSelector.y(L)-L.unit*3
                                 && Math.abs(r-L.unit*.19f)<.001f)count[0]++;
                     }
-                    return null;
+                    return method.getReturnType()==boolean.class?Boolean.FALSE:null;
                 });
         c.modes.draw(p,c,L);return count[0];
     }
@@ -396,7 +396,7 @@ final class TestModeSelector extends Check {
         c.caseIndex=Collect.COUNT-1;
         check("unowned case entries use an owned squishy for the skit",Collect.has(c.collected,SurvivalDemo.companion(c)));
         Painter sink=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),
-                new Class<?>[]{Painter.class},(proxy,method,args)->method.getName().equals("skin")?Integer.valueOf(Skins.DEFAULT):method.getName().equals("accessory")?Integer.valueOf(-1):null);
+                new Class<?>[]{Painter.class},(proxy,method,args)->method.getName().equals("skin")?Integer.valueOf(Skins.DEFAULT):method.getName().equals("accessory")?Integer.valueOf(-1):method.getReturnType()==boolean.class?Boolean.FALSE:null);
         int settings=((Mem)c.store).playerSettings;
         for(int i=0;i<160;i++) {c.clock=i*.05f;SurvivalDemo.draw(sink,c,L,1f);}
         check("title skit leaves combat, saves and gameplay randomness untouched",c.state==GameCore.TITLE

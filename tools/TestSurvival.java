@@ -118,7 +118,7 @@ final class TestSurvival extends Check {
         cosmetic.survival.update(cosmetic,30.125f);
         final int[] calls={0};
         Painter painter=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),
-                new Class<?>[]{Painter.class},(proxy,method,args)-> {calls[0]++;return null;});
+                new Class<?>[]{Painter.class},(proxy,method,args)-> {calls[0]++;return method.getReturnType()==boolean.class?Boolean.FALSE:null;});
         cosmetic.survival.cheer.draw(painter,cosmetic,L);
         cosmetic.survival.cheer.pulse(painter,cosmetic,L);
         check("cheer timing and drawing never consume gameplay RNG",cosmetic.rnd.nextLong()==twin.rnd.nextLong());
@@ -142,7 +142,7 @@ final class TestSurvival extends Check {
                     if(method.getName().equals("skin"))return Skins.DEFAULT;
                     if(method.getName().equals("fillRect"))bodies.add(new float[]{(Float)args[0],(Float)args[1],
                             (Float)args[2],(Float)args[3],(Integer)args[4]});
-                    return null;
+                    return method.getReturnType()==boolean.class?Boolean.FALSE:null;
                 });
         c.survival.scenery(painter,c,L);return bodies;
     }
@@ -198,7 +198,7 @@ final class TestSurvival extends Check {
                             bounds[2]=Math.max(bounds[2],pts[i]);bounds[3]=Math.max(bounds[3],pts[i+1]);
                         }
                     }
-                    return null;
+                    return method.getReturnType()==boolean.class?Boolean.FALSE:null;
                 });
         check("Survival suppresses the normal companion",SurvivalEnd.ownsCompanion(c));
         c.deathT=c.deathDuration()*.4f;
@@ -333,7 +333,7 @@ final class TestSurvival extends Check {
         for(int i=0;i<600;i++)bodies.update(c,DT);
         boolean bounded=true;for(float value:bodies.skin[10][0].outline())bounded&=Float.isFinite(value)&&Math.abs(value)<2;
         check("duck spring skin settles without exploding",bounded);
-        float[] frozen=bodies.skin[10][0].outline().clone();Renderer.draw((Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),new Class<?>[]{Painter.class},(proxy,method,args)->method.getName().equals("skin")?Integer.valueOf(Skins.DEFAULT):method.getName().equals("accessory")?Integer.valueOf(-1):null),c,L);Renderer.draw((Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),new Class<?>[]{Painter.class},(proxy,method,args)->method.getName().equals("skin")?Integer.valueOf(Skins.DEFAULT):method.getName().equals("accessory")?Integer.valueOf(-1):null),c,L);
+        float[] frozen=bodies.skin[10][0].outline().clone();Renderer.draw((Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),new Class<?>[]{Painter.class},(proxy,method,args)->method.getName().equals("skin")?Integer.valueOf(Skins.DEFAULT):method.getName().equals("accessory")?Integer.valueOf(-1):method.getReturnType()==boolean.class?Boolean.FALSE:null),c,L);Renderer.draw((Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),new Class<?>[]{Painter.class},(proxy,method,args)->method.getName().equals("skin")?Integer.valueOf(Skins.DEFAULT):method.getName().equals("accessory")?Integer.valueOf(-1):method.getReturnType()==boolean.class?Boolean.FALSE:null),c,L);
         check("drawing does not advance duck physics",java.util.Arrays.equals(frozen,bodies.skin[10][0].outline()));
     }
 
@@ -445,7 +445,7 @@ final class TestSurvival extends Check {
                     if(method.getName().equals("accessory"))return -1;
                     if(method.getName().equals("skin"))return Skins.DEFAULT;
                     if(method.getName().equals("text"))labels.add((String)args[0]);
-                    return null;
+                    return method.getReturnType()==boolean.class?Boolean.FALSE:null;
                 });
         c.highScoreScreen.draw(painter,c,L);
         check("Survival summary contains its time and controls",labels.contains("TIME SURVIVED")
@@ -535,7 +535,7 @@ final class TestSurvival extends Check {
                     if(method.getName().equals("accessory"))return -1;
                     if(method.getName().equals("skin"))return Skins.DEFAULT;
                     if(method.getName().equals("fillCircle"))bottom[0]=Math.max(bottom[0],(Float)args[1]+(Float)args[2]);
-                    return null;
+                    return method.getReturnType()==boolean.class?Boolean.FALSE:null;
                 });
         c.survival.scenery(painter,c,L);
         check("Survival starts on the title sky with all stripe caps above screen",
@@ -568,7 +568,7 @@ final class TestSurvival extends Check {
                             colors.add((Integer)args[4]);
                         }
                         if(method.getName().equals("clipRect"))for(int i=0;i<4;i++)clip[i]=(Float)args[i];
-                        return null;
+                        return method.getReturnType()==boolean.class?Boolean.FALSE:null;
                     });
             boolean covered=true,saturated=true,stable=true,refreshed=true,screenLength=true;
             java.util.ArrayList<Float> firstOrder=null;

@@ -7,6 +7,7 @@
 #import "com/dddumpling/game/MushroomForest.h"
 #import "com/dddumpling/game/SwampGrass.h"
 #import "com/dddumpling/game/SwampLayers.h"
+#import "com/dddumpling/game/Gradients.h"
 #import "com/dddumpling/game/SlimeBasinArt.h"
 #import "com/dddumpling/game/CrystalField.h"
 #import "com/dddumpling/game/CrystalArena.h"
@@ -65,6 +66,17 @@ static void DDDrawCachedImage(CGContextRef ctx,CGRect rect,CGImageRef color,CGIm
   CGContextSetBlendMode(ctx,kCGBlendModePlusLighter);CGContextSetAlpha(ctx,mono);
   CGContextDrawImage(ctx,rect,gray);
   CGContextEndTransparencyLayer(ctx);CGContextRestoreGState(ctx);
+}
+
+static CGGradientRef DDGradient(CGColorSpaceRef space,IOSIntArray *colors,IOSFloatArray *stops) {
+  if(!colors || !stops || colors->size_<2 || colors->size_!=stops->size_)return NULL;
+  NSUInteger count=colors->size_;CGFloat components[count*4],locations[count];
+  for(NSUInteger i=0;i<count;i++) {
+    uint32_t c=colors->buffer_[i];locations[i]=stops->buffer_[i];
+    components[i*4]=((c>>16)&255)/255.0;components[i*4+1]=((c>>8)&255)/255.0;
+    components[i*4+2]=(c&255)/255.0;components[i*4+3]=(c>>24)/255.0;
+  }
+  return CGGradientCreateWithColorComponents(space,components,locations,count);
 }
 
 @interface DDIOSPainter () {
@@ -613,6 +625,39 @@ static void DDDrawCachedImage(CGContextRef ctx,CGRect rect,CGImageRef color,CGIm
   }
   DDSetStrokeColor(context, [self cachedColor:color], width);
   CGContextStrokePath(context);
+}
+
+- (jboolean)gradients {return YES;}
+- (jboolean)linearGradientWithFloatArray:(IOSFloatArray *)polygon withFloat:(jfloat)x0
+    withFloat:(jfloat)y0 withFloat:(jfloat)x1 withFloat:(jfloat)y1
+    withIntArray:(IOSIntArray *)colors withFloatArray:(IOSFloatArray *)stops {
+  CGContextRef context=self.context;
+  if(!context || !DDHasPolygon(polygon) || (x0==x1 && y0==y1))return NO;
+  CGGradientRef gradient=DDGradient(_colorSpace,colors,stops);if(!gradient)return NO;
+  CGContextSaveGState(context);CGContextBeginPath(context);DDAppendPolygon(context,polygon);CGContextClip(context);
+  CGContextDrawLinearGradient(context,gradient,CGPointMake(x0,y0),CGPointMake(x1,y1),
+      kCGGradientDrawsBeforeStartLocation|kCGGradientDrawsAfterEndLocation);
+  CGContextRestoreGState(context);CGGradientRelease(gradient);return YES;
+}
+- (jboolean)radialGradientWithFloat:(jfloat)x withFloat:(jfloat)y withFloat:(jfloat)rx
+    withFloat:(jfloat)ry withIntArray:(IOSIntArray *)colors withFloatArray:(IOSFloatArray *)stops {
+  CGContextRef context=self.context;if(!context || rx<=0 || ry<=0)return NO;
+  CGGradientRef gradient=DDGradient(_colorSpace,colors,stops);if(!gradient)return NO;
+  CGContextSaveGState(context);CGContextTranslateCTM(context,x,y);CGContextScaleCTM(context,rx,ry);
+  CGContextBeginPath(context);CGContextAddEllipseInRect(context,CGRectMake(-1,-1,2,2));CGContextClip(context);
+  CGContextDrawRadialGradient(context,gradient,CGPointZero,0,CGPointZero,1,
+      kCGGradientDrawsBeforeStartLocation|kCGGradientDrawsAfterEndLocation);
+  CGContextRestoreGState(context);CGGradientRelease(gradient);return YES;
+}
+- (jboolean)capsuleGradientWithFloat:(jfloat)x withFloat:(jfloat)top withFloat:(jfloat)bottom
+    withFloat:(jfloat)radius withIntArray:(IOSIntArray *)colors withFloatArray:(IOSFloatArray *)stops {
+  if(!self.context || radius<=0 || bottom<top)return NO;
+  CGContextRef context=self.context;CGContextSaveGState(context);
+  // Internal clipping partitions the capsule without blended seams at the joins.
+  CGContextSetShouldAntialias(context,NO);
+  [DDGradients capsulePiecesWithDDPainter:self withFloat:x withFloat:top withFloat:bottom
+      withFloat:radius withIntArray:colors withFloatArray:stops];
+  CGContextRestoreGState(context);return YES;
 }
 
 - (void)verticalGradientWithFloat:(jfloat)left withFloat:(jfloat)top

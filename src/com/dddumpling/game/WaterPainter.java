@@ -27,6 +27,14 @@ final class WaterPainter extends OpacityPainter {
         }
         return work;
     }
+    public boolean linearGradient(float[] xy,float x0,float y0,float x1,float y1,int[] colors,float[] stops) {
+        return gradients() && p.linearGradient(warped(xy),x0+dx(x0,y0),y0,x1+dx(x1,y1),y1,colors,stops);
+    }
+    public boolean radialGradient(float x,float y,float rx,float ry,int[] colors,float[] stops) {
+        return gradients() && p.radialGradient(x+dx(x,y),y,rx,ry,colors,stops);
+    }
+    // A warped capsule is not circular-ended; preserve its vector silhouette.
+    public boolean capsuleGradient(float x,float top,float bottom,float radius,int[] colors,float[] stops) {return false;}
     public void fillPoly(float[] xy,int c) {p.fillPoly(warped(xy),c);}
     public void strokePoly(float[] xy,int c,float w) {p.strokePoly(warped(xy),c,w);}
     public void polyline(float[] xy,int c,float w) {p.polyline(warped(xy),c,w);}

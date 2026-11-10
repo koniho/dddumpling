@@ -67,7 +67,7 @@ final class TestUnderwater extends Check {
             if(method.getName().equals("fillCircle")) {
                 if(dots[0]++==0){point[0]=(Float)args[0];point[1]=(Float)args[1];}
             }
-            return null;
+            return method.getReturnType()==boolean.class?Boolean.FALSE:null;
         });
         GameCore.Enemy e=new GameCore.Enemy();e.word=new int[]{0};e.need=new int[]{1};e.baseX=x;e.y=y;
         c.enemies.add(e);c.destroyWord(e,x,y,L,false);c.clock+=.08f;control.clock=c.clock;
@@ -135,7 +135,7 @@ final class TestUnderwater extends Check {
                     tips[at]=(shape[16]+shape[18])*.5f;tips[at+1]=shape[17];
                 }
             }
-            return null;
+            return method.getReturnType()==boolean.class?Boolean.FALSE:null;
         });
         UnderwaterCave.draw(probe,c,L,1,1);
         float[] idle=tips.clone(),anchored=roots.clone();int idleLight=light[0];
@@ -219,7 +219,7 @@ final class TestUnderwater extends Check {
         Painter probe=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),new Class<?>[]{Painter.class},(proxy,method,args)-> {
             if(method.getName().equals("stamps"))return cache;
             if(method.getName().equals("fillPoly") && ((float[])args[0]).length==16)fishShapes[0]++;
-            draws[0]++;return null;
+            draws[0]++;return method.getReturnType()==boolean.class?Boolean.FALSE:null;
         });
         Underwater.backdrop(new OpacityPainter(probe,1),c,L);
         check("cave scenery and relighting stay cached through wrappers",valid[0] && stamps[0]==7 && draws[0]<160);
@@ -308,7 +308,7 @@ final class TestUnderwater extends Check {
         };
         Painter probe=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),new Class<?>[]{Painter.class},(proxy,method,args)-> {
             if(method.getName().equals("stamps"))return cache;
-            calls[0]++;return null;
+            calls[0]++;return method.getReturnType()==boolean.class?Boolean.FALSE:null;
         });
         GameCore c=stage(L);boolean bounded=true;
         for(int i=0;i<180;i++) {
@@ -321,18 +321,18 @@ final class TestUnderwater extends Check {
     private static void backdropSeams() {
         final double[] coverage=new double[512];
         Painter probe=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),new Class<?>[]{Painter.class},(proxy,method,args)-> {
-            if(method.getName().equals("fillRect")) {
-                float top=(Float)args[1],bottom=(Float)args[3];int color=(Integer)args[4];
+            if(method.getName().equals("verticalGradient")) {
+                float top=(Float)args[1],bottom=(Float)args[3];int[] colors=(int[])args[4];float[] stops=(float[])args[5];
                 for(int row=0;row<coverage.length;row++) {
-                    double alpha=Math.max(0,Math.min(row+1,bottom)-Math.max(row,top))*(color>>>24)/255;
-                    coverage[row]+=alpha*(1-coverage[row]);
+                    int color=Gradients.sample(colors,stops,(row+.5f-top)/(bottom-top));
+                    coverage[row]=(color>>>24)/255.;
                 }
             }
-            return null;
+            return method.getReturnType()==boolean.class?Boolean.FALSE:null;
         });
         UnderwaterVista.paint(probe,0);
         boolean opaque=true;for(double alpha:coverage)opaque&=alpha>.999;
-        check("antialiased water gradient has no transparent horizontal seams",opaque);
+        check("water gradient profile covers every row opaquely",opaque);
         boolean overlap=true,curved=false;
         for(int i=0;i<40;i++) {
             float t=i/100f,y=UnderwaterVista.rootY(t),floorDepth=(y-.48f)/.60f;
@@ -359,7 +359,7 @@ final class TestUnderwater extends Check {
         });
         Painter probe=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),new Class<?>[]{Painter.class},(proxy,method,args)-> {
             if(method.getName().equals("stamps"))return cache;
-            calls[0]++;return null;
+            calls[0]++;return method.getReturnType()==boolean.class?Boolean.FALSE:null;
         });
         for(int scene=0;scene<4;scene++) {
             GameCore c=scene==0?stage(L):scene==1?TestBossRetry.fight(L,Boss.OCTOPUS)
@@ -419,7 +419,7 @@ final class TestUnderwater extends Check {
                 if(arg instanceof float[])for(float x:(float[])arg){finite[0]&=Float.isFinite(x);vertices[0]++;}
                 else if(arg instanceof Float)finite[0]&=Float.isFinite((Float)arg);
             }
-            return null;
+            return method.getReturnType()==boolean.class?Boolean.FALSE:null;
         });
         for(int art=0;art<UnderwaterVista.COUNT;art++)UnderwaterVista.paint(probe,art);
         check("cached reef paintings contain finite geometry",finite[0]);

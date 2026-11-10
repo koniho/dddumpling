@@ -1037,12 +1037,17 @@ final class TestRainbowCat extends Check {
         c.state=GameCore.PLAY;c.skyGlow=0;
         final boolean[] seen={false,false,true,true};
         Painter recorder=new OpacityPainter(new RasterPainter((int)L.w,(int)L.h,1),1) {
-            public void fillPoly(float[] points,int color) {
+            private void record(int color) {
                 for(int band:RainbowLand.CLEAR_COLORS)if((color&0xFFFFFF)==(band&0xFFFFFF)) {
                     seen[0]=true;seen[2]&=!seen[1];seen[3]&=(color>>>24)>0 && (color>>>24)<128;
                 }
                 for(int layer=0;layer<GameCore.CLOUD_LAYERS;layer++)if((color&0xFFFFFF)==(Lands.cloudTint(c,layer)&0xFFFFFF))seen[1]=true;
-                super.fillPoly(points,color);
+            }
+            public boolean capsuleGradient(float x,float top,float bottom,float radius,int[] colors,float[] stops) {
+                record(colors[0]);return super.capsuleGradient(x,top,bottom,radius,colors,stops);
+            }
+            public void fillPoly(float[] points,int color) {
+                record(color);super.fillPoly(points,color);
             }
         };
         Renderer.draw(recorder,c,L);

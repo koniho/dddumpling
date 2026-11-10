@@ -70,10 +70,17 @@ final class CrystalArena extends Draw {
                     cell.face[j]=cx+(cell.rim[j]-cx)*.94f;
                     cell.face[j+1]=cy+(cell.rim[j+1]-cy)*.94f;
                 }
-                if(joined==null)cell.sheen=CrystalField.makeSheen(cell.face,side==0?1:-1);
+                if(joined==null) {
+                    cell.sheenDirection=side==0?1:-1;
+                    cell.sheen=CrystalField.makeSheen(cell.face,cell.sheenDirection);
+                    cell.sheenFaces=new float[][]{cell.face};
+                }
                 else {
                     // The middle tile shares one contour, with reflected sweeps inside it.
-                    float[][] left=CrystalField.makeSheen(CrystalField.clip(cell.face,1,0,w*.5f),1);
+                    float[] faceLeft=CrystalField.clip(cell.face,1,0,w*.5f),faceRight=faceLeft.clone();
+                    for(int j=0;j<faceRight.length;j+=2)faceRight[j]=w-faceRight[j];
+                    cell.sheenFaces=new float[][]{faceLeft,faceRight};
+                    float[][] left=CrystalField.makeSheen(faceLeft,1);
                     cell.sheen=new float[16][];
                     for(int band=0;band<8;band++) {
                         cell.sheen[band]=left[band];

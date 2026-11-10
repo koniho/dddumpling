@@ -26,7 +26,8 @@ policy lives in [AGENTS.md](../../AGENTS.md).
   draws a wing tile past the plaque for the clip to cut off. Since the harness font is wider than
   Quicksand, a line that fits in a PNG fits on the device — so this is the whole check. Check the selected preview output for `DOES NOT FIT` after text or layout changes.
 
-- **`Painter` cannot clip to a shape,** only to a rectangle. That is why a banded finish in
+- **General `Painter` clipping is rectangular** (with circular cutouts). Gradient fills can
+  use a polygon boundary, but this does not provide a general arbitrary-shape clip. That is why a banded finish in
   `Trinket` is fitted to an ellipse and why `Collect.banded` restricts which shapes may wear
   one — there is an assertion holding the catalogue to it.
 
@@ -102,8 +103,8 @@ policy lives in [AGENTS.md](../../AGENTS.md).
 - **`strokePoly` double-blends at every vertex.** A translucent stroke round a 72-point soft-body
   outline comes out as a dotted line. Every other stroke in this game is a handful of points, so
   nothing met it before; `Slime`'s rim is opaque for that reason. The boss's open-window star met it
-  too, at twenty vertices — layered *fills*, widest and faintest first, is how every halo in this
-  game is built, and the burst had already learnt it.
+  too, at twenty vertices. Use layered *fills*, widest and faintest first, for irregular
+  outlines; use native radial gradients for compatible elliptical halos.
 
 - **A layout offset read off a live body can be pushed anywhere.** The wanted-letter badge sits a
   fixed multiple of the body's height above it, and the whole header column is derived against the
@@ -147,6 +148,32 @@ HUD/vignette fades, underwater background/bottom fade/cave light, forest sunligh
 band feathering, slime-boss glow and crystal shimmer. Already-cached artwork has different
 runtime costs from effects rebuilt every frame; prioritize accordingly and record cases
 where preserving layered geometry is the better choice.
+
+The #250 conversion uses `Painter.linearGradient` for polygon-clipped directional ramps,
+`radialGradient` for elliptical glows, and `capsuleGradient` for rainbow bands. Native
+implementations use Android shaders and Core Graphics gradients; software previews sample
+the same color stops. Unsupported painters keep the existing layered geometry. Palette,
+opacity and tint wrappers transform stops, and the underwater wrapper refracts geometry.
+Capsules partition their body and two caps at hard internal clips to avoid double blending.
+
+- Shared HUD: 48 strips become one vertical gradient. The vignette retains corner overlap
+  with four gradients instead of 128 overlapping rectangles.
+- Underwater: the 14-strip keyboard fade and 80-strip vista backdrop become vertical
+  gradients; the 64-ellipse vista glow becomes radial. The cave's 8,192 depth rectangles
+  become one vertical gradient. These backdrops remain inside their existing artwork caches.
+- Forest: each sunlight beam uses three gradient ribbons instead of up to 24 segments.
+  Keep irregular sun patches, the three curved mist veils, and actual path/stream materials.
+- Rainbow: eight feathered capsule polygons become three native gradient pieces per band,
+  with one distance-field primitive in the software preview.
+- Slime basin: its 48-ellipse ambient glow becomes radial. Keep basin contours and banks.
+- Crystal: a smooth moving gradient stays clipped to each face, including mirrored arena
+  faces. Keep the facets themselves and their shading geometry.
+
+Already-cached underwater haze bands and glows retain their native texture paths. Curved
+cave mist and irregular forest edge feathering retain their contours; a straight or radial
+ramp would change their shape. The counts above describe primitive reductions, not measured
+frame-time improvements. Native fractional-scale tests cover capsule joins and gradient
+state restoration; device visual review and performance captures remain separate checks.
 
 ## Deterministic comparison
 

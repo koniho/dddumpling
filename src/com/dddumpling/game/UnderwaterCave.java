@@ -259,18 +259,13 @@ final class UnderwaterCave extends Draw {
     }
 
     private static void chamber(Painter p,float x,float y,float w,float h,float fade) {
-        // Tiny baked dithering avoids broad color bands in the near-black gradient.
-        for(int row=0;row<256;row++) {
-            float t=(row+.5f)/256f;
-            float light=(float)Math.exp(-Math.pow((t-.46f)/.24f,2));
-            for(int col=0;col<32;col++) {
-                float noise=hash(935+row*37+col);
-                int r=(int)(2+18*light+noise),g=(int)(8+50*light+noise),b=(int)(19+58*light+noise);
-                p.fillRect(x+w*col/32,y+(float)Math.floor(h*row/256),
-                        x+w*(col+1)/32,y+(float)Math.floor(h*(row+1)/256),
-                        ink(0xFF000000|(r<<16)|(g<<8)|b,fade*255));
-            }
+        int[] colors=new int[65];float[] stops=new float[65];
+        for(int i=0;i<colors.length;i++) {
+            float t=stops[i]=i/64f,light=(float)Math.exp(-Math.pow((t-.46f)/.24f,2));
+            int red=Math.round(2+18*light),green=Math.round(8+50*light),blue=Math.round(19+58*light);
+            colors[i]=ink(0xFF000000|(red<<16)|(green<<8)|blue,fade*255);
         }
+        p.verticalGradient(x,y,x+w,y+h,colors,stops);
         for(int plane=0;plane<2;plane++) {
             float inset=plane==0?.24f:.13f;
             Painter distant=new DepthStone(p,plane==0?.60f:.36f);

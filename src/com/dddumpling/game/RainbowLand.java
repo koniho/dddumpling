@@ -39,6 +39,19 @@ final class RainbowLand extends Draw {
                 float top=offset+row*pitch-straight*.5f,bottom=top+straight;
                 if(bottom+radius*1.2f<-margin || top-radius*1.2f>L.deckTop)continue;
                 int color=CLEAR_COLORS[Math.floorMod(column*5+generation,CLEAR_COLORS.length)];
+                if(p.gradients()) {
+                    int[] colors=new int[Gradients.SAMPLES];
+                    for(int i=0;i<colors.length;i++) {
+                        float distance=Gradients.STOPS[i]*1.20f,transmission=1;
+                        for(int feather=0;feather<8;feather++) {
+                            float edge=1.20f-feather*.065f;
+                            float coverage=Math.max(0,Math.min(1,(edge-distance)/.065f));
+                            transmission*=1-(int)((4+feather*1.2f)*fade)*coverage/255f;
+                        }
+                        colors[i]=Gradients.alpha(color,255*(1-transmission));
+                    }
+                    if(p.capsuleGradient(x,top,bottom,radius*1.20f,colors,Gradients.STOPS))continue;
+                }
                 // Layer faint concentric silhouettes to feather both sides and rounded ends.
                 for(int feather=0;feather<8;feather++)
                     band(p,x,top,bottom,radius*(1.20f-feather*.065f),
