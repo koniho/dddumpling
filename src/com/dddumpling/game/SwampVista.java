@@ -82,12 +82,21 @@ final class SwampVista extends Draw {
         c.swampFireflies.draw(p,c,L,fade);
     }
     static void backdrop(Painter p,Layout L,float fade) {
-        float h=horizon(L)/L.deckTop;
-        for(int i=0;i<80;i++) {
-            float t=i/80f,y=i==0?-L.h*.03f:(float)Math.floor(t*L.deckTop),next=(float)Math.floor((i+1)/80f*L.deckTop);
-            int color=t<h?Glyph.mix(0xFF142E3B,0xFF657C68,(float)Math.pow(t/h,2.2)):Glyph.mix(0xFF657C68,0xFF153E43,(float)(1-Math.exp(-3.7f*(t-h)/(1-h))));
-            p.fillRect(-L.w*.06f,y,L.w*1.06f,next,ink(color,fade));
+        // A single ramp avoids antialias seams between adjacent translucent rectangles.
+        final int half=32;int[] colors=new int[half*2+2];float[] stops=new float[colors.length];
+        float top=-L.h*.03f,range=L.deckTop-top;
+        colors[0]=ink(0xFF142E3B,fade);stops[0]=0;
+        for(int i=0;i<=half;i++) {
+            float u=i/(float)half;
+            colors[i+1]=ink(Glyph.mix(0xFF142E3B,0xFF657C68,(float)Math.pow(u,2.2)),fade);
+            stops[i+1]=(horizon(L)*u-top)/range;
         }
+        for(int i=1;i<=half;i++) {
+            float u=i/(float)half;int index=half+1+i;
+            colors[index]=ink(Glyph.mix(0xFF657C68,0xFF153E43,(float)(1-Math.exp(-3.7f*u))),fade);
+            stops[index]=(horizon(L)+(L.deckTop-horizon(L))*u-top)/range;
+        }
+        p.verticalGradient(-L.w*.06f,top,L.w*1.06f,L.deckTop,colors,stops);
     }
     static void nightSky(Painter p,Layout L,float fade) {
         for(int i=0;i<18;i++) {

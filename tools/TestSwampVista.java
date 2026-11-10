@@ -119,6 +119,7 @@ final class TestSwampVista extends Check {
         }
         public void fillEllipse(float x,float y,float rx,float ry,int c){top=Math.min(top,y-ry);record(c,x,y,rx,ry);}
         public void fillCircle(float x,float y,float r,int c){record(c,x,y,r);}
+        public void verticalGradient(float l,float t,float r,float b,int[] colors,float[] stops){top=Math.min(top,t);record(colors[0],l,t,r,b);}
         public void fillRect(float l,float t,float r,float b,int c){top=Math.min(top,t);record(c,l,t,r,b);}
         public void line(float x,float y,float a,float b,int c,float w){record(c,x,y,a,b,w);}
         public void polyline(float[] xy,int c,float w){record(c,xy);hash=hash*31+Float.floatToIntBits(w);}

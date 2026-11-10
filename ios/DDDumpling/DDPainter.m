@@ -615,6 +615,25 @@ static void DDDrawCachedImage(CGContextRef ctx,CGRect rect,CGImageRef color,CGIm
   CGContextStrokePath(context);
 }
 
+- (void)verticalGradientWithFloat:(jfloat)left withFloat:(jfloat)top
+    withFloat:(jfloat)right withFloat:(jfloat)bottom withIntArray:(IOSIntArray *)colors
+    withFloatArray:(IOSFloatArray *)stops {
+  CGContextRef context=self.context;
+  if(!context || !colors || !stops || colors->size_<2 || colors->size_!=stops->size_ || bottom<=top)return;
+  NSUInteger count=colors->size_;
+  CGFloat components[count*4],locations[count];
+  for(NSUInteger i=0;i<count;i++) {
+    uint32_t color=colors->buffer_[i];locations[i]=stops->buffer_[i];
+    components[i*4]=((color>>16)&255)/255.0;components[i*4+1]=((color>>8)&255)/255.0;
+    components[i*4+2]=(color&255)/255.0;components[i*4+3]=(color>>24)/255.0;
+  }
+  CGGradientRef gradient=CGGradientCreateWithColorComponents(_colorSpace,components,locations,count);
+  if(!gradient)return;
+  CGContextSaveGState(context);CGContextClipToRect(context,CGRectMake(left,top,right-left,bottom-top));
+  CGContextDrawLinearGradient(context,gradient,CGPointMake(0,top),CGPointMake(0,bottom),0);
+  CGContextRestoreGState(context);CGGradientRelease(gradient);
+}
+
 - (void)fillRectWithFloat:(jfloat)left
                  withFloat:(jfloat)top
                  withFloat:(jfloat)right

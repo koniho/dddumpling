@@ -46,6 +46,20 @@ interface Painter {
 
     void fillRect(float l, float t, float r, float b, int color);
 
+    /** Continuous vertical color ramp. Native hosts draw one gradient; previews sample rows. */
+    default void verticalGradient(float l,float t,float r,float b,int[] colors,float[] stops) {
+        if(b<=t || colors.length<2 || colors.length!=stops.length)return;
+        int stop=0;
+        for(float y=t;y<b;) {
+            float next=Math.min(b,(float)Math.floor(y)+1),u=((y+next)*.5f-t)/(b-t);
+            while(stop<stops.length-2 && u>stops[stop+1])stop++;
+            float mix=Math.max(0,Math.min(1,(u-stops[stop])/(stops[stop+1]-stops[stop])));
+            int a=colors[stop],z=colors[stop+1];
+            int color=Glyph.withAlpha(Glyph.mix(a,z,mix),Math.round((a>>>24)+((z>>>24)-(a>>>24))*mix));
+            fillRect(l,y,r,next,color);y=next;
+        }
+    }
+
     void line(float x1, float y1, float x2, float y2, int color, float width);
 
     /** Draws {@code s} with its baseline at y, aligned about x. */

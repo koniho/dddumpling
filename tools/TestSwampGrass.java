@@ -2,6 +2,7 @@ package com.dddumpling.game;
 
 final class TestSwampGrass extends Check {
     static void all() {
+        background();
         layers();
         group("cached tall swamp reeds");
         check("reed coverage is about twenty times the sparse banks",SwampVista.ROWS*2*SwampVista.LANES*SwampGrass.BLADES>=6*2*2*9*20);
@@ -27,6 +28,39 @@ final class TestSwampGrass extends Check {
         check("unsupported hosts retain complete vector reeds",vector.polys==SwampGrass.BLADES && vector.lines>0);
         cached=new Probe(true);SwampGrass.draw(new MonochromePainter(new OpacityPainter(cached,1),.6f),100,200,20,17,3,1,.5f);
         check("palette wrappers preserve caching, fade and grayscale",cached.stamps==1 && Math.abs(cached.mono-.6f)<.001f && cached.alpha>0 && cached.alpha<128);
+    }
+    private static void background() {
+        group("continuous swamp background");
+        Layout l=new Layout();l.compute(393,852,0,0,0,0);
+        BackgroundProbe probe=new BackgroundProbe();SwampVista.backdrop(probe,l,1);
+        check("background is one continuous fill rather than adjacent strips",probe.fills==1);
+        boolean solid=true,smooth=true,fade=true,mono=true;
+        for(int ss:new int[]{1,3}) {
+            RasterPainter raster=new RasterPainter(393,852,ss);raster.clear(0xFFFF00FF);SwampVista.backdrop(raster,l,1);
+            int[] pixels=raster.resolve();int previous=pixels[196];
+            for(int y=0;y<(int)l.deckTop;y++) {
+                int color=pixels[y*393+196];solid&=((color>>16)&255)<160 && (color&255)<160;
+                for(int shift=0;shift<=16;shift+=8)smooth&=Math.abs(((color>>shift)&255)-((previous>>shift)&255))<=2;
+                previous=color;
+            }
+            RasterPainter faded=new RasterPainter(393,852,ss);
+            SwampVista.backdrop(new MonochromePainter(new OpacityPainter(faded,.5f),1),l,1);
+            int[] gray=faded.resolve();
+            for(int y=0;y<(int)l.deckTop;y++) {
+                int color=gray[y*393+196],original=pixels[y*393+196];
+                int expected=((((original>>16)&255)*54+((original>>8)&255)*183+(original&255)*19)/256)*128/255;
+                fade&=Math.abs((color&255)-expected)<=2;
+                mono&=((color>>16)&255)==((color>>8)&255) && ((color>>8)&255)==(color&255);
+            }
+        }
+        check("background has no transparent seams",solid);
+        check("background changes smoothly between adjacent rows",smooth);
+        check("background wrappers preserve uniform fade and grayscale",fade && mono);
+    }
+    private static final class BackgroundProbe extends OpacityPainter {
+        int fills;BackgroundProbe(){super(null,1);}
+        public void verticalGradient(float l,float t,float r,float b,int[] colors,float[] stops){fills++;}
+        public void fillRect(float l,float t,float r,float b,int c){fills++;}
     }
     private static void layers() {
         group("cached swamp scenery layers");
@@ -83,6 +117,7 @@ final class TestSwampGrass extends Check {
             if(polys>=SwampGrass.BLADES*2/3)frontLight+=light;
             polys++;baseMin=Math.min(baseMin,xy[1]);baseMax=Math.max(baseMax,xy[1]);ordered&=xy[1]>=previousBase;previousBase=xy[1];for(int i=0;i<xy.length;i+=2)point(xy[i],xy[i+1],0);}
         public void line(float x,float y,float a,float b,int c,float w){lines++;point(x,y,w*.5f);point(a,b,w*.5f);}
+        public void verticalGradient(float l,float t,float r,float b,int[] colors,float[] stops){point(l,t,0);point(r,b,0);}
         public void fillRect(float l,float t,float r,float b,int c){point(l,t,0);point(r,b,0);}
         public void fillCircle(float x,float y,float r,int c){point(x,y,r);}
         public void fillEllipse(float x,float y,float rx,float ry,int c){point(x-rx,y-ry,0);point(x+rx,y+ry,0);}

@@ -9,6 +9,7 @@ import android.graphics.Typeface;
 /** {@link Painter} backed by an Android {@link Canvas}. */
 final class CanvasPainter implements Painter, ArtStamp {
 
+    private final Paint gradientFill = new Paint(Paint.DITHER_FLAG);
     private final Paint fill = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint stroke = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint type = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -254,6 +255,13 @@ final class CanvasPainter implements Painter, ArtStamp {
         stroke.setColor(color);
         stroke.setStrokeWidth(width);
         canvas.drawPath(path, stroke);
+    }
+
+    @Override public void verticalGradient(float l,float t,float r,float b,int[] colors,float[] stops) {
+        if(b<=t)return;
+        gradientFill.setShader(new android.graphics.LinearGradient(0,t,0,b,colors,stops,android.graphics.Shader.TileMode.CLAMP));
+        canvas.drawRect(l,t,r,b,gradientFill);
+        gradientFill.setShader(null);
     }
 
     @Override public void fillRect(float l, float t, float r, float b, int color) {

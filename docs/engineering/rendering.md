@@ -233,6 +233,11 @@ preparation with the native stamp contract; pass `vector` to measure the fallbac
 measures rasterization or device FPS. Tests cover image bounds, cached dispatch through palette
 wrappers, and grass attachment as rows recycle.
 
+The swamp backdrop uses one continuous vertical gradient on Android and iOS, including
+when baked into its scenery tile. Do not replace it with adjacent antialiased rectangles:
+fractional cache scaling leaves dark seams between their partially covered edges. Palette
+and opacity wrappers transform the gradient stops; the headless renderer samples each row.
+
 Swamp scenery also caches the fixed sky/stars/moon, horizon haze, three treeline layers,
 and up to twelve groups of three distant reed clumps. Android and iOS use seventeen
 cropped tiles capped at 512 pixels per viewport width, replacing the set when layout

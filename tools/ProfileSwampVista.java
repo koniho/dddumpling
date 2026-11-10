@@ -63,6 +63,7 @@ final class ProfileSwampVista {
         public void strokeCircle(float x,float y,float r,int c,float w){point(x,y,c);}
         public void arc(float x,float y,float rx,float ry,float a,float s,int c,float w){point(x,y,c);}
         public void fillEllipse(float x,float y,float rx,float ry,int c){point(x,y,c);}
+        public void verticalGradient(float l,float t,float r,float b,int[] colors,float[] stops){point(l,t,colors[0]);vertices+=4;}
         public void fillRect(float l,float t,float r,float b,int c){point(l,t,c);}
         public void line(float x,float y,float a,float b,int c,float w){point(x,y,c);}
         public void text(String s,float x,float y,float size,int c,int align,boolean bold){point(x,y,c);}
