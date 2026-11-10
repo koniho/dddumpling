@@ -1,4 +1,7 @@
 #import "com/dddumpling/game/SlimeBasinArt.h"
+#import "com/dddumpling/game/RainbowLand.h"
+#import "com/dddumpling/game/GameCore.h"
+#import "com/dddumpling/game/Layout.h"
 #import "com/dddumpling/game/UnderwaterVista.h"
 #import <XCTest/XCTest.h>
 #import "DDPainter.h"
@@ -72,28 +75,25 @@
   painter.context=NULL;CGContextRelease(context);CGColorSpaceRelease(space);
 }
 
-- (void)testCapsuleGradientJoinsDoNotGapOrDoubleBlendAtFractionalScale {
+- (void)testCapsuleGradientDeclinesWithoutDrawingSoRainbowUsesContinuousVectors {
   unsigned char pixels[128*256*4]={0};
   CGColorSpaceRef space=CGColorSpaceCreateDeviceRGB();
   CGContextRef context=CGBitmapContextCreate(pixels,128,256,8,128*4,space,kCGImageAlphaPremultipliedLast);
   DDIOSPainter *painter=[DDIOSPainter new];painter.context=context;
   IOSIntArray *colors=[IOSIntArray arrayWithLength:2];
-  colors->buffer_[0]=(jint)0x80FFFFFF;colors->buffer_[1]=(jint)0x80FFFFFF;
+  colors->buffer_[0]=(jint)0x80FFFFFF;colors->buffer_[1]=(jint)0x00FFFFFF;
   IOSFloatArray *stops=[IOSFloatArray arrayWithLength:2];stops->buffer_[1]=1;
-  for(int flipped=0;flipped<2;flipped++) {
-  CGContextSaveGState(context);
-  if(flipped)CGContextTranslateCTM(context,0,256);
-  CGContextScaleCTM(context,.473,flipped?-.487:.473);CGAffineTransform before=CGContextGetCTM(context);
-  for(int phase=0;phase<8;phase++) {
-    memset(pixels,0,sizeof(pixels));
-    XCTAssertTrue([painter capsuleGradientWithFloat:135 withFloat:90+phase*.31f withFloat:430+phase*.31f withFloat:50 withIntArray:colors withFloatArray:stops]);
-    // A constant-alpha profile exposes both missing pixels and overlapping pieces.
-    for(int row=30;row<218;row++)XCTAssertEqualWithAccuracy(pixels[(row*128+64)*4+3],128,1);
-    XCTAssertEqual(pixels[(100*128+5)*4+3],0);
-    XCTAssertTrue(CGAffineTransformEqualToTransform(before,CGContextGetCTM(context)));
-  }
-  CGContextRestoreGState(context);
-  }
+  CGContextScaleCTM(context,.473,.473);CGAffineTransform before=CGContextGetCTM(context);
+  XCTAssertFalse([painter capsuleGradientWithFloat:135 withFloat:90.31f withFloat:430.31f withFloat:50 withIntArray:colors withFloatArray:stops]);
+  BOOL untouched=YES;for(int i=0;i<sizeof(pixels);i++)untouched&=pixels[i]==0;
+  XCTAssertTrue(untouched);XCTAssertTrue(CGAffineTransformEqualToTransform(before,CGContextGetCTM(context)));
+  // Exercise the real caller, which must still render bands when this optional path declines.
+  DDGameCore *game=[[DDGameCore alloc] initWithDDGameCore_Store:nil withLong:250];
+  DDLayout *layout=[DDLayout new];
+  [layout computeWithFloat:270 withFloat:540 withFloat:0 withFloat:0 withFloat:0 withFloat:0];
+  [DDRainbowLand backdropWithDDPainter:painter withDDGameCore:game withDDLayout:layout withFloat:1];
+  BOOL visible=NO;for(int i=3;i<sizeof(pixels);i+=4)visible|=pixels[i]>0;
+  XCTAssertTrue(visible);XCTAssertTrue(CGAffineTransformEqualToTransform(before,CGContextGetCTM(context)));
   painter.context=NULL;CGContextRelease(context);CGColorSpaceRelease(space);
 }
 

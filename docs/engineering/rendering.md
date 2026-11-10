@@ -154,11 +154,11 @@ The #250 conversion uses `Painter.linearGradient` for polygon-clipped directiona
 implementations use Android shaders and Core Graphics gradients; software previews sample
 the same color stops. Unsupported painters keep the existing layered geometry. Palette,
 opacity and tint wrappers transform stops, and the underwater wrapper refracts geometry.
-Capsules partition their body and two caps at hard internal clips to avoid double blending.
-On iOS, construct the internal clips directly at integer device-pixel boundaries. Converting
-snapped coordinates back to Java floats can reintroduce fractions; Quartz rounds those
-clips outward even with antialiasing disabled, otherwise sharing a pixel twice. Rotated or
-sheared iOS capsules retain the vector fallback.
+Android capsules partition their body and two caps at hard internal clips. iOS declines
+the optional capsule gradient and retains the continuous vector silhouettes: native tests
+found overlapping alpha at fractional cap/body joins, including after coordinate snapping.
+This platform exception preserves the existing appearance while other iOS fades use native
+gradients. Revisit it only with a native pixel-continuity test that passes.
 
 - Shared HUD: 48 strips become one vertical gradient. The vignette retains corner overlap
   with four gradients instead of 128 overlapping rectangles.
@@ -167,8 +167,9 @@ sheared iOS capsules retain the vector fallback.
   become one vertical gradient. These backdrops remain inside their existing artwork caches.
 - Forest: each sunlight beam uses three gradient ribbons instead of up to 24 segments.
   Keep irregular sun patches, the three curved mist veils, and actual path/stream materials.
-- Rainbow: eight feathered capsule polygons become three native gradient pieces per band,
-  with one distance-field primitive in the software preview.
+- Rainbow: on Android, eight feathered capsule polygons become three native gradient
+  pieces per band, with one distance-field primitive in the software preview. iOS retains
+  the eight continuous feathered silhouettes to avoid cap/body seams.
 - Slime basin: its 48-ellipse ambient glow becomes radial. Keep basin contours and banks.
 - Crystal: retain the distinct moving shimmer bands clipped to each facet, including
   mirrored arena faces. Visual review preferred their stepped character over a smooth
@@ -177,8 +178,8 @@ sheared iOS capsules retain the vector fallback.
 Already-cached underwater haze bands and glows retain their native texture paths. Curved
 cave mist and irregular forest edge feathering retain their contours; a straight or radial
 ramp would change their shape. The counts above describe primitive reductions, not measured
-frame-time improvements. Native fractional-scale tests cover capsule joins and gradient
-state restoration; device visual review and performance captures remain separate checks.
+frame-time improvements. Native tests cover gradient clipping/state restoration and the iOS capsule fallback.
+Device visual review and performance captures remain separate checks.
 
 ## Deterministic comparison
 
