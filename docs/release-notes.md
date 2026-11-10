@@ -125,6 +125,9 @@ Keep a separate entry only when it communicates a distinct change the player nee
 | `news` | Exploring release notes | Little steamer |
 | `flurry` | Flurry pickup feedback | Circular rainbow |
 | `travel` | Choosing or traveling between lands | Interactive land travel |
+| `swamp_scenery` | Refreshed Swampland scenery | Moonlit river and reeds with fireflies that scatter on tap |
+| `forest_scenery` | Furry Forest scenery | Companion visits the forest paths and stream |
+| `land_bonus` | Hidden Adventure scenery bonuses | Flamingo hops and flaps with sparkles and +100 when tapped |
 | `land_homes` | Refreshed Adventure scenery | Companion explores four lands without bosses; continuous tour, tap to advance |
 | `arena_homes` | Refreshed boss arenas | Companion visits four reactive boss homes; continuous tour, tap to advance |
 | `stars` | Star Path challenges | Star and trail |

@@ -10,9 +10,26 @@ final class ReleaseHomes extends Draw {
     static int stop(float time){return Math.floorMod((int)Math.floor(time/PERIOD),HOSTS.length);}
     private static final class Icons {
         static final ReleaseHomes LAND=new ReleaseHomes(false),ARENA=new ReleaseHomes(true);
+        static Room swamp;
     }
     static void icon(Painter p,boolean arena,float x,float y,float r,float time) {
         (arena?Icons.ARENA:Icons.LAND).draw(p,x-r*1.12f,y-r,r*2.24f,r*2,time,false);
+    }
+    static void swampIcon(Painter p,float x,float y,float r,float time,float celebration) {
+        float w=r*1.9f,h=r*2.2f;
+        Room room=Icons.swamp;
+        if(room==null || room.layout.w!=w || room.layout.h!=h)
+            Icons.swamp=room=new Room(Boss.ALLIGATOR,false,w,h);
+        room.pose(time);
+        GameCore c=room.c;Layout L=room.layout;
+        c.swampFireflies.reset();
+        if(celebration>=0 && celebration<SwampFireflies.DURATION) {
+            c.swampFireflies.cleared(c,L,w*.28f,h*.48f);
+            c.swampFireflies.update(c,celebration);
+        }
+        p.save();p.translate(x-w*.5f,y-h*.5f);p.clipRect(0,0,w,h);
+        SwampVista.draw(p,c,L,1);
+        p.restore();
     }
     private static final class Room {
         final GameCore c;

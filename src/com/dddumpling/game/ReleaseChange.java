@@ -5,7 +5,7 @@ final class ReleaseChange extends Draw {
     static final int TRAVEL=0, STARS=1, BUGS=2, SHUFFLE=3, DISGUISE=4, SLIME=5,
             PAIR=6, FLEX=7, TEAM=8, NEWS=9, FLURRY=10, MISC=11, SETTINGS=12, SWIPE=13, SCORES=14, OCTOPULSE=15,
             COMPANION=16, TUTORIAL=17, TOWN=18, SURVIVAL=19, TIME_ATTACK=20, SWAMP=21, RUSH=22, FOG=23, HALLOWEEN=24, RAINBOW=25, BOSS_RETRY=26,
-            ACHIEVEMENTS=27, PROFESSOR=28, LAND_HOMES=29, ARENA_HOMES=30, WARDROBE=31, DIFFICULTY=32, LEADERBOARD=33, SURVIVAL_CHEER=34, STEAMER_FAN=35;
+            ACHIEVEMENTS=27, PROFESSOR=28, LAND_HOMES=29, ARENA_HOMES=30, WARDROBE=31, DIFFICULTY=32, LEADERBOARD=33, SURVIVAL_CHEER=34, STEAMER_FAN=35, LAND_BONUS=36, FOREST_SCENERY=37, SWAMP_SCENERY=38;
     private static final class FogIcon {
         static final GameCore.Enemy WORD=new GameCore.Enemy();
         static {WORD.word=new int[]{0,1,2};WORD.enterT=1f;WORD.swampKind=SwampEnemies.FOG;}
@@ -103,7 +103,13 @@ final class ReleaseChange extends Draw {
         if(homes(id)) {
             ReleaseHomes.icon(p,id==ARENA_HOMES,x,y,r,time);return;
         }
-        if(id==STEAMER_FAN) {
+        if(id==SWAMP_SCENERY) {
+            ReleaseHomes.swampIcon(p,x,y,r,time,celebration);
+        } else if(id==FOREST_SCENERY) {
+            ReleaseHomes.icon(p,false,x,y,r,ReleaseHomes.PERIOD*3+1.8f+time%2f);
+        } else if(id==LAND_BONUS) {
+            LandBonusArt.releaseIcon(p,x,y,r,time,celebration);
+        } else if(id==STEAMER_FAN) {
             SteamerCompanion.releaseIcon(p,x,y,r,time);
         } else if(id==LEADERBOARD) {
             ReleaseCelebrations.leaderboard(p,x,y,r,time);

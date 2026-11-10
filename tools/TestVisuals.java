@@ -38,15 +38,31 @@ final class TestVisuals extends Check {
     private static void releaseBook(Layout L) {
         TestUpdatePrompt.run(L);TestReviewPrompt.run(L);
         releaseHistory();releaseEntryBounds();releaseHomes(L);releaseMascots(L);releaseWardrobe(L);releaseCelebrations(L);
+        releaseBonusDemo(L);
         releaseOutside(L);
         releaseFeedback(L);
         try(ReleaseExamples examples=new ReleaseExamples()) { releaseNavigation(L);releaseDetailOutside(L);releaseBookExamples(L); }
+    }
+    private static void releaseBonusDemo(Layout L) {
+        int item=ReleaseContent.ITEMS[0][0],saved=ReleaseContent.ICONS[item];
+        boolean reset=ReleaseContent.AUTO_RESET[item];
+        try {
+            ReleaseContent.ICONS[item]=ReleaseChange.LAND_BONUS;ReleaseContent.AUTO_RESET[item]=true;
+            GameCore c=new GameCore(new Mem(),244);ReleaseNotes n=c.releaseNotes;
+            n.show(c,L);n.update(ReleaseTransition.DURATION,L);n.select(0,0,L);n.update(ReleaseNotes.PAGE_TIME,L);
+            int score=c.score;long revision=c.progress.revision;
+            n.touch(c,L,L.w*.5f,(n.demoTop(L)+n.demoBottom(L))*.5f);
+            check("bonus demo reacts to tap",n.celebration==0);
+            n.update(ReleaseNotes.RESTART_DELAY+.2f,L);
+            check("bonus demo resets for another tap",n.celebration<0 && !n.listing);
+            check("bonus demo leaves real rewards alone",c.score==score && c.progress.revision==revision);
+        } finally {ReleaseContent.ICONS[item]=saved;ReleaseContent.AUTO_RESET[item]=reset;}
     }
     private static void releaseCelebrations(Layout L) {
         int item=ReleaseContent.ITEMS[0][0],saved=ReleaseContent.ICONS[item];
         boolean reset=ReleaseContent.AUTO_RESET[item];
         try {
-            for(int icon:new int[]{ReleaseChange.LEADERBOARD,ReleaseChange.SURVIVAL_CHEER}) {
+            for(int icon:new int[]{ReleaseChange.LEADERBOARD,ReleaseChange.SURVIVAL_CHEER,ReleaseChange.SWAMP_SCENERY}) {
                 ReleaseContent.ICONS[item]=icon;ReleaseContent.AUTO_RESET[item]=false;
                 GameCore c=new GameCore(new Mem(),214);ReleaseNotes n=c.releaseNotes;
                 n.show(c,L);n.update(ReleaseTransition.DURATION,L);n.select(0,0,L);n.update(ReleaseNotes.PAGE_TIME,L);

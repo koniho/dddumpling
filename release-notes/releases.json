@@ -1,6 +1,47 @@
 {
   "releases": [
     {
+      "version": "0.1.42",
+      "changes": [
+        {
+          "icon": "land_bonus",
+          "title": "Peek, tap, surprise!",
+          "where": "Adventure scenery",
+          "why": "Spot a hidden visitor in one stage of each land. Tap for 100 bonus points, a happy little dance and a playful sound. Find them all!",
+          "autoReset": true
+        },
+        {
+          "icon": "forest_scenery",
+          "title": "A forest full of life",
+          "where": "Furry Forest stages",
+          "why": "Follow winding paths and sparkling streams under warm sunbeams. Little critters scamper when you clear an enemy, and bouncy mushrooms greet each stage.",
+          "autoReset": false
+        },
+        {
+          "icon": "swamp_scenery",
+          "title": "Swamp under the stars",
+          "where": "Swampland stages",
+          "why": "Drift through tall reeds beneath a starry sky. Watch frogs, ripples and fireflies that scatter when you clear an enemy.",
+          "autoReset": false
+        },
+        {
+          "icon": "misc",
+          "title": "Little improvements",
+          "autoReset": false,
+          "improvements": [
+            {
+              "where": "Entering Adventure lands",
+              "why": "Big welcome titles introduce Crystal Cave, Sea Squish, Furry Forest and Rainbow Run."
+            },
+            {
+              "where": "Across Adventure scenery",
+              "why": "Softer light and color fades brighten the journey. Rainbow Run streams past twice as fast."
+            }
+          ]
+        }
+      ]
+    },
+    {
       "version": "0.1.41",
       "changes": [
         {

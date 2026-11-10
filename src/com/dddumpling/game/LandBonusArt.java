@@ -5,6 +5,22 @@ final class LandBonusArt extends Draw {
     static final float SQUIRREL_SCALE=.76f;
     private static final int[] COLORS={SlimeHills.MINT,CrystalField.edgeColor(2),0xFFFFBCE8,MushroomForest.WOOD_LIGHT,0,0xFFFF9EBF,0xFFFFE57B};
     private static final int[] RAINBOW={0xFFFF91B7,0xFFFFC26D,0xFFFFEC83,0xFF92EDBC,0xFF85DAFF,0xFFC5ACFF};
+    static void releaseIcon(Painter p,float x,float y,float r,float time,float hit) {
+        float size=r*.72f,baseY=y+r*.12f;
+        float reaction=hit<0?0:Math.min(1,hit/.2f);
+        float pop=hit<0?0:(float)(Math.sin(hit*18)*Math.exp(-hit*4));
+        float lift=hit<0?0:size*.55f*(float)Math.sin(Math.min(1,hit/.85f)*Math.PI);
+        flamingo(p,x,baseY-lift,size*(1+pop*.22f),time,reaction,false,baseY+size*.86f,size);
+        if(hit<0 || hit>=LandBonus.BURST)return;
+        float fade=1-hit/LandBonus.BURST;
+        for(int i=0;i<8;i++) {
+            float a=i*.7854f,travel=r*(.65f+hit*.8f);
+            mote(p,Lands.SWAMP,x+(float)Math.cos(a)*travel,
+                    y+(float)Math.sin(a)*travel,r*.07f*fade,a,Glyph.withAlpha(GOLD,(int)(230*fade)));
+        }
+        p.text("+"+LandBonus.POINTS,x,y-r*(.85f+hit*.2f),r*.40f,
+                Glyph.withAlpha(GOLD,(int)(255*fade)),Painter.CENTER,true);
+    }
     static void draw(Painter p,GameCore c,Layout L) {
         int land=Lands.forStage(c.stage);
         if(land!=MushroomForest.LAND && land!=Lands.SWAMP && ((land!=CrystalField.LAND && land!=Underwater.LAND) || c.landBonus.burst>=0))drawBonus(p,c,L);

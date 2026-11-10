@@ -339,7 +339,7 @@ final class ReleaseNotes extends Draw {
         }
         if(demo==null) {
             if(!ReleaseMascots.active(change()))age=0f;
-            if(change()==ReleaseChange.ACHIEVEMENTS || change()==ReleaseChange.WARDROBE || change()==ReleaseChange.DIFFICULTY || ReleaseCelebrations.active(change()) || change()==ReleaseChange.STEAMER_FAN) { celebration=0f;feedback(); }
+            if(change()==ReleaseChange.ACHIEVEMENTS || change()==ReleaseChange.WARDROBE || change()==ReleaseChange.DIFFICULTY || ReleaseCelebrations.active(change()) || change()==ReleaseChange.STEAMER_FAN || change()==ReleaseChange.LAND_BONUS || change()==ReleaseChange.SWAMP_SCENERY) { celebration=0f;feedback(); }
             else if(ReleaseMascots.active(change())) { celebrateMascot();feedback(); }
             activated();return true;
         }
