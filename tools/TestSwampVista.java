@@ -62,12 +62,12 @@ final class TestSwampVista extends Check {
         Probe p=new Probe();SwampVista.draw(p,c,L,1);
         check("perspective art preserves gameplay randomness",c.rnd.nextLong()==twin.rnd.nextLong());
         check("scenery stays bounded and extends behind the header ("+p.calls+" draws)",p.calls>100 && p.calls<650 && p.top<=0);
-        boolean bounded=true;int peak=0;
+        boolean bounded=true;int peak=0,peakVertices=0;
         for(int age=0;age<=90;age+=3) {
             c.skyClock=age;Probe frame=new Probe();SwampVista.draw(frame,c,L,1);
-            bounded&=frame.calls<650;peak=Math.max(peak,frame.calls);
+            bounded&=frame.calls<650 && frame.polygonVertices<6000;peak=Math.max(peak,frame.calls);peakVertices=Math.max(peakVertices,frame.polygonVertices);
         }
-        check("quiet scenery stays bounded throughout travel ("+peak+" draws)",bounded);c.skyClock=18;
+        check("quiet scenery stays bounded throughout travel ("+peak+" draws, "+peakVertices+" polygon vertices)",bounded);c.skyClock=18;
         for(int i=0;i<12;i++) {
             c.swampFireflies.cleared(c,L,L.w*(.2f+(i%3)*.3f),L.h*(.40f+(i%4)*.09f));
             c.swampFireflies.update(c,.03f);
@@ -100,13 +100,14 @@ final class TestSwampVista extends Check {
     private static final class Probe extends OpacityPainter {
         float width,cornerTop,cornerBottom;int leftGrass,rightGrass;
         Layout treeLayout;float treeClock;boolean rootsOnBanks=true;final float[] treeXs=new float[36];
-        long hash=1;int calls;float top=Float.MAX_VALUE;
+        long hash=1;int calls,polygonVertices;float top=Float.MAX_VALUE;
         Probe(){super(null,1);}
         public ArtStamp stamps(){return this;}
         public boolean swampGrass(int art,float x,float y,float r,float sway,int alpha,float mono){record(alpha,art,x,y,r,sway,mono);if(y>cornerTop && y<cornerBottom){if(x>=0 && x<width*.15f)leftGrass++;if(x>width*.85f && x<=width)rightGrass++;}return true;}
 
         void record(int color,float... values){calls++;hash=hash*31+color;for(float v:values)hash=hash*31+Float.floatToIntBits(v);}
         public void fillPoly(float[] xy,int c){
+            polygonVertices+=xy.length/2;
             if(treeLayout!=null) {
                 treeXs[calls]=xy[0];
                 float base=-Float.MAX_VALUE;for(int i=1;i<xy.length;i+=2)base=Math.max(base,xy[i]);
