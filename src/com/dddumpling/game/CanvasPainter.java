@@ -257,8 +257,28 @@ final class CanvasPainter implements Painter, ArtStamp {
         canvas.drawPath(path, stroke);
     }
 
+    public boolean gradients(){return true;}
+    public boolean linearGradient(float[] polygon,float x0,float y0,float x1,float y1,int[] colors,float[] stops) {
+        if(polygon.length<6 || (x0==x1 && y0==y1))return false;
+        build(polygon);gradientFill.setAntiAlias(true);
+        gradientFill.setShader(new android.graphics.LinearGradient(x0,y0,x1,y1,colors,stops,android.graphics.Shader.TileMode.CLAMP));
+        canvas.drawPath(path,gradientFill);gradientFill.setShader(null);return true;
+    }
+    public boolean radialGradient(float x,float y,float rx,float ry,int[] colors,float[] stops) {
+        if(rx<=0 || ry<=0)return false;
+        canvas.save();canvas.translate(x,y);canvas.scale(rx,ry);
+        gradientFill.setAntiAlias(true);
+        gradientFill.setShader(new android.graphics.RadialGradient(0,0,1,colors,stops,android.graphics.Shader.TileMode.CLAMP));
+        canvas.drawCircle(0,0,1,gradientFill);gradientFill.setShader(null);canvas.restore();return true;
+    }
+    public boolean capsuleGradient(float x,float top,float bottom,float radius,int[] colors,float[] stops) {
+        if(radius<=0 || bottom<top)return false;
+        Gradients.capsulePieces(this,x,top,bottom,radius,colors,stops);return true;
+    }
+
     @Override public void verticalGradient(float l,float t,float r,float b,int[] colors,float[] stops) {
         if(b<=t)return;
+        gradientFill.setAntiAlias(false);
         gradientFill.setShader(new android.graphics.LinearGradient(0,t,0,b,colors,stops,android.graphics.Shader.TileMode.CLAMP));
         canvas.drawRect(l,t,r,b,gradientFill);
         gradientFill.setShader(null);

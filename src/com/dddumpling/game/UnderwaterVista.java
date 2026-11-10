@@ -211,16 +211,15 @@ final class UnderwaterVista extends Draw {
         }
     }
     private static void backdrop(Painter p,float x,float y,float w,float h,float a) {
-        // Smooth water/light falloff is baked once on each native host.
-        for(int row=0;row<80;row++) {
-            float t=(row+.5f)/80;
-            int col=Glyph.mix(0xFF17546F,0xFF0B203E,smooth(t));
-            // Integer texel boundaries avoid antialiased gaps between adjacent strips.
-            p.fillRect(x,y+(float)Math.floor(h*row/80),x+w,y+(float)Math.floor(h*(row+1)/80),ink(col,a*255));
-        }
-        for(int layer=63;layer>=0;layer--) {
-            float t=layer/63f;
-            p.fillEllipse(x+w*.48f,y-h*.06f,w*(.13f+t*.52f),h*(.15f+t*.54f),ink(0xFF75DFDD,a*1.8f));
+        int[] colors=new int[Gradients.SAMPLES];
+        for(int i=0;i<colors.length;i++)colors[i]=ink(Glyph.mix(0xFF17546F,0xFF0B203E,smooth(Gradients.STOPS[i])),a*255);
+        p.verticalGradient(x,y,x+w,y+h,colors,Gradients.STOPS);
+        if(!p.radialGradient(x+w*.48f,y-h*.06f,w*.65f,h*.69f,
+                Gradients.nested(0xFF75DFDD,(int)(a*1.8f),64,.21f),Gradients.STOPS)) {
+            for(int layer=63;layer>=0;layer--) {
+                float t=layer/63f;
+                p.fillEllipse(x+w*.48f,y-h*.06f,w*(.13f+t*.52f),h*(.15f+t*.54f),ink(0xFF75DFDD,a*1.8f));
+            }
         }
         // Continuous polygons remove strip seams; the wider floor tucks under both banks.
         float[] path=new float[100];

@@ -135,8 +135,16 @@ final class Sky extends Draw {
 
     static void vignette(Painter p, Layout L, int color, float strength) {
         if (strength <= 0.01f) return;
-        // Many thin layers, not few thick ones: the innermost layer's own edge is the only
-        // hard boundary, so its alpha has to be small enough to be invisible.
+        // Preserve accumulated edge opacity and the overlap at screen corners.
+        if(p.gradients()) {
+            int[] colors=Gradients.nested(color,Math.max(1,(int)(strength*3.5f)),32,0);
+            float dx=L.w*.16f,dy=L.h*.16f;
+            p.linearGradient(Gradients.rect(0,0,L.w,dy),0,0,0,dy,colors,Gradients.STOPS);
+            p.linearGradient(Gradients.rect(0,L.h-dy,L.w,L.h),0,L.h,0,L.h-dy,colors,Gradients.STOPS);
+            p.linearGradient(Gradients.rect(0,0,dx,L.h),0,0,dx,0,colors,Gradients.STOPS);
+            p.linearGradient(Gradients.rect(L.w-dx,0,L.w,L.h),L.w,0,L.w-dx,0,colors,Gradients.STOPS);
+            return;
+        }
         int layers = 32;
         float depthY = 0.16f * L.h, depthX = 0.16f * L.w;
         int col = Glyph.withAlpha(color, Math.max(1, (int) (strength * 3.5f)));
@@ -156,11 +164,8 @@ final class Sky extends Draw {
      */
     static void hudBacking(Painter p, Layout L, int bg) {
         // Fade fully to transparent so scenery has no visible seam at the header edge.
-        int layers=48;
-        for(int i=0;i<layers;i++) {
-            float fade=1-(i+.5f)/layers;
-            p.fillRect(0,L.playTop*i/layers,L.w,L.playTop*(i+1)/layers,
-                    Glyph.withAlpha(bg,Math.round(199*fade*fade)));
-        }
+        int[] colors=new int[Gradients.SAMPLES];
+        for(int i=0;i<colors.length;i++){float fade=1-Gradients.STOPS[i];colors[i]=Gradients.alpha(bg,199*fade*fade);}
+        p.verticalGradient(0,0,L.w,L.playTop,colors,Gradients.STOPS);
     }
 }

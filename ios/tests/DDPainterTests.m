@@ -45,6 +45,48 @@
   painter.context=NULL;CGContextRelease(context);CGColorSpaceRelease(space);
 }
 
+- (void)testDirectionalAndRadialGradientsRespectClipAndRestoreState {
+  unsigned char pixels[64*64*4]={0};
+  CGColorSpaceRef space=CGColorSpaceCreateDeviceRGB();
+  CGContextRef context=CGBitmapContextCreate(pixels,64,64,8,64*4,space,kCGImageAlphaPremultipliedLast);
+  DDIOSPainter *painter=[DDIOSPainter new];painter.context=context;
+  IOSIntArray *colors=[IOSIntArray arrayWithLength:2];
+  colors->buffer_[0]=(jint)0x80FFFFFF;colors->buffer_[1]=(jint)0x00FFFFFF;
+  IOSFloatArray *stops=[IOSFloatArray arrayWithLength:2];stops->buffer_[1]=1;
+  IOSFloatArray *polygon=[IOSFloatArray arrayWithLength:6];
+  jfloat points[]={0,0,60,0,0,60};memcpy(polygon->buffer_,points,sizeof(points));
+  CGContextSaveGState(context);CGContextTranslateCTM(context,2,2);
+  CGContextClipToRect(context,CGRectMake(0,0,40,40));CGAffineTransform before=CGContextGetCTM(context);
+  XCTAssertTrue([painter linearGradientWithFloatArray:polygon withFloat:0 withFloat:0 withFloat:60 withFloat:0 withIntArray:colors withFloatArray:stops]);
+  // Bitmap storage rows run opposite the unflipped Core Graphics y axis.
+  XCTAssertGreaterThan(pixels[((63-5)*64+5)*4+3],pixels[((63-5)*64+30)*4+3]);
+  XCTAssertEqual(pixels[((63-5)*64+45)*4+3],0);XCTAssertEqual(pixels[((63-38)*64+38)*4+3],0);
+  XCTAssertTrue(CGAffineTransformEqualToTransform(before,CGContextGetCTM(context)));
+  CGContextRestoreGState(context);memset(pixels,0,sizeof(pixels));before=CGContextGetCTM(context);
+  XCTAssertTrue([painter radialGradientWithFloat:32 withFloat:32 withFloat:24 withFloat:12 withIntArray:colors withFloatArray:stops]);
+  XCTAssertGreaterThan(pixels[(32*64+32)*4+3],115);XCTAssertEqual(pixels[(48*64+32)*4+3],0);
+  XCTAssertEqualWithAccuracy(pixels[(32*64+44)*4+3],pixels[(38*64+32)*4+3],6);
+  XCTAssertTrue(CGAffineTransformEqualToTransform(before,CGContextGetCTM(context)));
+  [painter fillRectWithFloat:0 withFloat:0 withFloat:64 withFloat:64 withInt:(jint)0xFFFFFFFF];
+  XCTAssertEqual(pixels[3],255);XCTAssertEqual(pixels[(63*64+63)*4+3],255);
+  painter.context=NULL;CGContextRelease(context);CGColorSpaceRelease(space);
+}
+
+- (void)testCapsuleGradientDeclinesWithoutDrawingSoRainbowUsesContinuousVectors {
+  unsigned char pixels[128*256*4]={0};
+  CGColorSpaceRef space=CGColorSpaceCreateDeviceRGB();
+  CGContextRef context=CGBitmapContextCreate(pixels,128,256,8,128*4,space,kCGImageAlphaPremultipliedLast);
+  DDIOSPainter *painter=[DDIOSPainter new];painter.context=context;
+  IOSIntArray *colors=[IOSIntArray arrayWithLength:2];
+  colors->buffer_[0]=(jint)0x80FFFFFF;colors->buffer_[1]=(jint)0x00FFFFFF;
+  IOSFloatArray *stops=[IOSFloatArray arrayWithLength:2];stops->buffer_[1]=1;
+  CGContextScaleCTM(context,.473,.473);CGAffineTransform before=CGContextGetCTM(context);
+  XCTAssertFalse([painter capsuleGradientWithFloat:135 withFloat:90.31f withFloat:430.31f withFloat:50 withIntArray:colors withFloatArray:stops]);
+  BOOL untouched=YES;for(int i=0;i<sizeof(pixels);i++)untouched&=pixels[i]==0;
+  XCTAssertTrue(untouched);XCTAssertTrue(CGAffineTransformEqualToTransform(before,CGContextGetCTM(context)));
+  painter.context=NULL;CGContextRelease(context);CGColorSpaceRelease(space);
+}
+
 - (void)testSwampLayersRestoreContextAndResize {
   unsigned char pixels[128*256*4]={0};
   CGColorSpaceRef space=CGColorSpaceCreateDeviceRGB();

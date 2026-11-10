@@ -46,6 +46,12 @@ interface Painter {
 
     void fillRect(float l, float t, float r, float b, int color);
 
+    /** Optional gradient-filled geometry; callers retain vector fallbacks. */
+    default boolean gradients() {return false;}
+    default boolean linearGradient(float[] polygon,float x0,float y0,float x1,float y1,int[] colors,float[] stops) {return false;}
+    default boolean radialGradient(float x,float y,float rx,float ry,int[] colors,float[] stops) {return false;}
+    default boolean capsuleGradient(float x,float top,float bottom,float radius,int[] colors,float[] stops) {return false;}
+
     /** Continuous vertical color ramp. Native hosts draw one gradient; previews sample rows. */
     default void verticalGradient(float l,float t,float r,float b,int[] colors,float[] stops) {
         if(b<=t || colors.length<2 || colors.length!=stops.length)return;

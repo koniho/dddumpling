@@ -20,6 +20,19 @@ final class ForestSunlight extends Draw {
                 float endX=x+(beam==0?-.035f:.055f)*L.w+shift,endY=y+beam*L.w*.055f;
                 float startX=x-L.w*(.27f+hash(seed+11)*.09f)+shift*.25f,startY=y-L.w*.62f;
                 float width=L.w*(beam==0?.038f:.024f);
+                if(p.gradients()) {
+                    for(int layer=2;layer>=0;layer--) {
+                        float wa=width*.10f*(1+layer*.40f),wb=width*1.10f*(1+layer*.40f);
+                        ray[0]=startX-wa;ray[1]=startY;ray[2]=startX+wa;ray[3]=startY;
+                        ray[4]=endX+wb;ray[5]=endY;ray[6]=endX-wb;ray[7]=endY;
+                        int[] colors=new int[Gradients.SAMPLES];
+                        for(int i=0;i<colors.length;i++)colors[i]=Gradients.alpha(0xFFF3DCA0,
+                                light*(layer==2?5:layer==1?7:10)*(float)Math.sin(Gradients.STOPS[i]*Math.PI));
+                        // Original segments run along y, with horizontal cross sections.
+                        p.linearGradient(ray,0,startY,0,endY,colors,Gradients.STOPS);
+                    }
+                    continue;
+                }
                 for(int layer=2;layer>=0;layer--)for(int segment=0;segment<8;segment++) {
                     float a=segment/8f,b=(segment+1)/8f;
                     float envelope=(float)Math.sin((a+b)*.5f*Math.PI);

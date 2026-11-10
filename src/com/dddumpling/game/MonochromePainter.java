@@ -50,6 +50,19 @@ final class MonochromePainter implements Painter,ArtStamp {
         return (c&0xFF000000)|((int)(r+(gray-r)*amount)<<16)
                 |((int)(g+(gray-g)*amount)<<8)|(int)(b+(gray-b)*amount);
     }
+    public boolean gradients(){return p!=null && p.gradients();}
+    private int[] gradientColors(int[] colors) {
+        int[] mapped=new int[colors.length];for(int i=0;i<colors.length;i++)mapped[i]=color(colors[i]);return mapped;
+    }
+    public boolean linearGradient(float[] polygon,float x0,float y0,float x1,float y1,int[] colors,float[] stops) {
+        return gradients() && p.linearGradient(polygon,x0,y0,x1,y1,gradientColors(colors),stops);
+    }
+    public boolean radialGradient(float x,float y,float rx,float ry,int[] colors,float[] stops) {
+        return gradients() && p.radialGradient(x,y,rx,ry,gradientColors(colors),stops);
+    }
+    public boolean capsuleGradient(float x,float top,float bottom,float radius,int[] colors,float[] stops) {
+        return gradients() && p.capsuleGradient(x,top,bottom,radius,gradientColors(colors),stops);
+    }
     public void fillPoly(float[] xy,int c) { p.fillPoly(xy,color(c)); }
     public void fillContours(float[][] xy,int c) { p.fillContours(xy,color(c)); }
     public void strokePoly(float[] xy,int c,float w) { p.strokePoly(xy,color(c),w); }

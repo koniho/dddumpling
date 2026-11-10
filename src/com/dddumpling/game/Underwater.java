@@ -51,11 +51,9 @@ final class Underwater extends Draw {
         if(cave<1)fish(p,c,L,fade*(1-cave));
         // Scenery continues behind the keys; a gradual darkening replaces the cut-off horizon.
         float start=L.deckTop-L.h*.045f;
-        for(int band=0;band<14;band++) {
-            float top=start+(L.h-start)*band/14f,bottom=start+(L.h-start)*(band+1)/14f;
-            float t=(band+.5f)/14f;
-            p.fillRect(0,top,L.w,bottom,ink(WATER,fade*180*t*t*(3-2*t)));
-        }
+        int[] colors=new int[Gradients.SAMPLES];
+        for(int i=0;i<colors.length;i++){float t=Gradients.STOPS[i];colors[i]=ink(WATER,fade*180*t*t*(3-2*t));}
+        p.verticalGradient(0,start,L.w,L.h,colors,Gradients.STOPS);
         p.restore();
     }
 

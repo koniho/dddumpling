@@ -12,6 +12,26 @@ final class RasterPainter implements Painter {
     private final int bw, bh;    // buffer size
     private final int[] buf;
 
+    private int gradientKind;
+    private float gx,gy,ga,gb,gden;
+    private int[] gradientColors;private float[] gradientStops;
+    public boolean gradients(){return true;}
+    public boolean linearGradient(float[] poly,float x0,float y0,float x1,float y1,int[] colors,float[] stops) {
+        if(poly.length<6 || (x0==x1 && y0==y1))return false;
+        gradientKind=1;gx=sx(x0);gy=sy(y0);ga=(x1-x0)*ss;gb=(y1-y0)*ss;gden=ga*ga+gb*gb;
+        gradientColors=colors;gradientStops=stops;
+        try {fillPoly(poly,0xFFFFFFFF);}finally {gradientKind=0;}return true;
+    }
+    public boolean radialGradient(float x,float y,float rx,float ry,int[] colors,float[] stops) {
+        if(rx<=0 || ry<=0)return false;
+        gradientKind=2;gx=sx(x);gy=sy(y);ga=rx*ss;gb=ry*ss;gradientColors=colors;gradientStops=stops;
+        try {fillEllipse(x,y,rx,ry,0xFFFFFFFF);}finally {gradientKind=0;}return true;
+    }
+    public boolean capsuleGradient(float x,float top,float bottom,float radius,int[] colors,float[] stops) {
+        if(radius<=0 || bottom<top)return false;
+        gradientKind=3;gx=sx(x);gy=sy(top);ga=radius*ss;gb=sy(bottom);gradientColors=colors;gradientStops=stops;
+        try {fillRect(x-radius,top-radius,x+radius,bottom+radius,0xFFFFFFFF);}finally {gradientKind=0;}return true;
+    }
     private float tx, ty;
     /**
      * Cap height as a fraction of the type size — how far a line of text reaches above its
@@ -77,6 +97,13 @@ final class RasterPainter implements Painter {
         for (float[] circle : cutouts) {
             float dx = x + 0.5f - circle[0], dy = y + 0.5f - circle[1];
             if (dx*dx + dy*dy <= circle[2]*circle[2]) return;
+        }
+        if(gradientKind!=0) {
+            float xx=x+.5f-gx,yy=y+.5f-gy,u;
+            if(gradientKind==1)u=(xx*ga+yy*gb)/gden;
+            else if(gradientKind==2)u=(float)Math.sqrt(xx*xx/(ga*ga)+yy*yy/(gb*gb));
+            else {float dy=y+.5f<gy?y+.5f-gy:y+.5f>gb?y+.5f-gb:0;u=(float)Math.sqrt(xx*xx+dy*dy)/ga;if(u>1)return;}
+            color=Gradients.sample(gradientColors,gradientStops,u);
         }
         float a = ((color >>> 24) / 255f) * (cov > 1 ? 1 : cov);
         if (a <= 0.0015f) return;
