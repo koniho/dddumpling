@@ -13,10 +13,6 @@ final class Gradients {
         float t=(u-stops[at])/(stops[at+1]-stops[at]);int a=colors[at],b=colors[at+1];
         return alpha(Glyph.mix(a,b,t),(a>>>24)+((b>>>24)-(a>>>24))*t);
     }
-    static int[] bell(int color,float peak) {
-        int[] colors=new int[SAMPLES];
-        for(int i=0;i<SAMPLES;i++){float t=STOPS[i]*2-1,v=Math.max(0,1-t*t);colors[i]=alpha(color,peak*v*v);}return colors;
-    }
     static int[] nested(int color,float each,int count,float inner) {
         int[] colors=new int[SAMPLES];
         for(int i=0;i<SAMPLES;i++) {

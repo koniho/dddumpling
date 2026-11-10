@@ -168,8 +168,9 @@ rectangle clips outward even with antialiasing disabled, otherwise sharing a pix
 - Rainbow: eight feathered capsule polygons become three native gradient pieces per band,
   with one distance-field primitive in the software preview.
 - Slime basin: its 48-ellipse ambient glow becomes radial. Keep basin contours and banks.
-- Crystal: a smooth moving gradient stays clipped to each face, including mirrored arena
-  faces. Keep the facets themselves and their shading geometry.
+- Crystal: retain the distinct moving shimmer bands clipped to each facet, including
+  mirrored arena faces. Visual review preferred their stepped character over a smooth
+  gradient; this is an intentional exception to continuous-gradient conversion.
 
 Already-cached underwater haze bands and glows retain their native texture paths. Curved
 cave mist and irregular forest edge feathering retain their contours; a straight or radial
