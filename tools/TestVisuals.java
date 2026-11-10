@@ -986,6 +986,52 @@ final class TestVisuals extends Check {
         check("screen shake restores its drawing transform", stack.isEmpty() && offset[0] == 0f && offset[1] == 0f);
     }
 
+    private static void landIntroHeadings() {
+        group("land intro headings");
+        String[] names={"SLIME HILLS","CRYSTAL LANDS","UNDERWATER","MUSHROOM FIELDS","CAVE","SWAMPLAND","RAINBOW LAND"};
+        for(int[] viewport:new int[][]{{320,568},{360,800},{390,844},{768,1024}}) {
+            Layout L=new Layout();L.compute(viewport[0],viewport[1],0,0,0,0);
+            for(int land=0;land<Lands.COUNT;land++) {
+                if(!Lands.playable(land))continue;
+                GameCore c=new GameCore(new Mem(),253L);c.collected=Collect.MASK;c.landChoice=land;c.startGame();
+                check("selected land starts with its chapter "+land,c.stage==Lands.firstStage(land));
+                for(int repeat=0;repeat<2;repeat++)for(int offset=0;offset<WorldCatalog.STAGES_PER_CHAPTER;offset++) {
+                    c.stage=Lands.firstStage(land)+repeat*Lands.playableCount()*WorldCatalog.STAGES_PER_CHAPTER+offset;
+                    for(float remaining:new float[]{GameCore.BANNER_TIME,.2f,0}) {
+                        c.stageBanner=remaining;
+                        java.util.ArrayList<Object[]> text=new java.util.ArrayList<>();
+                        Painter p=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),
+                                new Class<?>[]{Painter.class},(proxy,method,args)->{
+                                    if(method.getName().equals("accessory"))return -1;
+                                    if(method.getName().equals("skin"))return Skins.DEFAULT;
+                                    if(method.getName().equals("text"))text.add(args);return null;
+                                });
+                        Hud.stageBanner(p,c,L);
+                        StringBuilder heading=new StringBuilder();float previousBottom=L.hudBottom();
+                        boolean fits=true,centered=true,clear=true,fades=true,prominent=true;
+                        for(Object[] call:text) {
+                            String line=(String)call[0];float x=(Float)call[1],y=(Float)call[2],size=(Float)call[3];
+                            if(line.startsWith("STAGE ")) {
+                                clear&=previousBottom<y-size*.8f;
+                                continue;
+                            }
+                            if(heading.length()>0)heading.append(' ');heading.append(line);
+                            fits&=RasterPainter.textWidth(line,size)<=L.w*.91f;
+                            centered&=x==L.w*.5f && (Integer)call[5]==Painter.CENTER;
+                            clear&=y-size*.8f>previousBottom;previousBottom=y;
+                            fades&=((Integer)call[4]>>>24)==(int)(235*Math.min(1,remaining/.4f));
+                            prominent&=size>Draw.type(L.unit*1.7f);
+                        }
+                        String tag=" "+viewport[0]+" stage "+c.stage+" time "+remaining;
+                        check("heading only opens chapters"+tag,heading.toString().equals(offset==0?names[land]:""));
+                        check("heading fits above stage and below HUD"+tag,fits && centered && clear && prominent);
+                        check("heading follows intro fade"+tag,fades);
+                    }
+                }
+            }
+        }
+    }
+
     private static void reactiveLandSkits() {
         group("Reactive land skits");
         RasterPainter p=new RasterPainter(320,280,1);
@@ -1012,6 +1058,7 @@ final class TestVisuals extends Check {
         }
     }
     static void sky(Layout L) {
+        landIntroHeadings();
         reactiveLandSkits();
         backgroundShake(L);
         group("cloud sky");

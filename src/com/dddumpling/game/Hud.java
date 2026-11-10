@@ -159,6 +159,20 @@ final class Hud extends Draw {
     static void stageBanner(Painter p, GameCore c, Layout L) {
         float k = Math.min(1f, c.stageBanner / 0.4f);
         int a = (int) (235 * k);
+        if (c.modes.adventure() && (c.stage - 1) % WorldCatalog.STAGES_PER_CHAPTER == 0) {
+            String name = WorldCatalog.LANDS[Lands.forStage(c.stage)].name;
+            int split = name.lastIndexOf(' ');
+            String first = split < 0 ? name : name.substring(0, split);
+            String last = split < 0 ? "" : name.substring(split + 1);
+            // Two lines keep long land names prominent on narrow phones, in either native font path.
+            float size = Math.min(type(L.unit * 2.15f), L.w * .90f / (Math.max(first.length(), last.length()) * .73f));
+            float bottom = L.h * .34f - type(L.unit * 1.7f);
+            size = Math.min(size, (bottom - L.hudBottom() - L.unit * .3f) / (split < 0 ? .8f : 1.85f));
+            p.text(first, L.w * .5f, bottom - (split < 0 ? 0 : size * 1.05f), size,
+                    Glyph.withAlpha(INK, a), Painter.CENTER, true);
+            if (split >= 0) p.text(last, L.w * .5f, bottom, size,
+                    Glyph.withAlpha(INK, a), Painter.CENTER, true);
+        }
         p.text("STAGE " + c.stage, L.w / 2f, L.h * 0.34f, type(L.unit * 1.7f),
                 Glyph.withAlpha(INK, a), Painter.CENTER, true);
 

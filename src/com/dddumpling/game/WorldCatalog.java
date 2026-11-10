@@ -5,20 +5,20 @@ final class WorldCatalog {
     static final int STAGES_PER_CHAPTER=5;
     static final class Land {
         final int background,tint,ending;
-        final String death;
-        Land(int background,int tint,int ending,String death) {
-            this.background=background;this.tint=tint;this.ending=ending;this.death=death;
+        final String name,death;
+        Land(String name,int background,int tint,int ending,String death) {
+            this.name=name;this.background=background;this.tint=tint;this.ending=ending;this.death=death;
         }
     }
     // Land array indices are saved IDs. Cave's reserved row remains in place.
     static final Land[] LANDS={
-        new Land(Glyph.mix(Draw.BG,0xFF244A32,.85f),0xFF79C99D,5,"Slime hills hugged back."),
-        new Land(Glyph.mix(Draw.BG,0xFF21182F,.5f),0xFFB18CDB,6,"Crystal sparkle nap. Very shiny."),
-        new Land(Glyph.mix(Draw.BG,0xFF102735,.5f),0xFF62BEC5,7,"Kelp tucked you in. Bubble blanket!"),
-        new Land(0xFF202D2C,0xFF8FA58A,8,"Mushroom cap became your pillow."),
-        new Land(CaveArt.DARK,CaveArt.LIGHT,9,"Pebble adopted its own dumpling."),
-        new Land(0xFF182F32,0xFF74B99C,10,"Lily pad booked you a swamp nap."),
-        new Land(0xFF282341,0xFFDEA9EC,13,"A rainbow cloud borrowed you.")
+        new Land("SLIME HILLS",Glyph.mix(Draw.BG,0xFF244A32,.85f),0xFF79C99D,5,"Slime hills hugged back."),
+        new Land("CRYSTAL LANDS",Glyph.mix(Draw.BG,0xFF21182F,.5f),0xFFB18CDB,6,"Crystal sparkle nap. Very shiny."),
+        new Land("UNDERWATER",Glyph.mix(Draw.BG,0xFF102735,.5f),0xFF62BEC5,7,"Kelp tucked you in. Bubble blanket!"),
+        new Land("MUSHROOM FIELDS",0xFF202D2C,0xFF8FA58A,8,"Mushroom cap became your pillow."),
+        new Land("CAVE",CaveArt.DARK,CaveArt.LIGHT,9,"Pebble adopted its own dumpling."),
+        new Land("SWAMPLAND",0xFF182F32,0xFF74B99C,10,"Lily pad booked you a swamp nap."),
+        new Land("RAINBOW LAND",0xFF282341,0xFFDEA9EC,13,"A rainbow cloud borrowed you.")
     };
     static final class BossEntry {
         final int land,friend,face,ending;
