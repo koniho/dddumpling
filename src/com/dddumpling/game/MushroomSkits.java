@@ -2,7 +2,7 @@ package com.dddumpling.game;
 
 /** A woodland springboard, a shared seesaw, and a parachute that becomes a hat. */
 final class MushroomSkits extends Draw {
-    private static final int LIGHT=0xFFFFE8CE, GILLS=0xFF82675E, CAP=0xFFD998A2;
+    private static final int LIGHT=0xFFFFE8CE, GILLS=0xFF805E65, CAP=0xFFC17B8C;
     private static final int MOSS=0xFF71917A, LEAF=0xFFACB394;
     // Cap deformations only change scale/shear; prepare the circular samples once.
     private static final float[] RIM=new float[48];
@@ -59,16 +59,51 @@ final class MushroomSkits extends Draw {
         }
         p.fillPoly(rim,color);
     }
+    /** Rounded dome above a shallow curved lip, rather than a flat oval disc. */
+    private static void dome(Painter p,float x,float y,float r,float dx,float dy,
+            float width,float height,float tilt,float squash,int color) {
+        float[] rim=new float[52];
+        for(int i=0;i<=12;i++) {
+            float u=RIM[i*2]*width*r+dx*r;
+            float v=(dy-RIM[i*2+1]*height)*r;
+            rim[i*2]=x+u*squash;rim[i*2+1]=y+v/squash+u*tilt;
+            v=(dy+RIM[i*2+1]*.10f)*r;
+            int j=25-i;
+            rim[j*2]=x+u*squash;rim[j*2+1]=y+v/squash+u*tilt;
+        }
+        p.fillPoly(rim,color);
+    }
     private static void cap(Painter p,float x,float y,float r,float tilt,float squash,int a) {
-        oval(p,x,y,0,0,r*1.12f,r*.57f,tilt,squash,Glyph.withAlpha(CAP,a));
-        oval(p,x,y,0,r*.21f,r,r*.15f,tilt,squash,Glyph.withAlpha(GILLS,a));
-        for(int k=0;k<3;k++)
-            oval(p,x,y,(k-1)*r*.51f,-r*(k==1?.29f:.12f),r*.13f,r*.10f,
+        oval(p,x,y,0,r*.15f,r*1.10f,r*.25f,tilt,squash,Glyph.withAlpha(GILLS,a));
+        // The lower gills radiate from the stalk, tucked behind the curved cap lip.
+        for(int k=-2;k<=2;k++) {
+            float u=k*r*.32f;
+            p.line(x+u*.28f*squash,y+r*.28f/squash+u*.28f*tilt,
+                    x+u*squash,y+r*.22f/squash+u*tilt,Glyph.withAlpha(LIGHT,a/3),r*.025f);
+        }
+        dome(p,x,y,r,0,.12f,1.12f,.84f,tilt,squash,Glyph.withAlpha(CAP,a));
+        dome(p,x,y,r,-.045f,.075f,1.04f,.75f,tilt,squash,Glyph.withAlpha(0xFFDFA0A7,a));
+        oval(p,x,y,-r*.27f,-r*.40f,r*.43f,r*.13f,tilt,squash,
+                Glyph.withAlpha(LIGHT,a/5));
+        for(int k=-1;k<=1;k++)
+            oval(p,x,y,k*r*.54f,-r*(k==0?.43f:.24f),r*(k==0?.15f:.12f),
+                    r*(k==0?.11f:.08f),tilt,squash,Glyph.withAlpha(LIGHT,a));
+        for(int side=-1;side<=1;side+=2)
+            oval(p,x,y,side*r*.86f,-r*.015f,r*.075f,r*.045f,
                     tilt,squash,Glyph.withAlpha(LIGHT,a*4/5));
     }
     private static void stem(Painter p,float x,float top,float bottom,float r,int a) {
-        if(bottom<=top)return;
-        p.fillEllipse(x,(top+bottom)*.5f,r*.20f,(bottom-top)*.5f,Glyph.withAlpha(LIGHT,a));
+        if(bottom<=top || a<=2)return;
+        float h=(bottom-top)*.5f,mid=(top+bottom)*.5f;
+        float[] rim=new float[48];
+        for(int i=0;i<24;i++) {
+            float v=(RIM[i*2+1]+1)*.5f;
+            float bend=r*.13f*(float)Math.sin(v*Math.PI);
+            rim[i*2]=x+bend+RIM[i*2]*r*(.18f+.10f*v);
+            rim[i*2+1]=mid+RIM[i*2+1]*h;
+        }
+        p.fillPoly(rim,Glyph.withAlpha(0xFFD5BCA0,a));
+        p.fillEllipse(x+r*.015f,mid-h*.03f,r*.11f,h*.87f,Glyph.withAlpha(LIGHT,a));
     }
     private static void spores(Painter p,float x,float y,float r,float age,int a) {
         if(age<=0f || age>=1f)return;
@@ -103,7 +138,7 @@ final class MushroomSkits extends Draw {
         stem(p,x,cy,y+r*1.12f,r,a);
         cap(p,x,cy,cr,0,squash,a);
         float bodySquash=1f+.24f*(press+land)-leap*.13f;
-        float py=cy-cr*.57f/squash-r*.42f/bodySquash-r*leap*.72f;
+        float py=cy-cr*.72f/squash-r*.42f/bodySquash-r*leap*.72f;
         friend(p,Kawaii.DUMPLING,x,py,r*.42f,a,bodySquash,
                 .25f+.75f*ease(t,.24f,.42f),leap+.5f*ease(t,.76f,.86f));
         spores(p,x,cy+r*.13f,r,(t-.28f)/.30f,a);
@@ -121,7 +156,7 @@ final class MushroomSkits extends Draw {
             float settle=side<0?left:right;
             float squash=1f+.23f*settle-leap*.12f;
             float dx=side*r*.67f;
-            float surface=cy-cr*.57f*(float)Math.sqrt(1f-dx*dx/(cr*cr*1.12f*1.12f))+dx*tilt;
+            float surface=cy-cr*.72f*(float)Math.sqrt(1f-dx*dx/(cr*cr*1.12f*1.12f))+dx*tilt;
             friend(p,side<0?Kawaii.CAT:Kawaii.STRAWBERRY,x+dx,
                     surface-r*.36f/squash-r*leap*.48f,r*.36f,a,squash,
                     .35f+.65f*ease(t,side<0?.15f:.38f,side<0?.30f:.55f),
