@@ -388,10 +388,10 @@ and Skip dismisses only the active enemy lesson. Boss projectiles retain their s
 
 Normal Adventure waves in Swampland (stages 21–24, and later Swampland visits) mix ordinary
 words with **fog words** and **divebomb words**. Fog also appears in later catalog chapters,
-including Rainbow Land, and in Survival. Swampland uses a 20% fog selection band on its first stage and 25% on later stages.
+including Rainbow Run, and in Survival. Swampland uses a 20% fog selection band on its first stage and 25% on later stages.
 Later Adventure lands use half those rates: 10% initially, then 12.5%. Survival uses 12.5%. Only multi-key solo words
 are eligible; linked pairs and single-key rush enemies stay unchanged.
-Swampland retains its 15% introductory / 20% later divebomb band, while Rainbow Land retains
+Swampland retains its 15% introductory / 20% later divebomb band, while Rainbow Run retains
 its 36% divebomb band. Survival adds rush enemies at 90 active seconds and a 20% divebomb band at
 120 seconds, including during power-ups. Together with fog from the opening and linked pairs
 from 60 seconds, this gives Survival the full enemy mix after two minutes. Rush enemies
@@ -657,7 +657,7 @@ The developer settings **ALL LANDS** chip enables every land for the current ses
 ## Cave expedition
 
 The cave land retains save slot 4 but is unreachable in Adventure and the land picker while
-its introduction is reworked. Swampland follows Mushroom Fields in every build. The **explorer dumpling** runs through a winding gauntlet
+its introduction is reworked. Swampland follows Furry Forest in every build. The **explorer dumpling** runs through a winding gauntlet
 at 1.15 route units per second. Arc-length sampling keeps travel speed steady through lateral
 bends and downward turns; the camera follows both axes. Seven encounters are spaced about
 1–2 seconds of travel apart. Forks give a short 0.55-second choice, then follow the lantern.
@@ -893,6 +893,6 @@ The next arm-wave attack waits until every thrown enemy is destroyed or reaches 
 The final arm tear ends the fight without another throw.
 Octopulse’s visual enrage warning starts at 40 seconds to allow for the added wind-ups and throws.
 
-- **Rainbow Land** — Adventure stages 26–30, after Swampland; floating clouds and rainbow arches.
-- **Rainbow Cat** — Rainbow Land boss. Tap him twice, then trace the shape for his current health band (circle, heart, diamond, figure eight, star) to catch him in a fishing net. Alternate a fixed pair of keys, one from each hand, during vulnerability. Each hit damages him immediately; twenty hits fill one health band, and each window is capped at the next band. Partial damage persists between catches.
+- **Rainbow Run** — Adventure stages 26–30, after Swampland; floating clouds and rainbow arches.
+- **Rainbow Cat** — Rainbow Run boss. Tap him twice, then trace the shape for his current health band (circle, heart, diamond, figure eight, star) to catch him in a fishing net. Alternate a fixed pair of keys, one from each hand, during vulnerability. Each hit damages him immediately; twenty hits fill one health band, and each window is capped at the next band. Partial damage persists between catches.
 - **Sprinkle Paws** — Rainbow Cat's collectible boss friend.

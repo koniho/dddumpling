@@ -988,7 +988,7 @@ final class TestVisuals extends Check {
 
     private static void landIntroHeadings() {
         group("land intro headings");
-        String[] names={"SLIME HILLS","CRYSTAL LANDS","UNDERWATER","MUSHROOM FIELDS","CAVE","SWAMPLAND","RAINBOW LAND"};
+        String[] names={"SLIME HILLS","CRYSTAL CAVE","SEA SQUISH","FURRY FOREST","CAVE","SWAMPLAND","RAINBOW RUN"};
         for(int[] viewport:new int[][]{{320,568},{360,800},{390,844},{768,1024}}) {
             Layout L=new Layout();L.compute(viewport[0],viewport[1],0,0,0,0);
             for(int land=0;land<Lands.COUNT;land++) {

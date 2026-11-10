@@ -13,12 +13,12 @@ final class WorldCatalog {
     // Land array indices are saved IDs. Cave's reserved row remains in place.
     static final Land[] LANDS={
         new Land("SLIME HILLS",Glyph.mix(Draw.BG,0xFF244A32,.85f),0xFF79C99D,5,"Slime hills hugged back."),
-        new Land("CRYSTAL LANDS",Glyph.mix(Draw.BG,0xFF21182F,.5f),0xFFB18CDB,6,"Crystal sparkle nap. Very shiny."),
-        new Land("UNDERWATER",Glyph.mix(Draw.BG,0xFF102735,.5f),0xFF62BEC5,7,"Kelp tucked you in. Bubble blanket!"),
-        new Land("MUSHROOM FIELDS",0xFF202D2C,0xFF8FA58A,8,"Mushroom cap became your pillow."),
+        new Land("CRYSTAL CAVE",Glyph.mix(Draw.BG,0xFF21182F,.5f),0xFFB18CDB,6,"Crystal sparkle nap. Very shiny."),
+        new Land("SEA SQUISH",Glyph.mix(Draw.BG,0xFF102735,.5f),0xFF62BEC5,7,"Kelp tucked you in. Bubble blanket!"),
+        new Land("FURRY FOREST",0xFF202D2C,0xFF8FA58A,8,"Mushroom cap became your pillow."),
         new Land("CAVE",CaveArt.DARK,CaveArt.LIGHT,9,"Pebble adopted its own dumpling."),
         new Land("SWAMPLAND",0xFF182F32,0xFF74B99C,10,"Lily pad booked you a swamp nap."),
-        new Land("RAINBOW LAND",0xFF282341,0xFFDEA9EC,13,"A rainbow cloud borrowed you.")
+        new Land("RAINBOW RUN",0xFF282341,0xFFDEA9EC,13,"A rainbow cloud borrowed you.")
     };
     static final class BossEntry {
         final int land,friend,face,ending;
