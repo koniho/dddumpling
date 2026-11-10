@@ -28,16 +28,19 @@ final class Gradients {
     static float[] rect(float l,float t,float r,float b) {return new float[]{l,t,r,t,r,b,l,b};}
     // Clip only the internal joins; each gradient's geometry extends past its clip edge.
     static void capsulePieces(Painter p,float x,float top,float bottom,float radius,int[] colors,float[] stops) {
+        capsulePieces(p,x,top,bottom,radius,top,bottom,colors,stops);
+    }
+    static void capsulePieces(Painter p,float x,float top,float bottom,float radius,float joinTop,float joinBottom,int[] colors,float[] stops) {
         int n=colors.length;int[] across=new int[n*2-1];float[] positions=new float[across.length];
         for(int i=0;i<n;i++) {
             across[n-1-i]=across[n-1+i]=colors[i];
             positions[n-1-i]=(1-stops[i])*.5f;positions[n-1+i]=(1+stops[i])*.5f;
         }
-        p.save();p.clipRect(x-radius,top,x+radius,bottom);
+        p.save();p.clipRect(x-radius,joinTop,x+radius,joinBottom);
         p.linearGradient(rect(x-radius,top-radius,x+radius,bottom+radius),x-radius,top,x+radius,top,across,positions);p.restore();
-        p.save();p.clipRect(x-radius,top-radius,x+radius,top);
+        p.save();p.clipRect(x-radius,top-radius,x+radius,joinTop);
         p.radialGradient(x,top,radius,radius,colors,stops);p.restore();
-        p.save();p.clipRect(x-radius,bottom,x+radius,bottom+radius);
+        p.save();p.clipRect(x-radius,joinBottom,x+radius,bottom+radius);
         p.radialGradient(x,bottom,radius,radius,colors,stops);p.restore();
     }
 }

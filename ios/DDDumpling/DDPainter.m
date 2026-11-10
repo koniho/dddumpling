@@ -653,10 +653,16 @@ static CGGradientRef DDGradient(CGColorSpaceRef space,IOSIntArray *colors,IOSFlo
     withFloat:(jfloat)radius withIntArray:(IOSIntArray *)colors withFloatArray:(IOSFloatArray *)stops {
   if(!self.context || radius<=0 || bottom<top)return NO;
   CGContextRef context=self.context;CGContextSaveGState(context);
-  // Internal clipping partitions the capsule without blended seams at the joins.
+  // Quartz rounds fractional rectangle clips outward, even without antialiasing.
+  // Partition at device-pixel boundaries, keeping the gradient centers unchanged.
+  CGPoint first=CGContextConvertPointToDeviceSpace(context,CGPointMake(x,top));
+  CGPoint last=CGContextConvertPointToDeviceSpace(context,CGPointMake(x,bottom));
+  first.y=round(first.y);last.y=round(last.y);
+  jfloat joinTop=CGContextConvertPointToUserSpace(context,first).y;
+  jfloat joinBottom=CGContextConvertPointToUserSpace(context,last).y;
   CGContextSetShouldAntialias(context,NO);
   [DDGradients capsulePiecesWithDDPainter:self withFloat:x withFloat:top withFloat:bottom
-      withFloat:radius withIntArray:colors withFloatArray:stops];
+      withFloat:radius withFloat:joinTop withFloat:joinBottom withIntArray:colors withFloatArray:stops];
   CGContextRestoreGState(context);return YES;
 }
 

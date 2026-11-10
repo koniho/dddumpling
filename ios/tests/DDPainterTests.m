@@ -58,8 +58,9 @@
   CGContextSaveGState(context);CGContextTranslateCTM(context,2,2);
   CGContextClipToRect(context,CGRectMake(0,0,40,40));CGAffineTransform before=CGContextGetCTM(context);
   XCTAssertTrue([painter linearGradientWithFloatArray:polygon withFloat:0 withFloat:0 withFloat:60 withFloat:0 withIntArray:colors withFloatArray:stops]);
-  XCTAssertGreaterThan(pixels[(5*64+5)*4+3],pixels[(5*64+30)*4+3]);
-  XCTAssertEqual(pixels[(5*64+45)*4+3],0);XCTAssertEqual(pixels[(38*64+38)*4+3],0);
+  // Bitmap storage rows run opposite the unflipped Core Graphics y axis.
+  XCTAssertGreaterThan(pixels[((63-5)*64+5)*4+3],pixels[((63-5)*64+30)*4+3]);
+  XCTAssertEqual(pixels[((63-5)*64+45)*4+3],0);XCTAssertEqual(pixels[((63-38)*64+38)*4+3],0);
   XCTAssertTrue(CGAffineTransformEqualToTransform(before,CGContextGetCTM(context)));
   CGContextRestoreGState(context);memset(pixels,0,sizeof(pixels));before=CGContextGetCTM(context);
   XCTAssertTrue([painter radialGradientWithFloat:32 withFloat:32 withFloat:24 withFloat:12 withIntArray:colors withFloatArray:stops]);
