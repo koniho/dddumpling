@@ -5,7 +5,7 @@ final class Underwater extends Draw {
     static final int LAND=2,ROCK_COUNT=12,ROCK_WIDTH=248,ROCK_HEIGHT=236;
     static final float SCROLL=.016f;
     static final int WATER_TEXTURE=128;
-    private static final int WATER=0xFF080F24, LIGHT=0xFF8BCFDF;
+    static final int WATER=0xFF080F24, LIGHT=0xFF8BCFDF;
     private static final float[][] ROCK_RIMS=rockRims();
     private Underwater() {}
     private static float[][] rockRims() {
@@ -49,11 +49,6 @@ final class Underwater extends Draw {
         if(cave<1)UnderwaterVista.draw(p,c,L,fade*(1-cave));
         if(cave>0)UnderwaterCave.draw(p,c,L,fade*cave,cave);
         if(cave<1)fish(p,c,L,fade*(1-cave));
-        // Scenery continues behind the keys; a gradual darkening replaces the cut-off horizon.
-        float start=L.deckTop-L.h*.045f;
-        int[] colors=new int[Gradients.SAMPLES];
-        for(int i=0;i<colors.length;i++){float t=Gradients.STOPS[i];colors[i]=ink(WATER,fade*180*t*t*(3-2*t));}
-        p.verticalGradient(0,start,L.w,L.h,colors,Gradients.STOPS);
         p.restore();
     }
 

@@ -13,7 +13,7 @@ final class ForestTerrain extends Draw {
     static float streamBankWidth(float z) {return streamWidth(z)+.033f;}
     static float screenY(float z,float travel,Layout L) {return z*L.w+travel;}
     static int firstRow(float travel,Layout L,float step) {return (int)Math.floor((-travel/L.w-.4f)/step);}
-    static int lastRow(float travel,Layout L,float step) {return (int)Math.ceil(((L.deckTop-travel)/L.w+.4f)/step);}
+    static int lastRow(float travel,Layout L,float step) {return (int)Math.ceil(((L.h-travel)/L.w+.4f)/step);}
 
     static void ground(Painter p,GameCore c,Layout L,float fade) {
         if(fade<=0)return;
@@ -51,7 +51,7 @@ final class ForestTerrain extends Draw {
             float center=wet?streamX(z):pathX(z),width=wet?streamBankWidth(z):pathWidth(z);
             float bank=center+side*(width+.013f+hash(seed+3)*.016f);
             float y=screenY(z,travel,L);
-            if(y<-L.w*.16f || y>L.deckTop+L.w*.16f)continue;
+            if(y<-L.w*.16f || y>L.h+L.w*.16f)continue;
             for(int i=0;i<(wet?3:2);i++) {
                 float r=L.w*(.010f+hash(seed+i*31+7)*(wet?.017f:.026f));
                 float x=L.w*bank+side*i*r*.95f,yy=y+(hash(seed+i*53+19)-.5f)*L.w*.085f;
@@ -192,7 +192,7 @@ final class ForestTerrain extends Draw {
             boolean wet=hash(seed+11)>.45f;
             float center=wet?streamX(z):pathX(z),width=wet?streamBankWidth(z):pathWidth(z);
             float bank=center+side*(width+.045f+hash(seed+3)*.025f),y=screenY(z,travel,L);
-            if(y<-L.w*.16f || y>L.deckTop+L.w*.16f)continue;
+            if(y<-L.w*.16f || y>L.h+L.w*.16f)continue;
             for(int i=0;i<2;i++) {
                 float r=L.w*(.035f+hash(seed+i*23+5)*.035f);
                 float x=L.w*bank+side*i*r*.80f,yy=y+i*r*.30f;

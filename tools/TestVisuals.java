@@ -971,6 +971,28 @@ final class TestVisuals extends Check {
         check("spring squash and stretch stays drawable", shaped);
     }
 
+    private static void translucentDeck(Layout L) {
+        group("scenery behind the key deck");
+        for(int stage:new int[]{1,5,6,10,11,15,16,20,21,25,26,30}) {
+            GameCore c=TestLandBonuses.start(L,stage,false,370);c.boss.intro=0;
+            final boolean[] seen=new boolean[2];
+            Painter p=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),new Class<?>[]{Painter.class},(proxy,method,args)->{
+                String name=method.getName();
+                if(name.equals("verticalGradient") && Math.abs((Float)args[1]-(L.deckTop-L.h*.045f))<.01f) {
+                    int[] colors=(int[])args[4];seen[0]=(colors[0]>>>24)==0 && (colors[colors.length-1]>>>24)>0 && (colors[colors.length-1]>>>24)<255;
+                }
+                if(name.equals("fillRect") && (Float)args[0]<=0 && (Float)args[1]==L.deckTop && (Float)args[2]>=L.w && (Float)args[3]>=L.h && ((Integer)args[4]>>>24)==255)seen[1]=true;
+                if(name.equals("accessory"))return -1;
+                if(method.getReturnType()==boolean.class)return false;
+                if(method.getReturnType()==int.class)return 0;
+                if(method.getReturnType()==float.class)return 0f;
+                return null;
+            });
+            Renderer.draw(p,c,L);
+            check("stage "+stage+" uses a fading deck without an opaque lower panel",seen[0]&&!seen[1]);
+        }
+    }
+
     private static void backgroundShake(Layout L) {
         GameCore c = new GameCore(new Mem(), 8801L); c.startGame();
         c.clock = .137f; c.shake = 1.2f;
@@ -994,7 +1016,7 @@ final class TestVisuals extends Check {
                         && (Float) args[1] + offset[1] <= 0f && (Float) args[2] + offset[0] >= L.w
                         && (Float) args[3] + offset[1] >= L.h);
             } else if (name.equals("clipRect") && (Float) args[1] <= 0f
-                    && (Float) args[3] == L.deckTop && !seen[1]) {
+                    && (Float) args[3] >= L.h && !seen[1]) {
                 seen[1] = true;
                 check("cloud clipping leaves no stationary edge strip", (Float) args[0] + offset[0] <= 0f
                         && (Float) args[2] + offset[0] >= L.w);
@@ -1089,6 +1111,7 @@ final class TestVisuals extends Check {
         landIntroHeadings();
         reactiveLandSkits();
         backgroundShake(L);
+        translucentDeck(L);
         group("cloud sky");
         for (int land = 0; land < Lands.COUNT; land++) {
             if(!Lands.playable(land))continue;

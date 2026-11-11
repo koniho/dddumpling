@@ -42,7 +42,7 @@ final class Sky extends Draw {
      */
     static float cloudY(GameCore c, Layout L, int layer, int i) {
         float margin = cloudMargin(L, layer);
-        return -margin + c.cloudPhase(layer, i) * (L.deckTop + 2f * margin);
+        return -margin + c.cloudPhase(layer, i) * ((c.state==GameCore.TITLE?L.deckTop:L.h) + 2f * margin);
     }
 
     static void clouds(Painter p, GameCore c, Layout L, int layer, float hurt) {
@@ -79,7 +79,7 @@ final class Sky extends Draw {
         }
     }
 
-    /** Draws the given layers clipped to the sky, so they slide away behind the key deck. */
+    /** Scenery continues beneath the translucent key deck during play. */
     static void cloudBand(Painter p, GameCore c, Layout L, int from, int to,
             float hurt) {
         if(c.survival.active || SurvivalEntrance.active(c)) {
@@ -90,7 +90,7 @@ final class Sky extends Draw {
         }
         p.save();
         float margin = Renderer.shakeMargin(c, L);
-        p.clipRect(-margin, -margin, L.w + margin, L.deckTop);
+        p.clipRect(-margin, -margin, L.w + margin, c.state==GameCore.TITLE?L.deckTop:L.h+margin);
         for (int l = from; l < to; l++) clouds(p, c, L, l, hurt);
         MushroomForest.mist(p,c,L,from,to);
         p.restore();

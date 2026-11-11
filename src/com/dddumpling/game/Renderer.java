@@ -11,6 +11,18 @@ final class Renderer extends Draw {
 
     private Renderer() {}
 
+    static void deckShade(Painter p,GameCore c,Layout L,float hurt,float gone) {
+        int tint=Glyph.mix(Lands.background(c),BG_HI,.35f);
+        tint=Glyph.mix(tint,Underwater.WATER,Underwater.presence(c));
+        tint=Glyph.mix(Glyph.mix(tint,BG_HURT,hurt*.35f),c.survival.active?BG_HI:BG_DEATH,gone*.85f);
+        int[] colors=new int[Gradients.SAMPLES];
+        for(int i=0;i<colors.length;i++) {
+            float t=Gradients.STOPS[i];colors[i]=Glyph.withAlpha(tint,Math.round(180*t*t*(3-2*t)));
+        }
+        float margin=shakeMargin(c,L);
+        p.verticalGradient(-margin,L.deckTop-L.h*.045f,L.w+margin,L.h+margin,colors,Gradients.STOPS);
+    }
+
     static float shakeMargin(GameCore c, Layout L) { return Math.max(0f, c.shake) * .016f * L.w; }
 
     static void draw(Painter p, GameCore c, Layout L) {
@@ -64,7 +76,7 @@ final class Renderer extends Draw {
         // Overscan the flat backing so camera motion cannot expose an unpainted edge.
         p.fillRect(-shakeMargin, -shakeMargin, L.w + shakeMargin, L.h + shakeMargin,
                 Glyph.mix(Glyph.mix(Lands.background(c), BG_HURT, hurt * 0.45f), c.survival.active?BG:BG_DEATH, gone));
-        p.fillRect(-shakeMargin, L.deckTop, L.w + shakeMargin, L.h + shakeMargin,
+        if(c.state==GameCore.TITLE)p.fillRect(-shakeMargin, L.deckTop, L.w + shakeMargin, L.h + shakeMargin,
                 Glyph.mix(Glyph.mix(BG_HI, BG_HURT, hurt * 0.35f), c.survival.active?BG_HI:BG_DEATH, gone * 0.85f));
 
         Lands.backdrop(p,c,L);
@@ -115,6 +127,7 @@ final class Renderer extends Draw {
         Sky.cloudBand(p, c, L, Sky.CLOUD_FRONT_LAYER, GameCore.CLOUD_LAYERS, hurt);
 
         if(c.state==GameCore.PLAY && c.ninja())c.ninjaSlashes.draw(p,L);
+        if(c.state!=GameCore.TITLE)deckShade(p,c,L,hurt,gone);
         p.save();p.translate(0,c.starter.keyOffset(L));
         if (!(c.state == GameCore.BONUS && c.starBonus)) keys(p, c, L);
         p.restore();

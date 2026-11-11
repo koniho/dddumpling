@@ -3,7 +3,7 @@ package com.dddumpling.game;
 /** Immutable scenery and soft light masks, rasterized once by each native host. */
 final class SlimeBasinArt extends Draw {
     static final int SCENE=0,LIGHT=1,SHADOW=2,LEFT_BANK=3,RIGHT_BANK=4,REAR_LIT=5,LEFT_LIT=6,RIGHT_LIT=7,COUNT=20;
-    static final int LAYERS=4;
+    static final int LAYERS=4, WATER=0xFF153D34;
     static final float BANK_FRACTION=.70f;
     static int bank(int side,int layer,boolean lit) {
         return layer==0?LEFT_BANK+side+(lit?3:0):8+(layer-1)*4+side+(lit?2:0);
@@ -48,7 +48,7 @@ final class SlimeBasinArt extends Draw {
             }
             return;
         }
-        p.fillRect(0,0,w,h,0xFF153D34);
+        p.fillRect(0,0,w,h,WATER);
         if(!p.radialGradient(w*.5f,h*.34f,w*.86f,h*.67f,
                 Gradients.nested(0xFF6FBC73,4,48,.19f),Gradients.STOPS))
         for(int i=47;i>=0;i--) {

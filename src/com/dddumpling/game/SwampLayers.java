@@ -14,7 +14,7 @@ final class SwampLayers {
     }
     static float width(int art,float w) {return w*(art<REEDS?(art>=TREES?1.32f:1.12f):3/35f+.11f);}
     static float bottom(int art,float h,float w,float deck) {
-        return art==SKY?deck:art==HAZE?h*.515f:art<REEDS?h*.50f:h*.45f+w*.115f;
+        return art==SKY?h:art==HAZE?h*.515f:art<REEDS?h*.50f:h*.45f+w*.115f;
     }
     static void paint(Painter p,int art,float w,float h,float deck) {
         Layout l=new Layout();l.w=w;l.h=h;l.deckTop=deck;

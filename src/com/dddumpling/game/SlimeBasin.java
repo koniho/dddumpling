@@ -103,6 +103,7 @@ final class SlimeBasin extends Draw {
         float cx=b.bodyX(L),floor=b.bodyY(L)+b.bodyR(L)*.80f;
         float[] shape=new float[34];
         float[][] rings={new float[66],new float[66]};
+        p.fillRect(0,0,L.w,L.h,Glyph.withAlpha(SlimeBasinArt.WATER,(int)(fade*255)));
         art(p,SlimeBasinArt.SCENE,0,0,L.w,L.deckTop,(int)(fade*255));
         if(hit>.01f)art(p,SlimeBasinArt.REAR_LIT,0,0,L.w,L.deckTop,
                 (int)(fade*surfaceLight(c,L,L.w*.5f,L.deckTop*.27f,hit)*170));

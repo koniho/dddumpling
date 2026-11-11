@@ -26,7 +26,7 @@ final class RainbowLand extends Draw {
     static void backdrop(Painter p,GameCore c,Layout L,float fade) {
         if(fade<=0)return;
         float margin=Renderer.shakeMargin(c,L),spacing=L.w/(BAND_ORDER.length-2);
-        p.save();p.clipRect(-margin,-margin,L.w+margin,L.deckTop);
+        p.save();p.clipRect(-margin,-margin,L.w+margin,L.h+margin);
         for(int column:BAND_ORDER) {
             float radius=L.w*(.155f+.045f*hash(column*89+7));
             float straight=L.h*1.12f-radius*2,pitch=straight*.90f;
@@ -37,7 +37,7 @@ final class RainbowLand extends Draw {
                 int generation=cycle-row,seed=column*719+generation*977+151;
                 float x=(column-.5f+(hash(seed)-.5f)*.8f)*spacing;
                 float top=offset+row*pitch-straight*.5f,bottom=top+straight;
-                if(bottom+radius*1.2f<-margin || top-radius*1.2f>L.deckTop)continue;
+                if(bottom+radius*1.2f<-margin || top-radius*1.2f>L.h)continue;
                 int color=CLEAR_COLORS[Math.floorMod(column*5+generation,CLEAR_COLORS.length)];
                 if(p.gradients()) {
                     int[] colors=new int[Gradients.SAMPLES];

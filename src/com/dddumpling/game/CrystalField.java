@@ -302,16 +302,16 @@ final class CrystalField extends Draw {
         prepare(L.w);
         float period=PERIOD*L.w;
         boolean lighting=hasLights(c);
-        p.save();p.clipRect(0,0,L.w,L.deckTop);
+        p.save();p.clipRect(0,0,L.w,L.h);
         for(int layer=0;layer<LAYERS;layer++) {
             float offset=scroll(c.skyClock,L.w,layer);
-            for(int tile=-1;tile<=(int)(L.deckTop/period)+1;tile++) {
+            for(int tile=-1;tile<=(int)(L.h/period)+1;tile++) {
                 float y=offset+tile*period;
                 ArtStamp cache=p.stamps();
-                boolean cached=cache!=null && (y+period<0 || y>L.deckTop || cache.crystal(layer,0,y,L.w,period,(int)(fade*255)));
+                boolean cached=cache!=null && (y+period<0 || y>L.h || cache.crystal(layer,0,y,L.w,period,(int)(fade*255)));
                 p.save();p.translate(0,y);
                 for(Cell cell:layers[layer]) {
-                    if(cell.bottom+y<0 || cell.top+y>L.deckTop)continue;
+                    if(cell.bottom+y<0 || cell.top+y>L.h)continue;
                     if(!cached)base(p,cell,layer,L.w,fade);
                     if(animate && lighting)edgeLights(p,c,L,cell,layer,y,fade);
                     if(!animate)continue;
