@@ -20,6 +20,8 @@ final class WebPainter implements Painter {
     public void fillEllipse(float x,float y,float rx,float ry,int c) {ellipse(context,x,y,rx,ry,c,0);}
     public void arc(float x,float y,float rx,float ry,float start,float sweep,int c,float w) {arc(context,x,y,rx,ry,start,sweep,c,w);}
     public void fillRect(float l,float t,float r,float b,int c) {rect(context,l,t,r,b,c);}
+    public void verticalGradient(float l,float t,float r,float b,int[] colors,float[] stops) {gradient(context,l,t,r,b,colors,stops);}
+    @JSBody(params={"c","l","t","r","b","colors","stops"},script="ddd.paint.verticalGradient(c,l,t,r,b,colors,stops);") private static native void gradient(JSObject c,float l,float t,float r,float b,@JSByRef int[] colors,@JSByRef float[] stops);
     public void line(float x,float y,float a,float b,int c,float w) {line(context,x,y,a,b,c,w);}
     public void text(String s,float x,float y,float z,int c,int a,boolean b) {text(context,s,x,y,z,c,a);}
     public void clipRect(float l,float t,float r,float b) {clip(context,l,t,r,b);}

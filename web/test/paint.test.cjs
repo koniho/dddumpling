@@ -45,3 +45,25 @@ test('cave buffer reuses authored resolution, clears stale lighting, and composi
  ddd.cave.begin(layer,200,400);assert.equal(canvas.width,200);assert.equal(canvas.height,400);
  assert.equal(ddd.cave.begin(layer,0,0),null);
 });
+
+
+test('depth shading stays continuous while worker palettes are pending and reuses surfaces',()=>{
+ const blends=[],surfaces=[];
+ const {ddd}=env({createElement(){
+  const canvas={width:0,height:0},ctx={clearRect(){},drawImage(){},fillRect(){blends.push([this.globalCompositeOperation,this.globalAlpha,this.fillStyle]);}};
+  canvas.getContext=()=>ctx;surfaces.push(canvas);return canvas;
+ }});
+ ddd.cache.requestPalette=()=>{throw Error('Animated depth must not queue palettes');};
+ const target={globalAlpha:1,save(){},restore(){},drawImage(){}},hard={width:256,height:768,artGroup:'vista',artId:1},soft={width:128,height:384,artGroup:'vista',artId:12};
+ for(const shade of [.12,.121,.122,.123])for(const image of [hard,soft])ddd.cache.draw(target,image,0,0,100,300,255,0,shade,0xff17445c);
+ assert.equal(surfaces.length,2);assert.equal(blends.length,8);
+ assert.ok(Math.abs(blends[2][1]-blends[0][1]+.001)<1e-9);
+ assert.ok(blends.every(b=>b[0]==='source-atop'&&b[2]==='rgba(23,68,92,1)'));
+});
+
+test('vertical scenery ramp uses one continuous canvas gradient',()=>{
+ const stops=[],fills=[],ramp={addColorStop(...a){stops.push(a);}};
+ const {ddd}=env();const c={createLinearGradient(...a){assert.deepEqual(a,[0,10,0,30]);return ramp;},fillRect(...a){fills.push(a);}};
+ ddd.paint.verticalGradient(c,2,10,12,30,[0xff000000,0x80ffffff],[0,1]);
+ assert.equal(c.fillStyle,ramp);assert.equal(stops.length,2);assert.equal(stops[1][0],1);assert.deepEqual(fills,[[2,10,10,20]]);
+});

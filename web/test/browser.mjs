@@ -105,6 +105,23 @@ for(const [engine,type] of engines){
     console.log(`${engine}: ${scene} rendered`);
     if(await page.evaluate(()=>ddd.error))throw Error(await page.evaluate(()=>ddd.error));
   }
+  // Rebased scenery must use the same reed stamps, including worker-produced tiles.
+  for(const scene of ['stage:21','stage:11']){
+    await page.evaluate(s=>{ddd.api.scene(s);ddd.test.stop();ddd.test.step(120);},scene);
+    await page.waitForFunction(()=>ddd.artState().pending===0);
+    const sample=await page.evaluate(()=>{
+      let polys=0,palettes=0;const poly=ddd.paint.poly,request=ddd.cache.requestPalette;
+      ddd.paint.poly=(...args)=>{polys++;return poly(...args);};
+      ddd.cache.requestPalette=(...args)=>{palettes++;return request(...args);};
+      try{ddd.test.step(60);}finally{ddd.paint.poly=poly;ddd.cache.requestPalette=request;}
+      return {polysPerFrame:polys/60,palettes,grass:[0,1,2,3].every(i=>!!ddd.cache.get('grass'+i)),worker:ddd.artState()};
+    });
+    if(sample.worker.failed)throw Error('Scenery worker failed');
+    if(scene==='stage:21'&&(!sample.grass||sample.polysPerFrame>=800))throw Error('Swamp stamp regression: '+JSON.stringify(sample));
+    if(scene==='stage:11'&&sample.palettes!==0)throw Error('Continuous underwater depth requested asynchronous palettes');
+    await page.locator('#game').screenshot({path:`${out}/${engine}-scenery-${scene.replace(':','-')}.png`});
+    console.log(`${engine}: ${scene} scenery caches passed`);
+  }
   // Full fixed replays include fracture stalls, eight globs, the exit and Octopulse's arena.
   for(const scene of ['profile:divide','profile:octopulse']){
     await page.evaluate(s=>{ddd.api.scene(s);ddd.test.stop();ddd.test.clearMetrics();},scene);

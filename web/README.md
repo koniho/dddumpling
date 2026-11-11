@@ -66,7 +66,12 @@ sync; the separate YouTube build below uses SDK-managed saves. Browser-specific 
   stable IDs and the departing pointer on up. `WebStore` implements all save fields.
 - `WebPainter` implements `Painter` through Canvas 2D. `WebStamps` invokes the same
   cached-art generators as Android/iOS for slime banks, crystal layers, underwater
-  scenery, Gator palms and forest foliage. Water haze uses cached alpha textures.
+  scenery, Gator palms, forest foliage, and the native swamp tiles/reed clumps.
+  Swamp tiles use `SwampLayers` bounds and the same 512-pixel viewport cap; clumps
+  use `SwampGrass` dimensions, anchors and live shear. Workers generate these from
+  shared artwork, and the bounded texture cache also handles viewport changes.
+  Water haze uses cached alpha textures. Underwater depth tint uses reusable Canvas
+  compositing surfaces, preserving edge alpha without asynchronous palette changes.
 - `paint.js` provides Canvas primitives, texture meshes and a bounded 64 MiB LRU
   texture cache. Palette variants are quantized to bound recoloring work; spring
   geometry and game rules are unchanged. Measure texture warm-up and palette churn
@@ -116,6 +121,7 @@ For optional local CPU rendering on Termux (Skia supports Android arm64):
 ```sh
 npm install --prefix build/web-test-deps --no-package-lock @napi-rs/canvas@0.1.80
 node web/test/render.cjs
+node web/test/scenery.cjs
 ```
 
 This executes the actual generated JavaScript and draws review frames. It is not a

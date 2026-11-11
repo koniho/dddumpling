@@ -16,6 +16,11 @@ window.ddd = window.ddd || {};
   }
   const contour=(c,p)=>{if(p.length<2)return;c.moveTo(p[0],p[1]);for(let i=2;i<p.length;i+=2)c.lineTo(p[i],p[i+1]);c.closePath();};
   ddd.paint={color,contour,
+    verticalGradient(c,l,t,r,b,colors,stops){
+      if(b<=t||r<=l||colors.length<2||colors.length!==stops.length)return;
+      const ramp=c.createLinearGradient(0,t,0,b);for(let i=0;i<colors.length;i++)ramp.addColorStop(stops[i],color(colors[i]));
+      c.fillStyle=ramp;c.fillRect(l,t,r-l,b-t);
+    },
     poly(c,p,n,w,closed){if(p.length<2 || n>>>24===0)return;const path=pathFor(p,closed);if(w>0)stroke(c,n,w,path);else{c.fillStyle=color(n);c.fill(path);}},
     ellipse(c,x,y,rx,ry,n,w){if(rx<=0||ry<=0)return;c.beginPath();c.ellipse(x,y,rx,ry,0,0,Math.PI*2);if(w>0)stroke(c,n,w);else{c.fillStyle=color(n);c.fill();}},
     arc(c,x,y,rx,ry,a,s,n,w){if(rx<=0||ry<=0||w<=0)return;c.beginPath();c.ellipse(x,y,rx,ry,0,a*Math.PI/180,(a+s)*Math.PI/180,s<0);stroke(c,n,w);},
@@ -52,6 +57,23 @@ window.ddd = window.ddd || {};
     ctx.putImageData(pixels,0,0);put(key,out);return out;
   }
   function matrixFor(mono,shade,water){const weights=[54/256,183/256,19/256],m=new Array(20).fill(0);for(let r=0;r<3;r++){for(let c=0;c<3;c++)m[r*5+c]=(weights[c]*mono+(r===c?1-mono:0))*shade;m[r*5+4]=((water>>>(16-r*8))&255)*(1-shade);}m[18]=1;return m;}
+  // Depth changes continuously. Composite in a reusable surface instead of queuing
+  // quantized palette jobs that temporarily flash back to the unshaded column.
+  const shadeSurfaces=new Map();
+  function shaded(img,shade,water){
+    const key=img.width+'x'+img.height;let surface=shadeSurfaces.get(key);
+    if(!surface){
+      const canvas=document.createElement('canvas');canvas.width=img.width;canvas.height=img.height;
+      surface={canvas,context:canvas.getContext('2d')};
+      if(shadeSurfaces.size>=4)shadeSurfaces.delete(shadeSurfaces.keys().next().value);
+      shadeSurfaces.set(key,surface);
+    }
+    const c=surface.context;
+    c.clearRect(0,0,img.width,img.height);c.drawImage(img,0,0);
+    c.globalCompositeOperation='source-atop';c.globalAlpha=1-Math.max(0,Math.min(1,shade));
+    c.fillStyle=color(water|0xff000000);c.fillRect(0,0,img.width,img.height);
+    c.globalAlpha=1;c.globalCompositeOperation='source-over';return surface.canvas;
+  }
   function triangle(c,img,s,d){
     const [x0,y0,x1,y1,x2,y2]=s,[u0,v0,u1,v1,u2,v2]=d;
     const det=(x1-x0)*(y2-y0)-(x2-x0)*(y1-y0);if(!det)return;
@@ -63,7 +85,7 @@ window.ddd = window.ddd || {};
     // Cached art is recolored on the CPU. Avoid repeated GPU readback during palette changes.
     create(w,h){const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;canvas.getContext('2d',{willReadFrequently:true});return canvas;},
     pixels(c,pixels,w,h){const d=c.createImageData(w,h);for(let i=0;i<pixels.length;i++){const p=pixels[i];d.data[i*4]=p>>>16&255;d.data[i*4+1]=p>>>8&255;d.data[i*4+2]=p&255;d.data[i*4+3]=p>>>24;}c.putImageData(d,0,0);},get bytes(){return bytes;},get count(){return entries.size;},
-    draw(c,img,x,y,w,h,alpha,mono,shade,water){if(!img||w<=0||h<=0||alpha<=0)return;const tex=mono||shade!==1?filtered(img,matrixFor(mono,shade,water)):img;c.save();c.globalAlpha*=Math.min(255,alpha)/255;c.drawImage(tex,x,y,w,h);c.restore();},
+    draw(c,img,x,y,w,h,alpha,mono,shade,water){if(!img||w<=0||h<=0||alpha<=0)return;let tex=mono?filtered(img,matrixFor(mono,1,0)):img;if(shade!==1)tex=shaded(tex,shade,water);c.save();c.globalAlpha*=Math.min(255,alpha)/255;c.drawImage(tex,x,y,w,h);c.restore();},
     matrix(c,img,x,y,l,t,w,h,angle,alpha,m){if(!img)return;c.save();c.globalAlpha*=alpha/255;c.translate(x,y);c.rotate(angle);c.drawImage(filtered(img,Array.from(m)),l,t,w,h);c.restore();},
     // A haze segment is a parallelogram: one affine image needs no triangle clip masks.
     band(c,img,xy,r,a,mono){if(!img||r<=0||a<=0)return;const tex=mono?filtered(img,matrixFor(mono,1,0)):img;c.save();c.globalAlpha*=a/255;for(let i=2;i<xy.length;i+=2){const x0=xy[i-2],y0=xy[i-1],dx=xy[i]-x0,dy=xy[i+1]-y0;if(!dx)continue;c.save();c.transform(dx/tex.width,dy/tex.width,0,2*r/tex.height,x0,y0-r);c.drawImage(tex,0,0);c.restore();}c.restore();},

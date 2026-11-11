@@ -28,7 +28,15 @@ final class WebStamps implements ArtStamp {
         JSObject image=find(key);if(image!=null)return image;
         if(request(group,art))return null;
         int w=256,h=256;
+        float sceneW=0,sceneH=0,deck=0,left=0,top=0,width=0,height=0;
+        if(group.startsWith("swamp:")) {
+            String[] size=group.split(":");sceneW=Float.parseFloat(size[1]);sceneH=Float.parseFloat(size[2]);deck=Float.parseFloat(size[3]);
+            left=SwampLayers.left(art,sceneW);top=SwampLayers.top(art,sceneH,sceneW);
+            width=SwampLayers.width(art,sceneW);height=SwampLayers.bottom(art,sceneH,sceneW,deck)-top;
+            float scale=Math.min(1,512/sceneW);w=(int)Math.ceil(width*scale);h=(int)Math.ceil(height*scale);
+        }
         switch(group) {
+            case "grass":w=SwampGrass.WIDTH;h=SwampGrass.HEIGHT;break;
             case "basin":w=SlimeBasinArt.width(art);h=SlimeBasinArt.height(art);break;
             case "crystal":w=CrystalField.STAMP_WIDTH;h=CrystalField.STAMP_HEIGHT;break;
             case "vista":w=UnderwaterVista.width(art);h=UnderwaterVista.height(art);break;
@@ -36,8 +44,13 @@ final class WebStamps implements ArtStamp {
             case "gator":w=h=384;break;
             case "water":w=art==0?2:Underwater.WATER_TEXTURE;h=Underwater.WATER_TEXTURE;break;
         }
-        image=create(w,h);WebPainter q=new WebPainter(context(image),false);
+        image=create(w,h);WebPainter q=new WebPainter(context(image),sceneW>0);
+        if(sceneW>0) {
+            transform(q.context,w/width,h/height,-left*w/width,-top*h/height);
+            SwampLayers.paint(q,art,sceneW,sceneH,deck);
+        }
         switch(group) {
+            case "grass":SwampGrass.paint(q,art,SwampGrass.ANCHOR_X,SwampGrass.ANCHOR_Y,SwampGrass.UNIT,0,1);break;
             case "water":int[] pixels=new int[w*h];for(int y=0;y<h;y++)for(int x=0;x<w;x++)pixels[y*w+x]=Underwater.waterPixel(x,y,art==0);pixels(context(image),pixels,w,h);break;
             case "basin":SlimeBasinArt.paint(q,art,w,h);break;
             case "crystal":CrystalField.paintLayer(q,art);break;
@@ -48,6 +61,20 @@ final class WebStamps implements ArtStamp {
         }
         remember(key,image);return image;
     }
+    public boolean swampLayer(int art,float w,float h,float deck,float shift,int alpha,float mono) {
+        JSObject img=image("swamp:"+w+":"+h+":"+deck+":",art);if(img==null)return false;
+        float left=SwampLayers.left(art,w),top=SwampLayers.top(art,h,w);
+        draw(p.context,img,left+shift,top,SwampLayers.width(art,w),SwampLayers.bottom(art,h,w,deck)-top,alpha,mono,1,0);return true;
+    }
+    public boolean swampGrass(int art,float x,float y,float r,float sway,int alpha,float mono) {
+        JSObject img=image("grass",art);if(img==null)return false;
+        float unit=r/SwampGrass.UNIT;
+        p.save();p.translate(x,y);shear(p.context,-sway);
+        draw(p.context,img,-SwampGrass.ANCHOR_X*unit,-SwampGrass.ANCHOR_Y*unit,SwampGrass.WIDTH*unit,SwampGrass.HEIGHT*unit,alpha,mono,1,0);
+        p.restore();return true;
+    }
+    @JSBody(params={"c","sx","sy","x","y"},script="c.setTransform(sx,0,0,sy,x,y);") private static native void transform(JSObject c,float sx,float sy,float x,float y);
+    @JSBody(params={"c","sway"},script="c.transform(1,0,sway,1,0,0);") private static native void shear(JSObject c,float sway);
     public boolean stamp(int art,float x,float y,float w,float h,float angle,int tint,float amount) {return greenStamp(art,x,y,w,h,angle,tint,amount,0);}
     public boolean greenStamp(int art,float x,float y,float w,float h,float angle,int tint,float amount,float phase) {
         float[] m=new float[20];GatorPalette.matrix(m,tint,amount,phase);
