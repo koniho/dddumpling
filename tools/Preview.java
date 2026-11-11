@@ -2213,6 +2213,10 @@ final class Preview {
             cloud.preferences.achievementsEnabled=true;
             cloud.settingsPage=PlayerSettings.SERVICES_PAGE;
             shot(dir,"cloud-settings-achievements",cloud,L,w,h,ss);
+            cloud.externalServices=false;
+            shot(dir,"cloud-playables-progress",cloud,L,w,h,ss);
+            cloud.settingsPage=0;shot(dir,"cloud-playables-player",cloud,L,w,h,ss);
+            cloud.externalServices=true;cloud.settingsPage=PlayerSettings.SERVICES_PAGE;
             float trophyClock=cloud.clock;
             for(float age:new float[]{.08f,.28f,.52f}) {
                 cloud.preferences.animatedAction=PlayerSettings.ACHIEVEMENTS;

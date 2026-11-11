@@ -1,0 +1,113 @@
+name: Web port preview
+on:
+  workflow_dispatch:
+    inputs:
+      official_suite:
+        description: Run Google's live SDK Test Suite with production CSP
+        type: boolean
+        default: false
+  pull_request:
+    paths: ['web/**', 'src/**/*.java', 'ios/java/**', 'check.sh', 'tools/build-flags.sh', 'assets/fonts/**', '.github/workflows/web-port.yml']
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Host tests and browser build
+        run: |
+          python3 web/build.py
+          python3 web/build.py --playables
+      - uses: actions/upload-artifact@v6
+        with:
+          name: web-playable-preview
+          path: build/web/
+      - uses: actions/upload-artifact@v6
+        with:
+          name: youtube-playables-preview
+          path: build/web-playables/
+  browser:
+    if: ${{ !inputs.official_suite }}
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [chromium, webkit]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@v6
+        with:
+          name: web-playable-preview
+          path: build/web/
+      - uses: actions/download-artifact@v6
+        with:
+          name: youtube-playables-preview
+          path: build/web/playables/
+      - name: Browser test tools
+        run: |
+          npm install --prefix "$RUNNER_TEMP/web-check" --no-package-lock playwright@1.55.0
+          "$RUNNER_TEMP/web-check/node_modules/.bin/playwright" install --with-deps ${{ matrix.engine }}
+      - name: Browser validation
+        env:
+          SITE_TEST_DEPS: ${{ runner.temp }}/web-check
+          WEB_ENGINE: ${{ matrix.engine }}
+        run: |
+          python3 -m http.server 8766 --bind 127.0.0.1 --directory build/web > build/web-server.log 2>&1 &
+          node web/test/playables.mjs
+          node web/test/browser.mjs
+          node web/test/octopulse.mjs
+          node web/test/divide.mjs
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: web-preview-review-${{ matrix.engine }}
+          path: |
+            build/web-review/
+            build/web-server.log
+
+  official-suite:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.official_suite }}
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@v6
+        with:
+          name: youtube-playables-preview
+          path: build/web-playables/
+      - name: Browser tools and local certificate
+        run: |
+          npm install --prefix "$RUNNER_TEMP/web-check" --no-package-lock playwright@1.55.0
+          "$RUNNER_TEMP/web-check/node_modules/.bin/playwright" install --with-deps chromium
+          openssl req -x509 -newkey rsa:2048 -nodes -keyout "$RUNNER_TEMP/playables.key" -out "$RUNNER_TEMP/playables.crt" -days 1 -subj '/CN=localhost' -addext 'subjectAltName=DNS:localhost,IP:127.0.0.1'
+      - name: Live official Test Suite with production CSP
+        env:
+          SITE_TEST_DEPS: ${{ runner.temp }}/web-check
+        run: |
+          python3 web/tools/serve-playables.py --cert "$RUNNER_TEMP/playables.crt" --key "$RUNNER_TEMP/playables.key" > build/official-server.log 2>&1 &
+          node web/test/official-playables.mjs
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: official-playables-review
+          path: |
+            build/official-review/
+            build/official-server.log

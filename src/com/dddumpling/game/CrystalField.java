@@ -1,7 +1,5 @@
 package com.dddumpling.game;
 
-import java.util.ArrayList;
-
 /** Periodic Voronoi gemstone floor. Geometry is rebuilt only when the viewport changes. */
 final class CrystalField extends Draw {
     static final int LAND=1, COUNT=18;
@@ -14,15 +12,19 @@ final class CrystalField extends Draw {
     private final Pulse[] lights=new Pulse[MAX_LIGHTS+Boss.DIVIDE_PIECES*2];
     private int nextLight,arenaLightCount;
     private boolean hasJiggle;
+    private final Pulse[] edgePulses=new Pulse[MAX_LIGHTS+Boss.DIVIDE_PIECES*2];
+    private int edgePulseCount;
     final CrystalArrival arrival=new CrystalArrival();
     private float width;
     static final class Pulse {
         float born=-100,sky,x,y,rx,ry=.27f,held=-1,kickWave;
         boolean kick;
+        float power,px,prx,pry;
+        final float[] py=new float[LAYERS];
         int color;
     }
     CrystalField(){for(int i=0;i<lights.length;i++)lights[i]=new Pulse();}
-    void reset(){for(Pulse light:lights){light.born=-100;light.held=-1;light.kick=false;light.kickWave=0;}nextLight=arenaLightCount=0;hasJiggle=false;arrival.reset();}
+    void reset(){for(Pulse light:lights){light.born=-100;light.held=-1;light.kick=false;light.kickWave=0;}nextLight=arenaLightCount=edgePulseCount=0;hasJiggle=false;arrival.reset();}
     void cleared(GameCore c,Layout L,float x,float y,int length,int color) {
         if(c.state!=GameCore.PLAY || c.survival.active || Lands.forStage(c.stage)!=LAND)return;
         flash(c,L,x,y,length,color);
@@ -180,30 +182,46 @@ final class CrystalField extends Draw {
     }
     /** Clip to the half-plane closest to this seed; no gameplay RNG is consumed. */
     static float[] clip(float[] p,float nx,float ny,float d) {
-        ArrayList<Float> out=new ArrayList<>();
+        // Count first: one primitive buffer, no boxed coordinates or growing lists on a split.
+        int size=0;
+        for(int k=0;k<p.length;k+=2) {
+            int prev=(k+p.length-2)%p.length;
+            boolean a=p[prev]*nx+p[prev+1]*ny-d<=0,b=p[k]*nx+p[k+1]*ny-d<=0;
+            if(a!=b)size+=2;
+            if(b)size+=2;
+        }
+        float[] result=new float[size];int out=0;
         for(int k=0;k<p.length;k+=2) {
             int prev=(k+p.length-2)%p.length;
             float ax=p[prev],ay=p[prev+1],bx=p[k],by=p[k+1];
             float a=ax*nx+ay*ny-d,b=bx*nx+by*ny-d;
             if((a<=0)!=(b<=0)) {
-                float t=a/(a-b);out.add(ax+(bx-ax)*t);out.add(ay+(by-ay)*t);
+                float t=a/(a-b);result[out++]=ax+(bx-ax)*t;result[out++]=ay+(by-ay)*t;
             }
-            if(b<=0){out.add(bx);out.add(by);}
+            if(b<=0){result[out++]=bx;result[out++]=by;}
         }
-        float[] result=new float[out.size()];
-        for(int k=0;k<result.length;k++)result[k]=out.get(k);
         return result;
+    }
+
+    private void prepareEdgeLights(GameCore c,Layout L) {
+        edgePulseCount=0;
+        for(int i=0;i<MAX_LIGHTS+arenaLightCount;i++) {
+            Pulse light=lights[i];light.power=strength(light,c.clock);
+            if(light.power<=.015f)continue;
+            light.px=light.x*L.w;light.prx=light.rx*L.w;light.pry=light.ry*L.w;
+            for(int layer=0;layer<LAYERS;layer++)light.py[layer]=lightY(light,c,layer)*L.w;
+            edgePulses[edgePulseCount++]=light;
+        }
     }
     void edgeLights(Painter p,GameCore c,Layout L,Cell cell,int layer,float y,float fade) {
         for(int k=0;k<cell.rim.length;k+=2) {
             int n=(k+2)%cell.rim.length;
             float ax=cell.rim[k],ay=cell.rim[k+1],bx=cell.rim[n],by=cell.rim[n+1];
             float best=0,from=0,to=0;int color=0;
-            for(int lightIndex=0;lightIndex<MAX_LIGHTS+arenaLightCount;lightIndex++) {
-                Pulse light=lights[lightIndex];
-                float power=strength(light,c.clock);if(power<=.015f)continue;
-                float rx=light.rx*L.w,ry=light.ry*L.w;
-                float lx=light.x*L.w,ly=lightY(light,c,layer)*L.w-y;
+            for(int lightIndex=0;lightIndex<edgePulseCount;lightIndex++) {
+                Pulse light=edgePulses[lightIndex];
+                float power=light.power,rx=light.prx,ry=light.pry;
+                float lx=light.px,ly=light.py[layer]-y;
                 if(Math.max(ax,bx)<lx-rx || Math.min(ax,bx)>lx+rx
                         || Math.max(ay,by)<ly-ry || Math.min(ay,by)>ly+ry)continue;
                 float dx=(bx-ax)/rx,dy=(by-ay)/ry;
@@ -266,6 +284,7 @@ final class CrystalField extends Draw {
     void draw(Painter p,GameCore c,Layout L,float fade) {
         prepareArenaLights(c,L);
         if(fade<=.001f)return;
+        prepareEdgeLights(c,L);
         if(CrystalArena.active(c)) {
             Boss b=BossVictory.sceneBoss(c);
             if(b.intro>0) {
@@ -283,16 +302,16 @@ final class CrystalField extends Draw {
         prepare(L.w);
         float period=PERIOD*L.w;
         boolean lighting=hasLights(c);
-        p.save();p.clipRect(0,0,L.w,L.deckTop);
+        p.save();p.clipRect(0,0,L.w,L.h);
         for(int layer=0;layer<LAYERS;layer++) {
             float offset=scroll(c.skyClock,L.w,layer);
-            for(int tile=-1;tile<=(int)(L.deckTop/period)+1;tile++) {
+            for(int tile=-1;tile<=(int)(L.h/period)+1;tile++) {
                 float y=offset+tile*period;
                 ArtStamp cache=p.stamps();
-                boolean cached=cache!=null && (y+period<0 || y>L.deckTop || cache.crystal(layer,0,y,L.w,period,(int)(fade*255)));
+                boolean cached=cache!=null && (y+period<0 || y>L.h || cache.crystal(layer,0,y,L.w,period,(int)(fade*255)));
                 p.save();p.translate(0,y);
                 for(Cell cell:layers[layer]) {
-                    if(cell.bottom+y<0 || cell.top+y>L.deckTop)continue;
+                    if(cell.bottom+y<0 || cell.top+y>L.h)continue;
                     if(!cached)base(p,cell,layer,L.w,fade);
                     if(animate && lighting)edgeLights(p,c,L,cell,layer,y,fade);
                     if(!animate)continue;

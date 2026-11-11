@@ -72,7 +72,7 @@ final class Lands extends Draw {
         if (c.state == GameCore.TITLE) return;
         p.save();
         float margin = Renderer.shakeMargin(c, L);
-        p.clipRect(-margin, -margin, L.w + margin, L.deckTop);
+        p.clipRect(-margin, -margin, L.w + margin, L.h + margin);
         float mix = blend(c), valley=1-SlimeBasin.progress(c);
         if (mix < 1f && c.landFrom >= 0) sceneryLayer(p, c, L, c.landFrom, (1f - mix)*valley);
         if (mix > 0f) sceneryLayer(p, c, L, forStage(visualStage(c)), mix*valley);

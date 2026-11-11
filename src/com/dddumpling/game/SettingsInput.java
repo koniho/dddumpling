@@ -85,6 +85,9 @@ final class SettingsInput {
                 && h!=1000+ScoreReset.CANCEL) return false;
         if(h!=SettingsUi.HIT_RESET_PROGRESS) c.resetProgressArmed=false;
         if(h>=1000) {
+            int action=h-1000;
+            if(!c.externalServices && (action==PlayerSettings.SHARE || action==PlayerSettings.RATE
+                    || action==PlayerSettings.PRIVACY || action==PlayerSettings.CLOUD || action==PlayerSettings.ACHIEVEMENTS))return false;
             switch(h-1000) {
                 case ScoreReset.OPEN:
                 case ScoreReset.CONFIRM:

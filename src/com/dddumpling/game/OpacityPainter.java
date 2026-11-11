@@ -11,6 +11,10 @@ class OpacityPainter implements Painter, ArtStamp {
     public GatorCompanion gator() { return p.gator(); }
     // Per-primitive fading is intentionally retained during transitions.
     public ArtStamp stamps() { return amount==1 && p.stamps()!=null?this:null; }
+    public boolean beginCave(float width,float height) {
+        return p.stamps()!=null && p.stamps().beginCave(width,height);
+    }
+    public void endCave() {p.stamps().endCave();}
     public boolean stamp(int art,float x,float y,float w,float h,float angle,int tint,float mix) {
         ArtStamp cache=stamps()==null?null:p.stamps();
         return cache!=null && cache.stamp(art,x,y,w,h,angle,tint,mix);

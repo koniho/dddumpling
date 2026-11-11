@@ -72,7 +72,7 @@ final class SwampVista extends Draw {
             float t=travel(c.skyClock,row,side,lane),d=depth(t),s=scale(t);
             float x=L.w*grassX(L,c.skyClock,t,side,lane,seed),y=rootY(L,t,x);
             float r=L.w*SwampGrass.RADIUS*s*(.8f+hash(seed)*.25f);
-            if(x+r*1.4f<0 || x-r*1.4f>L.w || y-r*SwampGrass.TOP>L.deckTop)continue;
+            if(x+r*1.4f<0 || x-r*1.4f>L.w || y-r*SwampGrass.TOP>L.h)continue;
             float opacity=fade*reveal(t);if(opacity<.008f)continue;
             SwampGrass.draw(p,x,y,r,seed,time,.25f+.75f*Math.min(1,d*2.5f),opacity);
         }
@@ -83,8 +83,8 @@ final class SwampVista extends Draw {
     }
     static void backdrop(Painter p,Layout L,float fade) {
         // A single ramp avoids antialias seams between adjacent translucent rectangles.
-        final int half=32;int[] colors=new int[half*2+2];float[] stops=new float[colors.length];
-        float top=-L.h*.03f,range=L.deckTop-top;
+        final int half=32;int[] colors=new int[half*2+3];float[] stops=new float[colors.length];
+        float top=-L.h*.03f,range=L.h-top;
         colors[0]=ink(0xFF142E3B,fade);stops[0]=0;
         for(int i=0;i<=half;i++) {
             float u=i/(float)half;
@@ -96,7 +96,8 @@ final class SwampVista extends Draw {
             colors[index]=ink(Glyph.mix(0xFF657C68,0xFF153E43,(float)(1-Math.exp(-3.7f*u))),fade);
             stops[index]=(horizon(L)+(L.deckTop-horizon(L))*u-top)/range;
         }
-        p.verticalGradient(-L.w*.06f,top,L.w*1.06f,L.deckTop,colors,stops);
+        colors[colors.length-1]=colors[colors.length-2];stops[stops.length-1]=1;
+        p.verticalGradient(-L.w*.06f,top,L.w*1.06f,L.h,colors,stops);
     }
     static void nightSky(Painter p,Layout L,float fade) {
         for(int i=0;i<18;i++) {
@@ -162,7 +163,7 @@ final class SwampVista extends Draw {
             for(int i=1;i<=48;i++) {
                 float x=xs[i]+side*widths[i]*2f;core[(i+10)*2]=x;core[(i+10)*2+1]=bankY(L,ds[i],x);
             }
-            core[118]=outer;core[119]=L.deckTop;p.fillPoly(core,ink(0xFF324F3B,fade*.65f));
+            core[118]=outer;core[119]=L.h;p.fillPoly(core,ink(0xFF324F3B,fade*.65f));
             // Feather the wet bank into the water with a smooth, shared-color falloff.
             for(int band=0;band<8;band++) {
                 float inner=-1.6f+band*.45f,outerEdge=inner+.45f;
@@ -211,7 +212,7 @@ final class SwampVista extends Draw {
                 int seed=8923+(i-(int)Math.floor(phase))*191+side*73;
                 float t=(i+phase-(float)Math.floor(phase))/6,d=depth(t),r=L.w*(.003f+.011f*d);
                 float x=L.w*(waterEdgeX(L,c.skyClock,d,side)+side*.003f*scale(t)),y=rootY(L,t,x),a=fade*reveal(t);
-                if(x+r*1.4f<0 || x-r*1.4f>L.w || y-r*SwampGrass.TOP>L.deckTop || a<.01f)continue;
+                if(x+r*1.4f<0 || x-r*1.4f>L.w || y-r*SwampGrass.TOP>L.h || a<.01f)continue;
                 p.fillEllipse(x,y,r*1.7f,r*.35f,ink(0xFF385D45,a*.18f));
                 SwampGrass.draw(p,x,y,r,seed,time,.35f+d*.55f,a*.70f);
             }
@@ -280,7 +281,7 @@ final class SwampVista extends Draw {
             float x=L.w*(.5f+bend(c.skyClock,d)+(hash(seed)-.5f)*(.08f+.28f*d)),y=rootY(L,t,x);
             float cycle=time*.34f+hash(seed+3),u=cycle-(float)Math.floor(cycle);
             float r=L.w*(.006f+.028f*d)*(.45f+u),a=fade*reveal(t)*.27f*(float)Math.sin(u*Math.PI);
-            if(y-r*.25f>L.deckTop || a<.008f)continue;
+            if(y-r*.25f>L.h || a<.008f)continue;
             p.arc(x,y,r,r*.24f,15+hash(seed+7)*50,150+hash(seed+11)*130,
                     ink(0xFF9EBBA1,a),Math.max(.55f,L.w*(.0012f+.001f*d)));
         }
@@ -292,7 +293,7 @@ final class SwampVista extends Draw {
             float t=(i+phase-(float)Math.floor(phase))/6,d=depth(t);
             float x=L.w*(.5f+bend(c.skyClock,d)+(hash(seed)-.5f)*(.08f+.22f*d));
             float y=rootY(L,t,x),r=L.w*(.006f+.025f*d),a=fade*reveal(t)*(.14f+.10f*d);
-            if(y-r*3>L.deckTop || a<.008f)continue;
+            if(y-r*3>L.h || a<.008f)continue;
             int kind=Math.floorMod(seed,3);
             if(kind==0) {
                 p.fillEllipse(x,y,r*1.4f,r*.62f,ink(0xFF71846C,a));
@@ -352,7 +353,7 @@ final class SwampVista extends Draw {
             float t=(i+phase-(float)Math.floor(phase))/8,d=depth(t);
             float x=L.w*(.5f+bend(c.skyClock,d)+(hash(seed)-.5f)*(.07f+.17f*d));
             float y=rootY(L,t,x),r=L.w*(.004f+.020f*d),a=fade*.60f*reveal(t);
-            if(y-r>L.deckTop || a<.01f)continue;
+            if(y-r>L.h || a<.01f)continue;
             float bob=(float)Math.sin(time*.6f+seed)*r*.12f;
             p.fillEllipse(x,y+r*.55f,r*2,r*.25f,ink(0xFF153F3A,a*.24f));
             int kind=Math.floorMod(seed,3);

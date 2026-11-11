@@ -35,7 +35,7 @@ final class SlimeHills extends Draw {
         fade*=1-c.drained();
         if(fade<=.001f)return;
         float[] bank=new float[70],edge=new float[66],blob=new float[66];
-        float span=L.deckTop,clock=c.skyClock;
+        float span=L.h,clock=c.skyClock;
         // Continuous banks have no tile seams; the inner contour travels down the valley.
         for(int layer=0;layer<3;layer++)for(int side=0;side<2;side++) {
             for(int j=0;j<=32;j++) {

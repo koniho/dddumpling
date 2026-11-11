@@ -130,17 +130,17 @@ final class CrystalArena extends Draw {
         float sheenFade=fade*(b.intro>0?panelTravel((b.introProgress()-.88f)/.12f):1);
         // Freeze the pattern at the burst so every visible tile leaves its actual position.
         float clock=c.skyClock-burst;
-        p.save();p.clipRect(0,0,L.w,L.deckTop);
+        p.save();p.clipRect(0,0,L.w,L.h);
         for(int layer=0;layer<cells.length;layer++) {
             float offset=CrystalField.scroll(clock,L.w,layer);
-            for(int tile=-1;tile<=(int)(L.deckTop/period)+1;tile++) {
-                float y=offset+tile*period;if(y+period<0 || y>L.deckTop)continue;
+            for(int tile=-1;tile<=(int)(L.h/period)+1;tile++) {
+                float y=offset+tile*period;if(y+period<0 || y>L.h)continue;
                 ArtStamp cache=p.stamps();
                 boolean cached=burst==0 && cache!=null && cache.crystal(art(layer,phase),0,y,L.w,period,(int)(fade*255));
                 p.save();p.translate(0,y);
                 for(int i=0;i<cells[layer].length;i++) {
                     CrystalField.Cell cell=cells[layer][i];
-                    if(cell.bottom+y<0 || cell.top+y>L.deckTop)continue;
+                    if(cell.bottom+y<0 || cell.top+y>L.h)continue;
                     if(burst>0){shatter(p,cell,layer,y,burst,L,fade);continue;}
                     if(!cached)base(p,cell,layer,L.w,fade);
                     if(lighting)c.crystalField.edgeLights(p,c,L,cell,layer,y,fade);

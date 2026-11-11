@@ -100,7 +100,7 @@ final class MushroomForest extends Draw {
         float floor=groveFloor(b,L);
         float lift=-(1-progress)*L.h*.72f;
         float[] shape=new float[66];
-        p.save();p.clipRect(0,0,L.w,L.deckTop);p.translate(0,lift);
+        p.save();p.clipRect(0,0,L.w,L.h);p.translate(0,lift);
         // A softly lit clearing joins the boss's own living roots, without a hard horizon.
         for(int i=3;i>=0;i--)p.fillEllipse(L.w*.5f,floor,L.w*(.38f+i*.055f),L.h*(.035f+i*.018f),
                 Glyph.withAlpha(0xFF9BAE86,(int)(fade*9)));
@@ -237,9 +237,9 @@ final class MushroomForest extends Draw {
             int seed=901+i*53+layer*317;
             float r=L.w*(.13f+hash(seed)*.10f),side=i%2==0?1:-1;
             float x=side>0?L.w*(-.03f+hash(seed+1)*.11f):L.w*(1.03f-hash(seed+1)*.11f);
-            float span=L.deckTop+r*5;
+            float span=L.h+r*5;
             float y=((i+hash(seed+2))*.1f*span+c.skyClock*L.h*(.012f+layer*.008f)+scroll(c,L))%span-r*2.5f;
-            if(y<-r*2.1f || y-r*2.1f>L.deckTop)continue;
+            if(y<-r*2.1f || y-r*2.1f>L.h)continue;
             float sway=c.cloudUi.reduceMotion?0:(float)Math.sin(c.skyClock*.43f+i)*r*.10f;
             int alpha=(int)(fade*(layer==0?38:66));
             // Ferns alternate with rounded broad leaves and slim willow sprays.

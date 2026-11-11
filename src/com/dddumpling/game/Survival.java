@@ -168,7 +168,7 @@ final class Survival extends Draw {
         float width=L.w/(3f+21f*intensity),radius=width*.5f;
         float length=L.h,pitch=length-width;
         float saturation=.50f+.25f*intensity,value=.30f+.08f*intensity;
-        float exitY=(L.deckTop+L.h)*exit*(.25f+.75f*exit);
+        float exitY=L.h*2*exit*(.25f+.75f*exit);
         float x=0;
         int count=0;
         for(int column=0;;column++) {
@@ -183,7 +183,7 @@ final class Survival extends Draw {
             // Leave room for each incoming stripe to shift without opening a gap.
             x=Math.min(L.w,x+width*(.12f+.36f*scatter(column,1)));
         }
-        p.save();p.clipRect(0,0,L.w,L.deckTop);
+        p.save();p.clipRect(0,0,L.w,L.h);
         for(int layer=0;layer<count;layer++) {
             int column=bandOrder[layer];x=bandX[column];
             // The first cap starts above the title sky; later stripes follow continuously.
@@ -200,9 +200,9 @@ final class Survival extends Draw {
                 if(stripeX>L.w)stripeX=2f*L.w-stripeX;
                 float cy=offset+row*pitch,top=cy-pitch*.5f,bottom=cy+pitch*.5f;
                 // Phase freezes at death: only the stripes already visible leave, with no replacements.
-                if(bottom+radius<0 || top-radius>L.deckTop)continue;
+                if(bottom+radius<0 || top-radius>L.h)continue;
                 top+=exitY;bottom+=exitY;
-                if(top-radius>L.deckTop)continue;
+                if(top-radius>L.h)continue;
                 float hue=(scatter(column,4)+(row-cycle)*.137f)%1f;
                 if(hue<0)hue+=1f;
                 int color=Glyph.hsv(hue*6f,saturation,value);

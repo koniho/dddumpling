@@ -7,9 +7,23 @@ final class TestCrystalField extends Check {
         arenaLights(L);
         splitLighting(L);
         arrival(L);
+        float[] square={0,0,2,0,2,2,0,2};
+        check("crystal clip keeps boundary points and interpolates crossing edges",
+                java.util.Arrays.equals(CrystalField.clip(square,1,0,1),new float[]{0,0,1,0,1,2,0,2}));
+        float[] kept=CrystalField.clip(square,1,0,2);
+        check("crystal clip owns its output even when nothing is clipped",kept!=square && java.util.Arrays.equals(kept,square));
+        check("crystal clip handles fully excluded and empty shapes",
+                CrystalField.clip(square,1,0,-1).length==0 && CrystalField.clip(new float[0],1,0,1).length==0);
 
         GatorReplay replay=new GatorReplay(Boss.SPLITTER),chunked=new GatorReplay(Boss.SPLITTER);
-        for(int i=0;i<1440;i++){replay.step(L);if(i%2==1)chunked.update(GatorReplay.STEP*2,L);}
+        boolean splitEffects=false;
+        for(int i=0;i<1440;i++) {
+            int before=replay.core.boss.divideSplits;replay.step(L);
+            if(replay.core.boss.divideSplits>before)splitEffects|=replay.core.shake>0
+                    && replay.core.crystalField.hasLights(replay.core);
+            if(i%2==1)chunked.update(GatorReplay.STEP*2,L);
+        }
+        check("Divide replay includes real pinch lighting and shake",splitEffects);
         check("Divide profiling reproduces the busy split state without a playthrough",replay.core.boss.pieceCount()==Boss.DIVIDE_PIECES);
         check("Divide profiling is frame chunk independent",replay.tick==chunked.tick
                 && replay.core.boss.divideSplits==chunked.core.boss.divideSplits);

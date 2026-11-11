@@ -15,6 +15,13 @@
 @end
 
 @implementation DDPainterTests
+- (void)testCavePassKeepsNativeRenderingPath {
+  DDIOSPainter *painter=[DDIOSPainter new];
+  XCTAssertFalse([painter beginCaveWithFloat:390 withFloat:844]);
+  [painter endCave];
+  XCTAssertEqual(painter.context, NULL);
+}
+
 - (void)testBareCanvasHasNoEquippedAccessories {
   DDIOSPainter *painter=[DDIOSPainter new];
   for (jint slot=0;slot<5;slot++)

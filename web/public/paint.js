@@ -1,0 +1,98 @@
+'use strict';
+window.ddd = window.ddd || {};
+(() => {
+  const colors=new Map();
+  const color=n=>{let c=colors.get(n);if(c)return c;c=`rgba(${n>>>16&255},${n>>>8&255},${n&255},${(n>>>24)/255})`;if(colors.size>4096)colors.clear();colors.set(n,c);return c;};
+  const stroke=(c,n,w,path)=>{c.strokeStyle=color(n);c.lineWidth=w;c.lineJoin='round';c.lineCap='round';if(path)c.stroke(path);else c.stroke();};
+  // Java passes its actual coordinate buffer. Reuse static paths; scratch/body arrays may mutate.
+  const paths=new WeakMap();
+  function pathFor(p,closed){
+    let entry=paths.get(p),same=entry?.closed===closed && entry.points.length===p.length;
+    if(same)for(let i=0;i<p.length;i++)if(entry.points[i]!==p[i]){same=false;break;}
+    if(same)return entry.path;
+    const path=new Path2D();path.moveTo(p[0],p[1]);for(let i=2;i<p.length;i+=2)path.lineTo(p[i],p[i+1]);if(closed)path.closePath();
+    if(!entry || entry.points.length!==p.length)entry={points:new Float32Array(p.length)};
+    entry.points.set(p);entry.path=path;entry.closed=closed;paths.set(p,entry);return path;
+  }
+  const contour=(c,p)=>{if(p.length<2)return;c.moveTo(p[0],p[1]);for(let i=2;i<p.length;i+=2)c.lineTo(p[i],p[i+1]);c.closePath();};
+  ddd.paint={color,contour,
+    verticalGradient(c,l,t,r,b,colors,stops){
+      if(b<=t||r<=l||colors.length<2||colors.length!==stops.length)return;
+      const ramp=c.createLinearGradient(0,t,0,b);for(let i=0;i<colors.length;i++)ramp.addColorStop(stops[i],color(colors[i]));
+      c.fillStyle=ramp;c.fillRect(l,t,r-l,b-t);
+    },
+    poly(c,p,n,w,closed){if(p.length<2 || n>>>24===0)return;const path=pathFor(p,closed);if(w>0)stroke(c,n,w,path);else{c.fillStyle=color(n);c.fill(path);}},
+    ellipse(c,x,y,rx,ry,n,w){if(rx<=0||ry<=0)return;c.beginPath();c.ellipse(x,y,rx,ry,0,0,Math.PI*2);if(w>0)stroke(c,n,w);else{c.fillStyle=color(n);c.fill();}},
+    arc(c,x,y,rx,ry,a,s,n,w){if(rx<=0||ry<=0||w<=0)return;c.beginPath();c.ellipse(x,y,rx,ry,0,a*Math.PI/180,(a+s)*Math.PI/180,s<0);stroke(c,n,w);},
+    line(c,x,y,a,b,n,w){if(w<=0)return;c.beginPath();c.moveTo(x,y);c.lineTo(a,b);stroke(c,n,w);}
+  };
+  // Cave textures are authored at 256px wide. Blend them at that resolution, then
+  // composite once; all motion/lighting still updates every frame and actors stay sharp.
+  ddd.cave={
+    create(){const canvas=document.createElement('canvas');return {canvas,context:canvas.getContext('2d')};},
+    begin(layer,w,h){
+      if(w<=0||h<=0||!layer.context)return null;
+      const width=Math.min(256,Math.ceil(w)),height=Math.max(1,Math.round(h*width/w));
+      if(layer.canvas.width!==width||layer.canvas.height!==height){layer.canvas.width=width;layer.canvas.height=height;}
+      layer.width=w;layer.height=h;const c=layer.context;
+      c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,width,height);c.setTransform(width/w,0,0,height/h,0,0);
+      return c;
+    },
+    end(target,layer){target.drawImage(layer.canvas,0,0,layer.width,layer.height);}
+  };
+  const entries=new Map(),limit=64*1024*1024;let bytes=0,serial=0;
+  function get(key){const v=entries.get(key);if(!v)return null;entries.delete(key);entries.set(key,v);return v;}
+  function remove(key){const v=entries.get(key);if(v){bytes-=v.width*v.height*4;entries.delete(key);v.close?.();}}
+  function put(key,img){const old=entries.get(key);if(old===img)return;remove(key);entries.set(key,img);bytes+=img.width*img.height*4;img.cacheID??=++serial;while(bytes>limit&&entries.size>1){const [k,v]=entries.entries().next().value;remove(k);}}
+  // Recolour cached artwork once per quantized palette, on all browsers (no Canvas.filter dependency).
+  function filtered(img,m){
+    if(m.every((v,i)=>Math.abs(v-([0,6,12,18].includes(i)?1:0))<.0001))return img;
+    const q=m.map((v,i)=>Math.round(v*(i%5===4?1/8:16))/(i%5===4?1/8:16));
+    const key=`palette:${img.artGroup ?? img.cacheID}:${img.artId ?? ''}:${q.join(',')}`;let out=get(key);if(out)return out;
+    // Readback/recolour must not stall a prompt press. Keep the base art while its tint arrives.
+    if(img.artGroup && ddd.cache.requestPalette?.(img.artGroup,img.artId,key,Array.from(q)))return img;
+    out=document.createElement('canvas');out.width=img.width;out.height=img.height;const ctx=out.getContext('2d',{willReadFrequently:true});ctx.drawImage(img,0,0);
+    const pixels=ctx.getImageData(0,0,out.width,out.height),d=pixels.data;
+    for(let i=0;i<d.length;i+=4){const r=d[i],g=d[i+1],b=d[i+2];for(let j=0;j<3;j++)d[i+j]=q[j*5]*r+q[j*5+1]*g+q[j*5+2]*b+q[j*5+4];}
+    ctx.putImageData(pixels,0,0);put(key,out);return out;
+  }
+  function matrixFor(mono,shade,water){const weights=[54/256,183/256,19/256],m=new Array(20).fill(0);for(let r=0;r<3;r++){for(let c=0;c<3;c++)m[r*5+c]=(weights[c]*mono+(r===c?1-mono:0))*shade;m[r*5+4]=((water>>>(16-r*8))&255)*(1-shade);}m[18]=1;return m;}
+  // Depth changes continuously. Composite in a reusable surface instead of queuing
+  // quantized palette jobs that temporarily flash back to the unshaded column.
+  const shadeSurfaces=new Map();
+  function shaded(img,shade,water){
+    const key=img.width+'x'+img.height;let surface=shadeSurfaces.get(key);
+    if(!surface){
+      const canvas=document.createElement('canvas');canvas.width=img.width;canvas.height=img.height;
+      surface={canvas,context:canvas.getContext('2d')};
+      if(shadeSurfaces.size>=4)shadeSurfaces.delete(shadeSurfaces.keys().next().value);
+      shadeSurfaces.set(key,surface);
+    }
+    const c=surface.context;
+    c.clearRect(0,0,img.width,img.height);c.drawImage(img,0,0);
+    c.globalCompositeOperation='source-atop';c.globalAlpha=1-Math.max(0,Math.min(1,shade));
+    c.fillStyle=color(water|0xff000000);c.fillRect(0,0,img.width,img.height);
+    c.globalAlpha=1;c.globalCompositeOperation='source-over';return surface.canvas;
+  }
+  function triangle(c,img,s,d){
+    const [x0,y0,x1,y1,x2,y2]=s,[u0,v0,u1,v1,u2,v2]=d;
+    const det=(x1-x0)*(y2-y0)-(x2-x0)*(y1-y0);if(!det)return;
+    const a=((u1-u0)*(y2-y0)-(u2-u0)*(y1-y0))/det,b=((v1-v0)*(y2-y0)-(v2-v0)*(y1-y0))/det;
+    const cc=((u2-u0)*(x1-x0)-(u1-u0)*(x2-x0))/det,dd=((v2-v0)*(x1-x0)-(v1-v0)*(x2-x0))/det;
+    c.save();c.beginPath();c.moveTo(u0,v0);c.lineTo(u1,v1);c.lineTo(u2,v2);c.closePath();c.clip();c.transform(a,b,cc,dd,u0-a*x0-cc*y0,v0-b*x0-dd*y0);c.drawImage(img,0,0);c.restore();
+  }
+  ddd.cache={get,put,remove,filtered,
+    // Cached art is recolored on the CPU. Avoid repeated GPU readback during palette changes.
+    create(w,h){const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;canvas.getContext('2d',{willReadFrequently:true});return canvas;},
+    pixels(c,pixels,w,h){const d=c.createImageData(w,h);for(let i=0;i<pixels.length;i++){const p=pixels[i];d.data[i*4]=p>>>16&255;d.data[i*4+1]=p>>>8&255;d.data[i*4+2]=p&255;d.data[i*4+3]=p>>>24;}c.putImageData(d,0,0);},get bytes(){return bytes;},get count(){return entries.size;},
+    draw(c,img,x,y,w,h,alpha,mono,shade,water){if(!img||w<=0||h<=0||alpha<=0)return;let tex=mono?filtered(img,matrixFor(mono,1,0)):img;if(shade!==1)tex=shaded(tex,shade,water);c.save();c.globalAlpha*=Math.min(255,alpha)/255;c.drawImage(tex,x,y,w,h);c.restore();},
+    matrix(c,img,x,y,l,t,w,h,angle,alpha,m){if(!img)return;c.save();c.globalAlpha*=alpha/255;c.translate(x,y);c.rotate(angle);c.drawImage(filtered(img,Array.from(m)),l,t,w,h);c.restore();},
+    // A haze segment is a parallelogram: one affine image needs no triangle clip masks.
+    band(c,img,xy,r,a,mono){if(!img||r<=0||a<=0)return;const tex=mono?filtered(img,matrixFor(mono,1,0)):img;c.save();c.globalAlpha*=a/255;for(let i=2;i<xy.length;i+=2){const x0=xy[i-2],y0=xy[i-1],dx=xy[i]-x0,dy=xy[i+1]-y0;if(!dx)continue;c.save();c.transform(dx/tex.width,dy/tex.width,0,2*r/tex.height,x0,y0-r);c.drawImage(tex,0,0);c.restore();}c.restore();},
+    mesh(c,img,x,y,w,h,offsets,left,alpha){if(!img)return;c.save();c.globalAlpha*=alpha/255;const n=offsets.length-1;for(let i=0;i<n;i++){
+      const y0=y+h*i/n,y1=y+h*(i+1)/n,s0=img.height*i/n,s1=img.height*(i+1)/n;
+      const l0=x-(left?0:offsets[i]),l1=x-(left?0:offsets[i+1]),r0=x+w+(left?offsets[i]:0),r1=x+w+(left?offsets[i+1]:0);
+      triangle(c,img,[0,s0,img.width,s0,0,s1],[l0,y0,r0,y0,l1,y1]);triangle(c,img,[img.width,s0,img.width,s1,0,s1],[r0,y0,r1,y1,l1,y1]);
+    }c.restore();}
+  };
+})();

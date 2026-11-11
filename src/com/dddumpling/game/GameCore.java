@@ -633,6 +633,8 @@ final class GameCore {
     /** Session-only developer aid; damage feedback still plays normally. */
     boolean devInfiniteLives,devLandBonuses;
     final LandBonus landBonus;
+    // Transient draw-only mask, set on isolated developer replays; never saved.
+    int profileHiddenOcto;
     /** Newly collected stars in this update, including the winning pickup. */
     int starPickups;
     int starBlastHaptic; // Per-frame completion storm: 1 light, 2 heavy.
@@ -1610,6 +1612,8 @@ final class GameCore {
 
     final Random rnd;
     final Store store;
+    boolean externalServices=true; // Embedded hosts omit store links and native service UI.
+    boolean mouseStretch; // Host capability; touch hosts keep the two-finger lesson.
     final PlaythroughLog playthrough;
     final Progress progress;
     final LeaderboardSubmissions leaderboards;
