@@ -96,12 +96,17 @@ final class ReleaseChange extends Draw {
             }
         }
     }
+    static void listIcon(Painter p,int id,float x,float y,float r,float time) {
+        // Freeze scenery only in the list; detail cards keep their live animation.
+        boolean scenery=homes(id) || id==FOREST_SCENERY || id==SWAMP_SCENERY;
+        icon(p,id,x,y,r,scenery?1.8f:time);
+    }
     static void icon(Painter p,int id,float x,float y,float r,float time) {
         icon(p,id,x,y,r,time,-1f);
     }
     static void icon(Painter p,int id,float x,float y,float r,float time,float celebration) {
         if(homes(id)) {
-            ReleaseHomes.icon(p,id==ARENA_HOMES,x,y,r);return;
+            ReleaseHomes.icon(p,id==ARENA_HOMES,x,y,r,time);return;
         }
         if(id==SWAMP_SCENERY) {
             ReleaseHomes.swampIcon(p,x,y,r,time,celebration);

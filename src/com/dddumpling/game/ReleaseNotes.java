@@ -464,7 +464,7 @@ final class ReleaseNotes extends Draw {
                 int id=ReleaseChange.ITEMS[release][i];float y=itemY(L,release,i)-listScroll,x=iconX(L,release,i);
                 int color=listDragging && !listMoved && pressedRow==itemOffset(release)+i ? 0xFF71618A : 0xFF463B5B;
                 p.fillPoly(pageShape(x-s*1.4f,y-s*1.4f,x+s*1.4f,y+s*1.4f,s*.4f),color);
-                ReleaseChange.icon(p,ReleaseContent.ICONS[id],x,y,s*1.05f,c.clock);
+                ReleaseChange.listIcon(p,ReleaseContent.ICONS[id],x,y,s*1.05f,c.clock);
             }
         }
         p.restore();

@@ -38,10 +38,22 @@ final class TestVisuals extends Check {
     private static void releaseBook(Layout L) {
         TestUpdatePrompt.run(L);TestReviewPrompt.run(L);
         releaseHistory();releaseEntryBounds();releaseHomes(L);releaseMascots(L);releaseWardrobe(L);releaseCelebrations(L);
-        releaseBonusDemo(L);
+        releaseBonusDemo(L);releaseStaticScenery();
         releaseOutside(L);
         releaseFeedback(L);
         try(ReleaseExamples examples=new ReleaseExamples()) { releaseNavigation(L);releaseDetailOutside(L);releaseBookExamples(L); }
+    }
+    private static void releaseStaticScenery() {
+        RasterPainter p=new RasterPainter(160,180,1);
+        for(int icon:new int[]{ReleaseChange.LAND_HOMES,ReleaseChange.ARENA_HOMES,
+                ReleaseChange.FOREST_SCENERY,ReleaseChange.SWAMP_SCENERY}) {
+            p.clear(Draw.BG);ReleaseChange.listIcon(p,icon,80,90,48,.5f);int[] first=p.resolve();
+            p.clear(Draw.BG);ReleaseChange.listIcon(p,icon,80,90,48,9f);
+            check("scenery list preview stays still "+icon,java.util.Arrays.equals(first,p.resolve()));
+            p.clear(Draw.BG);ReleaseChange.icon(p,icon,80,90,48,.5f);first=p.resolve();
+            p.clear(Draw.BG);ReleaseChange.icon(p,icon,80,90,48,9f);
+            check("scenery artwork can still animate "+icon,!java.util.Arrays.equals(first,p.resolve()));
+        }
     }
     private static void releaseBonusDemo(Layout L) {
         int item=ReleaseContent.ITEMS[0][0],saved=ReleaseContent.ICONS[item];
