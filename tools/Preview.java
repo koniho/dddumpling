@@ -3950,6 +3950,13 @@ final class Preview {
             shot(dir, "76n-octopulse-pain-wave-" + frame, pulsePain, L, w, h, ss);
         }
 
+        GameCore kidsGrab = TestOctoThrow.kidsEncounter(L);
+        for (int i = 0; i < 360 && kidsGrab.boss.octoReach < 0; i++)
+            kidsGrab.boss.update(DT, L, kidsGrab.rnd);
+        kidsGrab.boss.press(kidsGrab.boss.octoTarget, kidsGrab.rnd, L);
+        for (int i = 0; i < 180; i++) kidsGrab.update(DT, L);
+        shot(dir, "76t-octopulse-kids-grab-window", kidsGrab, L, w, h, ss);
+
         GameCore throwing = TestOctoThrow.tear(L, 7);
         throwing.stageBanner = throwing.rosterSceneT = 0f;
         String[] throwTags = {"76o-octopulse-throw-windup", "76p-octopulse-throw-release",

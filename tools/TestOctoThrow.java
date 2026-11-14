@@ -2,7 +2,18 @@ package com.dddumpling.game;
 
 final class TestOctoThrow extends Check {
     static GameCore tear(Layout L, int removed) {
-        GameCore c = TestBoss.enterBoss(L, Boss.OCTOPUS, 810L + removed);
+        return tear(L, removed, false);
+    }
+
+    static GameCore kidsEncounter(Layout L) {
+        GameCore c=new GameCore(new Mem(),1415L);c.preferences.kids=true;c.startGame();
+        c.enterStage(WorldCatalog.bossStage(Boss.OCTOPUS));
+        c.stageBanner=c.stageGap=0;c.boss.intro=0;c.boss.update(0,L,c.rnd);
+        return c;
+    }
+
+    static GameCore tear(Layout L, int removed, boolean kids) {
+        GameCore c = kids ? kidsEncounter(L) : TestBoss.enterBoss(L, Boss.OCTOPUS, 810L + removed);
         Boss b = c.boss;
         b.octoArms = (1 << (9 - removed)) - 1;
         b.hp = 9 - removed;
@@ -15,6 +26,7 @@ final class TestOctoThrow extends Check {
     }
 
     static void run(Layout L) {
+        kidsAssistance(L);
         group("octopulse arm throws");
         for (int removed = 1; removed <= 8; removed++) for (int parry = 0; parry < 2; parry++) {
             GameCore c = tear(L, removed);
@@ -97,5 +109,68 @@ final class TestOctoThrow extends Check {
         GameCore reset = tear(L, 7);
         reset.boss.leave();
         check("leaving clears queued throws", !OctoThrow.busy(reset.boss));
+    }
+
+    private static void readyStrike(Boss b) {
+        b.octoTarget=0;b.octoAttackArm=0;b.octoSweep=b.octoCharge=1;b.octoReach=0;
+    }
+
+    private static void kidsAssistance(Layout L) {
+        group("kids octopulse assistance");
+        for(int stolen:new int[]{0,1<<1,(1<<1)|(1<<4)}) {
+            GameCore c=kidsEncounter(L);Boss b=c.boss;readyStrike(b);b.disabledKeys=stolen;
+            float normalWindow=Math.max(.36f,.925f-Integer.bitCount(stolen)*.125f);
+            for(int frame=0;frame<(int)((normalWindow+.15f)/DT);frame++)b.update(DT,L,c.rnd);
+            check("kids response remains open past normal deadline "+stolen,b.octoTarget==0 && b.octoReach<1);
+            c.tapKey(0,L);
+            check("late-but-valid kids response exposes the arm "+stolen,b.octoVulnerableArm==0);
+            GameCore miss=kidsEncounter(L);readyStrike(miss.boss);miss.boss.disabledKeys=stolen;
+            for(int frame=0;frame<(int)((normalWindow*2+.1f)/DT);frame++)miss.boss.update(DT,L,miss.rnd);
+            check("kids response still has a finite doubled deadline "+stolen,miss.boss.octoTarget<0);
+        }
+        GameCore early=kidsEncounter(L);Boss e=early.boss;
+        for(int frame=0;frame<300 && e.octoTarget<0;frame++)e.update(DT,L,early.rnd);
+        int key=e.octoTarget,lives=early.lives;
+        early.tapKey(key,L);
+        check("kids early press only gives timing feedback",e.octoFeedback==Boss.OCTO_EARLY
+                && early.lives==lives && e.octoLash==0 && e.disabledKeys==0 && e.octoVulnerableArm<0);
+        for(int frame=0;frame<120 && e.octoReach<0;frame++)e.update(DT,L,early.rnd);
+        early.tapKey(key,L);
+        check("kids can retry the same key when the arm is ready",e.octoVulnerableArm>=0 && early.lives==lives);
+        for(int frame=0;frame<150;frame++)e.update(DT,L,early.rnd);
+        check("kids arm remains grabbable after two and a half seconds",e.octoVulnerableArm>=0
+                && Math.abs(e.octoDragProgress()-.625f)<.01f);
+        int arm=e.octoVulnerableArm,tip=Boss.OCTO_NODES-1;
+        early.grabBoss(e.octoX[arm][tip],e.octoY[arm][tip]);
+        early.dragBoss(L.w*.5f,(L.playTop+L.dangerY)*.5f,L);
+        early.dragBoss(L.playLeft-L.keyR,L.playTop,L);
+        check("a late kids grab can still tear off the arm",(e.octoArms&(1<<arm))==0);
+
+        GameCore escaped=kidsEncounter(L);Boss b=escaped.boss;readyStrike(b);escaped.tapKey(0,L);
+        int arrivals=0,maxBolts=0;
+        for(int frame=0;frame<60*8;frame++) {
+            arrivals+=b.update(DT,L,escaped.rnd);maxBolts=Math.max(maxBolts,b.boltCount());
+            if(frame==180)check("missed kids grab has not expired at three seconds",b.octoVulnerableArm==0);
+            if(frame==245)check("missed kids grab expires after four seconds",b.octoVulnerableArm<0 && b.boltCount()==1);
+        }
+        check("missed kids grab retaliates with one projectile",arrivals==1 && maxBolts==1 && b.octoFlurryLeft==0);
+
+        for(int removed=1;removed<=8;removed++)for(boolean parry:new boolean[]{false,true}) {
+            GameCore c=tear(L,removed,true);b=c.boss;
+            int hits=0,cleared=0,launches=0,max=0;
+            boolean waited=true;
+            for(int frame=0;frame<60*8;frame++) {
+                hits+=b.update(DT,L,c.rnd);max=Math.max(max,b.boltCount());
+                if(b.launched)launches++;
+                if(OctoThrow.busy(b) || b.boltCount()>0)waited&=b.octoTarget<0;
+                if(parry)for(int i=0;i<Boss.MAX_BOLTS;i++)if(b.blive[i])
+                    cleared+=b.press(b.bglyph[i],c.rnd,L)==Boss.PARRY?1:0;
+                if(!OctoThrow.busy(b) && b.boltCount()==0)break;
+            }
+            int expected=removed==8?0:1;
+            check("kids tear has one resolvable retaliation "+removed+"/"+parry,
+                    launches==expected && max==expected && waited
+                    && (parry?cleared==expected && hits==0:hits==expected));
+        }
     }
 }

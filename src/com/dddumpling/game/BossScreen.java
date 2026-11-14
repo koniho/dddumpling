@@ -1039,7 +1039,7 @@ final class BossScreen extends Draw {
         }
         p.polyline(smile, ink, rx * 0.055f);
         if (!b.beaten && b.octoVulnerableArm >= 0) {
-            float urgency = Math.min(1f, b.octoDragTime / 2f);
+            float urgency = b.octoDragProgress();
             float wince = 0.5f + 0.5f * (float) Math.sin(
                     c.clock * (8f + urgency * 20f));
             // Squeezed brows, flushed cheeks and a trembling frown during the whole catch window.
@@ -1188,8 +1188,8 @@ final class BossScreen extends Draw {
                         && (b.octoSweep < 1f || b.octoCharge < 1f);
                 boolean vulnerable = !victory && !b.beaten && a == b.octoVulnerableArm;
                 boolean escaping = !victory && !b.beaten && a == b.octoEscapeArm && b.octoEscape > 0f;
-                float tug = vulnerable ? Math.min(1f, b.octoDragTime / 2f) : 0f;
-                // The warning heartbeat accelerates continuously toward the two-second escape.
+                float tug = vulnerable ? b.octoDragProgress() : 0f;
+                // The warning heartbeat follows the current profile's escape deadline.
                 float pulse = 0.5f + 0.5f * (float) Math.sin(c.clock * (8f + 24f * tug));
                 int armCol = dying
                         ? Glyph.mix(col, death < 0.38f ? 0xFFFFFF8A : 0xFFFF6A86,

@@ -13,14 +13,15 @@ runtime setting, and persistence hooks have been removed; old saved speed values
 | Player shots toward words or bosses | No | `Fx.updateShots`: normal `dt` for flight progress |
 | Cave enemy approaching the player | Yes | `Cave.update`: approach after the reveal; contact deadline follows position |
 | Cave player bolts | No | `CaveEnemy.update`: normal flight and impact timing |
-| Boss introduction, prompts, charge, attacks, arm sequences, recovery, defeat | No | `Boss.update`: ordinary `dt` for all actions and body animation |
+| Boss introduction, prompts, charge, attacks, arm sequences, recovery, defeat | No | `Boss.update`: ordinary `dt`; Octopulse has separate Kids response/grab durations |
 | Stage gaps, spawn countdowns, frenzy duration | No | `GameCore.update`: ordinary `dt` |
 | Steamer, Star Path, Cart Rush, Dumpling Mine | No | Normal animation timing; Kids Steamer holds its play phase until completion |
 | Cave travel, route choice, reveal, hazards, retreat, camera | No | Normal sequence and animation timing |
 | Key feedback, particles, soft bodies, UI, music, celebrations, collection parade | No | Normal animation/audio clocks |
 | Panic-swipe push-back playback | No | `slideT` resolves the player's action at normal speed |
 
-Boss actions and projectile flights retain their durations. Movement-linked
+Boss actions retain their durations except Octopulse's Kids response/grab windows;
+projectile flight durations stay unchanged. Movement-linked
 cues (word entrance/warning and cave approach stomps) follow the slowed position.
 
 Kids Mode's other assistance remains separate: four keys and early-stage movement/spawn pacing. Word length
@@ -30,8 +31,13 @@ not a shared time multiplier. Lives and game over remain enabled.
 
 Slime and Dark Divide keep their requested key fixed in Kids Mode (each new Divide
 piece gets its own key). Both allow only one live boss projectile at a time,
-including across all Divide pieces. Projectile flight and boss action speeds stay
-normal. Adventure, retries and Boss Time Attack use the run's Kids Mode setting.
+including across all Divide pieces. Their projectile flight and boss action speeds
+stay normal. Adventure, retries and Boss Time Attack use the run's Kids Mode setting.
+
+Octopulse doubles its matching-key strike window in Kids Mode and gives four seconds
+instead of two to grab and tear the exposed arm. The arm's urgency cues follow that
+longer window. Successful tears and missed grabs each trigger one projectile, with
+their usual flight speed. Early presses retain harmless timing feedback.
 
 Kids Mode gives the Steamer unlimited play time and a fixed ten-pip target, independent of
 lifetime wins. Its spinner, lid escape and parade still finish normally. It caps Star Path at 30%

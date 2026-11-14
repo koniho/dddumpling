@@ -732,8 +732,10 @@ their own difficulty rules and never change saved Adventure assistance.
 
 **Kids Mode** keeps lives and game over, slows enemy traversal to 45% speed while projectiles retain normal speed, keeps four keys and early-stage movement/spawn pacing.
 Words grow with the stage, including multipress keys, with a six-press total cap.
-Linked pairs use the same 200 ms window as normal mode. Boss actions, animations,
-sequences, and minigame clocks run at normal speed. Regular play returns on
+Linked pairs use the same 200 ms window as normal mode. Slime and Dark Divide keep
+their prompts fixed and allow one projectile at a time. Octopulse doubles its response
+and arm-grab windows and retaliates with one projectile. Other boss actions, animations,
+and minigame clocks run at normal speed. Regular play returns on
 the next run after switching it off. `PlayerSettings`, `SettingsArt`, and `SettingsInput` own the
 public preferences, character handles, and shared native input; `SettingsUi` and `DevSettings` own
 the developer groups. See [Game timing](docs/game-timing.md) for the multiplier boundaries.

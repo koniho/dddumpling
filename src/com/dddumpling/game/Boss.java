@@ -1481,6 +1481,9 @@ final class Boss {
         return octoFeedback==OCTO_EARLY?"TOO EARLY!":octoFeedback==OCTO_WRONG?"WRONG CHOICE!":"TOO LATE!";
     }
 
+    float octoDragDuration() { return kids ? 4f : 2f; }
+    float octoDragProgress() { return Math.min(1f, octoDragTime / octoDragDuration()); }
+
     private void updateOctopus(float dt, Layout L, Random rnd) {
         octoImpact = octoPlayerHit = false;
         octoTaunt = Math.max(0f, octoTaunt - dt / 1.20f);
@@ -1488,7 +1491,7 @@ final class Boss {
         octoEscape = Math.max(0f, octoEscape - dt / 0.72f);
         if (octoVulnerableArm >= 0) {
             octoDragTime += dt;
-            if (octoDragTime >= 2f) {
+            if (octoDragTime >= octoDragDuration()) {
                 octoEscapeArm = octoVulnerableArm;
                 octoEscape = 1f;
                 octoVulnerableArm = -1;
@@ -1496,7 +1499,7 @@ final class Boss {
                 octoDragStarted = octoDragCanDamage = false;
                 octoDragTime = 0f;
                 held = -1;
-                octoFlurryLeft = 3;
+                octoFlurryLeft = kids ? 1 : 3;
                 octoFlurryT = 0f;
                 octoPause = 1.25f;
                 rage = 1f;
@@ -1505,7 +1508,8 @@ final class Boss {
         }
         if (octoFlurryLeft > 0) {
             octoFlurryT -= dt;
-            if (octoFlurryT <= 0f && singleBolt(rnd, body.centreX(), body.centreY()) >= 0) {
+            if (octoFlurryT <= 0f && (!kids || boltCount() == 0)
+                    && singleBolt(rnd, body.centreX(), body.centreY()) >= 0) {
                 octoFlurryLeft--;
                 octoFlurryT = 0.22f;
             }
@@ -1576,6 +1580,7 @@ final class Boss {
                 // The strike keeps the old reaction duration; sweep and charge are added before it.
                 float duration = Math.max(0.36f,
                         0.925f - Integer.bitCount(disabledKeys) * 0.125f);
+                if (kids) duration *= 2f;
                 octoReach += dt / duration;
                 if (octoReach >= 1f) {
                     octoTaunt = 0.60f;
@@ -1632,7 +1637,7 @@ final class Boss {
         float leanCos = (float)Math.cos(octoLean), leanSin = (float)Math.sin(octoLean);
         float resistedDragX = octoDragX, resistedDragY = octoDragY;
         if (held == -3) {
-            float resistance = Math.min(1f, octoDragTime / 2f);
+            float resistance = octoDragProgress();
             resistance *= resistance;
             float towardX = cx - octoDragX, towardY = cy - octoDragY;
             float towardD = Math.max(1f, (float) Math.sqrt(towardX * towardX + towardY * towardY));
@@ -1774,7 +1779,7 @@ final class Boss {
                     tx += (coilX - tx) * coil;
                     ty += (coilY - ty) * coil;
                     if (held != -3) {
-                        float urgency = Math.min(1f, octoDragTime / 2f);
+                        float urgency = octoDragProgress();
                         float safeTop = L.playTop + L.keyR * 1.15f;
                         float safeBottom = L.deckTop - L.keyR * 1.35f;
                         float playCX = (L.playLeft + L.playRight) * 0.5f;
@@ -2517,7 +2522,7 @@ final class Boss {
             } else {
                 float bounce = 0f;
                 if (kind == OCTOPUS && octoVulnerableArm >= 0) {
-                    float urgency = Math.min(1f, octoDragTime / 2f);
+                    float urgency = octoDragProgress();
                     // Slow enough for the pressurised body to follow, broad enough to read.
                     bounce = (float) Math.sin(octoDragTime * (4.2f + urgency * 1.8f))
                             * bodyR(L) * (0.34f + urgency * 0.24f);

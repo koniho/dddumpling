@@ -17,7 +17,7 @@ final class OctoThrow {
     static void torn(Boss b) {
         reset(b);
         int left = Integer.bitCount(b.octoArms);
-        b.octoThrowsLeft = left == 0 ? 0 : left == 1 ? 3 : left <= 3 ? 2 : 1;
+        b.octoThrowsLeft = left == 0 ? 0 : b.kids ? 1 : left == 1 ? 3 : left <= 3 ? 2 : 1;
         b.octoThrowT = -.35f; // Let the torn arm snap back before the wind-up.
     }
 
@@ -93,6 +93,7 @@ final class OctoThrow {
 
     static void release(Boss b) {
         if (b.octoThrowArm < 0 || b.octoThrowReleased || b.octoThrowT < RELEASE) return;
+        if (b.kids && b.boltCount() > 0) return;
         int count = b.octoThrowArm2 >= 0 ? 2 : 1;
         if (Boss.NORMAL_BOLT_LIMIT - b.boltCount() < count) return;
         launch(b, b.octoThrowArm, b.octoThrowGlyph);
