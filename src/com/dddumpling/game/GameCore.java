@@ -3772,7 +3772,7 @@ final class GameCore {
         // Every fifth stage is a boss instead of a wave. Started here rather than on the first frame
         // of play so its arrival card runs over the stage breather it already had.
         int bk = Boss.kindFor(stage);
-        if (bk >= 0) boss.begin(bk, stage, rnd, playRosterFull());
+        if (bk >= 0) boss.begin(bk, stage, rnd, playRosterFull(), kidsRun);
         else boss.leave();
         bossRetry.checkpoint(this);
         if (sound != null && hadBoss != (bk >= 0)) sound.bossMusic(bk >= 0);

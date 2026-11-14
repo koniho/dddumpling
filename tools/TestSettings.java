@@ -75,6 +75,68 @@ final class TestSettings extends Check {
         check("kids cart ride clock runs normally",Math.abs(c.cart.elapsed-.1f)<.001f);
     }
 
+    private static void kidsBosses(Layout L) {
+        group("kids boss prompts and projectiles");
+        GameCore c=new GameCore(new Mem(),1401L);c.preferences.kids=true;c.startGame();
+        c.preferences.kids=false; // Mid-run settings must not change the encounter profile.
+        c.enterStage(WorldCatalog.bossStage(Boss.SLIME));
+        Boss b=c.boss;b.intro=0;b.age=10;b.update(0,L,c.rnd);
+        int key=b.chainLetter();
+        for(int hit=0;hit<Boss.SPLIT_HITS;hit++) {
+            c.tapKey(key,L);
+            check("kids slime keeps its requested key "+hit,b.chainLetter()==key && b.chainAt==hit+1);
+        }
+        check("fixed slime prompt still sheds a glob",b.hasGlob());
+        c.enterStage(WorldCatalog.bossStage(Boss.SLIME));
+        b.intro=0;b.age=10;b.promptT=0;b.update(0,L,c.rnd);
+        key=b.chainLetter();
+        check("kids slime timeout launches one centered projectile",b.kids && b.boltCount()==1
+                && b.bglyph[0]==key && Math.abs(b.bsx[0]-b.bodyX(L))<.001f);
+        c.tapKey(key,L);
+        check("parry clears projectile without advancing prompt",b.boltCount()==0 && b.chainLetter()==key);
+        b.slimeRetaliating=true;b.update(DT,L,c.rnd);
+        check("kids slime retaliation also launches only one",b.boltCount()==1 && b.chainLetter()==key);
+
+        c.enterStage(WorldCatalog.bossStage(Boss.SPLITTER));
+        b.intro=0;b.update(0,L,c.rnd);key=b.pieceWant(0);
+        for(int hit=0;hit<Boss.DIVIDE_HITS;hit++) {
+            c.tapKey(key,L);
+            check("kids divide keeps its requested key "+hit,b.pieceWant(0)==key && b.pieceCharge(0)==hit+1);
+        }
+        check("fixed divide prompt still allows splitting",b.beginPinch(100f)
+                && b.pinch(100f*(Boss.DIVIDE_SCALE+.01f),Float.NaN,Float.NaN,Float.NaN,Float.NaN,c.rnd)
+                && b.pieceCount()==2);
+        for(int piece=0;piece<b.pieceCount();piece++) {
+            int wanted=b.pieceWant(piece);c.tapKey(wanted,L);
+            check("child keeps its own fixed key "+piece,b.pieceWant(piece)==wanted && b.pieceCharge(piece)==1);
+            b.halfIdle[b.pieceNodeIndex(piece)]=b.divideBoltInterval();
+        }
+        b.update(DT,L,c.rnd);
+        check("split pieces share one projectile limit",b.boltCount()==1);
+        int firstKey=-1;
+        for(int i=0;i<Boss.MAX_BOLTS;i++)if(b.blive[i])firstKey=b.bglyph[i];
+        c.tapKey(firstKey,L);b.update(DT,L,c.rnd);
+        check("another piece can fire after the parry",b.boltCount()==1);
+        int landed=0,maxBolts=0;
+        for(int frame=0;frame<60*20;frame++) {
+            landed+=b.update(DT,L,c.rnd);maxBolts=Math.max(maxBolts,b.boltCount());
+        }
+        check("unanswered split attacks continue without overlapping",landed>2 && maxBolts==1);
+        c.onboarding.begin(c,Onboarding.SLIME,L);
+        check("slime practice inherits kids boss rules",c.onboarding.practice.boss.kids);
+        c.onboarding.clear();
+        b.leave();check("leaving clears kids encounter state",!b.kids);
+        b.begin(Boss.SPLITTER,10,c.rnd,false);
+        check("normal encounters restore three-projectile volleys",!b.kids && b.divideVolleySize()==3);
+        c.startGame();c.enterStage(5);
+        check("a new normal run does not inherit kids boss rules",!c.boss.kids);
+
+        GameCore timed=new GameCore(TestTimeAttack.store(),1402L);
+        timed.preferences.kids=true;timed.modes.restore(ModeSelector.TIME_ATTACK);
+        timed.timeAttack.selected=Boss.SPLITTER;timed.startGame();
+        check("kids time attack uses the same boss assistance",timed.boss.kids && timed.boss.divideVolleySize()==1);
+    }
+
     private static void kidsMinigames(Layout L) {
         Mem store=new Mem();store.starWins=StarPath.MAX_DIFFICULTY;
         GameCore c=new GameCore(store,583L);c.preferences.kids=true;c.startGame();
@@ -646,6 +708,7 @@ final class TestSettings extends Check {
         transitions(L);
         social(L);
         kidsTiming(L);
+        kidsBosses(L);
         kidsMinigames(L);
         group("player settings");
         GameCore title=new GameCore(new Mem(),203L);

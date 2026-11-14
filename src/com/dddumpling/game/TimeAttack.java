@@ -81,7 +81,7 @@ final class TimeAttack extends Draw {
         c.pendingBonus=c.bossReward=c.bossPrizePending=false;
         c.stageGap=c.stageBanner=0;c.spawnedThisStage=c.resolvedThisStage=0;
         c.pushUsed=false;c.pushT=c.pushSlowT=0;
-        c.boss.begin(which,c.stage,c.rnd,c.playRosterFull());
+        c.boss.begin(which,c.stage,c.rnd,c.playRosterFull(),c.kidsRun);
         versus.begin(c,which);
         if(c.sound!=null)c.sound.versusMusic();
     }

@@ -28,6 +28,11 @@ and stack odds follow the actual stage, with a six-press total cap including mul
 keys. Linked pairs use the same 200 ms window as normal mode. These are rule choices,
 not a shared time multiplier. Lives and game over remain enabled.
 
+Slime and Dark Divide keep their requested key fixed in Kids Mode (each new Divide
+piece gets its own key). Both allow only one live boss projectile at a time,
+including across all Divide pieces. Projectile flight and boss action speeds stay
+normal. Adventure, retries and Boss Time Attack use the run's Kids Mode setting.
+
 Kids Mode gives the Steamer unlimited play time and a fixed ten-pip target, independent of
 lifetime wins. Its spinner, lid escape and parade still finish normally. It caps Star Path at 30%
 of its normal difficulty ladder (level 3 of 10). Saved Star Path progression is preserved

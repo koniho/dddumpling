@@ -151,6 +151,7 @@ final class Boss {
     /** -1 when there is no boss. Also the index into every table above. */
     int kind = -1;
     boolean rosterFull = true;
+    boolean kids;
     float hp, hpMax;
     /** Seconds the fight has been running, and of the arrival card and the exit. */
     float age, intro, leaveT;
@@ -351,7 +352,12 @@ final class Boss {
     void begin(int which, int stage, Random rnd) { begin(which, stage, rnd, true); }
 
     void begin(int which, int stage, Random rnd, boolean fullRoster) {
+        begin(which, stage, rnd, fullRoster, false);
+    }
+
+    void begin(int which, int stage, Random rnd, boolean fullRoster, boolean kidsMode) {
         rosterFull = fullRoster;
+        kids = kidsMode;
         alligator.reset();
         cat.reset();
         kind = which;
@@ -446,6 +452,7 @@ final class Boss {
      * Every field a boss writes is reset here, not just the ones that happen to be drawn today.
      */
     void leave() {
+        kids = false;
         alligator.reset();
         cat.reset();
         kind = -1;
@@ -813,6 +820,7 @@ final class Boss {
     /** The next letter of {@link #SLIME}'s chain. */
     int chainLetter() {
         if (kind != SLIME) return -1;
+        if (kids) return chain[0];
         return chain[((chainAt % chain.length) + chain.length) % chain.length];
     }
 
@@ -1035,7 +1043,7 @@ final class Boss {
                 pieceHits[part] = Math.min(DIVIDE_HITS, pieceHits[part] + 1);
                 divideHits = pieceHits[part];
                 if (pieceHits[part] < DIVIDE_HITS) {
-                    rerollPiece(part, rnd);
+                    if (!kids) rerollPiece(part, rnd);
                     return PART;
                 }
                 return PART;
@@ -2054,7 +2062,8 @@ final class Boss {
         slimeRetaliating = false;
         if (body != null) body.squash(0.75f);
         promptT = promptDelay();
-        for (int i = 0; i < BOLTS; i++) {
+        int count = kids ? 1 : BOLTS;
+        for (int i = 0; i < count; i++) {
             blive[i] = true;
             bfast[i] = false;
             // Spread round the six rather than drawn independently — a repeat would collapse the
@@ -2066,7 +2075,7 @@ final class Boss {
             bt[i] = -BOLT_STAGGER * i;
             // Fanned below the live underside, like drops expelled from the slime rather than
             // projectiles appearing in its face.
-            bsx[i] = lastBX + (i - 1) * lastBR * 0.55f;
+            bsx[i] = lastBX + (i - (count - 1) * 0.5f) * lastBR * 0.55f;
             bsy[i] = body == null ? lastBY + lastBR
                     : body.centreY() + body.radiusY() * 1.12f;
         }
@@ -2260,9 +2269,11 @@ final class Boss {
         return root * 2f * (depth == 0 ? 1f : 0.62f * (float) Math.pow(0.72f, depth - 1));
     }
 
-    int divideVolleySize() { return divideSplits == 0 ? 3 : divideSplits == 1 ? 2 : 1; }
+    int divideVolleySize() { return kids ? 1 : divideSplits == 0 ? 3 : divideSplits == 1 ? 2 : 1; }
 
     private boolean divideVolley(int node, Layout L, Random rnd) {
+        // The limit belongs to the encounter, including every split piece.
+        if (kids && boltCount() > 0) return false;
         int made = 0, count = divideVolleySize(), free = 0;
         for (int i=0;i<NORMAL_BOLT_LIMIT;i++) if (!blive[i]) free++;
         if (free < count) return false;

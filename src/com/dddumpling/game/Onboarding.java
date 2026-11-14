@@ -256,7 +256,8 @@ final class Onboarding extends Draw {
         q.stageBanner=0;q.spawnTimer=9999f;q.companion.begin(q.runWho);
         if(which==CORE) makeWord(L,new int[]{0});
         else if(which==SLIME) {
-            q.stage=5;q.boss.begin(Boss.SLIME,5,q.rnd,q.playRosterFull());
+            q.kidsRun=c.kidsRun;
+            q.stage=5;q.boss.begin(Boss.SLIME,5,q.rnd,q.playRosterFull(),q.kidsRun);
             q.boss.intro=0;q.boss.slimeCoverLearned=true;
         } else if(which==CART || which==MINE) {
             q.stage=21;q.state=GameCore.BONUS;q.bonusTimer=1;
