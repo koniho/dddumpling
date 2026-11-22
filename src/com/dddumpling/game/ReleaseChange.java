@@ -56,6 +56,7 @@ final class ReleaseChange extends Draw {
         }
     }
     private static void wardrobe(Painter p,float x,float y,float r,float time) {
+        final int squishy=27; // Marble Glob.
         final int outfit=(int)(time/4.8f)%3;
         final float phase=time%4.8f,landing=1.25f;
         final int hat=Accessories.item(Accessories.HAT,outfit);
@@ -74,9 +75,9 @@ final class ReleaseChange extends Draw {
             }
         };
         Painter dancer=new LinkedPairArt.TurnPainter(dressed,cx,cy,wiggle*.18f);
-        Trinket.drawReacting(dancer,0,0,0,bodyR*(1+.06f*wiggle),time,1f,phase>=landing?1:0,0);
+        Trinket.drawReacting(dancer,squishy,0,0,bodyR*(1+.06f*wiggle),time,1f,phase>=landing?1:0,0);
         if(phase>=.35f && phase<landing) {
-            float targetY=cy+bodyR*AccessoryAnchors.TOP[Collect.SHAPE[0]];
+            float targetY=cy+bodyR*AccessoryAnchors.TOP[Collect.SHAPE[squishy]];
             for(int i=11;i>=0;i--) {
                 float t=u-i*.025f;if(t<0)continue;
                 float tx=bx+(cx-bx)*t,ty=by-r*.15f+(targetY-by+r*.15f)*t-r*.70f*4*t*(1-t);

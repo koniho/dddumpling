@@ -1,6 +1,33 @@
 {
   "releases": [
     {
+      "version": "0.1.43",
+      "changes": [
+        {
+          "icon": "wardrobe",
+          "title": "Shake, try, undo",
+          "where": "Dressing up your squishies",
+          "why": "Shake for a fresh outfit. Changed your mind? Tap Undo to bring back your previous look.",
+          "autoReset": false
+        },
+        {
+          "icon": "misc",
+          "title": "Little improvements",
+          "autoReset": false,
+          "improvements": [
+            {
+              "where": "Scenery and performance",
+              "why": "Scenery flows behind the key deck. Smoother swamp grass on iPhone and lighter boss rendering."
+            },
+            {
+              "where": "Tutorial and release book",
+              "why": "Learn about between-stage minigames. Browse updates with page dots and still scenery previews."
+            }
+          ]
+        }
+      ]
+    },
+    {
       "version": "0.1.42",
       "changes": [
         {
