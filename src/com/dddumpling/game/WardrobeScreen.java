@@ -7,6 +7,12 @@ final class WardrobeScreen extends Draw {
     static final float EXIT_TIME=.72f;
     int who, slot, selected;
     private Wardrobe wardrobe;
+    private int[] undoOutfit;
+    private long[] undoApplied;
+    boolean canUndo() {return open && !reward && !exiting && undoOutfit!=null
+            && java.util.Arrays.equals(undoApplied,wardrobe.outfits[who]);}
+    float undoY(Layout L) {return trayTop(L)+trayHeight(L)*(error.isEmpty()?.96f:1.18f);}
+    static float undoHalfHeight(Layout L) {return Math.max(L.unit*1.1f,L.h*.025f);}
     int count(int category) {
         int n=0;if(wardrobe!=null)for(int i=0;i<Accessories.COUNT;i++)if(Accessories.slot(i)==category && wardrobe.owned[i])n++;
         return n;
@@ -43,12 +49,13 @@ final class WardrobeScreen extends Draw {
     void show(GameCore c,int target) {
         if(c.state!=GameCore.TITLE || !Collect.has(c.collected,target))return;
         c.wardrobe.refresh(c);wardrobe=c.wardrobe;who=target;slot=0;
+        undoOutfit=null;undoApplied=null;
         selected=c.wardrobe.equipped(who,slot);if(selected<0)selected=item(slot,0);
         lastSlot=-1;trayT=0;arrivalSounds=0;scroll=scrollTarget=0;shakeCooldown=.7f;swoosh=0;
         revealSelected();scroll=scrollTarget;flight.clear();pendingCelebration=false;
         open=true;reward=false;narrationPaused=false;exiting=false;exitT=0;error="";pulse=0;danceT=3;scrambleT=2;feedback=0;cancelTouch();
     }
-    void close() {flight.clear();pendingCelebration=false;open=reward=narrationPaused=exiting=false;exitT=0;lastSlot=-1;trayT=1;swoosh=0;error="";danceT=3;scrambleT=2;feedback=0;cancelTouch();}
+    void close() {undoOutfit=null;undoApplied=null;flight.clear();pendingCelebration=false;open=reward=narrationPaused=exiting=false;exitT=0;lastSlot=-1;trayT=1;swoosh=0;error="";danceT=3;scrambleT=2;feedback=0;cancelTouch();}
     void back(GameCore c) {
         if(reward){close();return;}
         if(exiting)return;
@@ -115,6 +122,11 @@ final class WardrobeScreen extends Draw {
         }
         p.save();p.clipRect(0,0,L.w,L.h);p.translate(0,-(trayBottom(c,L)+L.unit*3)*exitProgress(.28f,.28f));
         WardrobeToybox.draw(p,c,L,this);
+        if(canUndo()) {
+            float yy=undoY(L),hh=undoHalfHeight(L);
+            p.fillRect(L.w*.34f,yy-hh,L.w*.66f,yy+hh,0xFF393354);
+            p.text("UNDO",x,yy+s*.30f,type(s*.85f),0xFFFFE29A,Painter.CENTER,true);
+        }
         if(!error.isEmpty())p.text(error,x,trayTop(L)+trayHeight(L)*.88f,type(s*.55f),INK,Painter.CENTER,false);
         if(dragging) {
             float hx=Storybook.heroX(c,L),hy=Storybook.heroY(c,L),r=Storybook.heroRadius(L);
@@ -127,7 +139,7 @@ final class WardrobeScreen extends Draw {
         flight.draw(p,L,c.clock);
         p.restore();
     }
-    float trayBottom(GameCore c,Layout L) {return WardrobeToybox.bottom(L,!error.isEmpty());}
+    float trayBottom(GameCore c,Layout L) {return canUndo()?undoY(L)+undoHalfHeight(L)+L.unit*.2f:WardrobeToybox.bottom(L,!error.isEmpty());}
     static float trayTop(Layout L) {return top(L);}
     static float trayHeight(Layout L) {return Math.min(height(L)*.25f,L.unit*12f);}
     static float trayY(Layout L,float f) {return trayTop(L)+trayHeight(L)*(f-.09f);}
@@ -211,6 +223,7 @@ final class WardrobeScreen extends Draw {
             if(x>L.w*.82f && f<.10f || f>.90f)return 1;
             return x>=L.w*.10f && x<=L.w*.90f && f>=.82f && f<=.89f?2:0;
         }
+        if(canUndo() && x>=L.w*.34f && x<=L.w*.66f && Math.abs(yy-undoY(L))<=undoHalfHeight(L))return 3;
         return WardrobeToybox.hit(this,L,count(slot),x,yy);
     }
 
@@ -226,11 +239,11 @@ final class WardrobeScreen extends Draw {
         pauseNarration(c);
         selected=item;error="";
         if(item<0 || !c.wardrobe.owned[item] || c.wardrobe.equipped(who,slot)==item)return;
-        if(c.wardrobe.equip(c,item,who))celebrate(c,false);
+        if(c.wardrobe.equip(c,item,who)) {undoOutfit=null;undoApplied=null;celebrate(c,false);}
         else error="Could not save. Try again.";
     }
     private void remove(GameCore c) {
-        if(c.wardrobe.remove(c,who,slot)) {error="";celebrate(c,true);}
+        if(c.wardrobe.remove(c,who,slot)) {undoOutfit=null;undoApplied=null;error="";celebrate(c,true);}
         else error="Could not save. Try again.";
     }
     private void celebrate(GameCore c,boolean removing) {celebrate(c,removing,slot);}
@@ -275,8 +288,10 @@ final class WardrobeScreen extends Draw {
     private boolean shuffle(GameCore c) {
         pauseNarration(c);error="";c.wardrobe.refresh(c);
         int[] outfit=new int[Accessories.SLOTS];
+        int[] before=new int[Accessories.SLOTS];
         for(int category=0;category<outfit.length;category++) {
             int old=c.wardrobe.equipped(who,category),n=0;outfit[category]=old;
+            before[category]=old;
             for(int i=0;i<Accessories.COUNT;i++)if(Accessories.slot(i)==category && c.wardrobe.owned[i] && i!=old)n++;
             if(n>0) {
                 int pick=outfitRandom.nextInt(n);
@@ -284,6 +299,9 @@ final class WardrobeScreen extends Draw {
             }
         }
         if(c.wardrobe.equipOutfit(c,who,outfit)) {
+            if(!java.util.Arrays.equals(before,outfit)) {
+                undoOutfit=before;undoApplied=c.wardrobe.outfits[who].clone();
+            }
             int on=c.wardrobe.equipped(who,slot);selected=on<0?item(slot,0):on;
             revealSelected();celebrate(c,false,Accessories.FLAIR);scrambleT=0;feedback=0;return true;
         } else error="Could not save. Try again.";
@@ -298,6 +316,16 @@ final class WardrobeScreen extends Draw {
                 for(int i=0;target<0 && i<Collect.COUNT;i++)if(Collect.has(c.collected,i))target=i;
                 close();if(target>=0){c.caseIndex=target;c.caseOpen=true;c.openStory();}
             }
+            return;
+        }
+        if(action==3) {
+            c.wardrobe.refresh(c);
+            if(!canUndo())return;
+            if(c.wardrobe.equipOutfit(c,who,undoOutfit)) {
+                undoOutfit=null;undoApplied=null;error="";scrambleT=2;feedback=0;
+                int on=c.wardrobe.equipped(who,slot);selected=on<0?item(slot,0):on;
+                revealSelected();pauseNarration(c);celebrate(c,false,Accessories.FLAIR);
+            } else error="Could not save. Try again.";
             return;
         }
         if(action==10+slot) {feedback=Math.max(feedback,1);return;}

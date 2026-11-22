@@ -64,6 +64,9 @@ final class AccessoryPreview {
                 Png.write(new File(dir,"214-night-drift.png"),drift.resolve(),w,h);c.clock=clock;
             }
         }
+        c.wardrobe.screen.show(c,0);c.wardrobe.screen.update(c,2);c.wardrobe.screen.shake(c);c.wardrobe.screen.update(c,2);
+        RasterPainter undo=new RasterPainter(w,h,ss);Renderer.draw(undo,c,L);
+        Png.write(new File(dir,"214-wardrobe-undo.png"),undo.resolve(),w,h);
         c.wardrobe.screen.show(c,0);
         for(int category=0;category<Accessories.SLOTS;category++) {
             c.wardrobe.screen.choose(c,10+category);

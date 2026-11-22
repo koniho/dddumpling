@@ -12,7 +12,7 @@ final class TestAccessories extends Check {
         check("wardrobe grant persisted",c.progress.accessories(keys,values,false));c.wardrobe.refresh(c);
     }
     static void all(Layout L) {
-        catalog();flights(L);earnedPicker(L);exit(L);shake();feedback(L);startup();rewards();sharedOutfits();migration();merge();ui(L);developerCategories(L);flair(L);sounds();picking(L);dragOff(L);detail();glitter(L);googly();narration(L);toybox(L);
+        catalog();flights(L);earnedPicker(L);exit(L);shake();undoShake(L);feedback(L);startup();rewards();sharedOutfits();migration();merge();ui(L);developerCategories(L);flair(L);sounds();picking(L);dragOff(L);detail();glitter(L);googly();narration(L);toybox(L);
     }
     private static void openForShake(GameCore c) {
         c.caseOpen=true;c.caseIndex=0;c.openStory();c.storyT=2;c.wardrobe.screen.update(c,1);
@@ -108,6 +108,47 @@ final class TestAccessories extends Check {
         c.cloudUi.open=true;check("cloud dialog ignores shake",!ui.shake(c));c.cloudUi.open=false;
         ui.close();check("closed wardrobe ignores shake",!ui.shake(c) && ui.takeFeedback()==0 && ui.scrambleT>WardrobeScreen.SCRAMBLE);
     }
+    private static int[] outfit(GameCore c,int who) {
+        int[] items=new int[Accessories.SLOTS];
+        for(int slot=0;slot<items.length;slot++)items[slot]=c.wardrobe.equipped(who,slot);
+        return items;
+    }
+    private static void undoShake(Layout L) {
+        GameCore c=ready();grant(c);openForShake(c);WardrobeScreen ui=c.wardrobe.screen;
+        c.wardrobe.equip(c,0,0);c.wardrobe.equip(c,3,1);
+        int[] original=outfit(c,0),other=outfit(c,1);
+        check("undo is absent before a shake",!ui.canUndo());
+        ui.shake(c);check("successful shake offers undo",ui.canUndo());
+        float x=L.w*.5f,y=ui.undoY(L);
+        check("undo has its own hit target below the toy ribbon",ui.hit(L,x,y)==3 && !WardrobeToybox.inRibbon(L,x,y));
+        ui.touch(c,L,0,7,x,y);ui.touch(c,L,1,7,x,y);
+        check("undo tap restores all slots including empty ones",java.util.Arrays.equals(original,outfit(c,0)) && !ui.canUndo());
+        GameCore reload=new GameCore(c.store,214,true);
+        check("undo persists and preserves other squishy",java.util.Arrays.equals(original,outfit(reload,0)) && java.util.Arrays.equals(other,outfit(reload,1)));
+        ui.update(c,2);ui.shake(c);int[] first=outfit(c,0);
+        ui.update(c,2);ui.shake(c);ui.choose(c,3);
+        check("undo restores the immediately preceding shake",java.util.Arrays.equals(first,outfit(c,0)));
+        ui.update(c,2);ui.shake(c);ui.choose(c,10+Accessories.GLASSES);
+        check("category browsing retains undo",ui.canUndo());
+        ui.choose(c,20);check("manual outfit edit clears undo",!ui.canUndo());
+        ui.update(c,2);ui.shake(c);ui.close();openForShake(c);
+        check("leaving dress-up clears undo",!ui.canUndo());
+        ui.shake(c);c.wardrobe.remove(c,0,Accessories.HAT);
+        byte[] edited=c.progress.snapshot();ui.choose(c,3);
+        check("undo cannot overwrite an outside outfit change",!ui.canUndo() && java.util.Arrays.equals(edited,c.progress.snapshot()));
+        Mem backing=new Mem();boolean[] failWrite={false};
+        GameCore.Store store=(GameCore.Store)java.lang.reflect.Proxy.newProxyInstance(GameCore.Store.class.getClassLoader(),new Class<?>[]{GameCore.Store.class},(proxy,method,args)->{
+            if(failWrite[0] && method.getName().equals("saveProgress"))throw new IllegalStateException("disk full");
+            return method.invoke(backing,args);
+        });
+        GameCore broken=new GameCore(store,214,true);broken.collected=3;grant(broken);openForShake(broken);
+        WardrobeScreen b=broken.wardrobe.screen;original=outfit(broken,0);b.shake(broken);
+        byte[] shuffled=broken.progress.snapshot();failWrite[0]=true;b.choose(broken,3);
+        check("failed undo keeps shuffled outfit and permits retry",b.canUndo() && !b.error.isEmpty() && java.util.Arrays.equals(shuffled,broken.progress.snapshot()));
+        failWrite[0]=false;b.choose(broken,3);
+        check("undo retry restores original outfit",!b.canUndo() && b.error.isEmpty() && java.util.Arrays.equals(original,outfit(broken,0)));
+    }
+
     private static void feedback(Layout L) {
         GameCore c=ready();grant(c);openForShake(c);WardrobeScreen ui=c.wardrobe.screen;
         check("wardrobe entry is haptically quiet",ui.takeFeedback()==0);
