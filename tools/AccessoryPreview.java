@@ -3,6 +3,12 @@ import java.io.File;
 
 /** Portrait review sheets use exactly the live wardrobe and character renderers. */
 final class AccessoryPreview {
+    // End each frame's lifetime before allocating the next supersampled buffer.
+    private static void frame(File dir,String name,GameCore c,Layout L,int w,int h,int ss) throws Exception {
+        RasterPainter canvas=new RasterPainter(w,h,ss);Renderer.draw(canvas,c,L);
+        Png.write(new File(dir,name),canvas.resolve(),w,h);
+    }
+
     static void frames(File dir,Layout L,int w,int h,int ss) throws Exception {
         for(int who:new int[]{9,32,28,16,1,10})for(int item:new int[]{18,19,2,6,7,8,23,24,25,26}) {
             int slot=Accessories.slot(item);
@@ -13,8 +19,7 @@ final class AccessoryPreview {
             fit.wardrobe.equip(fit,item,who);fit.wardrobe.screen.show(fit,who);
             fit.wardrobe.screen.choose(fit,10+slot);
             fit.wardrobe.screen.trayT=1;fit.wardrobe.screen.danceT=3;
-            RasterPainter canvas=new RasterPainter(w,h,ss);Renderer.draw(canvas,fit,L);
-            Png.write(new File(dir,(slot==Accessories.HAT?"214-hat-fit-":"214-shoe-fit-")+who+"-"+item+".png"),canvas.resolve(),w,h);
+            frame(dir,(slot==Accessories.HAT?"214-hat-fit-":"214-shoe-fit-")+who+"-"+item+".png",fit,L,w,h,ss);
         }
         GameCore cat=TestAccessories.ready();TestAccessories.grant(cat);cat.clock=1.2f;
         cat.collected=Collect.add(cat.collected,Collect.RAINBOW_CAT_FRIEND);
@@ -22,29 +27,25 @@ final class AccessoryPreview {
         for(int hat:new int[]{18,19,0,2,20}) {
             cat.wardrobe.equip(cat,hat,Collect.RAINBOW_CAT_FRIEND);
             cat.wardrobe.screen.show(cat,Collect.RAINBOW_CAT_FRIEND);cat.wardrobe.screen.trayT=1;cat.wardrobe.screen.danceT=3;
-            RasterPainter fit=new RasterPainter(w,h,ss);Renderer.draw(fit,cat,L);
-            Png.write(new File(dir,"214-rainbow-hat-"+hat+".png"),fit.resolve(),w,h);
+            frame(dir,"214-rainbow-hat-"+hat+".png",cat,L,w,h,ss);
         }
         GameCore flight=TestAccessories.ready();TestAccessories.grant(flight);flight.caseOpen=true;flight.caseFade=1;flight.caseIndex=0;flight.openStory();flight.storyT=2;flight.storyPulse=2;flight.clock=1.2f;
         WardrobeScreen flightUi=flight.wardrobe.screen;flightUi.trayT=1;flight.wardrobe.equip(flight,0,0);TestAccessories.tapCard(flight,L,1);
         for(int sample=0;sample<2;sample++) {
             flightUi.update(flight,sample==0?.16f:.18f);
-            RasterPainter moving=new RasterPainter(w,h,ss);Renderer.draw(moving,flight,L);
-            Png.write(new File(dir,"214-accessory-flight-"+sample+".png"),moving.resolve(),w,h);
+            frame(dir,"214-accessory-flight-"+sample+".png",flight,L,w,h,ss);
         }
         flightUi.update(flight,.6f);flightUi.danceT=3;flightUi.choose(flight,10+Accessories.BOOTS);flightUi.trayT=1;flight.wardrobe.equip(flight,Accessories.item(Accessories.BOOTS,0),0);
         float dragX=WardrobeToybox.itemX(flightUi,L,flightUi.count(flightUi.slot),1),dragY=WardrobeToybox.itemY(flightUi,L,flightUi.count(flightUi.slot),1);
         flightUi.touch(flight,L,0,7,dragX,dragY);flightUi.touch(flight,L,2,7,Storybook.heroX(flight,L),Storybook.heroY(flight,L));flightUi.touch(flight,L,1,7,Storybook.heroX(flight,L),Storybook.heroY(flight,L));
         flightUi.update(flight,.11f);
-        RasterPainter settling=new RasterPainter(w,h,ss);Renderer.draw(settling,flight,L);
-        Png.write(new File(dir,"214-accessory-flight-drag.png"),settling.resolve(),w,h);
+        frame(dir,"214-accessory-flight-drag.png",flight,L,w,h,ss);
         GameCore partial=TestAccessories.ready();
         partial.progress.accessories(new String[]{Accessories.key("owned",0),Accessories.key("owned",2),Accessories.key("owned",18),Accessories.key("owned",12)},new long[]{1,1,1,1},false);
         partial.wardrobe.refresh(partial);partial.caseOpen=true;partial.caseFade=1;partial.caseIndex=0;partial.openStory();partial.storyT=2;partial.clock=1.2f;
         for(int category:new int[]{Accessories.HAT,Accessories.BOOTS,Accessories.MASK}) {
             partial.wardrobe.screen.choose(partial,10+category);partial.wardrobe.screen.trayT=1;partial.wardrobe.screen.pulse=2;
-            RasterPainter earned=new RasterPainter(w,h,ss);Renderer.draw(earned,partial,L);
-            Png.write(new File(dir,"214-earned-only-"+category+".png"),earned.resolve(),w,h);
+            frame(dir,"214-earned-only-"+category+".png",partial,L,w,h,ss);
         }
         GameCore c=TestAccessories.ready();TestAccessories.grant(c);c.clock=1.2f;
         c.settingsOpen=true;c.settingsPage=1;c.settingsTab=SettingsUi.COLLECTION;
@@ -56,32 +57,27 @@ final class AccessoryPreview {
             c.wardrobe.screen.show(c,0);c.wardrobe.screen.trayT=1;c.wardrobe.screen.selected=i==0?0:3;
             if(i==1) {c.wardrobe.equip(c,3,1);c.wardrobe.equip(c,3,0);c.wardrobe.screen.slot=Accessories.GLASSES;}
             if(i==2) {c.wardrobe.screen.reward=true;}
-            RasterPainter canvas=new RasterPainter(w,h,ss);Renderer.draw(canvas,c,L);
-            Png.write(new File(dir,"214-wardrobe-"+i+".png"),canvas.resolve(),w,h);
+            frame(dir,"214-wardrobe-"+i+".png",c,L,w,h,ss);
             if(i==0) {
                 float clock=c.clock;c.clock+=8;
-                RasterPainter drift=new RasterPainter(w,h,ss);Renderer.draw(drift,c,L);
-                Png.write(new File(dir,"214-night-drift.png"),drift.resolve(),w,h);c.clock=clock;
+                frame(dir,"214-night-drift.png",c,L,w,h,ss);c.clock=clock;
             }
         }
         c.wardrobe.screen.show(c,0);c.wardrobe.screen.update(c,2);c.wardrobe.screen.shake(c);c.wardrobe.screen.update(c,2);
-        RasterPainter undo=new RasterPainter(w,h,ss);Renderer.draw(undo,c,L);
-        Png.write(new File(dir,"214-wardrobe-undo.png"),undo.resolve(),w,h);
+        frame(dir,"214-wardrobe-undo.png",c,L,w,h,ss);
         c.wardrobe.screen.show(c,0);
         for(int category=0;category<Accessories.SLOTS;category++) {
             c.wardrobe.screen.choose(c,10+category);
             for(int sample=0;sample<2;sample++) {
                 c.wardrobe.screen.trayT=sample==0?.9f:3.1f;c.wardrobe.screen.pulse=2;
-                RasterPainter window=new RasterPainter(w,h,ss);Renderer.draw(window,c,L);
-                Png.write(new File(dir,"214-box-window-"+category+"-"+sample+".png"),window.resolve(),w,h);
+                frame(dir,"214-box-window-"+category+"-"+sample+".png",c,L,w,h,ss);
             }
         }
         c.wardrobe.screen.show(c,0);c.wardrobe.screen.trayT=1;c.wardrobe.screen.choose(c,10+Accessories.HAT);c.wardrobe.screen.trayT=1;
         c.wardrobe.screen.back(c);
         for(int sample=0;sample<4;sample++) {
             c.wardrobe.screen.exitT=new float[]{.10f,.30f,.49f,.70f}[sample];
-            RasterPainter leaving=new RasterPainter(w,h,ss);Renderer.draw(leaving,c,L);
-            Png.write(new File(dir,"214-wardrobe-exit-"+sample+".png"),leaving.resolve(),w,h);
+            frame(dir,"214-wardrobe-exit-"+sample+".png",c,L,w,h,ss);
         }
         c.closeStory();c.openStory();c.storyT=2;
         for(int skin=0;skin<Skins.COUNT;skin++) {
@@ -117,60 +113,47 @@ final class AccessoryPreview {
         c.wardrobe.screen.show(c,0);c.wardrobe.screen.trayT=1;
         c.wardrobe.equip(c,Accessories.item(Accessories.GLASSES,3),0);
         c.wardrobe.screen.slot=Accessories.GLASSES;c.wardrobe.screen.selected=Accessories.item(Accessories.GLASSES,3);c.wardrobe.screen.scroll=c.wardrobe.screen.scrollTarget=1;
-        RasterPainter googly=new RasterPainter(w,h,ss);Renderer.draw(googly,c,L);
-        Png.write(new File(dir,"214-googly-editor.png"),googly.resolve(),w,h);
+        frame(dir,"214-googly-editor.png",c,L,w,h,ss);
         c.wardrobe.equip(c,AccessoryGlitter.ITEM,0);
         c.wardrobe.screen.slot=Accessories.FLAIR;c.wardrobe.screen.selected=AccessoryGlitter.ITEM;
-        RasterPainter glitter=new RasterPainter(w,h,ss);Renderer.draw(glitter,c,L);
-        Png.write(new File(dir,"214-glitter-editor.png"),glitter.resolve(),w,h);
+        frame(dir,"214-glitter-editor.png",c,L,w,h,ss);
         c.wardrobe.screen.show(c,0);c.wardrobe.screen.trayT=1;c.wardrobe.screen.slot=Accessories.HAT;
         c.wardrobe.equip(c,Accessories.item(Accessories.HAT,2),0);
-        RasterPainter crown=new RasterPainter(w,h,ss);Renderer.draw(crown,c,L);
-        Png.write(new File(dir,"214-crown-editor.png"),crown.resolve(),w,h);
+        frame(dir,"214-crown-editor.png",c,L,w,h,ss);
         c.wardrobe.screen.show(c,0);c.wardrobe.screen.trayT=1;c.wardrobe.screen.slot=Accessories.MASK;c.wardrobe.screen.selected=Accessories.item(Accessories.MASK,3);c.wardrobe.equip(c,c.wardrobe.screen.selected,0);
-        RasterPainter masks=new RasterPainter(w,h,ss);Renderer.draw(masks,c,L);
-        Png.write(new File(dir,"214-mask-editor.png"),masks.resolve(),w,h);
+        frame(dir,"214-mask-editor.png",c,L,w,h,ss);
         c.wardrobe.screen.slot=Accessories.FLAIR;c.wardrobe.screen.selected=Accessories.item(Accessories.FLAIR,0);
-        RasterPainter flairEditor=new RasterPainter(w,h,ss);Renderer.draw(flairEditor,c,L);
-        Png.write(new File(dir,"214-flair-editor.png"),flairEditor.resolve(),w,h);
+        frame(dir,"214-flair-editor.png",c,L,w,h,ss);
         c.wardrobe.screen.choose(c,20);c.wardrobe.screen.danceT=.10f;
-        RasterPainter flash=new RasterPainter(w,h,ss);Renderer.draw(flash,c,L);
-        Png.write(new File(dir,"214-inline-flash.png"),flash.resolve(),w,h);
+        frame(dir,"214-inline-flash.png",c,L,w,h,ss);
         c.wardrobe.screen.danceT=.8f;
-        RasterPainter dance=new RasterPainter(w,h,ss);Renderer.draw(dance,c,L);
-        Png.write(new File(dir,"214-inline-dance.png"),dance.resolve(),w,h);
+        frame(dir,"214-inline-dance.png",c,L,w,h,ss);
         c.wardrobe.screen.touch(c,L,0,7,WardrobeToybox.itemX(c.wardrobe.screen,L,4,1),WardrobeToybox.itemY(c.wardrobe.screen,L,4,1));
         c.wardrobe.screen.touch(c,L,2,7,L.w*.65f,L.h*.4f);
         if(!c.wardrobe.screen.dragging)throw new AssertionError("preview drag did not start");
-        RasterPainter drag=new RasterPainter(w,h,ss);Renderer.draw(drag,c,L);
-        Png.write(new File(dir,"214-inline-drag.png"),drag.resolve(),w,h);
+        frame(dir,"214-inline-drag.png",c,L,w,h,ss);
         c.wardrobe.screen.cancelTouch();
         WardrobeScreen toy=c.wardrobe.screen;toy.choose(c,10+Accessories.GLASSES);toy.trayT=.30f;
-        RasterPainter entry=new RasterPainter(w,h,ss);Renderer.draw(entry,c,L);
-        Png.write(new File(dir,"214-toybox-arrival.png"),entry.resolve(),w,h);
+        frame(dir,"214-toybox-arrival.png",c,L,w,h,ss);
         toy.trayT=1;toy.scroll=toy.scrollTarget=0;
         float tx=WardrobeToybox.itemX(toy,L,Accessories.count(toy.slot),1),ty=WardrobeToybox.itemY(toy,L,Accessories.count(toy.slot),1);
         toy.touch(c,L,0,9,tx,ty);toy.touch(c,L,2,9,tx-L.w*.16f,ty);
-        RasterPainter swipe=new RasterPainter(w,h,ss);Renderer.draw(swipe,c,L);
-        Png.write(new File(dir,"214-toybox-swoosh.png"),swipe.resolve(),w,h);
+        frame(dir,"214-toybox-swoosh.png",c,L,w,h,ss);
         toy.touch(c,L,1,9,tx-L.w*.16f,ty);toy.update(c,1);
         toy.shake(c);toy.update(c,.48f);toy.danceT=.65f;
-        RasterPainter shuffle=new RasterPainter(w,h,ss);Renderer.draw(shuffle,c,L);
-        Png.write(new File(dir,"214-toybox-shuffle.png"),shuffle.resolve(),w,h);
+        frame(dir,"214-toybox-shuffle.png",c,L,w,h,ss);
         toy.cancelTouch();
         toy.danceT=3;toy.scrambleT=2;toy.picking.capture(c,L);
         float[] hat=toy.picking.targets[Accessories.HAT];
         float hatX=(hat[0]+hat[4])*.5f,hatY=(hat[1]+hat[5])*.5f;
         toy.touch(c,L,0,7,hatX,hatY);toy.touch(c,L,2,7,L.w*.87f,Storybook.heroY(c,L)+L.w*.20f);
         if(!toy.dragging)throw new AssertionError("worn accessory drag did not start");
-        RasterPainter lifted=new RasterPainter(w,h,ss);Renderer.draw(lifted,c,L);
-        Png.write(new File(dir,"214-worn-drag.png"),lifted.resolve(),w,h);
+        frame(dir,"214-worn-drag.png",c,L,w,h,ss);
         toy.cancelTouch();
         for(int who:new int[]{Collect.DUCK_FIRST,Collect.bossPrize(Boss.MUSHROOM),Collect.ALLIGATOR_FRIEND,Collect.RAINBOW_CAT_FRIEND}) {
             c.closeStory();c.collected=Collect.add(c.collected,who);c.caseIndex=who;c.openStory();c.storyT=2;c.wardrobe.screen.trayT=1;c.storyPulse=2;
             for(int category=0;category<Accessories.SLOTS;category++)c.wardrobe.equip(c,Accessories.item(category,0),who);
-            RasterPainter family=new RasterPainter(w,h,ss);Renderer.draw(family,c,L);
-            Png.write(new File(dir,"214-picker-family-"+who+".png"),family.resolve(),w,h);
+            frame(dir,"214-picker-family-"+who+".png",c,L,w,h,ss);
         }
         int[] cast={0,4,7,12,18,24,30,35,45,46,47,48,49,57,60,61};
         RasterPainter canvas=new RasterPainter(w,h,ss);canvas.clear(0xFF211D36);
