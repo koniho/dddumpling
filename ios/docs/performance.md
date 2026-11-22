@@ -103,3 +103,42 @@ rebuilding them for each shape. Alpha remains part of the key; collisions replac
 Native tests compare fill/stroke pixels against the original RGB setters and exercise 10,000
 color replacements. Thirteen native tests pass. The rendering improvement still needs a
 device retest; haptics are unchanged, and their small CPU sample count does not rule out waits.
+
+## Swamp reed filtering — 2026-11-22
+
+Physical iPhone 11 Pro Max, iOS 18.5, portrait, optimized Debug (`-O2`). The isolated
+`profile:swamp` scene reuses Android's seeded 36-second `GatorReplay`, including enemy
+clears and life replenishment, without a store. Both compared variants retain all reeds,
+scenery caches and animation. Instruments Animation Hitches captured 36 seconds per variant.
+
+| Reed filtering | Mean presented surfaces/s | Range of one-second bins | Display-link mean / p95 |
+| --- | ---: | ---: | ---: |
+| Previous medium | 20.24 | 15–30 | 48.86 / 63.10 ms |
+| Low | 60.15 | 60–61 | 16.62 / 16.62 ms |
+
+Presented counts come from `displayed-surfaces-per-second`, using complete interior bins
+from seconds 1 through 34. Counts of 61 reflect refresh cadence/bin boundaries. Callback
+statistics are separate 600-draw windows, not compositor measurements. Each trace spans a
+full replay cycle, though capture start phases differ. This is a short device comparison,
+not evidence for every iPhone, scene or thermal condition. Instruments reported Nominal
+thermal state for the baseline and Fair for the optimized run.
+
+Hiding grass, including cached distant reed groups, also restored 16.62 ms callbacks with
+no missed callback slots in sampled windows. An earlier release-app CPU trace was dominated
+by asynchronous Core Animation image drawing, resampling and pixel conversion; it included
+player deaths and is only diagnostic evidence, not the controlled benchmark.
+
+`DDIOSPainter` now uses `kCGInterpolationLow` for cached reed images, avoiding the expensive
+medium-filter resampling path on this device. Grass count, source textures, geometry, sway,
+opacity and gameplay are unchanged. Debug switches preserve the old filtering and hide-grass
+comparison. Portrait test attachments compare both filters at identical replay ticks.
+
+Verification: 889 iOS adapter assertions and the developer/production cloud checks passed;
+21 native painter tests passed on the phone. A subsequent grayscale-capture rerun lost its
+device connection when the phone locked; the final portrait test passed in Simulator, and
+the color/grayscale attachments were visually reviewed. The final developer app was installed
+alongside the existing release app. Grayscale-transition device timing remains unmeasured.
+
+Local raw traces, frame counts and console logs are retained under ignored
+`ios/build/swamp-performance-20261122/`. Reproduction instructions are in
+[the iOS README](../README.md). Do not use the desktop preparation benchmark as device FPS.

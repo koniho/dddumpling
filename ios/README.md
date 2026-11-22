@@ -108,6 +108,25 @@ SIMCTL_CHILD_DDD_PROFILE=1 SIMCTL_CHILD_DDD_SCENE=stage:10 \
 # Play in Simulator, then inspect ios/build/profile-divide.log.
 ```
 
+For unattended physical-device swamp profiling, a Debug build accepts
+`DDD_SCENE=profile:swamp` (or `profile:swamp-mono` for grayscale transitions). It repeats
+the shared 36-second replay, clears enemies automatically, and keeps lives replenished.
+Its separate game has no store or rewards; player progress is untouched. `DDD_PROFILE=1`
+logs the replay loop/tick alongside the timing windows. Use an optimized Debug build
+(`GCC_OPTIMIZATION_LEVEL=2`) for comparisons, and warm at least one full loop.
+
+```sh
+xcrun devicectl device process launch --device <iPhone-UDID> --terminate-existing \
+  --environment-variables '{"DDD_SCENE":"profile:swamp","DDD_PROFILE":"1"}' \
+  --console com.dddumpling.game.ios.dev
+```
+
+Debug-only `DDD_SWAMP_MEDIUM_GRASS=1` restores the old, expensive filtering;
+`DDD_SWAMP_HIDE_GRASS=1` removes reeds and their cached groups to isolate their cost.
+Neither is saved. Relaunch without these environment variables to return to normal play.
+Use Instruments Animation Hitches for presented-frame counts, not just the callback logs.
+See the [iPhone swamp measurements](docs/performance.md#swamp-reed-filtering--2026-11-22).
+
 The game layer uses asynchronous Core Graphics rasterization after profiling identified
 deferred path filling on the main thread. Set `DDD_SYNC_RASTER=1` in a Debug launch to compare
 the old synchronous path. Shared scene drawing and gameplay still execute on the main thread;

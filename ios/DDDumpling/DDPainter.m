@@ -83,6 +83,9 @@ static CGGradientRef DDGradient(CGColorSpaceRef space,IOSIntArray *colors,IOSFlo
   CGImageRef _swampLayers[DDSwampLayers_COUNT],_swampLayersGray[DDSwampLayers_COUNT];
   float _swampW,_swampH,_swampDeck;
   BOOL _drawingSwampLayer;
+#if DEBUG
+  BOOL _profileHideGrass, _profileMediumGrass;
+#endif
   CGImageRef _swampGrass[DDSwampGrass_COUNT],_swampGrassGray[DDSwampGrass_COUNT];
   CGImageRef _reefVista[DDUnderwaterVista_COUNT],_reefVistaGray[DDUnderwaterVista_COUNT];
   CGImageRef _reef[DDUnderwater_ROCK_COUNT],_reefGray[DDUnderwater_ROCK_COUNT];
@@ -128,6 +131,9 @@ static CGGradientRef DDGradient(CGColorSpaceRef space,IOSIntArray *colors,IOSFlo
     withFloat:(jfloat)deck withFloat:(jfloat)shift withInt:(jint)alpha withFloat:(jfloat)mono {
   CGContextRef context=self.context;
   if(!context || _drawingForest || _drawingSwampLayer || art<0 || art>=DDSwampLayers_COUNT || w<=0)return NO;
+#if DEBUG
+  if(_profileHideGrass && art>=DDSwampLayers_REEDS)return YES;
+#endif
   if(_swampW!=w || _swampH!=h || _swampDeck!=deck) {
     for(int i=0;i<DDSwampLayers_COUNT;i++) {
       CGImageRelease(_swampLayers[i]);_swampLayers[i]=NULL;
@@ -162,6 +168,9 @@ static CGGradientRef DDGradient(CGColorSpaceRef space,IOSIntArray *colors,IOSFlo
                   withFloat:(jfloat)r withFloat:(jfloat)sway withInt:(jint)alpha withFloat:(jfloat)mono {
   CGContextRef context=self.context;
   if(!context || _drawingForest || art<0 || art>=DDSwampGrass_COUNT || r<=0)return NO;
+#if DEBUG
+  if(_profileHideGrass)return YES;
+#endif
   if(!_swampGrass[art]) {
     CGContextRef bitmap=CGBitmapContextCreate(NULL,DDSwampGrass_WIDTH,DDSwampGrass_HEIGHT,8,
         DDSwampGrass_WIDTH*4,_colorSpace,kCGBitmapByteOrder32Big|kCGImageAlphaPremultipliedLast);
@@ -179,7 +188,11 @@ static CGGradientRef DDGradient(CGColorSpaceRef space,IOSIntArray *colors,IOSFlo
   CGContextSaveGState(context);CGContextTranslateCTM(context,x,y);
   CGContextConcatCTM(context,CGAffineTransformMake(1,0,-sway,1,0,0));
   CGContextSetAlpha(context,MAX(0,MIN(255,alpha))/255.0);
-  CGContextSetInterpolationQuality(context,kCGInterpolationMedium);
+  // Medium filtering resamples every sheared reed on CPU on older iPhones.
+  CGContextSetInterpolationQuality(context,kCGInterpolationLow);
+#if DEBUG
+  if(_profileMediumGrass)CGContextSetInterpolationQuality(context,kCGInterpolationMedium);
+#endif
   DDDrawCachedImage(context,CGRectMake(-DDSwampGrass_ANCHOR_X*unit,-DDSwampGrass_ANCHOR_Y*unit,
       DDSwampGrass_WIDTH*unit,DDSwampGrass_HEIGHT*unit),_swampGrass[art],_swampGrassGray[art],mono);
   CGContextRestoreGState(context);return YES;
@@ -475,6 +488,10 @@ static CGGradientRef DDGradient(CGColorSpaceRef space,IOSIntArray *colors,IOSFlo
 
 - (instancetype)init {
   if ((self = [super init])) _colorSpace = CGColorSpaceCreateDeviceRGB();
+#if DEBUG
+  _profileHideGrass=[NSProcessInfo.processInfo.environment[@"DDD_SWAMP_HIDE_GRASS"] boolValue];
+  _profileMediumGrass=[NSProcessInfo.processInfo.environment[@"DDD_SWAMP_MEDIUM_GRASS"] boolValue];
+#endif
   return self;
 }
 

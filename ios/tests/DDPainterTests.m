@@ -1,6 +1,8 @@
 #import "com/dddumpling/game/SlimeBasinArt.h"
 #import "com/dddumpling/game/UnderwaterVista.h"
 #import <XCTest/XCTest.h>
+#import "com/dddumpling/game/IOSGame.h"
+#import <UIKit/UIKit.h>
 #import "DDPainter.h"
 #import "IOSPrimitiveArray.h"
 
@@ -15,6 +17,35 @@
 @end
 
 @implementation DDPainterTests
+- (void)testSwampFilteringPortraitFrames {
+  DDIOSGame *game=[[DDIOSGame alloc] initWithDDGameCore_Store:nil withDDGameCore_Sound:nil withLong:9];
+  [game layoutWithFloat:414 withFloat:896 withFloat:0 withFloat:88 withFloat:0 withFloat:34];
+  UIGraphicsImageRendererFormat *format=[UIGraphicsImageRendererFormat defaultFormat];
+  format.scale=3;format.opaque=YES;
+  UIGraphicsImageRenderer *renderer=[[UIGraphicsImageRenderer alloc] initWithSize:CGSizeMake(414,896) format:format];
+  for(NSString *scene in @[@"profile:swamp",@"profile:swamp-mono"]) {
+    [game debugSceneWithNSString:scene];
+    XCTAssertTrue([[game debugStatus] containsString:@"swamp-replay"]);
+    for(int tick=0;tick<100;tick++)[game updateWithFloat:1.f/60];
+    for(NSNumber *medium in @[@YES,@NO]) {
+      DDIOSPainter *painter=[DDIOSPainter new];
+      [painter setValue:medium forKey:@"profileMediumGrass"];
+      UIImage *image=[renderer imageWithActions:^(UIGraphicsImageRendererContext *ctx) {
+        painter.context=ctx.CGContext;
+        CGAffineTransform before=CGContextGetCTM(ctx.CGContext);
+        [game drawWithDDPainter:painter];
+        XCTAssertTrue(CGAffineTransformEqualToTransform(before,CGContextGetCTM(ctx.CGContext)));
+        painter.context=NULL;
+      }];
+      XCTAssertEqual(CGImageGetWidth(image.CGImage),1242u);
+      XCTAssertEqual(CGImageGetHeight(image.CGImage),2688u);
+      XCTAttachment *shot=[XCTAttachment attachmentWithImage:image];
+      shot.name=[NSString stringWithFormat:@"%@-%@",scene,medium.boolValue?@"medium":@"low"];
+      shot.lifetime=XCTAttachmentLifetimeKeepAlways;[self addAttachment:shot];
+    }
+  }
+}
+
 - (void)testCavePassKeepsNativeRenderingPath {
   DDIOSPainter *painter=[DDIOSPainter new];
   XCTAssertFalse([painter beginCaveWithFloat:390 withFloat:844]);

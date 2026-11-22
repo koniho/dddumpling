@@ -10,6 +10,7 @@ public final class IOSGame {
     }
 
     private final GameCore core;
+    private GatorReplay profileReplay;
     private final Layout layout = new Layout();
     private final SettingsInput settingsInput = new SettingsInput();
     private final KeyboardInput keyboard = new KeyboardInput();
@@ -125,6 +126,7 @@ public final class IOSGame {
     }
     public boolean touch(IOSTouch ev) { return touch(ev,0f); }
     public boolean keyDown(int letter, boolean repeat) {
+        if (profileReplay != null) return true;
         if(core.cloudUi.open)return true;
         if (background) return false;
         int result = keyboard.down(core, layout, letter, repeat);
@@ -138,6 +140,7 @@ public final class IOSGame {
         tick();return true;
     }
     public boolean touch(IOSTouch ev,float inputAge) {
+        if (profileReplay != null) return true;
         if (background) return true;
         if(core.cloudUi.open) {
             int i=ev.getActionIndex();
@@ -826,6 +829,7 @@ public final class IOSGame {
     public void update(float elapsed) {
         if (background || layout.w <= 0 || elapsed < 0f || Float.isNaN(elapsed)
                 || Float.isInfinite(elapsed)) return;
+        if (profileReplay != null) { profileReplay.update(elapsed, layout); return; }
         elapsedClock += elapsed;
         if (delayedHaptic > 0f) {
             delayedHaptic -= elapsed;
@@ -861,12 +865,16 @@ public final class IOSGame {
     }
 
     public void draw(Painter painter) {
+        if (profileReplay != null) { Renderer.draw(painter, profileReplay.core, layout); return; }
         if (layout.w > 0) {Renderer.draw(painter, core, layout);core.cloudUi.draw(painter,core,layout);}
     }
 
     /** Simulator scenes use the same setup methods as the developer panel. */
     public String debugStatus() {
         if (!BuildFlags.DEVELOPER) return "";
+        if (profileReplay != null) return "swamp-replay;loop=" + profileReplay.loops
+                + ";tick=" + profileReplay.tick + ";stage=" + profileReplay.core.stage
+                + ";lives=" + profileReplay.core.lives;
         return "state=" + core.state + ";stage=" + core.stage + ";paused=" + core.paused
                 + ";score=" + core.score + ";lives=" + core.lives + ";case=" + core.caseOpen
                 + ";stars=" + core.starBonus + ";mode=" + core.mode + ";starter=" + core.starter.open
@@ -877,6 +885,12 @@ public final class IOSGame {
 
     public void debugScene(String scene) {
         if (!BuildFlags.DEVELOPER || scene == null || layout.w <= 0) return;
+        if (scene.equals("profile:swamp") || scene.equals("profile:swamp-mono")) {
+            cancelPointers();
+            profileReplay = new GatorReplay(Boss.ALLIGATOR, scene.endsWith("-mono"), true, true);
+            return;
+        }
+        profileReplay = null;
         // Explicit launch-only grants exercise the normal durable progress and sync path.
         if (scene.startsWith("progress:")) {
             String[] values = scene.split(":");

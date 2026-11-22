@@ -1317,9 +1317,22 @@ public final class IOSInputTest extends Check {
         highScores();leaderboardNavigation();leaderboardNotifications();notificationPreview();
         updatePrompt(); releaseAttention(); releaseNotes(); releaseFeedback(); packets(); titleAndLifecycle(); starsAndLand(); starFeedback(); starCompletionStorm(); bossOwnership(); ninjaHistory();
         steamerAndPanic(); forgivingRescue(); caseBackSwipes(); caseAndSettings(); storyDumplingInput(); outfitDragOff(); outfitFeedback(); outfitShake(); firstTitleEntry(); modeSelector(); survival();
-        debugScenes(); linkedChord();
+        debugScenes(); swampReplay(); linkedChord();
         System.out.println("iOS input: " + pass + " passed, " + fail + " failed");
         if (fail != 0) throw new AssertionError("iOS input regressions");
+    }
+
+    private static void swampReplay() {
+        IOSGame game=game();GameCore original=game.core();
+        int state=original.state;float clock=original.skyClock;
+        game.debugScene("profile:swamp");
+        for(int i=0;i<36*60+2;i++)game.update(1f/60f);
+        check("isolated swamp replay loops without player input",game.debugStatus().contains("loop=1")
+                && game.debugStatus().contains("stage=21"));
+        check("swamp replay leaves player game untouched",game.core()==original
+                && original.state==state && original.skyClock==clock);
+        game.debugScene("title");
+        check("normal scene exits swamp replay",!game.debugStatus().contains("swamp-replay"));
     }
 
     private static void keyboardInput() {
